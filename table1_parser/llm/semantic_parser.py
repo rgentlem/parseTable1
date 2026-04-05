@@ -134,7 +134,7 @@ class LLMSemanticTableDefinitionParser:
             validated = validate_llm_semantic_table_definition(result, table, retrieved_context)
         except (ValidationError, ValueError) as exc:
             error = LLMSemanticInterpretationError(
-                "Invalid structured LLM semantic interpretation.",
+                f"Invalid structured LLM semantic interpretation: {exc}",
                 payload=payload,
                 raw_response=raw_response,
             )

@@ -91,8 +91,12 @@ def build_llm_semantic_prompt(payload: LLMSemanticInputPayload, output_schema: d
     return render_prompt_template(
         template,
         {
-            "TABLE_PAYLOAD_JSON": json.dumps(payload.model_dump(mode="json", exclude_none=True), indent=2, sort_keys=True),
-            "OUTPUT_SCHEMA_JSON": json.dumps(output_schema, indent=2, sort_keys=True),
+            "TABLE_PAYLOAD_JSON": json.dumps(
+                payload.model_dump(mode="json", exclude_none=True),
+                separators=(",", ":"),
+                sort_keys=True,
+            ),
+            "OUTPUT_SCHEMA_JSON": json.dumps(output_schema, separators=(",", ":"), sort_keys=True),
         },
     )
 
