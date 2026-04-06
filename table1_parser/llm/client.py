@@ -159,7 +159,7 @@ class QwenClient(LLMClient):
         self.temperature = temperature
         self.timeout_seconds = timeout_seconds
         self.max_retries = max_retries
-        self._endpoint = self.base_url.rstrip("/") + "/services/aigc/multimodal-generation/generation"
+        self._endpoint = self.base_url.rstrip("/") + "/services/aigc/text-generation/generation"
         self._opener = urllib_request.build_opener(urllib_request.ProxyHandler({}))
 
     def structured_completion(
@@ -177,7 +177,7 @@ class QwenClient(LLMClient):
             data=json.dumps(
                 {
                     "model": self.model,
-                    "input": {"messages": [{"role": "user", "content": [{"text": strict_prompt}]}]},
+                    "input": {"prompt": strict_prompt},
                     "parameters": {"temperature": self.temperature},
                 }
             ).encode("utf-8"),
@@ -224,6 +224,12 @@ def _extract_qwen_message_text(response: Any) -> str:
         output = response.get("output")
     if output is None:
         return ""
+
+    output_text = getattr(output, "text", None)
+    if output_text is None and isinstance(output, dict):
+        output_text = output.get("text")
+    if isinstance(output_text, str) and output_text.strip():
+        return output_text.strip()
 
     choices = getattr(output, "choices", None)
     if choices is None and isinstance(output, dict):
