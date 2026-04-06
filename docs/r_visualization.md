@@ -16,6 +16,7 @@ The table display helper can display:
 
 - stored normalized-table JSON such as `normalized_tables.json`
 - row-oriented semantic debug payload JSON such as `table_definition_llm_input.json`
+  these payloads currently use compact keys such as `rows`, `vars`, and `passages`
 - parsed-table-style JSON that contains `variables`, `columns`, and `values`
 - trace wrapper files that store the actual payload under `payload`, `interpretation`, or `response`
 
@@ -39,7 +40,7 @@ visualize_table_from_json("outputs/papers/cobaltpaper/normalized_tables.json")
 
 ## Paper Output Inspection Helper
 
-The paper-output inspection helper is for comparing deterministic and LLM semantics and reading the supporting paper context.
+The paper-output inspection helper is for comparing deterministic and row-focused LLM semantics and reading the supporting paper context.
 
 Public functions:
 
@@ -90,9 +91,9 @@ What these are for:
 - `show_paper_variable_candidates(...)`
   print the merged candidate-variable records from `paper_variable_inventory.json`, including canonical labels and promotion metadata
 - `show_table_structure(...)`
-  print one saved table's normalized rows, semantic columns, and row-variable definitions together
+  print one saved table's normalized rows, deterministic columns, and row-variable definitions together
 - `compare_table_definitions(...)`
-  compare deterministic syntax-first semantics with the LLM semantic interpretation
+  compare deterministic syntax-first row semantics with the LLM semantic interpretation
 - `compare_table_definition_runs(...)`
   compare any two saved `table_definitions` variants, including cross-run comparisons such as `no_llm` deterministic vs `with_llm` semantic LLM
 - `list_llm_semantic_debug_runs(...)`
@@ -102,7 +103,7 @@ What these are for:
 - `show_table_context(...)`
   inspect the retrieved passages for one table
 - `show_llm_evidence(...)`
-  resolve `evidence_passage_ids` in the LLM output back to the actual retrieved passages
+  resolve variable- and level-level `evidence_passage_ids` in the LLM output back to the actual retrieved passages
 
 Current limitation:
 
@@ -110,6 +111,7 @@ Current limitation:
 - they do not yet expose page-number or line-number anchors
 - the paper-variable inventory is currently a Phase 1 search artifact and does not yet alter table-context retrieval or LLM prompts
 - raw mentions are intentionally broader than promoted candidates; ranges, levels, and artifacts may still appear in `show_paper_variable_mentions(...)`
+- the current semantic LLM pass is row-only; columns remain deterministic
 
 ## Observed TableOne Helper
 

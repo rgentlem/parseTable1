@@ -35,7 +35,6 @@ class _FakeOpenAI:
                 output_parsed=LLMSemanticTableDefinition(
                     table_id="tbl-llm",
                     variables=[],
-                    column_definition={"columns": []},
                     notes=["from fake openai"],
                 )
             )
@@ -157,12 +156,12 @@ def test_build_llm_client_returns_openai_client_with_fake_sdk(monkeypatch) -> No
 
     assert response["table_id"] == "tbl-llm"
     assert response["notes"] == ["from fake openai"]
-    assert response["column_definition"]["columns"] == []
     assert client._client.api_key == "test-key"  # type: ignore[attr-defined]
     assert client._client.timeout == 15  # type: ignore[attr-defined]
     assert client._client.max_retries == 3  # type: ignore[attr-defined]
     assert client._client.responses.calls[0]["model"] == "gpt-4.1-mini"  # type: ignore[attr-defined]
     assert client.sdk_debug is False
+    assert client.embeds_output_schema_in_prompt is False
 
 
 def test_build_llm_client_returns_qwen_client_and_parses_json_response() -> None:
@@ -189,7 +188,7 @@ def test_build_llm_client_returns_qwen_client_and_parses_json_response() -> None
                                     {
                                         "text": (
                                             "```json\n"
-                                            '{"table_id":"tbl-llm","variables":[],"column_definition":{"columns":[]},'
+                                            '{"table_id":"tbl-llm","variables":[],'
                                             '"notes":["from fake qwen"]}'
                                             "\n```"
                                         )
@@ -214,11 +213,11 @@ def test_build_llm_client_returns_qwen_client_and_parses_json_response() -> None
     body = request.data.decode("utf-8")  # type: ignore[attr-defined]
     assert response["table_id"] == "tbl-llm"
     assert response["notes"] == ["from fake qwen"]
-    assert response["column_definition"]["columns"] == []
     assert fake_opener.calls[0]["timeout"] == 15
     assert '"model": "qwen-plus"' in body
     assert "Output contract:" in body
     assert "Output schema:" not in body
+    assert client.embeds_output_schema_in_prompt is True
 
 
 def test_build_llm_client_separates_sdk_debug_from_artifact_debug(monkeypatch) -> None:

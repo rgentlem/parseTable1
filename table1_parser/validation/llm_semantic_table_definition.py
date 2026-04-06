@@ -1,4 +1,4 @@
-"""Validation for LLM semantic TableDefinition artifacts."""
+"""Validation for row-focused LLM semantic TableDefinition artifacts."""
 
 from __future__ import annotations
 
@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 
 from table1_parser.schemas import (
     ColumnDefinition,
-    DefinedColumn,
     DefinedLevel,
     DefinedVariable,
     NormalizedTable,
@@ -24,7 +23,7 @@ def validate_llm_semantic_table_definition(
     table: NormalizedTable,
     context: TableContext,
 ) -> LLMSemanticTableDefinition:
-    """Validate one LLM semantic interpretation against table structure and retrieved context."""
+    """Validate one row-focused LLM semantic interpretation against table structure and retrieved context."""
     _require(definition.table_id == table.table_id, "LLM semantic table_id does not match the normalized table.")
     projected = TableDefinition(
         table_id=definition.table_id,
@@ -50,22 +49,7 @@ def validate_llm_semantic_table_definition(
             )
             for variable in definition.variables
         ],
-        column_definition=ColumnDefinition(
-            grouping_label=definition.column_definition.grouping_label,
-            grouping_name=definition.column_definition.grouping_name,
-            columns=[
-                DefinedColumn(
-                    col_idx=column.col_idx,
-                    column_name=column.column_name,
-                    column_label=column.column_label,
-                    inferred_role=column.inferred_role,
-                    grouping_variable_hint=column.grouping_variable_hint,
-                    confidence=column.confidence,
-                )
-                for column in definition.column_definition.columns
-            ],
-            confidence=definition.column_definition.confidence,
-        ),
+        column_definition=ColumnDefinition(columns=[]),
         notes=list(definition.notes),
         overall_confidence=definition.overall_confidence,
     )
@@ -82,15 +66,6 @@ def validate_llm_semantic_table_definition(
                 all(passage_id in valid_passage_ids for passage_id in level.evidence_passage_ids),
                 f"Unknown evidence passage on level {level.level_name}.",
             )
-    _require(
-        all(passage_id in valid_passage_ids for passage_id in definition.column_definition.evidence_passage_ids),
-        "Unknown evidence passage on column definition.",
-    )
-    for column in definition.column_definition.columns:
-        _require(
-            all(passage_id in valid_passage_ids for passage_id in column.evidence_passage_ids),
-            f"Unknown evidence passage on column {column.column_name}.",
-        )
     return definition
 
 

@@ -135,32 +135,6 @@ def _write_sample_paper_outputs(paper_dir: Path, *, include_llm: bool) -> None:
                                 "disagrees_with_deterministic": True,
                             }
                         ],
-                        "column_definition": {
-                            "grouping_label": "DKD status",
-                            "grouping_name": "DKD status",
-                            "columns": [
-                                {
-                                    "col_idx": 1,
-                                    "column_name": "Overall",
-                                    "column_label": "Overall",
-                                    "inferred_role": "overall",
-                                    "evidence_passage_ids": [],
-                                    "confidence": 0.9,
-                                },
-                                {
-                                    "col_idx": 2,
-                                    "column_name": "DKD",
-                                    "column_label": "DKD case status",
-                                    "inferred_role": "comparison_group",
-                                    "grouping_variable_hint": "DKD status",
-                                    "evidence_passage_ids": ["section_1_p0"],
-                                    "confidence": 0.95,
-                                    "disagrees_with_deterministic": True,
-                                },
-                            ],
-                            "evidence_passage_ids": ["section_1_p0"],
-                            "confidence": 0.95,
-                        },
                         "notes": [],
                         "overall_confidence": 0.95,
                     }
@@ -364,6 +338,7 @@ def test_r_inspection_helpers_compare_and_resolve_context(tmp_path) -> None:
     assert result.returncode == 0, result.stderr
     assert "Variables" in result.stdout
     assert "Columns" in result.stdout
+    assert "row-only" in result.stdout
     assert "Table context for table_index=0" in result.stdout
     assert "LLM evidence for table_index=0" in result.stdout
     assert "section_1_p0" in result.stdout
@@ -438,7 +413,7 @@ def test_r_inspection_helper_compares_two_runs_at_table_definition_stage(tmp_pat
     assert "Left: no_llm (deterministic)" in result.stdout
     assert "Right: with_llm_llm (llm)" in result.stdout
     assert "Age at baseline" in result.stdout
-    assert "DKD case status" in result.stdout
+    assert "row-only" in result.stdout
     assert "different" in result.stdout
 
 
@@ -791,19 +766,6 @@ def test_r_inspection_resolves_sparse_llm_definitions_by_table_id(tmp_path) -> N
                             "disagrees_with_deterministic": True,
                         }
                     ],
-                    "column_definition": {
-                        "columns": [
-                            {
-                                "col_idx": 1,
-                                "column_name": "Overall",
-                                "column_label": "Overall cohort",
-                                "inferred_role": "overall",
-                                "confidence": 0.95,
-                                "disagrees_with_deterministic": True,
-                            }
-                        ],
-                        "confidence": 0.95,
-                    },
                     "notes": [],
                     "overall_confidence": 0.95,
                 }
@@ -855,7 +817,7 @@ def test_r_inspection_resolves_sparse_llm_definitions_by_table_id(tmp_path) -> N
 
     assert result.returncode == 0, result.stderr
     assert "Age at baseline" in result.stdout
-    assert "Overall cohort" in result.stdout
+    assert "row-only" in result.stdout
 
 
 def test_r_inspection_summarizes_llm_semantic_debug_run(tmp_path) -> None:

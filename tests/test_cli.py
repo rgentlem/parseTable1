@@ -136,7 +136,6 @@ def test_cli_parse_writes_semantic_llm_output_when_available(tmp_path, monkeypat
             result = LLMSemanticTableDefinition(
                 table_id=definition.table_id,
                 variables=[],
-                column_definition={"columns": []},
                 notes=["semantic"],
                 overall_confidence=0.9,
             )
@@ -283,7 +282,6 @@ def test_cli_parse_skips_semantic_llm_for_estimate_result_tables(tmp_path, monke
                 result=LLMSemanticTableDefinition(
                     table_id=definition.table_id,
                     variables=[],
-                    column_definition={"columns": []},
                     notes=["semantic"],
                     overall_confidence=0.9,
                 ),
@@ -363,7 +361,6 @@ def test_cli_parse_writes_semantic_debug_monitoring_when_llm_debug_enabled(tmp_p
                 result=LLMSemanticTableDefinition(
                     table_id=definition.table_id,
                     variables=[],
-                    column_definition={"columns": []},
                     notes=["semantic"],
                     overall_confidence=0.9,
                 ),

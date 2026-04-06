@@ -46,7 +46,7 @@ At the moment, the repository can persist:
 - paper-level variable inventory
 
 Today, a single call to `table1-parser parse` writes those artifacts from one extraction pass.
-When LLM configuration is available, the same `parse` call also writes semantic LLM table definitions.
+When LLM configuration is available, the same `parse` call also writes row-focused semantic LLM table definitions.
 
 ## Install
 
@@ -95,7 +95,7 @@ For example:
 table1-parser parse testpapers/cobaltpaper.pdf
 ```
 
-This writes the extraction, normalization, table-definition, final parsed-table, and paper-context outputs in one run. When configured, it also writes semantic LLM table-definition output.
+This writes the extraction, normalization, table-definition, final parsed-table, and paper-context outputs in one run. When configured, it also writes row-focused semantic LLM table-definition output.
 
 To suppress semantic LLM inference explicitly:
 
@@ -190,7 +190,7 @@ show_table_context("outputs/papers/cobaltpaper", table_index = 0L)
 show_llm_evidence("outputs/papers/cobaltpaper", table_index = 0L)
 ```
 
-These helpers are meant to make it easier to inspect the paper-level candidate variable inventory, distinguish broad mentions from promoted candidates, compare deterministic syntax-first semantics with LLM semantics, and inspect the retrieved supporting passages.
+These helpers are meant to make it easier to inspect the paper-level candidate variable inventory, distinguish broad mentions from promoted candidates, compare deterministic syntax-first row semantics with LLM semantics, and inspect the retrieved supporting passages.
 
 ## Output Layout
 
@@ -232,7 +232,7 @@ The easiest way to inspect one paper is:
 3. read `table_definitions.json` to see the deterministic row and column interpretation
 4. read `paper_variable_inventory.json` to see the paper-level candidate variable reference list
 5. read `parsed_tables.json` to see the final structured values
-6. read `table_definitions_llm.json` when present to see the context-aware semantic interpretation
+6. read `table_definitions_llm.json` when present to see the context-aware row interpretation
 7. use `paper_sections.json` and `table_contexts/*.json` to see the paper passages that support the semantic interpretation
 
 In practice:
@@ -250,7 +250,7 @@ In practice:
 - `parsed_tables.json`
   best for the final structured row, column, and value output
 - `table_definitions_llm.json`
-  best for the paper-context-aware semantic view
+  best for the paper-context-aware row-semantic view
 
 ## Syntax vs Semantics
 
@@ -260,10 +260,10 @@ The repository keeps syntax and semantics separate.
   what rows and columns physically exist in the table
   main files: `extracted_tables.json`, `normalized_tables.json`
 - semantics
-  what those rows and columns mean
+  what the rows mean and which levels belong under them
   main files: `table_definitions.json`, `table_definitions_llm.json`
 
-The deterministic and LLM semantic files both refer back to the same `table_id`, `row_idx`, and `col_idx` space. That makes them directly comparable.
+The deterministic and LLM semantic files both refer back to the same `table_id` and row-index space. Columns remain deterministic in the current LLM design.
 
 The paper-level variable inventory is complementary rather than competitive with those table-level artifacts. It is the paper-scoped candidate reference list that later semantic work can consult while still keeping one table at a time in the LLM prompt.
 
@@ -307,7 +307,7 @@ The LLM output should be treated as an additional semantic interpreter, not hidd
 To evaluate it:
 
 1. compare `table_definitions.json` with `table_definitions_llm.json`
-2. check whether they point to the same rows and columns
+2. check whether they point to the same rows
 3. inspect the `evidence_passage_ids` in the LLM file
 4. look up those passage IDs in the matching `table_contexts/table_<n>_context.json`
 5. read the surrounding section in `paper_sections.json` when needed

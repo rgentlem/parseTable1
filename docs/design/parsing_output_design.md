@@ -76,7 +76,7 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Table definition | `TableDefinition` | Written now as `table_definitions.json` by `parse` | Persist value-free row-variable, level, and column semantics |
 | Paper context | `PaperSection`, `TableContext` | Written now as `paper_markdown.md`, `paper_sections.json`, and `table_contexts/*.json` by `parse` | Persist markdown sections and per-table retrieval bundles, with only conservative glyph repair in the markdown text |
 | Paper variable inventory | `PaperVariableInventory`, `VariableMention`, `VariableCandidate` | Written now as `paper_variable_inventory.json` by `parse` | Persist the paper-level candidate variable reference list with explicit text/table provenance |
-| Semantic LLM table definition | `LLMSemanticTableDefinition` | Written now as `table_definitions_llm.json` by `parse` when LLM config is available | Persist value-free semantic interpretation grounded in table indices and retrieved paper context |
+| Semantic LLM table definition | `LLMSemanticTableDefinition` | Written now as `table_definitions_llm.json` by `parse` when LLM config is available | Persist row-focused value-free semantic interpretation grounded in table indices and retrieved paper context |
 | Semantic LLM debug monitoring | `LLMSemanticMonitoringReport`, `LLMSemanticCallRecord` | Written only when `LLM_DEBUG=true` as `llm_semantic_debug/<timestamp>/llm_semantic_monitoring.json` plus per-table trace files | Persist per-table timing, payload-size, status, and raw-response debug evidence |
 | Semantic LLM per-table trace files | wrapper JSON files | Written only when `LLM_DEBUG=true` as `table_definition_llm_input.json`, `table_definition_llm_metrics.json`, `table_definition_llm_output.json`, and `table_definition_llm_interpretation.json` | Preserve prompt payloads, metrics, raw provider responses, and validated semantic interpretations for inspection |
 | Final parsed output | `ParsedTable` | Written now as `parsed_tables.json` by `parse` | Validated downstream structured table data |
@@ -451,15 +451,14 @@ Design components:
 
 - `table_id`
 - `variables`
-- `column_definition`
 - `notes`
 - `overall_confidence`
 
 Design intent:
 
-- let the LLM speak about row and column semantics using table structure plus retrieved paper context
+- let the LLM speak about row semantics using deterministic row structure plus retrieved paper context
 - preserve `table_definitions.json` as the deterministic baseline artifact
-- keep row and column references tied to the normalized table index space
+- keep row references tied to the normalized table index space
 - validate the LLM output before writing this file
 - keep per-variable `units_hint` and `summary_style_hint` out of the semantic LLM contract for now
 
@@ -538,7 +537,8 @@ Design intent:
 
 - preserve the exact semantic LLM payload, monitoring metrics, raw provider output, and validated interpretation for inspection
 - keep these files separate from canonical pipeline outputs such as `table_definitions.json`, `table_definitions_llm.json`, and `parsed_tables.json`
-- preserve stable row and column references so semantic disagreements can still be audited safely
+- preserve stable row references so semantic disagreements can still be audited safely
+- keep the prompt payload compact; the saved input wrapper currently uses short payload keys such as `rows`, `vars`, and `passages`
 
 ## 7. `ParsedTable` JSON
 

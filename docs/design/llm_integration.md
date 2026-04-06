@@ -1,12 +1,30 @@
 # LLM Integration
 
-The repository's active LLM path is the semantic post-`TableDefinition` layer used by `table1-parser parse`.
+The repository's active LLM path is the row-focused semantic post-`TableDefinition` layer used by `table1-parser parse`.
 
 Current flow:
 
 `NormalizedTable -> TableDefinition -> TableContext -> LLMSemanticTableDefinition`
 
-The LLM is used only for optional semantic interpretation after deterministic table-definition assembly and paper-context retrieval.
+The LLM is used only for optional row interpretation after deterministic table-definition assembly and paper-context retrieval.
+
+Current scope:
+
+- row variables
+- categorical levels under those variables
+- evidence passage attribution for row claims
+
+Current non-scope:
+
+- column reinterpretation
+- grouping-label reinterpretation
+- cross-table prompting
+
+Current prompt-shaping strategy:
+
+- compact row hints rather than full cell arrays
+- compact deterministic variable spans rather than full `TableDefinition` dumps
+- a small truncated passage bundle rather than the full retrieval payload
 
 ## Current provider path
 
@@ -25,6 +43,7 @@ OpenAI uses:
 
 - the official OpenAI Python SDK
 - native structured parsing into the semantic Pydantic response model
+- provider-aware prompt compaction, so the prompt does not duplicate the full output schema text
 
 Qwen uses:
 

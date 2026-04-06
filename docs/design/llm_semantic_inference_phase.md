@@ -1,6 +1,6 @@
 # LLM Semantic Inference Phase
 
-This document scopes the next phase: using an LLM to interpret table semantics from both the table structure and the surrounding paper text.
+This document scopes the current row-focused semantic phase: using an LLM to interpret row semantics from the deterministic table structure and the surrounding paper text.
 
 See also:
 
@@ -12,9 +12,8 @@ Add an optional LLM-driven semantic interpretation stage that can:
 
 - interpret row-variable meaning
 - interpret categorical levels
-- interpret column meaning
 - use paper context to challenge or support deterministic output
-- preserve strict row and column safety
+- preserve strict row safety
 
 This phase is not for raw extraction or value parsing.
 
@@ -37,10 +36,8 @@ One more principle is important:
 The LLM must never:
 
 - invent rows
-- invent columns
 - invent values
 - refer to row indices not present in the normalized table
-- refer to column indices not present in the normalized table
 
 The deterministic pipeline remains the source of structural truth.
 
@@ -151,8 +148,8 @@ After the paper-level variable inventory exists, each table can still build its 
 
 The LLM should receive:
 
-- one table's normalized structure
-- one table's deterministic `TableDefinition`
+- one table's normalized body rows
+- one table's deterministic row definitions
 - one table's retrieved passages
 - the relevant subset of paper-level candidate variables
 
@@ -202,10 +199,8 @@ This variation is expected and should be treated as normal, not as a special-cas
 
 The LLM should receive:
 
-- normalized header rows
 - normalized body rows
-- deterministic `TableDefinition`
-- deterministic row and column guesses
+- deterministic row definitions
 - caption and footnotes
 - retrieved evidence passages with stable passage IDs
 - the relevant subset of `paper_variable_inventory.json`
@@ -252,8 +247,6 @@ The LLM should return a value-free semantic interpretation that includes:
 
 - row-linked variable judgments
 - row-linked level judgments
-- column-linked semantic role judgments
-- grouping-variable suggestions
 - evidence passage references
 - confidence
 - explicit disagreement with deterministic output where relevant
@@ -267,7 +260,6 @@ The LLM should be allowed to say:
 
 - this row is not a variable
 - these rows are levels under a parent variable
-- these columns are models, not subgroups
 - the deterministic interpretation does not fit the paper context
 
 ## Adjudication
@@ -290,9 +282,7 @@ The adjudicated output should preserve:
 
 - resolve whether a row is a parent variable or a section label
 - resolve whether following rows are levels
-- interpret messy multi-row headers
-- decide whether columns are subgroups, models, or comparison columns
-- identify likely grouping concepts from caption and paper text
+- identify likely row-level grouping concepts from caption and paper text
 - spot semantic conflicts in deterministic output
 
 ## Out of Scope

@@ -1,4 +1,4 @@
-"""LLM semantic interpreter for TableDefinition artifacts."""
+"""Row-focused LLM semantic interpreter for TableDefinition artifacts."""
 
 from __future__ import annotations
 
@@ -48,7 +48,7 @@ class LLMSemanticParseAttempt:
 
 
 class LLMSemanticTableDefinitionParser:
-    """Call an LLM for semantic TableDefinition interpretation and validate the result."""
+    """Call an LLM for row-focused semantic interpretation and validate the result."""
 
     def __init__(self, client: LLMClient) -> None:
         self.client = client
@@ -61,7 +61,7 @@ class LLMSemanticTableDefinitionParser:
         *,
         trace_dir: str | Path | None = None,
     ) -> LLMSemanticTableDefinition:
-        """Produce a validated LLM semantic interpretation for one normalized table."""
+        """Produce a validated row-focused LLM semantic interpretation for one normalized table."""
         attempt = self.parse_with_monitoring(
             table,
             deterministic_table_definition,
@@ -82,10 +82,13 @@ class LLMSemanticTableDefinitionParser:
         *,
         trace_dir: str | Path | None = None,
     ) -> LLMSemanticParseAttempt:
-        """Produce a semantic interpretation together with timing and payload metrics."""
+        """Produce a row-focused semantic interpretation together with timing and payload metrics."""
         payload = build_llm_semantic_input_payload(table, deterministic_table_definition, retrieved_context)
         schema = LLMSemanticTableDefinition.model_json_schema()
-        prompt = build_llm_semantic_prompt(payload, schema)
+        prompt = build_llm_semantic_prompt(
+            payload,
+            schema if self.client.embeds_output_schema_in_prompt else {},
+        )
         started_at = _utc_timestamp()
         started_perf = perf_counter()
         base_monitoring = LLMSemanticCallRecord(
@@ -195,7 +198,7 @@ def _write_trace_artifacts(
     result: LLMSemanticTableDefinition | None,
     monitoring: LLMSemanticCallRecord,
 ) -> None:
-    """Write compact trace artifacts for one semantic LLM interpretation."""
+    """Write compact trace artifacts for one row-focused semantic LLM interpretation."""
     trace_path = Path(trace_dir)
     trace_path.mkdir(parents=True, exist_ok=True)
     _write_json(
@@ -251,7 +254,7 @@ def _finalize_monitoring(
                 len(json.dumps(raw_response, sort_keys=True)) if raw_response is not None else None
             ),
             "output_variable_count": len(result.variables) if result is not None else None,
-            "output_column_count": len(result.column_definition.columns) if result is not None else None,
+            "output_column_count": None,
             "error_message": error_message,
         }
     )

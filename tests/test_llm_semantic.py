@@ -79,17 +79,27 @@ def _build_context_and_definition() -> tuple[NormalizedTable, object, object]:
 
 
 def test_semantic_prompt_payload_contains_context_and_deterministic_definition() -> None:
-    """Semantic payload should carry indexed rows, deterministic output, and retrieved context."""
+    """Semantic payload should carry compact row hints, deterministic row spans, and compact passages."""
     table, definition, context = _build_context_and_definition()
 
     payload = build_llm_semantic_input_payload(table, definition, context)
 
-    assert payload.header_rows[0].row_idx == 0
     assert payload.body_rows[1].row_idx == 2
-    assert payload.deterministic_table_definition.table_id == "tbl-semantic"
-    assert payload.retrieved_context.table_label == "Table 2"
-    assert payload.deterministic_table_definition.variables[0].units_hint is None
-    assert payload.deterministic_table_definition.variables[0].summary_style_hint is None
+    assert payload.body_rows[1].label == "Sex"
+    assert payload.body_rows[1].has_trailing_values is False
+    assert payload.body_rows[2].numeric_cell_count == 2
+    assert payload.deterministic_variables[0].label == "Age, years"
+    assert payload.deterministic_variables[1].levels[0].label == "Male"
+    assert payload.retrieved_passages[0].passage_id == context.passages[0].passage_id
+    assert payload.table_text == "Characteristics by DKD status"
+    dumped = payload.model_dump(mode="json", by_alias=True, exclude_none=True, exclude_defaults=True)
+    assert "rows" in dumped
+    assert "vars" in dumped
+    assert "passages" in dumped
+    assert "deterministic_variables" not in dumped
+    assert "cells" not in json.dumps(dumped)
+    assert "section_id" not in json.dumps(dumped)
+    assert "match_type" not in json.dumps(dumped)
 
 
 def test_semantic_prompt_includes_safety_and_evidence_requirements() -> None:
@@ -100,10 +110,17 @@ def test_semantic_prompt_includes_safety_and_evidence_requirements() -> None:
     prompt = build_llm_semantic_prompt(payload, LLMSemanticTableDefinition.model_json_schema())
 
     assert "Return strict JSON only." in prompt
-    assert "Do not invent rows, columns, levels, variables, values, or evidence passages." in prompt
+    assert "Do not invent rows, levels, variables, values, or evidence passages." in prompt
     assert "Use evidence_passage_ids whenever you make a semantic claim." in prompt
+    assert "Output schema:" in prompt
     assert "units_hint" not in prompt
     assert "summary_style_hint" not in prompt
+    assert "columns" not in prompt
+    assert '"rows"' in prompt
+    assert '"vars"' in prompt
+    assert '"passages"' in prompt
+    assert "deterministic_variables" not in prompt
+    assert '"cells"' not in prompt
 
 
 def test_semantic_prompt_template_is_repo_file() -> None:
@@ -112,7 +129,17 @@ def test_semantic_prompt_template_is_repo_file() -> None:
 
     assert "Use evidence_passage_ids whenever you make a semantic claim." in template
     assert "{{TABLE_PAYLOAD_JSON}}" in template
-    assert "{{OUTPUT_SCHEMA_JSON}}" in template
+    assert "{{OUTPUT_SCHEMA_SECTION}}" in template
+
+
+def test_semantic_prompt_omits_schema_section_when_not_requested() -> None:
+    """Prompt builder should support provider-native structured parsing without duplicating schema text."""
+    table, definition, context = _build_context_and_definition()
+    payload = build_llm_semantic_input_payload(table, definition, context)
+
+    prompt = build_llm_semantic_prompt(payload, {})
+
+    assert "Output schema:" not in prompt
 
 
 def test_semantic_parser_validates_safe_structured_response(tmp_path) -> None:
@@ -159,39 +186,6 @@ def test_semantic_parser_validates_safe_structured_response(tmp_path) -> None:
                     "disagrees_with_deterministic": False,
                 },
             ],
-            "column_definition": {
-                "grouping_label": "DKD status",
-                "grouping_name": "DKD status",
-                "columns": [
-                    {
-                        "col_idx": 1,
-                        "column_name": "Overall",
-                        "column_label": "Overall",
-                        "inferred_role": "overall",
-                        "evidence_passage_ids": [],
-                        "confidence": 0.95,
-                    },
-                    {
-                        "col_idx": 2,
-                        "column_name": "DKD",
-                        "column_label": "DKD",
-                        "inferred_role": "group",
-                        "grouping_variable_hint": "DKD status",
-                        "evidence_passage_ids": [passage_id],
-                        "confidence": 0.9,
-                    },
-                    {
-                        "col_idx": 3,
-                        "column_name": "P value",
-                        "column_label": "P-value",
-                        "inferred_role": "p_value",
-                        "evidence_passage_ids": [],
-                        "confidence": 0.98,
-                    },
-                ],
-                "evidence_passage_ids": [passage_id],
-                "confidence": 0.92,
-            },
             "notes": ["Context supports DKD grouping."],
             "overall_confidence": 0.92,
         }
@@ -224,7 +218,6 @@ def test_semantic_parser_rejects_unknown_evidence_passage() -> None:
                     "evidence_passage_ids": ["missing_passage"],
                 }
             ],
-            "column_definition": {"columns": []},
             "notes": [],
         }
     )
@@ -253,7 +246,6 @@ def test_semantic_parser_rejects_invalid_row_reference() -> None:
                     "evidence_passage_ids": [],
                 }
             ],
-            "column_definition": {"columns": []},
             "notes": [],
         }
     )
@@ -268,7 +260,6 @@ def test_semantic_trace_preserves_raw_response(tmp_path) -> None:
     response = {
         "table_id": "tbl-semantic",
         "variables": [],
-        "column_definition": {"columns": []},
         "notes": [],
     }
     client = StaticStructuredLLMClient(response=response)

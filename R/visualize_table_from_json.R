@@ -37,8 +37,28 @@ pick_header <- function(payload) {
 
 build_payload_display <- function(payload) {
   header <- pick_header(payload)
-  body_rows <- payload$body_rows %||% list()
+  body_rows <- payload$body_rows %||% payload$rows %||% list()
+  compact_rows <- FALSE
   row_cells <- lapply(body_rows, function(row) {
+    if (!is.null(row$label)) {
+      compact_rows <<- TRUE
+      vals <- if (isTRUE(row$vals %||% FALSE)) "Y" else ""
+      num <- as.character(as.integer(row$num %||% 0L))
+      if (identical(num, "0")) {
+        num <- ""
+      }
+      indent <- as.character(as.integer(row$indent %||% 0L))
+      if (identical(indent, "0")) {
+        indent <- ""
+      }
+      cells <- c(
+        paste0("[", as.integer(row$i %||% -1L), "] ", as.character(row$label %||% "")),
+        vals,
+        num,
+        indent
+      )
+      return(cells)
+    }
     cells <- unlist(row$cells %||% row, use.names = FALSE)
     label <- cells[1] %||% ""
     indent <- row$indent_level %||% 0
@@ -53,7 +73,9 @@ build_payload_display <- function(payload) {
   if (max_cols == 0) {
     return(data.frame())
   }
-  if (length(header) == 0) {
+  if (compact_rows) {
+    header <- c("Row", "Vals", "Num", "Indent")
+  } else if (length(header) == 0) {
     header <- c("Label", paste0("V", seq_len(max_cols - 1)))
   }
   header <- c(header, rep("", max_cols - length(header)))
@@ -184,6 +206,10 @@ visualize_table_from_json <- function(json_path) {
   payload <- unwrap_table_array(unwrap_trace_payload(read_json_file(json_path)))
   title <- payload$title %||% NULL
   caption <- payload$caption %||% NULL
+  table_text <- payload$table %||% NULL
+  if (is.null(title) && is.null(caption) && !is.null(table_text) && nzchar(table_text)) {
+    cat(table_text, "\n\n", sep = "")
+  }
   if (!is.null(title) && nzchar(title)) {
     cat(title, "\n", sep = "")
   }
@@ -196,12 +222,12 @@ visualize_table_from_json <- function(json_path) {
 
   display <- if (looks_like_normalized_table(payload)) {
     build_normalized_display(payload)
-  } else if (!is.null(payload$body_rows)) {
+  } else if (!is.null(payload$body_rows) || !is.null(payload$rows)) {
     build_payload_display(payload)
   } else if (!is.null(payload$variables) && !is.null(payload$columns)) {
     build_parsed_display(payload)
   } else {
-    stop("Unsupported JSON structure. Expected normalized rows, payload body_rows, or parsed variables/columns.", call. = FALSE)
+    stop("Unsupported JSON structure. Expected normalized rows, compact payload rows, or parsed variables/columns.", call. = FALSE)
   }
 
   if (nrow(display) == 0) {

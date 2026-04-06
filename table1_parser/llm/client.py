@@ -29,6 +29,11 @@ class LLMProviderError(RuntimeError):
 class LLMClient(ABC):
     """Abstract client for schema-constrained structured completions."""
 
+    @property
+    def embeds_output_schema_in_prompt(self) -> bool:
+        """Return whether prompts should include the explicit output schema text."""
+        return True
+
     @abstractmethod
     def structured_completion(
         self,
@@ -92,6 +97,11 @@ class OpenAIClient(LLMClient):
             timeout=timeout_seconds,
             max_retries=max_retries,
         )
+
+    @property
+    def embeds_output_schema_in_prompt(self) -> bool:
+        """OpenAI uses native structured parsing, so prompt-level schema text is redundant."""
+        return False
 
     def structured_completion(
         self,

@@ -1,30 +1,61 @@
-"""Schemas for LLM semantic TableDefinition interpretation."""
+"""Schemas for row-focused LLM semantic TableDefinition interpretation."""
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
-from table1_parser.schemas import TableContext, TableDefinition
-from table1_parser.schemas.table_definition import DefinedColumnRole, DefinedVariableType
-
-
-class LLMIndexedRowPayload(BaseModel):
-    """One indexed table row supplied to the semantic LLM."""
-
-    row_idx: int = Field(ge=0)
-    cells: list[str] = Field(default_factory=list)
+from table1_parser.schemas.table_definition import DefinedVariableType
 
 
-class LLMSemanticInputPayload(BaseModel):
-    """Structured payload for LLM semantic TableDefinition interpretation."""
+class _CompactPayloadModel(BaseModel):
+    """Base model for compact LLM input payload objects with short serialized keys."""
 
-    table_id: str
-    title: str | None = None
-    caption: str | None = None
-    header_rows: list[LLMIndexedRowPayload] = Field(default_factory=list)
-    body_rows: list[LLMIndexedRowPayload] = Field(default_factory=list)
-    deterministic_table_definition: TableDefinition
-    retrieved_context: TableContext
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class LLMIndexedRowPayload(_CompactPayloadModel):
+    """One compact row hint supplied to the semantic LLM."""
+
+    row_idx: int = Field(alias="i", ge=0)
+    label: str
+    has_trailing_values: bool = Field(default=False, alias="vals")
+    numeric_cell_count: int = Field(default=0, alias="num", ge=0)
+    indent_level: int = Field(default=0, alias="indent", ge=0)
+
+
+class LLMIndexedLevelPayload(_CompactPayloadModel):
+    """One compact deterministic level row supplied as row-structure evidence."""
+
+    row_idx: int = Field(alias="i", ge=0)
+    label: str
+
+
+class LLMDeterministicVariablePayload(_CompactPayloadModel):
+    """One compact deterministic variable span supplied to the semantic LLM."""
+
+    label: str
+    variable_type: DefinedVariableType = Field(alias="type")
+    row_start: int = Field(alias="r0", ge=0)
+    row_end: int = Field(alias="r1", ge=0)
+    levels: list[LLMIndexedLevelPayload] = Field(default_factory=list)
+
+
+class LLMRetrievedPassagePayload(_CompactPayloadModel):
+    """One compact retrieved passage supplied to the semantic LLM."""
+
+    passage_id: str = Field(alias="id")
+    heading: str | None = Field(default=None, alias="h")
+    text: str = Field(alias="t")
+
+
+class LLMSemanticInputPayload(_CompactPayloadModel):
+    """Structured compact payload for row-focused LLM semantic interpretation."""
+
+    table_id: str = Field(alias="id")
+    table_text: str | None = Field(default=None, alias="table")
+    body_rows: list[LLMIndexedRowPayload] = Field(default_factory=list, alias="rows")
+    deterministic_variables: list[LLMDeterministicVariablePayload] = Field(default_factory=list, alias="vars")
+    retrieved_passages: list[LLMRetrievedPassagePayload] = Field(default_factory=list, alias="passages")
 
 
 class LLMSemanticLevelInterpretation(BaseModel):
@@ -52,35 +83,10 @@ class LLMSemanticVariableInterpretation(BaseModel):
     disagrees_with_deterministic: bool = False
 
 
-class LLMSemanticColumnInterpretation(BaseModel):
-    """LLM semantic interpretation of one table column."""
-
-    col_idx: int = Field(ge=0)
-    column_name: str
-    column_label: str
-    inferred_role: DefinedColumnRole = "unknown"
-    grouping_variable_hint: str | None = None
-    evidence_passage_ids: list[str] = Field(default_factory=list)
-    confidence: float | None = Field(default=None, ge=0.0, le=1.0)
-    disagrees_with_deterministic: bool = False
-
-
-class LLMSemanticColumnDefinition(BaseModel):
-    """LLM semantic interpretation of the table columns as a whole."""
-
-    grouping_label: str | None = None
-    grouping_name: str | None = None
-    columns: list[LLMSemanticColumnInterpretation] = Field(default_factory=list)
-    evidence_passage_ids: list[str] = Field(default_factory=list)
-    confidence: float | None = Field(default=None, ge=0.0, le=1.0)
-    disagrees_with_deterministic: bool = False
-
-
 class LLMSemanticTableDefinition(BaseModel):
-    """Value-free LLM semantic interpretation linked to deterministic table structure."""
+    """Row-focused LLM semantic interpretation linked to deterministic table structure."""
 
     table_id: str
     variables: list[LLMSemanticVariableInterpretation] = Field(default_factory=list)
-    column_definition: LLMSemanticColumnDefinition
     notes: list[str] = Field(default_factory=list)
     overall_confidence: float | None = Field(default=None, ge=0.0, le=1.0)

@@ -424,6 +424,12 @@ show_table_structure <- function(
 
   cat("Columns\n")
   columns <- definition$column_definition$columns %||% definition$columns %||% list()
+  if (variant == "llm" && length(columns) == 0) {
+    columns <- outputs$table_definitions[[as.integer(table_index) + 1L]]$column_definition$columns %||% list()
+    if (length(columns) > 0) {
+      cat("[Using deterministic columns; current LLM semantic output is row-only.]\n")
+    }
+  }
   if (length(columns) == 0) {
     cat("[No column definitions]\n\n")
   } else {
@@ -531,9 +537,11 @@ compare_table_definition_runs <- function(
     left_suffix = "left",
     right_suffix = "right"
   )
+  columns_a <- definition_a$column_definition$columns %||% definition_a$columns %||% list()
+  columns_b <- definition_b$column_definition$columns %||% definition_b$columns %||% list()
   columns <- compare_rows(
-    normalize_column_rows(definition_a$column_definition$columns, label_a),
-    normalize_column_rows(definition_b$column_definition$columns, label_b),
+    normalize_column_rows(columns_a, label_a),
+    normalize_column_rows(columns_b, label_b),
     "key",
     c("column_label", "inferred_role", "grouping_variable_hint"),
     left_suffix = "left",
@@ -546,6 +554,10 @@ compare_table_definition_runs <- function(
 
   print_comparison_block("Variables", variables)
   print_comparison_block("Levels", levels)
+  if (variant_a == "llm" || variant_b == "llm") {
+    cat("Columns\n")
+    cat("[LLM semantic variant is row-only; columns remain deterministic and are shown only for comparison context.]\n\n")
+  }
   print_comparison_block("Columns", columns)
 
   invisible(
@@ -669,23 +681,6 @@ show_llm_evidence <- function(paper_dir, table_index = 0L) {
     }
     cat(sprintf("Variable: %s [%s-%s]\n", variable$variable_label %||% variable$variable_name %||% "", variable$row_start %||% "", variable$row_end %||% ""))
     cat(sprintf("disagrees_with_deterministic: %s\n", as.character(variable$disagrees_with_deterministic %||% FALSE)))
-    for (passage in resolve_evidence_passages(context, ids)) {
-      if (is.null(passage)) {
-        next
-      }
-      cat(sprintf("  [%s] %s\n", passage$passage_id, passage$heading %||% ""))
-      cat(sprintf("  %s\n", passage$text %||% ""))
-    }
-    cat("\n")
-  }
-
-  for (column in llm$column_definition$columns %||% list()) {
-    ids <- column$evidence_passage_ids %||% list()
-    if (length(ids) == 0) {
-      next
-    }
-    cat(sprintf("Column: %s [col_idx=%s]\n", column$column_label %||% column$column_name %||% "", column$col_idx %||% ""))
-    cat(sprintf("disagrees_with_deterministic: %s\n", as.character(column$disagrees_with_deterministic %||% FALSE)))
     for (passage in resolve_evidence_passages(context, ids)) {
       if (is.null(passage)) {
         next

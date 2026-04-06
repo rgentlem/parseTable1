@@ -102,3 +102,49 @@ def test_r_visualization_supports_normalized_table_json(tmp_path) -> None:
     assert "Table 1" in result.stdout
     assert "Age, years" in result.stdout
     assert "Male" in result.stdout
+
+
+def test_r_visualization_supports_compact_llm_payload_json(tmp_path) -> None:
+    """The R helper should render one compact row-focused LLM payload trace."""
+    if not _r_dependencies_available():
+        return
+
+    payload = {
+        "report_timestamp": "2026-04-06T12:00:00Z",
+        "table_id": "tbl-semantic",
+        "payload": {
+            "id": "tbl-semantic",
+            "table": "Characteristics by DKD status",
+            "rows": [
+                {"i": 1, "label": "Age, years", "vals": True, "num": 3},
+                {"i": 2, "label": "Sex"},
+                {"i": 3, "label": "Male", "vals": True, "num": 2, "indent": 2},
+            ],
+            "vars": [
+                {"label": "Age, years", "type": "continuous", "r0": 1, "r1": 1},
+                {
+                    "label": "Sex",
+                    "type": "binary",
+                    "r0": 2,
+                    "r1": 4,
+                    "levels": [{"i": 3, "label": "Male"}, {"i": 4, "label": "Female"}],
+                },
+            ],
+            "passages": [{"id": "section_1_p0", "h": "Results", "t": "Table 2 shows baseline characteristics by DKD status."}],
+        },
+    }
+    json_path = tmp_path / "table_definition_llm_input.json"
+    json_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+    result = subprocess.run(
+        ["Rscript", str(R_SCRIPT), str(json_path)],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "Characteristics by DKD status" in result.stdout
+    assert "[1] Age, years" in result.stdout
+    assert "Male" in result.stdout
