@@ -73,7 +73,11 @@ def build_llm_semantic_prompt(payload: LLMSemanticInputPayload, output_schema: d
     )
     output_schema_section = ""
     if output_schema:
-        output_schema_section = "Output schema:\n" + json.dumps(output_schema, separators=(",", ":"), sort_keys=True)
+        output_schema_section = "Output schema:\n" + json.dumps(
+            output_schema,
+            separators=(",", ":"),
+            sort_keys=True,
+        )
     return render_prompt_template(
         template,
         {
