@@ -88,15 +88,23 @@ def build_llm_semantic_input_payload(
 def build_llm_semantic_prompt(payload: LLMSemanticInputPayload, output_schema: dict[str, Any]) -> str:
     """Build a strict JSON-only prompt for semantic TableDefinition interpretation."""
     template = load_prompt_template(TABLE_DEFINITION_SEMANTIC_PROMPT)
+    payload_json = json.dumps(
+        payload.model_dump(mode="json", by_alias=True, exclude_none=True, exclude_defaults=True),
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+    output_schema_section = ""
+    if output_schema:
+        output_schema_section = "Output schema:\n" + json.dumps(
+            output_schema,
+            separators=(",", ":"),
+            sort_keys=True,
+        )
     return render_prompt_template(
         template,
         {
-            "TABLE_PAYLOAD_JSON": json.dumps(
-                payload.model_dump(mode="json", exclude_none=True),
-                separators=(",", ":"),
-                sort_keys=True,
-            ),
-            "OUTPUT_SCHEMA_JSON": json.dumps(output_schema, separators=(",", ":"), sort_keys=True),
+            "TABLE_PAYLOAD_JSON": payload_json,
+            "OUTPUT_SCHEMA_SECTION": output_schema_section,
         },
     )
 
