@@ -1,0 +1,86 @@
+{
+  "table_id": "metabolic-p6-t0",
+  "table_index": 1,
+  "table_label": "Table 2",
+  "title": "Table 2 RRs (95% CI) of all-cause mortality according to lifestyle category, age, and sex",
+  "caption": "Table 2 RRs (95% CI) of all-cause mortality according to lifestyle category, age, and sex",
+  "row_terms": [
+    "lation",
+    "score",
+    "Male",
+    "Middle lifestyle",
+    "Female",
+    "By age group",
+    "< 65 years old",
+    "style score",
+    ">= 65 years old",
+    "Middle life-"
+  ],
+  "column_terms": [
+    "CI) Model 2",
+    "Model 3"
+  ],
+  "grouping_terms": [
+    "CI)",
+    "CI"
+  ],
+  "methods_like_section_ids": [
+    "section_6",
+    "section_7",
+    "section_9",
+    "section_11"
+  ],
+  "results_like_section_ids": [
+    "section_12"
+  ],
+  "passages": [
+    {
+      "passage_id": "section_14_p0",
+      "section_id": "section_14",
+      "heading": "**Association of emerging healthy lifestyle factors and all-cause mortality**",
+      "text": "During the follow-up, 129 deaths were recorded. Based on the definition of metabolic syndrome, we finally included 1697 individuals for analysis to explore the association of the weighted healthy lifestyle score with all-cause mortality by performing generalized linear regression analyses. As shown in Table 2, the relative risk of all-cause mortality decreased as the lifestyle score increased. In model 1, after adjusting for age and sex, compared with participants with a relatively low healthy lifestyle, the RR of the middle group was 0.51 (RR = 0.51, 95% CI 0.30-0.88), and the high group was 0.26 (RR = 0.26, 95% CI 0.15-0.48). In model 2, adjusted for age, sex, ethnicity, education, and PIR, the RR was 0.55 (RR = 0.55, 95% CI 0.32-0.94) for the middle group and 0.27 (RR = 0.27, 95% CI 0.15-0.48) for the high score group compared with the low score group. And in model 3, after adjusting additionally included HbA1c% levels, the multivariate-adjusted RR of the middle group was 0.56 (RR = 0.56, 95% CI 0.33-0.97), and the high group was 0.26 (RR = 0.26, 95% CI 0.14-0.47).",
+      "match_type": "table_reference",
+      "score": 1.0
+    },
+    {
+      "passage_id": "section_15_p0",
+      "section_id": "section_15",
+      "heading": "**Subgroup analyses**",
+      "text": "Similar results were obtained in stratified analyses by sex and age. The impact of a healthy lifestyle on the relative risk of mortality from any cause is more pronounced among females. As shown in Table 2, in females, the RRs of the middle score group and the high score group were 0.47 (RR = 0.47, 95% CI 0.23-0.96) and 0.21 (RR = 0.21, 95% CI 0.09-0.46), respectively, when compared with the low score group in model 1. When additional covariates were adjusted, only the RRs of the high group were statistically significant, with 0.21 (RR = 0.21, 95% CI 0.09-0.47) in model 2 and 0.19 (RR = 0.19, 95% CI 0.08-0.44) in model 3. In the analysis performed with males, the protective effect of a healthy lifestyle was more pronounced Niu _et al. Journal of Translational Medicine (2023) 21:239_ Page 5 of 12 **Table 1** Baseline characteristics of the participants ||**Lifestyle score**| |---|---| ||**Low (n**=**2561)**<br>**Middle (n**=**2076)**<br>**High (n**=**2297)**<br>**_p_**| |Age, years<br>< 65y<br> >=65y<br>Gender<br>Men<br>Women<br>Ethnicity<br>Mexican American<br>Other Hispanic<br>Non-Hispanic White<br>Non-Hispanic Black<br>Other race<br>PIR<br>Education<br>Less than high school diploma<br>High school graduate or equivalent<br>Some college or associates degree<br>College or above<br>Smoking<br>Never<br>Former<br>Current<br>Alcohol consumption<br>Binge drinking<br>Non-binge drinking<br>Healthy diet<br>Regular physical activity<br>Adequate sleep duration<br>Less sedentary behaviors<br>LDL-cholesterol (mg/dL)<br>HDL-cholesterol (mg/dL)<br>Triglycerides (mg/dL)<br>HbA1c%|36.0 [27.0, 49.0]<br>44.0 [31.0, 58.0]<br>45.0 [32.0, 60.0]<br>**< 0.001b**<br>2396 (93.6%)<br>1772 (85.4%)<br>1908 (83.1%)<br>165 (6.4%)<br>304 (14.6%)<br>389 (16.9%)<br>**< 0.001a**<br>1450 (56.6%)<br>987 (47.5%)<br>1131 (49.2%)<br>1111 (43.4%)<br>1089 (52.5%)<br>1166 (50.8%)<br>**< 0.001a**<br>261 (10.2%)<br>210 (10.1%)<br>390 (17.0%)<br>211 (8.2%)<br>164 (7.9%)<br>265 (11.5%)<br>1236 (48.3%)<br>966 (46.5%)<br>993 (43.2%)<br>604 (23.6%)<br>414 (20.0%)<br>366 (15.9%)<br>249 (9.7%)<br>322 (15.5%)<br>283 (12.3%)<br>2.4 [1.2, 4.5]<br>3.5 [1.7, 5.0]<br>2.7 [1.3, 5.0]<br>**< 0.001b**<br>**< 0.001a**<br>372 (14.5%)<br>188 (9.1%)<br>393 (17.1%)<br>613 (23.9%)<br>319 (15.4%)<br>434 (18.9%)<br>927 (36.2%)<br>637 (30.7%)<br>686 (29.9%)<br>646 (25.2%)<br>931 (44.8%)<br>783 (34.1%)<br>**< 0.001a**<br>1281 (50.0%)<br>1489 (71.7%)<br>1755 (76.4%)<br>407 (15.9%)<br>519 (25.0%)<br>542 (23.6%)<br>873 (34.1%)<br>68 (3.3%)<br>0 (0%)<br>**< 0.001a**<br>1485 (58.0%)<br>791 (38.1%)<br>549 (23.9%)<br>1076 (42.0%)<br>1285 (61.9%)<br>1748 (76.1%)<br>172 (6.7%)<br>1597 (76.9%)<br>1540 (67.0%)<br>**< 0.001a**<br>1589 (62.0%)<br>1364 (65.7%)<br>1864 (81.1%)<br>**< 0.001a**<br>1159 (42.3%)<br>1185 (57.1%)<br>1656 (72.1%)<br>**< 0.001a**<br>225 (8.8%)<br>115 (5.5%)<br>1581 (68.8%)<br>**< 0.001a**<br>112.0 [90.0, 138.0]<br>111.0 [91.0, 132.0]<br>112.0 [90.0, 137.0]<br>0.584b<br>49.0 [40.0, 60.0]<br>54.0 [44.0, 65.0]<br>53.0 [44.0, 65.0]<br>**< 0.001b**<br>119.0[76.5, 186.0]<br>110.0 [75.0, 171.0]<br>108.0 [72.0, 168.0]<br>**< 0.001b**<br>5.4 [5.1, 5.7]<br>5.4 [5.1, 5.7]<br>5.4 [5.2, 5.7]<br>**< 0.001b**| PIR: family income to poverty ratio; LDL: low-density lipoprotein; HDL: high-density lipoprotein; HbA1c: glycated hemoglobin. _p_ -values in bold indicate statistical significance.[a] Represents the use of the Chi-square test.[b] Represents the use of the Kruskal-Wallis test only in the high score group (model 1: RR = 0.33, 95% CI 0.13-0.83, model 2: RR = 0.35, 95% CI 0.14-0.88, model 3: RR = 0.33, 95% CI 0.13-0.85). We divided the participants into two groups according to whether they were under or over 65 years old and performed stratified analyses. The protective effect of a healthy lifestyle on mortality was more evident in people younger than 65 years than in those older than 65 years. Moreover, the older the age, the higher the lifestyle score required to play a significant protective role.",
+      "match_type": "table_reference",
+      "score": 1.0
+    },
+    {
+      "passage_id": "section_16_p0",
+      "section_id": "section_16",
+      "heading": "**Association of emerging healthy lifestyle factors and all-cause mortality in people with metabolic syndrome-like characteristics**",
+      "text": "Participants with features of metabolic syndrome, that is, one of the following four features or a combination of two, three, or four of them, were included in the analysis. We performed population-wide and sex-stratified analyses within these 15 groups. As shown in Figs. 2 and 3, in general, a higher lifestyle score was associated with a more obvious protective effect, regardless of the Niu _et al. Journal of Translational Medicine (2023) 21:239_ Page 6 of 12 **Table 2** RRs (95% CI) of all-cause mortality according to lifestyle category, age, and sex ||**Risk ratio (95% CI)**| |---|---| ||**Model 1**<br>**Model 2**<br>**Model 3**| |The overall popu-<br>lation<br>Low lifestyle<br>score<br>Middle lifestyle<br>score<br>High lifestyle<br>score<br>Male<br>Low lifestyle<br>score<br>Middle lifestyle<br>score<br>High lifestyle<br>score<br>Female<br>Low lifestyle<br>score<br>Middle lifestyle<br>score<br>High lifestyle<br>score<br>By age group<br>< 65 years old<br>Low lifestyle<br>score<br>Middle life-<br>style score<br>High lifestyle<br>score<br> >=65 years old<br>Low lifestyle<br>score<br>Middle life-<br>style score<br>High lifestyle<br>score|1 (Reference)<br>1 (Reference)<br>1 (Reference)<br>0.51 (0.30, 0.88)*<br>0.55 (0.32, 0.94)*<br>0.56 (0.33, 0.97)*<br>0.26 (0.15, 0.48)*<br>0.27 (0.15, 0.48)*<br>0.26 (0.14, 0.47)*<br>1 (Reference)<br>1 (Reference)<br>1 (Reference)<br>0.59 (0.24, 1.45)<br>0.61 (0.26, 1.41)<br>0.61 (0.26, 1.40)<br>0.33 (0.13, 0.83)*<br>0.35 (0.14, 0.88)*<br>0.33 (0.13, 0.85)*<br>1 (Reference)<br>1 (Reference)<br>1 (Reference)<br>0.47 (0.23, 0.96)*<br>0.50 (0.24, 1.03)<br>0.52 (0.25, 1.08)<br>0.21 (0.09, 0.46)*<br>0.21 (0.09, 0.47)*<br>0.19 (0.08, 0.44)*<br>1 (Reference)<br>1 (Reference)<br>1 (Reference)<br>0.34 (0.12, 0.98)*<br>0.34 (0.12, 1.00)*<br>0.35 (0.12, 1.03)<br>0.06 (0.01, 0.26)*<br>0.06 (0.01, 0.27)*<br>0.06 (0.01, 0.29)*<br>1 (Reference)<br>1 (Reference)<br>1 (Reference)<br>0.70 (0.37, 1.34)<br>0.71 (0.38, 1.33)<br>0.73 (0.39, 1.36)<br>0.45 (0.22, 0.91)*<br>0.43 (0.21, 0.89)*<br>0.41 (0.20, 0.87)*| CI: confidence interval. The asterisk indicates statistical significance presence of one of the metabolic syndrome factors or a combination of several factors, and this was true for both males and females. In the dyslipidemia and hypertension groups, only the high score group had a reduced risk of all-cause mortality, with an RR of 0.29 (RR = 0.29, 95% CI 0.16-0.51) and 0.53 (RR = 0.53, 95% CI 0.33-0.85), respectively. The middle and high lifestyle scores were not statistically significant in the central obesity group. Interestingly, in the hyperglycemia group, the RR was higher in the high score group (RR = 0.43, 95% CI 0.22- 0.84) than in the middle score group (RR = 0.26, 95% CI 0.12-0.59). In most cases, it was found to be easier for female patients to achieve meaningful results. There was no statistically significant difference in the group of patients with central obesity and hypertension when the patients had two features of metabolic syndrome. When the patients had three characteristics of metabolic syndrome, the high score group had a reduced RR compared with the middle and low score groups. The dose-response relationship between a healthy lifestyle and all-cause mortality is shown in Fig. 4. In general, the healthy lifestyle score showed a nonlinear negative correlation with all-cause mortality with a relatively flat curve. As the score increased, the risk of all-cause mortality decreased. This negative nonlinear relationship became significant in all populations when the score exceeded 61.6. We further performed dose-response analyses for both males and females. Among females, a score above 63.7 was needed for a negative relationship to become statistically significant, whereas the relationship was not significant among males.",
+      "match_type": "table_reference",
+      "score": 1.0
+    },
+    {
+      "passage_id": "section_11_p0",
+      "section_id": "section_11",
+      "heading": "**Statistical analysis**",
+      "text": "Data were analyzed according to the guidelines provided by the NHANES. Baseline characteristic variables were expressed as n (%) if they were categorical, as the mean (SD) for normally distributed variables, or as the median (interquartile range) for non-normally distributed variables. The study population was divided into three groups according to lifestyle scores for between-group analysis. The Chi-square test, ANOVA, and Kruskal-Wallis test were used to compare the distribution of baseline characteristics among the different lifestyle score groups [18]. Generalized linear regression models and restricted cubic splines were used to analyze the association between healthy lifestyle scores and all-cause mortality risk [31]. The results were presented as risk ratios (RRs) with 95% confidence intervals (CI). Three regression models were constructed to account for the influence of confounding factors: model 1 included age and sex; model 2 additionally included ethnicity, education, and PIR; and model 3 additionally included HbA1c% levels. According to the weighted healthy lifestyle score, patients were divided into three levels: low, middle, and high. Age (< 65 years and >= 65 years) and sex stratification analyses were performed. We also examined the association between healthy lifestyle scores and all-cause mortality among participants with metabolic syndrome. Based on the aforementioned grouping, we examined different combinations of the basic characteristics of total metabolic function and a population with all the basic characteristics so that 15 groups were included in the analysis. Sensitivity analyses were also conducted. We calculated the conventional healthy lifestyle score and compared it with the emerging healthy lifestyle score in the overall population, males, and females. Data analysis was performed using STATA 16, and _p_ < 0.05 was considered statistically significant [32].",
+      "match_type": "methods_term_match",
+      "score": 0.7833
+    },
+    {
+      "passage_id": "section_7_p0",
+      "section_id": "section_7",
+      "heading": "**Study population**",
+      "text": "The NHANES is a major program of the National Center for Health Statistics (NCHS). It was designed to assess the health and nutritional status of adults and children in the United States. Written informed consent was obtained from all the participants. It began in the early 1960s and became a continuous program in 1999. It combines interviews and physical examinations and is based on a two-year survey cycle. The survey is conducted annually on a nationally representative sample of approximately 5000 people and oversampled for specific age and ethnic groups. Patient identifiers are not available in the publicly available NHANES database. A total of 29,573 participants from the NHANES 2007-2014 were included in the study. Of these 29,573 participants, we excluded those who were younger = than 18 years of age (n 4841), pregnant or lactating (n = 371), had unreliable or missing follow-up information (n = 881), had cancer or cardiovascular disease at baseline (n = 5008), and had missing values on lifestyle scores (n = 11,538), leaving 6934 participants in the final analysis (Fig. 1). Metabolic syndrome refers to a group of diseases with three or more of the following features, including central obesity, elevated triglycerides, reduced high-density lipoprotein cholesterol, high blood pressure, and elevated fasting glucose. High triglycerides and reduced Niu _et al. Journal of Translational Medicine (2023) 21:239_ Page 3 of 12 **==> picture [217 x 192] intentionally omitted <==** **Fig. 1** Flow chart of the screening of eligible participants HDL levels are collectively referred to as abnormal lipid metabolism. In addition, we grouped metabolic syndrome into four essential features: central obesity, dyslipidemia, hypertension, and hyperglycemia. We further divided the participants into those with metabolic syndrome and 15 groups with metabolic syndrome characteristics. We performed possible combinations based on the four main features of the metabolic syndrome, including those of any one feature (central obesity group, dyslipidemia group, hypertension group, and hyperglycemia group), combinations of two features (central obesity and dyslipidemia group, central obesity and hypertension group, central obesity and hyperglycemia group, dyslipidemia and hypertension group, dyslipidemia and hyperglycemia group, hypertension and hyperglycemia group), combinations of three features (central obesity, dyslipidemia and hypertension group, central obesity, dyslipidemia, and hyperglycemia group, central obesity, hypertension, and hyperglycemia group, dyslipidemia, hypertension, and hyperglycemia group), and all four features (central obesity, dyslipidemia, hypertension, and hyperglycemia group), for a total of 15 groups.",
+      "match_type": "methods_term_match",
+      "score": 0.5333
+    },
+    {
+      "passage_id": "section_9_p0",
+      "section_id": "section_9",
+      "heading": "**Covariates**",
+      "text": "Socioeconomic factor-related covariates were mainly obtained from home interviews in the form of questionnaires. They included age, sex, ethnicity, education, and the income-to-poverty ratio (PIR). Ethnic groups were mainly divided into five groups: Mexican Americans, other Hispanics, non-Hispanic white, non-Hispanic black, and other races. Education was categorized into less than high school diploma, high school graduate or equivalent, some college or associate degree, and college or above. The PIR was divided into three groups based on the following criteria: <= 1.0, PIR > 1.0, PIR <= 3.0, and PIR > 3.0. Other covariates included the laboratory data. Blood specimens were processed, stored, and transported to the Fairview Medical Center Laboratory at the University of Minnesota, Minneapolis, MN, USA, for analysis. The staff were well trained, and the NCHS developed and distributed a quality control protocol to each NHANES contract laboratory. Because the criteria for characterizing metabolic syndrome included values for triglycerides and HDL, we did not include either indicator in our model.",
+      "match_type": "methods_term_match",
+      "score": 0.2833
+    }
+  ]
+}

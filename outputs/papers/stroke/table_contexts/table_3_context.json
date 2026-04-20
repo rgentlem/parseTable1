@@ -1,0 +1,37 @@
+{
+  "table_id": "stroke-p12-t0",
+  "table_index": 3,
+  "table_label": null,
+  "title": null,
+  "caption": null,
+  "row_terms": [
+    "IL-1\u03b2",
+    "Lp-PLA2",
+    "SD"
+  ],
+  "column_terms": [
+    "Atherosclerotic cardiovascular disease"
+  ],
+  "grouping_terms": [
+    "ASCVD"
+  ],
+  "methods_like_section_ids": [
+    "section_6",
+    "section_7",
+    "section_10",
+    "section_11"
+  ],
+  "results_like_section_ids": [
+    "section_12"
+  ],
+  "passages": [
+    {
+      "passage_id": "section_11_p0",
+      "section_id": "section_11",
+      "heading": "**Statistical analysis**",
+      "text": "Since NHANES survey employed a series of complex sampling designs, we took into account the sample weights corresponding to different research periods in our analytic methods to yield accurate estimates of health-related statistics [40-42]. Continuous variables were presented in the form of weighted mean and standard deviation (SD), whereas categorical variables were expressed as frequencies and percentages. For the purpose of detecting differences in baseline characteristics between stroke and non-stroke participants, continuous and categorical variables were compared using student\u2019s t-test and chi-square test, respectively. The DII scores were categorized into four quartiles (Q1: DII < 0.23; Q2: 0.23 <= DII < 1.76; Q3: 1.76 <= DII < 2.95; Q4: DII >= 2.95), with the first quartile (Q1) being designated as the reference quartile. We used a variety of multivariate logistic regression models-non-adjusted model and two adjusted models (Model I and Model II)-to estimate the odds ratios (ORs) and 95% confidence intervals (CIs) for the association of DII with stroke. Adjustments for age, sex, and race/ethnicity was performed in Model I, and Model II was further adjusted for educational level, smoking status, alcohol consumption, BMI, diabetes, and hypertension. We also applied restricted cubic spline (RCS) regression with 3 knots (10th, 50th, and 90th percentiles) to examine the nonlinearity of the association between DII and stroke. Subgroup analyses in terms of age, sex, race/ethnicity, BMI, smoking status, alcohol consumption, diabetes, and hypertension were conducted to examine the presence of significant interactions of these covariates with the association between DII and stroke. To screen the most critical dietary predictors of stroke and eliminate the collinearity among different variables, we applied the least absolute shrinkage and selection operator (LASSO) regression model, in which the coefficients of the variables that make only a negligible contribution to the whole model are shrunk to zero, ensuring the predictive performance of the model [43]. In LASSO model, we used the method of cross-validation for model evaluation and parameter selection where the dataset is divided into 10 subsets, and the model is trained and tested on the 10 subsets multiple times. This helps assess the model\u2019s performance and determine suitable parameter values. During cross-validation, it\u2019s common to plot a curve with respect to lambda values to observe the model\u2019s performance at different lambda settings. \u201cminimum deviance\u201d refers to the lambda value with the smallest bias found during the cross-validation process, which Page 5 of 14 Mao _et al. BMC Public Health_ (2024) 24:50 means it provides the best fit to the data. We selected a lambda value slightly larger than the one with minimum deviance, typically by adding one standard deviation to the minimum deviance lambda value. This approach aims to make the model more stable and prevent overfitting, enhancing its generalization to new data. Besides, a risk prediction nomogram model was developed based on several key stroke-related variables, with its discriminatory power for forecasting the risk of stroke being validated by the receiver operating characteristic (ROC) curve. R software version 4.1.6 (http://www.R-project. org, The R Foundation, Vienna, Austria) was used for all statistical analyses, and a two-tailed _P_ -value < 0.05 was considered statistically significant.",
+      "match_type": "methods_term_match",
+      "score": 0.4
+    }
+  ]
+}

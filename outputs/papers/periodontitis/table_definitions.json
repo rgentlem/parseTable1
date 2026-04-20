@@ -1,0 +1,1529 @@
+[
+  {
+    "table_id": "periodontitis-p5-t0",
+    "title": "Table 1 Demographic baseline characteristics: NHANES (2009 to 2014)",
+    "caption": "Table 1 Demographic baseline characteristics: NHANES (2009 to 2014)",
+    "variables": [
+      {
+        "variable_name": "Age",
+        "variable_label": "Age (years), Mean (SD)",
+        "variable_type": "continuous",
+        "row_start": 1,
+        "row_end": 1,
+        "levels": [],
+        "units_hint": "Mean (SD)",
+        "summary_style_hint": "mean_sd",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Gender",
+        "variable_label": "Gender, n (%)",
+        "variable_type": "binary",
+        "row_start": 2,
+        "row_end": 4,
+        "levels": [
+          {
+            "level_name": "Male",
+            "level_label": "Male",
+            "row_idx": 3,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Female",
+            "level_label": "Female",
+            "row_idx": 4,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Ethnicity",
+        "variable_label": "Ethnicity, n (%)",
+        "variable_type": "categorical",
+        "row_start": 5,
+        "row_end": 10,
+        "levels": [
+          {
+            "level_name": "Mexican American",
+            "level_label": "Mexican American",
+            "row_idx": 6,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Other Hispanic",
+            "level_label": "Other Hispanic",
+            "row_idx": 7,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Non-Hispanic White",
+            "level_label": "Non-Hispanic White",
+            "row_idx": 8,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Non-Hispanic Black",
+            "level_label": "Non-Hispanic Black",
+            "row_idx": 9,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Other Race-Including Multi-Racial",
+            "level_label": "Other Race-Including Multi-Racial",
+            "row_idx": 10,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Marital status",
+        "variable_label": "Marital status, n (%)",
+        "variable_type": "categorical",
+        "row_start": 11,
+        "row_end": 13,
+        "levels": [
+          {
+            "level_name": "Married/Living with Partner",
+            "level_label": "Married/Living with Partner",
+            "row_idx": 12,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Widowed/Divorced/Separated/Never married 1921 (34.24)",
+            "level_label": "Widowed/Divorced/Separated/Never married 1921 (34.24)",
+            "row_idx": 13,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Educational level",
+        "variable_label": "Educational level, n (%)",
+        "variable_type": "categorical",
+        "row_start": 14,
+        "row_end": 16,
+        "levels": [
+          {
+            "level_name": "Less than high school",
+            "level_label": "Less than high school",
+            "row_idx": 15,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "High school or higher",
+            "level_label": "High school or higher",
+            "row_idx": 16,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Family income to poverty ratio",
+        "variable_label": "Family income-to-poverty ratio, n (%)",
+        "variable_type": "categorical",
+        "row_start": 17,
+        "row_end": 19,
+        "levels": [
+          {
+            "level_name": "Low income (<=1.85)",
+            "level_label": "Low income (\u22641.85)",
+            "row_idx": 18,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "High income (>1.85)",
+            "level_label": "High income (>1.85)",
+            "row_idx": 19,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Smoking status",
+        "variable_label": "Smoking status, n (%)",
+        "variable_type": "categorical",
+        "row_start": 20,
+        "row_end": 23,
+        "levels": [
+          {
+            "level_name": "No smoking",
+            "level_label": "No smoking",
+            "row_idx": 21,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Former smoking",
+            "level_label": "Former smoking",
+            "row_idx": 22,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Current smoking",
+            "level_label": "Current smoking",
+            "row_idx": 23,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Drinking status",
+        "variable_label": "Drinking status, n (%)",
+        "variable_type": "categorical",
+        "row_start": 24,
+        "row_end": 27,
+        "levels": [
+          {
+            "level_name": "0-14 g/d",
+            "level_label": "0-14 g/d",
+            "row_idx": 25,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "14-56 g/d",
+            "level_label": "14-56 g/d",
+            "row_idx": 26,
+            "confidence": 0.92
+          },
+          {
+            "level_name": ">56 g/d",
+            "level_label": ">56 g/d",
+            "row_idx": 27,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Sleeping status",
+        "variable_label": "Sleeping status, n (%)",
+        "variable_type": "categorical",
+        "row_start": 28,
+        "row_end": 31,
+        "levels": [
+          {
+            "level_name": "0-6 h",
+            "level_label": "0-6 h",
+            "row_idx": 29,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "7-9 h",
+            "level_label": "7-9 h",
+            "row_idx": 30,
+            "confidence": 0.92
+          },
+          {
+            "level_name": ">9 h",
+            "level_label": ">9 h",
+            "row_idx": 31,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "BMI status",
+        "variable_label": "BMI status, n (%)",
+        "variable_type": "categorical",
+        "row_start": 32,
+        "row_end": 35,
+        "levels": [
+          {
+            "level_name": "Underweight (18.5 kg/m2)",
+            "level_label": "Underweight (18.5 kg/m2)",
+            "row_idx": 33,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Normal (18.5-30 kg/m2)",
+            "level_label": "Normal (18.5-30 kg/m2)",
+            "row_idx": 34,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Obese (>30 kg/m2)",
+            "level_label": "Obese (>30 kg/m2)",
+            "row_idx": 35,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Physical activity level",
+        "variable_label": "Physical activity level, n (%)",
+        "variable_type": "categorical",
+        "row_start": 36,
+        "row_end": 39,
+        "levels": [
+          {
+            "level_name": "Lower 1/3 MET",
+            "level_label": "Lower 1/3 MET",
+            "row_idx": 37,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Middle 1/3 MET",
+            "level_label": "Middle 1/3 MET",
+            "row_idx": 38,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Upper 1/3 MET",
+            "level_label": "Upper 1/3 MET",
+            "row_idx": 39,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Energy intake level",
+        "variable_label": "Energy intake level, n (%)",
+        "variable_type": "categorical",
+        "row_start": 40,
+        "row_end": 43,
+        "levels": [
+          {
+            "level_name": "Insufficient intake",
+            "level_label": "Insufficient intake",
+            "row_idx": 41,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Adequate intake",
+            "level_label": "Adequate intake",
+            "row_idx": 42,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Excess intake",
+            "level_label": "Excess intake",
+            "row_idx": 43,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "History of diabetes",
+        "variable_label": "History of diabetes, n (%)",
+        "variable_type": "categorical",
+        "row_start": 44,
+        "row_end": 47,
+        "levels": [
+          {
+            "level_name": "No",
+            "level_label": "No",
+            "row_idx": 45,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Yes",
+            "level_label": "Yes",
+            "row_idx": 46,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Unknown or missing",
+            "level_label": "Unknown or missing",
+            "row_idx": 47,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Self reported oral health",
+        "variable_label": "Self-reported oral health, n (%)",
+        "variable_type": "categorical",
+        "row_start": 48,
+        "row_end": 51,
+        "levels": [
+          {
+            "level_name": "Excellent/Very good/Good",
+            "level_label": "Excellent/Very good/Good",
+            "row_idx": 49,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Fair/Poor",
+            "level_label": "Fair/Poor",
+            "row_idx": 50,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Unknown or missing",
+            "level_label": "Unknown or missing",
+            "row_idx": 51,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      }
+    ],
+    "column_definition": {
+      "grouping_label": null,
+      "grouping_name": null,
+      "group_count": 3,
+      "columns": [
+        {
+          "col_idx": 1,
+          "column_name": "All n 5611",
+          "column_label": "All (n=5611)",
+          "inferred_role": "overall",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": null,
+          "confidence": 0.84
+        },
+        {
+          "col_idx": 2,
+          "column_name": "0 1 n 1815",
+          "column_label": "0-1 (n=1815)",
+          "inferred_role": "group",
+          "grouping_variable_hint": null,
+          "group_level_label": "0-1 (n=1815)",
+          "group_level_name": "0 1 n 1815",
+          "group_order": 1,
+          "statistic_subtype": null,
+          "confidence": 0.78
+        },
+        {
+          "col_idx": 3,
+          "column_name": "2 3 n 3233",
+          "column_label": "2-3 (n=3233)",
+          "inferred_role": "group",
+          "grouping_variable_hint": null,
+          "group_level_label": "2-3 (n=3233)",
+          "group_level_name": "2 3 n 3233",
+          "group_order": 2,
+          "statistic_subtype": null,
+          "confidence": 0.78
+        },
+        {
+          "col_idx": 4,
+          "column_name": "4 6 n 563",
+          "column_label": "4-6 (n=563)",
+          "inferred_role": "group",
+          "grouping_variable_hint": null,
+          "group_level_label": "4-6 (n=563)",
+          "group_level_name": "4 6 n 563",
+          "group_order": 3,
+          "statistic_subtype": null,
+          "confidence": 0.78
+        },
+        {
+          "col_idx": 5,
+          "column_name": "p value",
+          "column_label": "p value",
+          "inferred_role": "p_value",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": "p_value",
+          "confidence": 0.97
+        }
+      ],
+      "confidence": 0.87
+    },
+    "notes": [],
+    "overall_confidence": 0.9173
+  },
+  {
+    "table_id": "periodontitis-p6-t0",
+    "title": "Table 2 Differences between periodontitis and healthy groups regarding lifestyles characteristics",
+    "caption": "Table 2 Differences between periodontitis and healthy groups regarding lifestyles characteristics",
+    "variables": [
+      {
+        "variable_name": "Age",
+        "variable_label": "Age (years), Mean (SD)",
+        "variable_type": "continuous",
+        "row_start": 3,
+        "row_end": 3,
+        "levels": [],
+        "units_hint": "Mean (SD)",
+        "summary_style_hint": "mean_sd",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Gender",
+        "variable_label": "Gender, n (%)",
+        "variable_type": "binary",
+        "row_start": 4,
+        "row_end": 6,
+        "levels": [
+          {
+            "level_name": "Male",
+            "level_label": "Male",
+            "row_idx": 5,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Female",
+            "level_label": "Female",
+            "row_idx": 6,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Ethnicity",
+        "variable_label": "Ethnicity, n (%)",
+        "variable_type": "categorical",
+        "row_start": 7,
+        "row_end": 12,
+        "levels": [
+          {
+            "level_name": "Mexican American",
+            "level_label": "Mexican American",
+            "row_idx": 8,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Other Hispanic",
+            "level_label": "Other Hispanic",
+            "row_idx": 9,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Non-Hispanic White",
+            "level_label": "Non-Hispanic White",
+            "row_idx": 10,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Non-Hispanic Black",
+            "level_label": "Non-Hispanic Black",
+            "row_idx": 11,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Other Race-Including",
+            "level_label": "Other Race-Including",
+            "row_idx": 12,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Marital status",
+        "variable_label": "Marital status, n (%)",
+        "variable_type": "categorical",
+        "row_start": 14,
+        "row_end": 16,
+        "levels": [
+          {
+            "level_name": "Married/Living with Partner",
+            "level_label": "Married/Living with Partner",
+            "row_idx": 15,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Widowed/Divorced/Separated/",
+            "level_label": "Widowed/Divorced/Separated/",
+            "row_idx": 16,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Educational level",
+        "variable_label": "Educational level, n (%)",
+        "variable_type": "categorical",
+        "row_start": 18,
+        "row_end": 20,
+        "levels": [
+          {
+            "level_name": "Less than high school",
+            "level_label": "Less than high school",
+            "row_idx": 19,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "High school or higher",
+            "level_label": "High school or higher",
+            "row_idx": 20,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Family income to poverty ratio",
+        "variable_label": "Family income-to-poverty ratio, n (%)",
+        "variable_type": "categorical",
+        "row_start": 21,
+        "row_end": 23,
+        "levels": [
+          {
+            "level_name": "Low income (<= 1.85)",
+            "level_label": "Low income (\u2264 1.85)",
+            "row_idx": 22,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "High income (> 1.85)",
+            "level_label": "High income (> 1.85)",
+            "row_idx": 23,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "History of diabetes",
+        "variable_label": "History of diabetes, n (%)",
+        "variable_type": "categorical",
+        "row_start": 24,
+        "row_end": 27,
+        "levels": [
+          {
+            "level_name": "No",
+            "level_label": "No",
+            "row_idx": 25,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Yes",
+            "level_label": "Yes",
+            "row_idx": 26,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Unknown or missing",
+            "level_label": "Unknown or missing",
+            "row_idx": 27,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Self reported oral health",
+        "variable_label": "Self-reported oral health, n (%)",
+        "variable_type": "categorical",
+        "row_start": 28,
+        "row_end": 31,
+        "levels": [
+          {
+            "level_name": "Excellent/Very good/Good",
+            "level_label": "Excellent/Very good/Good",
+            "row_idx": 29,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Fair/Poor",
+            "level_label": "Fair/Poor",
+            "row_idx": 30,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Unknown or missing",
+            "level_label": "Unknown or missing",
+            "row_idx": 31,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "No Smoking",
+        "variable_label": "No Smoking, n (%)",
+        "variable_type": "binary",
+        "row_start": 32,
+        "row_end": 34,
+        "levels": [
+          {
+            "level_name": "No",
+            "level_label": "No",
+            "row_idx": 33,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Yes",
+            "level_label": "Yes",
+            "row_idx": 34,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Healthy drinking",
+        "variable_label": "Healthy drinking, n (%)",
+        "variable_type": "binary",
+        "row_start": 35,
+        "row_end": 37,
+        "levels": [
+          {
+            "level_name": "No",
+            "level_label": "No",
+            "row_idx": 36,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Yes",
+            "level_label": "Yes",
+            "row_idx": 37,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Healthy sleeping",
+        "variable_label": "Healthy sleeping, n (%)",
+        "variable_type": "binary",
+        "row_start": 38,
+        "row_end": 40,
+        "levels": [
+          {
+            "level_name": "No",
+            "level_label": "No",
+            "row_idx": 39,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Yes",
+            "level_label": "Yes",
+            "row_idx": 40,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Healthy BMI",
+        "variable_label": "Healthy BMI, n (%)",
+        "variable_type": "binary",
+        "row_start": 41,
+        "row_end": 43,
+        "levels": [
+          {
+            "level_name": "No",
+            "level_label": "No",
+            "row_idx": 42,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Yes",
+            "level_label": "Yes",
+            "row_idx": 43,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Healthy energy intake",
+        "variable_label": "Healthy energy intake, n (%)",
+        "variable_type": "binary",
+        "row_start": 44,
+        "row_end": 46,
+        "levels": [
+          {
+            "level_name": "No",
+            "level_label": "No",
+            "row_idx": 45,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Yes",
+            "level_label": "Yes",
+            "row_idx": 46,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Healthy physical activities",
+        "variable_label": "Healthy physical activities, n (%)",
+        "variable_type": "binary",
+        "row_start": 47,
+        "row_end": 49,
+        "levels": [
+          {
+            "level_name": "No",
+            "level_label": "No",
+            "row_idx": 48,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Yes",
+            "level_label": "Yes",
+            "row_idx": 49,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.95
+      }
+    ],
+    "column_definition": {
+      "grouping_label": "Periodonti-",
+      "grouping_name": "Periodonti",
+      "group_count": 1,
+      "columns": [
+        {
+          "col_idx": 1,
+          "column_name": "Healthy Control",
+          "column_label": "Healthy Control",
+          "inferred_role": "overall",
+          "grouping_variable_hint": "Periodonti",
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": null,
+          "confidence": 0.84
+        },
+        {
+          "col_idx": 2,
+          "column_name": "Periodonti tis n 3338",
+          "column_label": "Periodonti- tis (n = 3338)",
+          "inferred_role": "group",
+          "grouping_variable_hint": "Periodonti",
+          "group_level_label": "tis (n = 3338)",
+          "group_level_name": "tis n 3338",
+          "group_order": 1,
+          "statistic_subtype": null,
+          "confidence": 0.9
+        },
+        {
+          "col_idx": 3,
+          "column_name": "p value",
+          "column_label": "p value",
+          "inferred_role": "p_value",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": "p_value",
+          "confidence": 0.97
+        }
+      ],
+      "confidence": 0.93
+    },
+    "notes": [],
+    "overall_confidence": 0.9333
+  },
+  {
+    "table_id": "periodontitis-p8-t0",
+    "title": "Table 3 Periodontitis Risk by lifestyle factors scoring",
+    "caption": "Table 3 Periodontitis Risk by lifestyle factors scoring",
+    "variables": [
+      {
+        "variable_name": "0 1 healthy 2 3 healthy lifestyle factors 4 6 healthy lifestyle factors Each additional healthy",
+        "variable_label": "0\u20131 healthy 2\u20133 healthy lifestyle factors 4\u20136 healthy lifestyle factors Each additional healthy",
+        "variable_type": "categorical",
+        "row_start": 0,
+        "row_end": 3,
+        "levels": [
+          {
+            "level_name": "",
+            "level_label": "",
+            "row_idx": 2,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "",
+            "level_label": "",
+            "row_idx": 3,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Total Model 1 Ref",
+        "variable_label": "Total Model 1 Ref",
+        "variable_type": "continuous",
+        "row_start": 4,
+        "row_end": 4,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Model 2 Ref",
+        "variable_label": "Model 2 Ref",
+        "variable_type": "continuous",
+        "row_start": 5,
+        "row_end": 5,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Model 3 Ref",
+        "variable_label": "Model 3 Ref",
+        "variable_type": "continuous",
+        "row_start": 6,
+        "row_end": 6,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Age",
+        "variable_label": "Age",
+        "variable_type": "unknown",
+        "row_start": 7,
+        "row_end": 7,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": null,
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "65 Model 1 Ref",
+        "variable_label": "<\u200965 Model 1 Ref",
+        "variable_type": "continuous",
+        "row_start": 8,
+        "row_end": 8,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Model 2 Ref",
+        "variable_label": "Model 2 Ref",
+        "variable_type": "continuous",
+        "row_start": 9,
+        "row_end": 9,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Model 3 Ref",
+        "variable_label": "Model 3 Ref",
+        "variable_type": "continuous",
+        "row_start": 10,
+        "row_end": 10,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "65 Model 1 Ref",
+        "variable_label": "\u2265\u200965 Model 1 Ref",
+        "variable_type": "continuous",
+        "row_start": 11,
+        "row_end": 11,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Model 2 Ref",
+        "variable_label": "Model 2 Ref",
+        "variable_type": "continuous",
+        "row_start": 12,
+        "row_end": 12,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Model 3 Ref",
+        "variable_label": "Model 3 Ref",
+        "variable_type": "continuous",
+        "row_start": 13,
+        "row_end": 13,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Gender",
+        "variable_label": "Gender",
+        "variable_type": "unknown",
+        "row_start": 14,
+        "row_end": 14,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": null,
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Male Model 1 Ref",
+        "variable_label": "Male Model 1 Ref",
+        "variable_type": "continuous",
+        "row_start": 15,
+        "row_end": 15,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Model 2 Ref",
+        "variable_label": "Model 2 Ref",
+        "variable_type": "continuous",
+        "row_start": 16,
+        "row_end": 16,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Model 3 Ref",
+        "variable_label": "Model 3 Ref",
+        "variable_type": "continuous",
+        "row_start": 17,
+        "row_end": 17,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Female Model 1 Ref",
+        "variable_label": "Female Model 1 Ref",
+        "variable_type": "continuous",
+        "row_start": 18,
+        "row_end": 18,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Model 2 Ref",
+        "variable_label": "Model 2 Ref",
+        "variable_type": "continuous",
+        "row_start": 19,
+        "row_end": 19,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Model 3 Ref",
+        "variable_label": "Model 3 Ref",
+        "variable_type": "continuous",
+        "row_start": 20,
+        "row_end": 20,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Education level",
+        "variable_label": "Education level",
+        "variable_type": "unknown",
+        "row_start": 21,
+        "row_end": 21,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": null,
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Less than Model 1 Ref",
+        "variable_label": "Less than Model 1 Ref",
+        "variable_type": "continuous",
+        "row_start": 22,
+        "row_end": 22,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "high school Model 2 Ref",
+        "variable_label": "high school Model 2 Ref",
+        "variable_type": "continuous",
+        "row_start": 23,
+        "row_end": 23,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Model 3 Ref",
+        "variable_label": "Model 3 Ref",
+        "variable_type": "continuous",
+        "row_start": 24,
+        "row_end": 24,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "High school Model 1 Ref",
+        "variable_label": "High school Model 1 Ref",
+        "variable_type": "continuous",
+        "row_start": 25,
+        "row_end": 25,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "or higher Model 2 Ref",
+        "variable_label": "or higher Model 2 Ref",
+        "variable_type": "continuous",
+        "row_start": 26,
+        "row_end": 26,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Model 3 Ref",
+        "variable_label": "Model 3 Ref",
+        "variable_type": "continuous",
+        "row_start": 27,
+        "row_end": 27,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Marital status",
+        "variable_label": "Marital status",
+        "variable_type": "unknown",
+        "row_start": 28,
+        "row_end": 28,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": null,
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Married Model 1 Ref",
+        "variable_label": "Married/ Model 1 Ref",
+        "variable_type": "continuous",
+        "row_start": 29,
+        "row_end": 29,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Living with Model 2 Ref",
+        "variable_label": "Living with Model 2 Ref",
+        "variable_type": "continuous",
+        "row_start": 30,
+        "row_end": 30,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Partner Model 3 Ref",
+        "variable_label": "Partner Model 3 Ref",
+        "variable_type": "continuous",
+        "row_start": 31,
+        "row_end": 31,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Widowed Model 1 Ref",
+        "variable_label": "Widowed/ Model 1 Ref",
+        "variable_type": "continuous",
+        "row_start": 32,
+        "row_end": 32,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Divorced Model 2 Ref",
+        "variable_label": "Divorced/ Model 2 Ref",
+        "variable_type": "continuous",
+        "row_start": 33,
+        "row_end": 33,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Sepa Model 3 Ref",
+        "variable_label": "Sepa\u00ad Model 3 Ref",
+        "variable_type": "continuous",
+        "row_start": 34,
+        "row_end": 34,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Family income to poverty ratio",
+        "variable_label": "Family income-to-poverty ratio",
+        "variable_type": "unknown",
+        "row_start": 37,
+        "row_end": 37,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": null,
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Low income Model 1 Ref",
+        "variable_label": "Low income Model 1 Ref",
+        "variable_type": "continuous",
+        "row_start": 38,
+        "row_end": 38,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Model 2 Ref",
+        "variable_label": "(\u2264\u20091.85) Model 2 Ref",
+        "variable_type": "continuous",
+        "row_start": 39,
+        "row_end": 39,
+        "levels": [],
+        "units_hint": "<= 1.85",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Model 3 Ref",
+        "variable_label": "Model 3 Ref",
+        "variable_type": "continuous",
+        "row_start": 40,
+        "row_end": 40,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "High income Model 1 Ref",
+        "variable_label": "High income Model 1 Ref",
+        "variable_type": "continuous",
+        "row_start": 41,
+        "row_end": 41,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Model 2 Ref",
+        "variable_label": "(>\u20091.85) Model 2 Ref",
+        "variable_type": "continuous",
+        "row_start": 42,
+        "row_end": 42,
+        "levels": [],
+        "units_hint": "> 1.85",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Model 3 Ref",
+        "variable_label": "Model 3 Ref",
+        "variable_type": "continuous",
+        "row_start": 43,
+        "row_end": 43,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      }
+    ],
+    "column_definition": {
+      "grouping_label": "lifestyle factors scoring",
+      "grouping_name": "lifestyle factors scoring",
+      "group_count": 12,
+      "columns": [
+        {
+          "col_idx": 1,
+          "column_name": "lifestyle",
+          "column_label": "lifestyle",
+          "inferred_role": "overall",
+          "grouping_variable_hint": "lifestyle factors scoring",
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": null,
+          "confidence": 0.84
+        },
+        {
+          "col_idx": 2,
+          "column_name": "column_2",
+          "column_label": "",
+          "inferred_role": "group",
+          "grouping_variable_hint": "lifestyle factors scoring",
+          "group_level_label": "",
+          "group_level_name": "column_2",
+          "group_order": 1,
+          "statistic_subtype": null,
+          "confidence": 0.82
+        },
+        {
+          "col_idx": 3,
+          "column_name": "column_3",
+          "column_label": "",
+          "inferred_role": "group",
+          "grouping_variable_hint": "lifestyle factors scoring",
+          "group_level_label": "",
+          "group_level_name": "column_3",
+          "group_order": 2,
+          "statistic_subtype": null,
+          "confidence": 0.82
+        },
+        {
+          "col_idx": 4,
+          "column_name": "column_4",
+          "column_label": "",
+          "inferred_role": "group",
+          "grouping_variable_hint": "lifestyle factors scoring",
+          "group_level_label": "",
+          "group_level_name": "column_4",
+          "group_order": 3,
+          "statistic_subtype": null,
+          "confidence": 0.82
+        },
+        {
+          "col_idx": 5,
+          "column_name": "column_5",
+          "column_label": "",
+          "inferred_role": "group",
+          "grouping_variable_hint": "lifestyle factors scoring",
+          "group_level_label": "",
+          "group_level_name": "column_5",
+          "group_order": 4,
+          "statistic_subtype": null,
+          "confidence": 0.82
+        },
+        {
+          "col_idx": 6,
+          "column_name": "column_6",
+          "column_label": "",
+          "inferred_role": "group",
+          "grouping_variable_hint": "lifestyle factors scoring",
+          "group_level_label": "",
+          "group_level_name": "column_6",
+          "group_order": 5,
+          "statistic_subtype": null,
+          "confidence": 0.82
+        },
+        {
+          "col_idx": 7,
+          "column_name": "column_7",
+          "column_label": "",
+          "inferred_role": "group",
+          "grouping_variable_hint": "lifestyle factors scoring",
+          "group_level_label": "",
+          "group_level_name": "column_7",
+          "group_order": 6,
+          "statistic_subtype": null,
+          "confidence": 0.82
+        },
+        {
+          "col_idx": 8,
+          "column_name": "column_8",
+          "column_label": "",
+          "inferred_role": "group",
+          "grouping_variable_hint": "lifestyle factors scoring",
+          "group_level_label": "",
+          "group_level_name": "column_8",
+          "group_order": 7,
+          "statistic_subtype": null,
+          "confidence": 0.82
+        },
+        {
+          "col_idx": 9,
+          "column_name": "column_9",
+          "column_label": "",
+          "inferred_role": "group",
+          "grouping_variable_hint": "lifestyle factors scoring",
+          "group_level_label": "",
+          "group_level_name": "column_9",
+          "group_order": 8,
+          "statistic_subtype": null,
+          "confidence": 0.82
+        },
+        {
+          "col_idx": 10,
+          "column_name": "lifestyle",
+          "column_label": "lifestyle",
+          "inferred_role": "group",
+          "grouping_variable_hint": "lifestyle factors scoring",
+          "group_level_label": "lifestyle",
+          "group_level_name": "lifestyle",
+          "group_order": 9,
+          "statistic_subtype": null,
+          "confidence": 0.82
+        },
+        {
+          "col_idx": 11,
+          "column_name": "factor",
+          "column_label": "factor",
+          "inferred_role": "group",
+          "grouping_variable_hint": "lifestyle factors scoring",
+          "group_level_label": "factor",
+          "group_level_name": "factor",
+          "group_order": 10,
+          "statistic_subtype": null,
+          "confidence": 0.82
+        },
+        {
+          "col_idx": 12,
+          "column_name": "column_12",
+          "column_label": "",
+          "inferred_role": "group",
+          "grouping_variable_hint": "lifestyle factors scoring",
+          "group_level_label": "",
+          "group_level_name": "column_12",
+          "group_order": 11,
+          "statistic_subtype": null,
+          "confidence": 0.82
+        },
+        {
+          "col_idx": 13,
+          "column_name": "column_13",
+          "column_label": "",
+          "inferred_role": "group",
+          "grouping_variable_hint": "lifestyle factors scoring",
+          "group_level_label": "",
+          "group_level_name": "column_13",
+          "group_order": 12,
+          "statistic_subtype": null,
+          "confidence": 0.82
+        }
+      ],
+      "confidence": 0.8675
+    },
+    "notes": [],
+    "overall_confidence": 0.8559
+  },
+  {
+    "table_id": "periodontitis-p11-t0",
+    "title": null,
+    "caption": null,
+    "variables": [
+      {
+        "variable_name": "SD",
+        "variable_label": "SD",
+        "variable_type": "continuous",
+        "row_start": 15,
+        "row_end": 15,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": null,
+        "confidence": 0.9
+      }
+    ],
+    "column_definition": {
+      "grouping_label": "NHANES",
+      "grouping_name": "NHANES",
+      "group_count": 1,
+      "columns": [
+        {
+          "col_idx": 1,
+          "column_name": "National Health and Nutrition Examination Survey",
+          "column_label": "National Health and Nutrition Examination Survey",
+          "inferred_role": "group",
+          "grouping_variable_hint": "NHANES",
+          "group_level_label": "National Health and Nutrition Examination Survey",
+          "group_level_name": "National Health and Nutrition Examination Survey",
+          "group_order": 1,
+          "statistic_subtype": null,
+          "confidence": 0.82
+        }
+      ],
+      "confidence": 0.82
+    },
+    "notes": [],
+    "overall_confidence": 0.86
+  }
+]

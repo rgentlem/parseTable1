@@ -1,0 +1,2270 @@
+[
+  {
+    "table_id": "stroke-p6-t0",
+    "title": "Table 1 Baseline characteristics of the study participants grouped by stroke status",
+    "caption": "Table 1 Baseline characteristics of the study participants grouped by stroke status",
+    "variables": [
+      {
+        "variable_name": "Sex man",
+        "variable_label": "Sex-man, n (%)",
+        "variable_type": "unknown",
+        "row_start": 3,
+        "row_end": 3,
+        "levels": [],
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Race",
+        "variable_label": "Race, n (%)",
+        "variable_type": "categorical",
+        "row_start": 4,
+        "row_end": 9,
+        "levels": [
+          {
+            "label": "Non-Hispanic White",
+            "row_idx": 5
+          },
+          {
+            "label": "Non-Hispanic Black",
+            "row_idx": 6
+          },
+          {
+            "label": "Mexican American",
+            "row_idx": 7
+          },
+          {
+            "label": "Other Hispanic",
+            "row_idx": 8
+          },
+          {
+            "label": "Other",
+            "row_idx": 9
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Smoking",
+        "variable_label": "Smoking, n (%)",
+        "variable_type": "unknown",
+        "row_start": 10,
+        "row_end": 10,
+        "levels": [],
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Drinking",
+        "variable_label": "Drinking, n (%)",
+        "variable_type": "unknown",
+        "row_start": 11,
+        "row_end": 11,
+        "levels": [],
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Education level",
+        "variable_label": "Education level, n (%)",
+        "variable_type": "categorical",
+        "row_start": 12,
+        "row_end": 17,
+        "levels": [
+          {
+            "label": "Below high school",
+            "row_idx": 13
+          },
+          {
+            "label": "High school",
+            "row_idx": 14
+          },
+          {
+            "label": "Above high school",
+            "row_idx": 15
+          },
+          {
+            "label": "SBP, mmHg",
+            "row_idx": 16
+          },
+          {
+            "label": "DBP, mmHg",
+            "row_idx": 17
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Diabetes",
+        "variable_label": "Diabetes, n (%)",
+        "variable_type": "categorical",
+        "row_start": 18,
+        "row_end": 32,
+        "levels": [
+          {
+            "label": "FBG, mmol/L",
+            "row_idx": 19
+          },
+          {
+            "label": "HbA1c, %",
+            "row_idx": 20
+          },
+          {
+            "label": "eGFR, ml/min/1.73m2",
+            "row_idx": 21
+          },
+          {
+            "label": "TG, mmol/L",
+            "row_idx": 22
+          },
+          {
+            "label": "TC, mmol/L",
+            "row_idx": 23
+          },
+          {
+            "label": "LDL-C, mmol/L",
+            "row_idx": 24
+          },
+          {
+            "label": "HDL-C, mmol/L",
+            "row_idx": 25
+          },
+          {
+            "label": "RBC, \u00d7109/L",
+            "row_idx": 26
+          },
+          {
+            "label": "WBC, \u00d7109/L",
+            "row_idx": 27
+          },
+          {
+            "label": "NE, \u00d7109/L",
+            "row_idx": 28
+          },
+          {
+            "label": "Monocyte, \u00d7109/L",
+            "row_idx": 29
+          },
+          {
+            "label": "LY, \u00d7109/L",
+            "row_idx": 30
+          },
+          {
+            "label": "PLT, \u00d7106/L",
+            "row_idx": 31
+          },
+          {
+            "label": "Hemoglobin, g/L",
+            "row_idx": 32
+          }
+        ],
+        "confidence": 0.92
+      }
+    ],
+    "columns": [
+      {
+        "col_idx": 1,
+        "column_name": "Overall n 44 019",
+        "column_label": "Overall (n = 44,019)",
+        "inferred_role": "overall",
+        "confidence": 0.84
+      },
+      {
+        "col_idx": 2,
+        "column_name": "Non Stroke n 42 533",
+        "column_label": "Non- Stroke (n = 42,533)",
+        "inferred_role": "group",
+        "confidence": 0.9
+      },
+      {
+        "col_idx": 3,
+        "column_name": "Stroke n 1486",
+        "column_label": "Stroke (n = 1486)",
+        "inferred_role": "group",
+        "confidence": 0.9
+      },
+      {
+        "col_idx": 4,
+        "column_name": "P value",
+        "column_label": "P value",
+        "inferred_role": "p_value",
+        "confidence": 0.97
+      }
+    ],
+    "values": [
+      {
+        "row_idx": 3,
+        "col_idx": 1,
+        "variable_name": "Sex man",
+        "level_label": null,
+        "column_name": "Overall n 44 019",
+        "raw_value": "49.3 [47.6, 51.0]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 3,
+        "col_idx": 2,
+        "variable_name": "Sex man",
+        "level_label": null,
+        "column_name": "Non Stroke n 42 533",
+        "raw_value": "49.4 [48.9, 49.9]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 3,
+        "col_idx": 3,
+        "variable_name": "Sex man",
+        "level_label": null,
+        "column_name": "Stroke n 1486",
+        "raw_value": "45.3 [42.1, 48.4]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 3,
+        "col_idx": 4,
+        "variable_name": "Sex man",
+        "level_label": null,
+        "column_name": "P value",
+        "raw_value": "0.01*",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 1,
+        "variable_name": "Race",
+        "level_label": "Non-Hispanic White",
+        "column_name": "Overall n 44 019",
+        "raw_value": "68.3 [64.2, 72.3]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 2,
+        "variable_name": "Race",
+        "level_label": "Non-Hispanic White",
+        "column_name": "Non Stroke n 42 533",
+        "raw_value": "68.3 [66.3, 70.3]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 3,
+        "variable_name": "Race",
+        "level_label": "Non-Hispanic White",
+        "column_name": "Stroke n 1486",
+        "raw_value": "66.8 [63.1, 70.4]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 1,
+        "variable_name": "Race",
+        "level_label": "Non-Hispanic Black",
+        "column_name": "Overall n 44 019",
+        "raw_value": "11.2 [10.2, 12.1]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 2,
+        "variable_name": "Race",
+        "level_label": "Non-Hispanic Black",
+        "column_name": "Non Stroke n 42 533",
+        "raw_value": "11.0 [10.0, 12.1]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 3,
+        "variable_name": "Race",
+        "level_label": "Non-Hispanic Black",
+        "column_name": "Stroke n 1486",
+        "raw_value": "16.8 [14.5, 19.1]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 1,
+        "variable_name": "Race",
+        "level_label": "Mexican American",
+        "column_name": "Overall n 44 019",
+        "raw_value": "8.2 [7.2, 9.2]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 2,
+        "variable_name": "Race",
+        "level_label": "Mexican American",
+        "column_name": "Non Stroke n 42 533",
+        "raw_value": "8.3 [7.2, 9.3]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 3,
+        "variable_name": "Race",
+        "level_label": "Mexican American",
+        "column_name": "Stroke n 1486",
+        "raw_value": "5.3 [4.0, 6.6]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 1,
+        "variable_name": "Race",
+        "level_label": "Other Hispanic",
+        "column_name": "Overall n 44 019",
+        "raw_value": "5.7 [4.8, 6.5]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 2,
+        "variable_name": "Race",
+        "level_label": "Other Hispanic",
+        "column_name": "Non Stroke n 42 533",
+        "raw_value": "5.7 [4.9, 6.6]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 3,
+        "variable_name": "Race",
+        "level_label": "Other Hispanic",
+        "column_name": "Stroke n 1486",
+        "raw_value": "3.6 [2.4, 4.9]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 1,
+        "variable_name": "Race",
+        "level_label": "Other",
+        "column_name": "Overall n 44 019",
+        "raw_value": "6.7 [6.1, 7.2]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 2,
+        "variable_name": "Race",
+        "level_label": "Other",
+        "column_name": "Non Stroke n 42 533",
+        "raw_value": "6.6 [6.1, 7.2]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 3,
+        "variable_name": "Race",
+        "level_label": "Other",
+        "column_name": "Stroke n 1486",
+        "raw_value": "7.5 [5.5, 9.6]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 1,
+        "variable_name": "Smoking",
+        "level_label": null,
+        "column_name": "Overall n 44 019",
+        "raw_value": "22.3 [21.2, 23.3]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 2,
+        "variable_name": "Smoking",
+        "level_label": null,
+        "column_name": "Non Stroke n 42 533",
+        "raw_value": "22.1 [21.3, 22.8]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 3,
+        "variable_name": "Smoking",
+        "level_label": null,
+        "column_name": "Stroke n 1486",
+        "raw_value": "29.6 [26.5, 32.7]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 4,
+        "variable_name": "Smoking",
+        "level_label": null,
+        "column_name": "P value",
+        "raw_value": "< 0.001***",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 1,
+        "variable_name": "Drinking",
+        "level_label": null,
+        "column_name": "Overall n 44 019",
+        "raw_value": "83.4 [80.3, 86.5]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 2,
+        "variable_name": "Drinking",
+        "level_label": null,
+        "column_name": "Non Stroke n 42 533",
+        "raw_value": "89.31 [88.5, 90.2]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 3,
+        "variable_name": "Drinking",
+        "level_label": null,
+        "column_name": "Stroke n 1486",
+        "raw_value": "84.3 [81.5, 87.1]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 4,
+        "variable_name": "Drinking",
+        "level_label": null,
+        "column_name": "P value",
+        "raw_value": "< 0.001***",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 1,
+        "variable_name": "Education level",
+        "level_label": "Below high school",
+        "column_name": "Overall n 44 019",
+        "raw_value": "5.4 [5.0, 5.8]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 2,
+        "variable_name": "Education level",
+        "level_label": "Below high school",
+        "column_name": "Non Stroke n 42 533",
+        "raw_value": "5.3 [4.9, 5.7]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 3,
+        "variable_name": "Education level",
+        "level_label": "Below high school",
+        "column_name": "Stroke n 1486",
+        "raw_value": "10.3 [8.3, 12.3]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 1,
+        "variable_name": "Education level",
+        "level_label": "High school",
+        "column_name": "Overall n 44 019",
+        "raw_value": "35.2 [33.5, 37.0]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 2,
+        "variable_name": "Education level",
+        "level_label": "High school",
+        "column_name": "Non Stroke n 42 533",
+        "raw_value": "35.0 [33.8, 36.1]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 3,
+        "variable_name": "Education level",
+        "level_label": "High school",
+        "column_name": "Stroke n 1486",
+        "raw_value": "47.8 [44.5, 51.1]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 1,
+        "variable_name": "Education level",
+        "level_label": "Above high school",
+        "column_name": "Overall n 44 019",
+        "raw_value": "59.3 [56.9, 61.7]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 2,
+        "variable_name": "Education level",
+        "level_label": "Above high school",
+        "column_name": "Non Stroke n 42 533",
+        "raw_value": "59.8 [58.4, 61.1]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 3,
+        "variable_name": "Education level",
+        "level_label": "Above high school",
+        "column_name": "Stroke n 1486",
+        "raw_value": "41.9 [38.4, 45.4]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 1,
+        "variable_name": "Education level",
+        "level_label": "SBP, mmHg",
+        "column_name": "Overall n 44 019",
+        "raw_value": "121.6 [121.3, 121.9]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 2,
+        "variable_name": "Education level",
+        "level_label": "SBP, mmHg",
+        "column_name": "Non Stroke n 42 533",
+        "raw_value": "121.4 [121.1, 121.7]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 3,
+        "variable_name": "Education level",
+        "level_label": "SBP, mmHg",
+        "column_name": "Stroke n 1486",
+        "raw_value": "130.2 [128.7, 131.7]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 4,
+        "variable_name": "Education level",
+        "level_label": "SBP, mmHg",
+        "column_name": "P value",
+        "raw_value": "< 0.001***",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 1,
+        "variable_name": "Education level",
+        "level_label": "DBP, mmHg",
+        "column_name": "Overall n 44 019",
+        "raw_value": "71.7 [71.4, 71.9]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 2,
+        "variable_name": "Education level",
+        "level_label": "DBP, mmHg",
+        "column_name": "Non Stroke n 42 533",
+        "raw_value": "71.7 [71.4, 72.0]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 3,
+        "variable_name": "Education level",
+        "level_label": "DBP, mmHg",
+        "column_name": "Stroke n 1486",
+        "raw_value": "71.0 [70.1, 71.9]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 4,
+        "variable_name": "Education level",
+        "level_label": "DBP, mmHg",
+        "column_name": "P value",
+        "raw_value": "0.13",
+        "value_type": "text",
+        "parsed_numeric": 0.13,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 1,
+        "variable_name": "Diabetes",
+        "level_label": "FBG, mmol/L",
+        "column_name": "Overall n 44 019",
+        "raw_value": "95.2 [94.7, 95.7]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 2,
+        "variable_name": "Diabetes",
+        "level_label": "FBG, mmol/L",
+        "column_name": "Non Stroke n 42 533",
+        "raw_value": "95.7 [95.2, 96.2]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 3,
+        "variable_name": "Diabetes",
+        "level_label": "FBG, mmol/L",
+        "column_name": "Stroke n 1486",
+        "raw_value": "77.4 [75.7, 79.0]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 4,
+        "variable_name": "Diabetes",
+        "level_label": "FBG, mmol/L",
+        "column_name": "P value",
+        "raw_value": "< 0.001***",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 1,
+        "variable_name": "Diabetes",
+        "level_label": "HbA1c, %",
+        "column_name": "Overall n 44 019",
+        "raw_value": "4.7 [4.7, 4.7]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 2,
+        "variable_name": "Diabetes",
+        "level_label": "HbA1c, %",
+        "column_name": "Non Stroke n 42 533",
+        "raw_value": "4.7 [4.7, 4.7]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 3,
+        "variable_name": "Diabetes",
+        "level_label": "HbA1c, %",
+        "column_name": "Stroke n 1486",
+        "raw_value": "4.6 [4.6, 4.6]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 4,
+        "variable_name": "Diabetes",
+        "level_label": "HbA1c, %",
+        "column_name": "P value",
+        "raw_value": "< 0.001***",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 1,
+        "variable_name": "Diabetes",
+        "level_label": "eGFR, ml/min/1.73m2",
+        "column_name": "Overall n 44 019",
+        "raw_value": "7.3 [7.2, 7.3]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 2,
+        "variable_name": "Diabetes",
+        "level_label": "eGFR, ml/min/1.73m2",
+        "column_name": "Non Stroke n 42 533",
+        "raw_value": "7.3 [7.2, 7.3]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 3,
+        "variable_name": "Diabetes",
+        "level_label": "eGFR, ml/min/1.73m2",
+        "column_name": "Stroke n 1486",
+        "raw_value": "7.5 [7.4, 7.7]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 4,
+        "variable_name": "Diabetes",
+        "level_label": "eGFR, ml/min/1.73m2",
+        "column_name": "P value",
+        "raw_value": "< 0.001***",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 1,
+        "variable_name": "Diabetes",
+        "level_label": "TG, mmol/L",
+        "column_name": "Overall n 44 019",
+        "raw_value": "4.30 [4.27, 4.33]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 2,
+        "variable_name": "Diabetes",
+        "level_label": "TG, mmol/L",
+        "column_name": "Non Stroke n 42 533",
+        "raw_value": "4.29 [4.26, 4.32]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 3,
+        "variable_name": "Diabetes",
+        "level_label": "TG, mmol/L",
+        "column_name": "Stroke n 1486",
+        "raw_value": "4.59 [4.48, 4.70]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 4,
+        "variable_name": "Diabetes",
+        "level_label": "TG, mmol/L",
+        "column_name": "P value",
+        "raw_value": "< 0.001***",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 1,
+        "variable_name": "Diabetes",
+        "level_label": "TC, mmol/L",
+        "column_name": "Overall n 44 019",
+        "raw_value": "0.56 [0.56, 0.56]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 2,
+        "variable_name": "Diabetes",
+        "level_label": "TC, mmol/L",
+        "column_name": "Non Stroke n 42 533",
+        "raw_value": "0.56 [0.56, 0.56]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 3,
+        "variable_name": "Diabetes",
+        "level_label": "TC, mmol/L",
+        "column_name": "Stroke n 1486",
+        "raw_value": "0.59 [0.58, 0.61]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 4,
+        "variable_name": "Diabetes",
+        "level_label": "TC, mmol/L",
+        "column_name": "P value",
+        "raw_value": "< 0.001***",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 1,
+        "variable_name": "Diabetes",
+        "level_label": "LDL-C, mmol/L",
+        "column_name": "Overall n 44 019",
+        "raw_value": "2.15 [2.13, 2.16]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 2,
+        "variable_name": "Diabetes",
+        "level_label": "LDL-C, mmol/L",
+        "column_name": "Non Stroke n 42 533",
+        "raw_value": "2.15 [2.14, 2.17]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 3,
+        "variable_name": "Diabetes",
+        "level_label": "LDL-C, mmol/L",
+        "column_name": "Stroke n 1486",
+        "raw_value": "2.07 [2.03, 2.12]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 4,
+        "variable_name": "Diabetes",
+        "level_label": "LDL-C, mmol/L",
+        "column_name": "P value",
+        "raw_value": "0.001**",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 1,
+        "variable_name": "Diabetes",
+        "level_label": "HDL-C, mmol/L",
+        "column_name": "Overall n 44 019",
+        "raw_value": "254.9 [253.5, 256.2]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 2,
+        "variable_name": "Diabetes",
+        "level_label": "HDL-C, mmol/L",
+        "column_name": "Non Stroke n 42 533",
+        "raw_value": "255.0 [253.7, 256.4]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 3,
+        "variable_name": "Diabetes",
+        "level_label": "HDL-C, mmol/L",
+        "column_name": "Stroke n 1486",
+        "raw_value": "248.6 [242.4, 254.8]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 4,
+        "variable_name": "Diabetes",
+        "level_label": "HDL-C, mmol/L",
+        "column_name": "P value",
+        "raw_value": "0.04*",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 1,
+        "variable_name": "Diabetes",
+        "level_label": "RBC, \u00d7109/L",
+        "column_name": "Overall n 44 019",
+        "raw_value": "14.37 [14.33, 14.41]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 2,
+        "variable_name": "Diabetes",
+        "level_label": "RBC, \u00d7109/L",
+        "column_name": "Non Stroke n 42 533",
+        "raw_value": "14.38 [14.34, 14.42]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 3,
+        "variable_name": "Diabetes",
+        "level_label": "RBC, \u00d7109/L",
+        "column_name": "Stroke n 1486",
+        "raw_value": "14.01 [13.89, 14.13]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 4,
+        "variable_name": "Diabetes",
+        "level_label": "RBC, \u00d7109/L",
+        "column_name": "P value",
+        "raw_value": "< 0.001***",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 1,
+        "variable_name": "Diabetes",
+        "level_label": "WBC, \u00d7109/L",
+        "column_name": "Overall n 44 019",
+        "raw_value": "45.8 [45.5, 46.2]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 2,
+        "variable_name": "Diabetes",
+        "level_label": "WBC, \u00d7109/L",
+        "column_name": "Non Stroke n 42 533",
+        "raw_value": "45.4 [45.1, 45.8]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 3,
+        "variable_name": "Diabetes",
+        "level_label": "WBC, \u00d7109/L",
+        "column_name": "Stroke n 1486",
+        "raw_value": "60.3 [59.4, 61.2]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 4,
+        "variable_name": "Diabetes",
+        "level_label": "WBC, \u00d7109/L",
+        "column_name": "P value",
+        "raw_value": "< 0.001***",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 1,
+        "variable_name": "Diabetes",
+        "level_label": "NE, \u00d7109/L",
+        "column_name": "Overall n 44 019",
+        "raw_value": "49.3 [47.6, 51.0]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 2,
+        "variable_name": "Diabetes",
+        "level_label": "NE, \u00d7109/L",
+        "column_name": "Non Stroke n 42 533",
+        "raw_value": "49.4 [48.9, 49.9]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 3,
+        "variable_name": "Diabetes",
+        "level_label": "NE, \u00d7109/L",
+        "column_name": "Stroke n 1486",
+        "raw_value": "45.3 [42.1, 48.4]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 4,
+        "variable_name": "Diabetes",
+        "level_label": "NE, \u00d7109/L",
+        "column_name": "P value",
+        "raw_value": "0.01*",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 1,
+        "variable_name": "Diabetes",
+        "level_label": "Monocyte, \u00d7109/L",
+        "column_name": "Overall n 44 019",
+        "raw_value": "0.56 [0.56, 0.56]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 2,
+        "variable_name": "Diabetes",
+        "level_label": "Monocyte, \u00d7109/L",
+        "column_name": "Non Stroke n 42 533",
+        "raw_value": "0.56 [0.56, 0.56]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 3,
+        "variable_name": "Diabetes",
+        "level_label": "Monocyte, \u00d7109/L",
+        "column_name": "Stroke n 1486",
+        "raw_value": "0.59 [0.58, 0.61]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 4,
+        "variable_name": "Diabetes",
+        "level_label": "Monocyte, \u00d7109/L",
+        "column_name": "P value",
+        "raw_value": "< 0.001***",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 1,
+        "variable_name": "Diabetes",
+        "level_label": "LY, \u00d7109/L",
+        "column_name": "Overall n 44 019",
+        "raw_value": "68.3 [64.2, 72.3]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 2,
+        "variable_name": "Diabetes",
+        "level_label": "LY, \u00d7109/L",
+        "column_name": "Non Stroke n 42 533",
+        "raw_value": "68.3 [66.3, 70.3]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 3,
+        "variable_name": "Diabetes",
+        "level_label": "LY, \u00d7109/L",
+        "column_name": "Stroke n 1486",
+        "raw_value": "66.8 [63.1, 70.4]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 4,
+        "variable_name": "Diabetes",
+        "level_label": "LY, \u00d7109/L",
+        "column_name": "P value",
+        "raw_value": "0.001**",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 1,
+        "variable_name": "Diabetes",
+        "level_label": "PLT, \u00d7106/L",
+        "column_name": "Overall n 44 019",
+        "raw_value": "11.2 [10.2, 12.1]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 2,
+        "variable_name": "Diabetes",
+        "level_label": "PLT, \u00d7106/L",
+        "column_name": "Non Stroke n 42 533",
+        "raw_value": "11.0 [10.0, 12.1]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 3,
+        "variable_name": "Diabetes",
+        "level_label": "PLT, \u00d7106/L",
+        "column_name": "Stroke n 1486",
+        "raw_value": "16.8 [14.5, 19.1]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 4,
+        "variable_name": "Diabetes",
+        "level_label": "PLT, \u00d7106/L",
+        "column_name": "P value",
+        "raw_value": "0.04*",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 32,
+        "col_idx": 1,
+        "variable_name": "Diabetes",
+        "level_label": "Hemoglobin, g/L",
+        "column_name": "Overall n 44 019",
+        "raw_value": "8.2 [7.2, 9.2]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 32,
+        "col_idx": 2,
+        "variable_name": "Diabetes",
+        "level_label": "Hemoglobin, g/L",
+        "column_name": "Non Stroke n 42 533",
+        "raw_value": "8.3 [7.2, 9.3]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 32,
+        "col_idx": 3,
+        "variable_name": "Diabetes",
+        "level_label": "Hemoglobin, g/L",
+        "column_name": "Stroke n 1486",
+        "raw_value": "5.3 [4.00, 6.6]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 32,
+        "col_idx": 4,
+        "variable_name": "Diabetes",
+        "level_label": "Hemoglobin, g/L",
+        "column_name": "P value",
+        "raw_value": "< 0.001***",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      }
+    ],
+    "notes": [],
+    "overall_confidence": 0.4734
+  },
+  {
+    "table_id": "stroke-p7-t0",
+    "title": "Table 2 Dietary intake of each DII component grouped by stroke status",
+    "caption": "Table 2 Dietary intake of each DII component grouped by stroke status",
+    "variables": [],
+    "columns": [
+      {
+        "col_idx": 1,
+        "column_name": "Overall n 44 019",
+        "column_label": "Overall (n = 44,019)",
+        "inferred_role": "overall",
+        "confidence": 0.84
+      },
+      {
+        "col_idx": 2,
+        "column_name": "Non stroke n 42 533",
+        "column_label": "Non-stroke (n = 42,533)",
+        "inferred_role": "group",
+        "confidence": 0.9
+      },
+      {
+        "col_idx": 3,
+        "column_name": "Stroke n 1 486",
+        "column_label": "Stroke (n = 1,486)",
+        "inferred_role": "group",
+        "confidence": 0.9
+      },
+      {
+        "col_idx": 4,
+        "column_name": "P value",
+        "column_label": "P value",
+        "inferred_role": "p_value",
+        "confidence": 0.97
+      }
+    ],
+    "values": [],
+    "notes": [],
+    "overall_confidence": 0.9025
+  },
+  {
+    "table_id": "stroke-p7-t1",
+    "title": "Table 3 Weighted logistic regression analysis on the association between DII and stroke",
+    "caption": "Table 3 Weighted logistic regression analysis on the association between DII and stroke",
+    "variables": [
+      {
+        "variable_name": "DII",
+        "variable_label": "DII",
+        "variable_type": "categorical",
+        "row_start": 2,
+        "row_end": 6,
+        "levels": [
+          {
+            "label": "Q1",
+            "row_idx": 3
+          },
+          {
+            "label": "Q2",
+            "row_idx": 4
+          },
+          {
+            "label": "Q3",
+            "row_idx": 5
+          },
+          {
+            "label": "Q4",
+            "row_idx": 6
+          }
+        ],
+        "confidence": 0.92
+      }
+    ],
+    "columns": [
+      {
+        "col_idx": 1,
+        "column_name": "Non adjusted OR 95",
+        "column_label": "Non-adjusted OR [95%",
+        "inferred_role": "overall",
+        "confidence": 0.84
+      },
+      {
+        "col_idx": 2,
+        "column_name": "model CI",
+        "column_label": "model CI]",
+        "inferred_role": "group",
+        "confidence": 0.8200000000000001
+      },
+      {
+        "col_idx": 3,
+        "column_name": "Pvalue",
+        "column_label": "Pvalue",
+        "inferred_role": "p_value",
+        "confidence": 0.97
+      },
+      {
+        "col_idx": 4,
+        "column_name": "Model OR 95",
+        "column_label": "Model OR [95%",
+        "inferred_role": "group",
+        "confidence": 0.8200000000000001
+      },
+      {
+        "col_idx": 5,
+        "column_name": "I CI",
+        "column_label": "I CI]",
+        "inferred_role": "group",
+        "confidence": 0.8200000000000001
+      },
+      {
+        "col_idx": 6,
+        "column_name": "Pvalue",
+        "column_label": "Pvalue",
+        "inferred_role": "p_value",
+        "confidence": 0.97
+      },
+      {
+        "col_idx": 7,
+        "column_name": "Model OR 95",
+        "column_label": "Model OR [95%",
+        "inferred_role": "group",
+        "confidence": 0.8200000000000001
+      },
+      {
+        "col_idx": 8,
+        "column_name": "II CI",
+        "column_label": "II CI]",
+        "inferred_role": "group",
+        "confidence": 0.8200000000000001
+      },
+      {
+        "col_idx": 9,
+        "column_name": "Pvalue",
+        "column_label": "Pvalue",
+        "inferred_role": "p_value",
+        "confidence": 0.97
+      }
+    ],
+    "values": [
+      {
+        "row_idx": 3,
+        "col_idx": 1,
+        "variable_name": "DII",
+        "level_label": "Q1",
+        "column_name": "Non adjusted OR 95",
+        "raw_value": "Reference",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 3,
+        "col_idx": 3,
+        "variable_name": "DII",
+        "level_label": "Q1",
+        "column_name": "Pvalue",
+        "raw_value": "-",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 3,
+        "col_idx": 4,
+        "variable_name": "DII",
+        "level_label": "Q1",
+        "column_name": "Model OR 95",
+        "raw_value": "Reference",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 3,
+        "col_idx": 6,
+        "variable_name": "DII",
+        "level_label": "Q1",
+        "column_name": "Pvalue",
+        "raw_value": "-",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 3,
+        "col_idx": 7,
+        "variable_name": "DII",
+        "level_label": "Q1",
+        "column_name": "Model OR 95",
+        "raw_value": "Reference",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 3,
+        "col_idx": 9,
+        "variable_name": "DII",
+        "level_label": "Q1",
+        "column_name": "Pvalue",
+        "raw_value": "-",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 1,
+        "variable_name": "DII",
+        "level_label": "Q2",
+        "column_name": "Non adjusted OR 95",
+        "raw_value": "1.26 [1.01,",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 2,
+        "variable_name": "DII",
+        "level_label": "Q2",
+        "column_name": "model CI",
+        "raw_value": "1.57]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 3,
+        "variable_name": "DII",
+        "level_label": "Q2",
+        "column_name": "Pvalue",
+        "raw_value": "0.04*",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 4,
+        "variable_name": "DII",
+        "level_label": "Q2",
+        "column_name": "Model OR 95",
+        "raw_value": "1.26 [1.01,1.58]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 6,
+        "variable_name": "DII",
+        "level_label": "Q2",
+        "column_name": "Pvalue",
+        "raw_value": "0.002**",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 7,
+        "variable_name": "DII",
+        "level_label": "Q2",
+        "column_name": "Model OR 95",
+        "raw_value": "1.19 [0.94,",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 8,
+        "variable_name": "DII",
+        "level_label": "Q2",
+        "column_name": "II CI",
+        "raw_value": "1.54]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 9,
+        "variable_name": "DII",
+        "level_label": "Q2",
+        "column_name": "Pvalue",
+        "raw_value": "0.15",
+        "value_type": "text",
+        "parsed_numeric": 0.15,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 1,
+        "variable_name": "DII",
+        "level_label": "Q3",
+        "column_name": "Non adjusted OR 95",
+        "raw_value": "1.69 [1.36,",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 2,
+        "variable_name": "DII",
+        "level_label": "Q3",
+        "column_name": "model CI",
+        "raw_value": "2.10]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 3,
+        "variable_name": "DII",
+        "level_label": "Q3",
+        "column_name": "Pvalue",
+        "raw_value": "<\u20090.001***",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 4,
+        "variable_name": "DII",
+        "level_label": "Q3",
+        "column_name": "Model OR 95",
+        "raw_value": "1.68 [1.34,",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 5,
+        "variable_name": "DII",
+        "level_label": "Q3",
+        "column_name": "I CI",
+        "raw_value": "2.10]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 6,
+        "variable_name": "DII",
+        "level_label": "Q3",
+        "column_name": "Pvalue",
+        "raw_value": "<\u20090.001***",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 7,
+        "variable_name": "DII",
+        "level_label": "Q3",
+        "column_name": "Model OR 95",
+        "raw_value": "1.46 [1.16,",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 8,
+        "variable_name": "DII",
+        "level_label": "Q3",
+        "column_name": "II CI",
+        "raw_value": "1.84]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 9,
+        "variable_name": "DII",
+        "level_label": "Q3",
+        "column_name": "Pvalue",
+        "raw_value": "0.002**",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 1,
+        "variable_name": "DII",
+        "level_label": "Q4",
+        "column_name": "Non adjusted OR 95",
+        "raw_value": "2.47 [2.08,",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 2,
+        "variable_name": "DII",
+        "level_label": "Q4",
+        "column_name": "model CI",
+        "raw_value": "2.94]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 3,
+        "variable_name": "DII",
+        "level_label": "Q4",
+        "column_name": "Pvalue",
+        "raw_value": "<\u20090.001***",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 4,
+        "variable_name": "DII",
+        "level_label": "Q4",
+        "column_name": "Model OR 95",
+        "raw_value": "2.43 [2.02,",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 5,
+        "variable_name": "DII",
+        "level_label": "Q4",
+        "column_name": "I CI",
+        "raw_value": "2.93]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 6,
+        "variable_name": "DII",
+        "level_label": "Q4",
+        "column_name": "Pvalue",
+        "raw_value": "<\u20090.001***",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 7,
+        "variable_name": "DII",
+        "level_label": "Q4",
+        "column_name": "Model OR 95",
+        "raw_value": "1.87 [1.53,",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 8,
+        "variable_name": "DII",
+        "level_label": "Q4",
+        "column_name": "II CI",
+        "raw_value": "2.29]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 9,
+        "variable_name": "DII",
+        "level_label": "Q4",
+        "column_name": "Pvalue",
+        "raw_value": "<\u20090.001***",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      }
+    ],
+    "notes": [],
+    "overall_confidence": 0.5767
+  },
+  {
+    "table_id": "stroke-p12-t0",
+    "title": null,
+    "caption": null,
+    "variables": [
+      {
+        "variable_name": "IL 1",
+        "variable_label": "IL-1\u03b2",
+        "variable_type": "categorical",
+        "row_start": 18,
+        "row_end": 22,
+        "levels": [
+          {
+            "label": "IL-6",
+            "row_idx": 19
+          },
+          {
+            "label": "LA",
+            "row_idx": 20
+          },
+          {
+            "label": "LASSO",
+            "row_idx": 21
+          },
+          {
+            "label": "LDL-C",
+            "row_idx": 22
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Lp PLA2",
+        "variable_label": "Lp-PLA2",
+        "variable_type": "categorical",
+        "row_start": 23,
+        "row_end": 37,
+        "levels": [
+          {
+            "label": "MEC",
+            "row_idx": 24
+          },
+          {
+            "label": "MUFA",
+            "row_idx": 25
+          },
+          {
+            "label": "NCHS",
+            "row_idx": 26
+          },
+          {
+            "label": "NHANES",
+            "row_idx": 27
+          },
+          {
+            "label": "NLRP3",
+            "row_idx": 28
+          },
+          {
+            "label": "2h-OGTT",
+            "row_idx": 29
+          },
+          {
+            "label": "OR",
+            "row_idx": 30
+          },
+          {
+            "label": "PCSK9",
+            "row_idx": 31
+          },
+          {
+            "label": "PUFA",
+            "row_idx": 32
+          },
+          {
+            "label": "RBC",
+            "row_idx": 33
+          },
+          {
+            "label": "RCS",
+            "row_idx": 34
+          },
+          {
+            "label": "ROC",
+            "row_idx": 35
+          },
+          {
+            "label": "SBP",
+            "row_idx": 36
+          },
+          {
+            "label": "SCr",
+            "row_idx": 37
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "SD",
+        "variable_label": "SD",
+        "variable_type": "continuous",
+        "row_start": 38,
+        "row_end": 38,
+        "levels": [],
+        "confidence": 0.9
+      }
+    ],
+    "columns": [
+      {
+        "col_idx": 1,
+        "column_name": "Atherosclerotic cardiovascular disease",
+        "column_label": "Atherosclerotic cardiovascular disease",
+        "inferred_role": "group",
+        "confidence": 0.82
+      }
+    ],
+    "values": [
+      {
+        "row_idx": 19,
+        "col_idx": 1,
+        "variable_name": "IL 1",
+        "level_label": "IL-6",
+        "column_name": "Atherosclerotic cardiovascular disease",
+        "raw_value": "Interleukin-6",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 1,
+        "variable_name": "IL 1",
+        "level_label": "LA",
+        "column_name": "Atherosclerotic cardiovascular disease",
+        "raw_value": "Linoleic acid",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 1,
+        "variable_name": "IL 1",
+        "level_label": "LASSO",
+        "column_name": "Atherosclerotic cardiovascular disease",
+        "raw_value": "Least absolute shrinkage and selection operator",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 1,
+        "variable_name": "IL 1",
+        "level_label": "LDL-C",
+        "column_name": "Atherosclerotic cardiovascular disease",
+        "raw_value": "Low-density lipoprotein cholesterol",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 1,
+        "variable_name": "Lp PLA2",
+        "level_label": "MEC",
+        "column_name": "Atherosclerotic cardiovascular disease",
+        "raw_value": "Mobile examination center",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 1,
+        "variable_name": "Lp PLA2",
+        "level_label": "MUFA",
+        "column_name": "Atherosclerotic cardiovascular disease",
+        "raw_value": "Monounsaturated fatty acid",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 1,
+        "variable_name": "Lp PLA2",
+        "level_label": "NCHS",
+        "column_name": "Atherosclerotic cardiovascular disease",
+        "raw_value": "National Center for Health Statistics",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 1,
+        "variable_name": "Lp PLA2",
+        "level_label": "NHANES",
+        "column_name": "Atherosclerotic cardiovascular disease",
+        "raw_value": "National Health and Nutrition Examination Survey",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 1,
+        "variable_name": "Lp PLA2",
+        "level_label": "NLRP3",
+        "column_name": "Atherosclerotic cardiovascular disease",
+        "raw_value": "NOD-, LRR- and pyrin domain-containing 3",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 1,
+        "variable_name": "Lp PLA2",
+        "level_label": "2h-OGTT",
+        "column_name": "Atherosclerotic cardiovascular disease",
+        "raw_value": "2-hour oral glucose tolerance test",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 1,
+        "variable_name": "Lp PLA2",
+        "level_label": "OR",
+        "column_name": "Atherosclerotic cardiovascular disease",
+        "raw_value": "Odds ratio",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 1,
+        "variable_name": "Lp PLA2",
+        "level_label": "PCSK9",
+        "column_name": "Atherosclerotic cardiovascular disease",
+        "raw_value": "Proprotein convertase subtilisin/kexin 9",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 32,
+        "col_idx": 1,
+        "variable_name": "Lp PLA2",
+        "level_label": "PUFA",
+        "column_name": "Atherosclerotic cardiovascular disease",
+        "raw_value": "Polyunsaturated fatty acid",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 1,
+        "variable_name": "Lp PLA2",
+        "level_label": "RBC",
+        "column_name": "Atherosclerotic cardiovascular disease",
+        "raw_value": "Red blood cell",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 34,
+        "col_idx": 1,
+        "variable_name": "Lp PLA2",
+        "level_label": "RCS",
+        "column_name": "Atherosclerotic cardiovascular disease",
+        "raw_value": "Restricted cubic spline",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 35,
+        "col_idx": 1,
+        "variable_name": "Lp PLA2",
+        "level_label": "ROC",
+        "column_name": "Atherosclerotic cardiovascular disease",
+        "raw_value": "Receiver operating characteristic",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 36,
+        "col_idx": 1,
+        "variable_name": "Lp PLA2",
+        "level_label": "SBP",
+        "column_name": "Atherosclerotic cardiovascular disease",
+        "raw_value": "Systolic blood pressure",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 37,
+        "col_idx": 1,
+        "variable_name": "Lp PLA2",
+        "level_label": "SCr",
+        "column_name": "Atherosclerotic cardiovascular disease",
+        "raw_value": "Serum creatinine",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 38,
+        "col_idx": 1,
+        "variable_name": "SD",
+        "level_label": null,
+        "column_name": "Atherosclerotic cardiovascular disease",
+        "raw_value": "Standard deviation",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      }
+    ],
+    "notes": [],
+    "overall_confidence": 0.4852
+  }
+]

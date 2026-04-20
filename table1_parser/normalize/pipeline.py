@@ -17,6 +17,7 @@ ALPHA_PATTERN = re.compile(r"[A-Za-z]")
 ALNUM_PATTERN = re.compile(r"[A-Za-z0-9]")
 COUNT_PCT_STYLE_PATTERN = re.compile(r"\bn\s*\(\s*%\s*\)")
 PERCENT_FRAGMENT_PATTERN = re.compile(r"^\(\s*\d+(?:\.\d+)?%\s*\)$")
+BRACKETED_SUMMARY_PATTERN = re.compile(r"^[<>]?\s*-?\d+(?:\.\d+)?\s*[\[\(±].*$")
 
 
 def _is_noninformative_cell(value: str) -> bool:
@@ -33,6 +34,100 @@ def _looks_like_label_cell(value: str) -> bool:
     """Return whether a cell resembles a meaningful row-label cell."""
     cleaned = clean_text(value)
     return bool(cleaned) and bool(ALPHA_PATTERN.search(cleaned)) and len(cleaned) >= 2
+
+
+def _looks_like_data_value_cell(value: str) -> bool:
+    """Return whether a cell resembles a table value rather than a split label fragment."""
+    cleaned = clean_text(value)
+    if not cleaned:
+        return False
+    if detect_value_pattern(cleaned).pattern != "unknown":
+        return True
+    if BRACKETED_SUMMARY_PATTERN.fullmatch(cleaned):
+        return True
+    digit_count = sum(char.isdigit() for char in cleaned)
+    if digit_count == 0:
+        return False
+    alpha_count = sum(char.isalpha() for char in cleaned)
+    if alpha_count == 0:
+        return True
+    if cleaned.startswith(("<", ">")) and digit_count > 0:
+        return True
+    punctuation_count = sum(char in "[]()%±,./<>=-" for char in cleaned)
+    return punctuation_count >= 2 and alpha_count <= max(2, digit_count // 2)
+
+
+def _looks_like_parenthetical_label_fragment(value: str) -> bool:
+    """Return whether a short parenthetical token is more likely a label suffix than a data value."""
+    cleaned = clean_text(value)
+    if not (cleaned.startswith("(") and cleaned.endswith(")")):
+        return False
+    if "%" in cleaned or "," in cleaned or "±" in cleaned:
+        return False
+    return any(char.isdigit() for char in cleaned)
+
+
+def _merge_leading_label_fragments(
+    raw_rows: list[list[str]],
+    cleaned_rows: list[list[str]],
+    body_rows: list[int],
+) -> int:
+    """Merge leading text fragments back into the first label cell on body rows."""
+    offset_value_rows = 0
+    for row_idx in body_rows:
+        if row_idx >= len(cleaned_rows):
+            continue
+        row = cleaned_rows[row_idx]
+        first_value_col_idx = next(
+            (
+                col_idx
+                for col_idx in range(1, len(row))
+                if _looks_like_data_value_cell(row[col_idx])
+                and not _looks_like_parenthetical_label_fragment(row[col_idx])
+            ),
+            None,
+        )
+        if first_value_col_idx is not None and first_value_col_idx >= 2:
+            offset_value_rows += 1
+    if offset_value_rows < 2:
+        return 0
+
+    repaired_row_count = 0
+    for row_idx in body_rows:
+        if row_idx >= len(cleaned_rows):
+            continue
+        row = cleaned_rows[row_idx]
+        if len(row) <= 2:
+            continue
+        first_value_col_idx = next(
+            (
+                col_idx
+                for col_idx in range(1, len(row))
+                if _looks_like_data_value_cell(row[col_idx])
+                and not _looks_like_parenthetical_label_fragment(row[col_idx])
+            ),
+            None,
+        )
+        leading_limit = first_value_col_idx if first_value_col_idx is not None else len(row)
+        if leading_limit <= 1:
+            continue
+        leading_fragments = [
+            raw_rows[row_idx][col_idx]
+            for col_idx in range(leading_limit)
+            if clean_text(raw_rows[row_idx][col_idx])
+        ]
+        if len(leading_fragments) <= 1:
+            continue
+        merged_label = " ".join(fragment.strip() for fragment in leading_fragments if fragment.strip()).strip()
+        if not merged_label:
+            continue
+        raw_rows[row_idx][0] = merged_label
+        cleaned_rows[row_idx][0] = clean_text(merged_label)
+        for col_idx in range(1, leading_limit):
+            raw_rows[row_idx][col_idx] = ""
+            cleaned_rows[row_idx][col_idx] = ""
+        repaired_row_count += 1
+    return repaired_row_count
 
 
 def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
@@ -90,6 +185,11 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
         cleaned_rows,
         row_bounds=row_bounds,
         horizontal_rules=horizontal_rules,
+    )
+    leading_label_fragment_repairs = _merge_leading_label_fragments(
+        raw_rows,
+        cleaned_rows,
+        body_rows,
     )
     first_column_bboxes: dict[int, tuple[float, float, float, float]] = {}
     x0_values: list[float] = []
@@ -204,6 +304,7 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
         "dropped_leading_cols": dropped_leading_cols,
         "dropped_trailing_cols": dropped_trailing_cols,
         "column_repairs": {
+            "leading_label_fragment_repairs": leading_label_fragment_repairs,
             "merged_columns": merged_columns,
             "dropped_empty_columns_after_repair": dropped_repaired_cols,
         },

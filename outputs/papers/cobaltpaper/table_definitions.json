@@ -1,0 +1,1215 @@
+[
+  {
+    "table_id": "cobaltpaper-p3-t0",
+    "title": "Table 1",
+    "caption": "Table 1",
+    "variables": [
+      {
+        "variable_name": "Number",
+        "variable_label": "Number",
+        "variable_type": "continuous",
+        "row_start": 2,
+        "row_end": 2,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "n_only",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Age",
+        "variable_label": "Age (yrs), mean\u00b1SD",
+        "variable_type": "continuous",
+        "row_start": 3,
+        "row_end": 3,
+        "levels": [],
+        "units_hint": "mean\u00b1SD",
+        "summary_style_hint": "mean_sd",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Male",
+        "variable_label": "Male, n (%)",
+        "variable_type": "continuous",
+        "row_start": 4,
+        "row_end": 4,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "BMI",
+        "variable_label": "BMI, mean\u00b1SD",
+        "variable_type": "continuous",
+        "row_start": 5,
+        "row_end": 5,
+        "levels": [],
+        "units_hint": "mean\u00b1SD",
+        "summary_style_hint": "mean_sd",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Education level",
+        "variable_label": "Education level, n (%)",
+        "variable_type": "categorical",
+        "row_start": 6,
+        "row_end": 9,
+        "levels": [
+          {
+            "level_name": "<High school",
+            "level_label": "<High school",
+            "row_idx": 7,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "High school",
+            "level_label": "High school",
+            "row_idx": 8,
+            "confidence": 0.92
+          },
+          {
+            "level_name": ">High school",
+            "level_label": ">High school",
+            "row_idx": 9,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Race",
+        "variable_label": "Race, n (%)",
+        "variable_type": "categorical",
+        "row_start": 10,
+        "row_end": 14,
+        "levels": [
+          {
+            "level_name": "Non-Hispanic White",
+            "level_label": "Non-Hispanic White",
+            "row_idx": 11,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Hispanic/Mexican",
+            "level_label": "Hispanic/Mexican",
+            "row_idx": 12,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Non-Hispanic Black",
+            "level_label": "Non-Hispanic Black",
+            "row_idx": 13,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Other",
+            "level_label": "Other",
+            "row_idx": 14,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Family poverty income ratio",
+        "variable_label": "Family poverty-income ratio, n (%)",
+        "variable_type": "categorical",
+        "row_start": 15,
+        "row_end": 18,
+        "levels": [
+          {
+            "level_name": "<1.0",
+            "level_label": "<1.0",
+            "row_idx": 16,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "1-4.99",
+            "level_label": "1-4.99",
+            "row_idx": 17,
+            "confidence": 0.92
+          },
+          {
+            "level_name": ">=5",
+            "level_label": "\u22655",
+            "row_idx": 18,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Smoking",
+        "variable_label": "Smoking, n (%)",
+        "variable_type": "categorical",
+        "row_start": 19,
+        "row_end": 22,
+        "levels": [
+          {
+            "level_name": "Non-smoker",
+            "level_label": "Non-smoker",
+            "row_idx": 20,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Ex-smoker",
+            "level_label": "Ex-smoker",
+            "row_idx": 21,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Current-smoker",
+            "level_label": "Current-smoker",
+            "row_idx": 22,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      }
+    ],
+    "column_definition": {
+      "grouping_label": "Cobalt quartiles (mg/l)",
+      "grouping_name": "Cobalt quartiles mg l",
+      "group_count": 4,
+      "columns": [
+        {
+          "col_idx": 1,
+          "column_name": "All",
+          "column_label": "All",
+          "inferred_role": "overall",
+          "grouping_variable_hint": "Cobalt quartiles mg l",
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": null,
+          "confidence": 0.96
+        },
+        {
+          "col_idx": 2,
+          "column_name": "Q1 0 12",
+          "column_label": "Q1 <=0.12",
+          "inferred_role": "group",
+          "grouping_variable_hint": "Cobalt quartiles mg l",
+          "group_level_label": "Q1",
+          "group_level_name": "Q1",
+          "group_order": 1,
+          "statistic_subtype": null,
+          "confidence": 0.9
+        },
+        {
+          "col_idx": 3,
+          "column_name": "Q2 0 13 0 14",
+          "column_label": "Q2 0.13-0.14",
+          "inferred_role": "group",
+          "grouping_variable_hint": "Cobalt quartiles mg l",
+          "group_level_label": "Q2",
+          "group_level_name": "Q2",
+          "group_order": 2,
+          "statistic_subtype": null,
+          "confidence": 0.9
+        },
+        {
+          "col_idx": 4,
+          "column_name": "Q3 0 15 0 18",
+          "column_label": "Q3 0.15-0.18",
+          "inferred_role": "group",
+          "grouping_variable_hint": "Cobalt quartiles mg l",
+          "group_level_label": "Q3",
+          "group_level_name": "Q3",
+          "group_order": 3,
+          "statistic_subtype": null,
+          "confidence": 0.9
+        },
+        {
+          "col_idx": 5,
+          "column_name": "Q4 0 19",
+          "column_label": "Q4 >=0.19",
+          "inferred_role": "group",
+          "grouping_variable_hint": "Cobalt quartiles mg l",
+          "group_level_label": "Q4",
+          "group_level_name": "Q4",
+          "group_order": 4,
+          "statistic_subtype": null,
+          "confidence": 0.9
+        },
+        {
+          "col_idx": 6,
+          "column_name": "P value",
+          "column_label": "P value",
+          "inferred_role": "p_value",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": "p_value",
+          "confidence": 0.97
+        },
+        {
+          "col_idx": 7,
+          "column_name": "P for trend",
+          "column_label": "P for trend",
+          "inferred_role": "p_value",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": "p_trend",
+          "confidence": 0.98
+        }
+      ],
+      "confidence": 0.93
+    },
+    "notes": [],
+    "overall_confidence": 0.9122
+  },
+  {
+    "table_id": "cobaltpaper-p3-t1",
+    "title": "Table 2",
+    "caption": "Table 2",
+    "variables": [
+      {
+        "variable_name": "Number",
+        "variable_label": "Number",
+        "variable_type": "continuous",
+        "row_start": 2,
+        "row_end": 2,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "n_only",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "SBP",
+        "variable_label": "SBP (mm Hg), mean\u00b1SD",
+        "variable_type": "continuous",
+        "row_start": 3,
+        "row_end": 3,
+        "levels": [],
+        "units_hint": "mean\u00b1SD",
+        "summary_style_hint": "mean_sd",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "DBP",
+        "variable_label": "DBP (mm Hg), mean\u00b1SD",
+        "variable_type": "continuous",
+        "row_start": 4,
+        "row_end": 4,
+        "levels": [],
+        "units_hint": "mean\u00b1SD",
+        "summary_style_hint": "mean_sd",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "TC",
+        "variable_label": "TC (mg/dl), mean\u00b1SD",
+        "variable_type": "continuous",
+        "row_start": 5,
+        "row_end": 5,
+        "levels": [],
+        "units_hint": "mean\u00b1SD",
+        "summary_style_hint": "mean_sd",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "LDL C",
+        "variable_label": "LDL-C (mg/dl), mean\u00b1SD",
+        "variable_type": "continuous",
+        "row_start": 6,
+        "row_end": 6,
+        "levels": [],
+        "units_hint": "mean\u00b1SD",
+        "summary_style_hint": "mean_sd",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "HDL C",
+        "variable_label": "HDL-C (mg/dl), mean\u00b1SD",
+        "variable_type": "continuous",
+        "row_start": 7,
+        "row_end": 7,
+        "levels": [],
+        "units_hint": "mean\u00b1SD",
+        "summary_style_hint": "mean_sd",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "TGs",
+        "variable_label": "TGs (mg/dl), mean\u00b1SD",
+        "variable_type": "continuous",
+        "row_start": 8,
+        "row_end": 8,
+        "levels": [],
+        "units_hint": "mean\u00b1SD",
+        "summary_style_hint": "mean_sd",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Hypertension",
+        "variable_label": "Hypertension, n (%)",
+        "variable_type": "binary",
+        "row_start": 9,
+        "row_end": 11,
+        "levels": [
+          {
+            "level_name": "Yes",
+            "level_label": "Yes",
+            "row_idx": 10,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "No",
+            "level_label": "No",
+            "row_idx": 11,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Diabetes",
+        "variable_label": "Diabetes, n (%)",
+        "variable_type": "binary",
+        "row_start": 12,
+        "row_end": 14,
+        "levels": [
+          {
+            "level_name": "Yes",
+            "level_label": "Yes",
+            "row_idx": 13,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "No",
+            "level_label": "No",
+            "row_idx": 14,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Elevated TC",
+        "variable_label": "Elevated TC, n (%)",
+        "variable_type": "binary",
+        "row_start": 15,
+        "row_end": 17,
+        "levels": [
+          {
+            "level_name": "Yes",
+            "level_label": "Yes",
+            "row_idx": 16,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "No",
+            "level_label": "No",
+            "row_idx": 17,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Elevated LDL C",
+        "variable_label": "Elevated LDL-C, n (%)",
+        "variable_type": "binary",
+        "row_start": 18,
+        "row_end": 20,
+        "levels": [
+          {
+            "level_name": "Yes",
+            "level_label": "Yes",
+            "row_idx": 19,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "No",
+            "level_label": "No",
+            "row_idx": 20,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Low HDL C",
+        "variable_label": "Low HDL-C, n (%)",
+        "variable_type": "binary",
+        "row_start": 21,
+        "row_end": 23,
+        "levels": [
+          {
+            "level_name": "Yes",
+            "level_label": "Yes",
+            "row_idx": 22,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "No",
+            "level_label": "No",
+            "row_idx": 23,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Elevated TGs",
+        "variable_label": "Elevated TGs, n (%)",
+        "variable_type": "binary",
+        "row_start": 24,
+        "row_end": 26,
+        "levels": [
+          {
+            "level_name": "Yes",
+            "level_label": "Yes",
+            "row_idx": 25,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "No",
+            "level_label": "No",
+            "row_idx": 26,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Antihypertensive drugs",
+        "variable_label": "Antihypertensive drugs",
+        "variable_type": "binary",
+        "row_start": 27,
+        "row_end": 29,
+        "levels": [
+          {
+            "level_name": "Yes",
+            "level_label": "Yes",
+            "row_idx": 28,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "No",
+            "level_label": "No",
+            "row_idx": 29,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Hypoglycemic drugs",
+        "variable_label": "Hypoglycemic drugs",
+        "variable_type": "binary",
+        "row_start": 30,
+        "row_end": 32,
+        "levels": [
+          {
+            "level_name": "Yes",
+            "level_label": "Yes",
+            "row_idx": 31,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "No",
+            "level_label": "No",
+            "row_idx": 32,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Lipid lowering drugs",
+        "variable_label": "Lipid lowering drugs",
+        "variable_type": "binary",
+        "row_start": 33,
+        "row_end": 35,
+        "levels": [
+          {
+            "level_name": "Yes",
+            "level_label": "Yes",
+            "row_idx": 34,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "No",
+            "level_label": "No",
+            "row_idx": 35,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.95
+      }
+    ],
+    "column_definition": {
+      "grouping_label": "Cobalt quartiles (mg/l)",
+      "grouping_name": "Cobalt quartiles mg l",
+      "group_count": 4,
+      "columns": [
+        {
+          "col_idx": 1,
+          "column_name": "All",
+          "column_label": "All",
+          "inferred_role": "overall",
+          "grouping_variable_hint": "Cobalt quartiles mg l",
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": null,
+          "confidence": 0.96
+        },
+        {
+          "col_idx": 2,
+          "column_name": "Q1 0 12",
+          "column_label": "Q1 <=0.12",
+          "inferred_role": "group",
+          "grouping_variable_hint": "Cobalt quartiles mg l",
+          "group_level_label": "Q1",
+          "group_level_name": "Q1",
+          "group_order": 1,
+          "statistic_subtype": null,
+          "confidence": 0.9
+        },
+        {
+          "col_idx": 3,
+          "column_name": "Q2 0 13 0 14",
+          "column_label": "Q2 0.13-0.14",
+          "inferred_role": "group",
+          "grouping_variable_hint": "Cobalt quartiles mg l",
+          "group_level_label": "Q2",
+          "group_level_name": "Q2",
+          "group_order": 2,
+          "statistic_subtype": null,
+          "confidence": 0.9
+        },
+        {
+          "col_idx": 4,
+          "column_name": "Q3 0 15 0 18",
+          "column_label": "Q3 0.15-0.18",
+          "inferred_role": "group",
+          "grouping_variable_hint": "Cobalt quartiles mg l",
+          "group_level_label": "Q3",
+          "group_level_name": "Q3",
+          "group_order": 3,
+          "statistic_subtype": null,
+          "confidence": 0.9
+        },
+        {
+          "col_idx": 5,
+          "column_name": "Q4 0 19",
+          "column_label": "Q4 >=0.19",
+          "inferred_role": "group",
+          "grouping_variable_hint": "Cobalt quartiles mg l",
+          "group_level_label": "Q4",
+          "group_level_name": "Q4",
+          "group_order": 4,
+          "statistic_subtype": null,
+          "confidence": 0.9
+        },
+        {
+          "col_idx": 6,
+          "column_name": "P value",
+          "column_label": "P value",
+          "inferred_role": "p_value",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": "p_value",
+          "confidence": 0.97
+        },
+        {
+          "col_idx": 7,
+          "column_name": "P for trend",
+          "column_label": "P for trend",
+          "inferred_role": "p_value",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": "p_trend",
+          "confidence": 0.98
+        }
+      ],
+      "confidence": 0.93
+    },
+    "notes": [],
+    "overall_confidence": 0.9282
+  },
+  {
+    "table_id": "cobaltpaper-p4-t0",
+    "title": "Table 3",
+    "caption": "Table 3",
+    "variables": [],
+    "column_definition": {
+      "grouping_label": "regression models. Dyslipidemia measure",
+      "grouping_name": "regression models Dyslipidemia measure",
+      "group_count": null,
+      "columns": [
+        {
+          "col_idx": 1,
+          "column_name": "Quartile blood cobalt levels Q1 0 12 n 1931 Q2 0 13 0 14 n 1418 Q3 0 15 0 18 n 1792 Q4 0 19 n 1725 P for trend",
+          "column_label": "Quartile blood cobalt levels Q1 <=0.12 (n=1931) Q2 0.13-0.14 (n=1418) Q3 0.15-0.18 (n=1792) Q4 >=0.19 (n=1725) P for trend",
+          "inferred_role": "p_value",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": "p_trend",
+          "confidence": 0.98
+        }
+      ],
+      "confidence": 0.98
+    },
+    "notes": [],
+    "overall_confidence": 0.98
+  },
+  {
+    "table_id": "cobaltpaper-p4-t1",
+    "title": "Table 4",
+    "caption": "Table 4",
+    "variables": [
+      {
+        "variable_name": "Cobalt",
+        "variable_label": "Cobalt",
+        "variable_type": "unknown",
+        "row_start": 2,
+        "row_end": 2,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": null,
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Q1",
+        "variable_label": "Q1",
+        "variable_type": "categorical",
+        "row_start": 3,
+        "row_end": 6,
+        "levels": [
+          {
+            "level_name": "Q2",
+            "level_label": "Q2",
+            "row_idx": 4,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Q3",
+            "level_label": "Q3",
+            "row_idx": 5,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Q4",
+            "level_label": "Q4",
+            "row_idx": 6,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "P for trend",
+        "variable_label": "P for trend",
+        "variable_type": "categorical",
+        "row_start": 7,
+        "row_end": 10,
+        "levels": [
+          {
+            "level_name": "Age",
+            "level_label": "Age",
+            "row_idx": 8,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Female",
+            "level_label": "Female",
+            "row_idx": 9,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "BMI",
+            "level_label": "BMI",
+            "row_idx": 10,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Race",
+        "variable_label": "Race",
+        "variable_type": "unknown",
+        "row_start": 11,
+        "row_end": 11,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": null,
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Non Hispanic White",
+        "variable_label": "Non-Hispanic White",
+        "variable_type": "categorical",
+        "row_start": 12,
+        "row_end": 15,
+        "levels": [
+          {
+            "level_name": "Hispanic/Mexican",
+            "level_label": "Hispanic/Mexican",
+            "row_idx": 13,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Non-Hispanic Black",
+            "level_label": "Non-Hispanic Black",
+            "row_idx": 14,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Others",
+            "level_label": "Others",
+            "row_idx": 15,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Education",
+        "variable_label": "Education",
+        "variable_type": "categorical",
+        "row_start": 16,
+        "row_end": 19,
+        "levels": [
+          {
+            "level_name": "<High school",
+            "level_label": "<High school",
+            "row_idx": 17,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "High school",
+            "level_label": "High school",
+            "row_idx": 18,
+            "confidence": 0.92
+          },
+          {
+            "level_name": ">High school",
+            "level_label": ">High school",
+            "row_idx": 19,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Family poverty income ratio",
+        "variable_label": "Family poverty-income ratio,",
+        "variable_type": "unknown",
+        "row_start": 20,
+        "row_end": 20,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": null,
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "1 0",
+        "variable_label": "<1.0",
+        "variable_type": "categorical",
+        "row_start": 21,
+        "row_end": 23,
+        "levels": [
+          {
+            "level_name": "1-4.99",
+            "level_label": "1-4.99",
+            "row_idx": 22,
+            "confidence": 0.92
+          },
+          {
+            "level_name": ">=5",
+            "level_label": "\u22655",
+            "row_idx": 23,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Smoke",
+        "variable_label": "Smoke",
+        "variable_type": "categorical",
+        "row_start": 24,
+        "row_end": 27,
+        "levels": [
+          {
+            "level_name": "Non-smoker",
+            "level_label": "Non-smoker",
+            "row_idx": 25,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Ex-smoker",
+            "level_label": "Ex-smoker",
+            "row_idx": 26,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Current-smoker",
+            "level_label": "Current-smoker",
+            "row_idx": 27,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      }
+    ],
+    "column_definition": {
+      "grouping_label": "95% confdence",
+      "grouping_name": "95 confdence",
+      "group_count": 1,
+      "columns": [
+        {
+          "col_idx": 1,
+          "column_name": "Adjusted odds ratio",
+          "column_label": "Adjusted odds ratio",
+          "inferred_role": "overall",
+          "grouping_variable_hint": "95 confdence",
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": null,
+          "confidence": 0.84
+        },
+        {
+          "col_idx": 2,
+          "column_name": "95 confdence intervals",
+          "column_label": "95% confdence intervals",
+          "inferred_role": "group",
+          "grouping_variable_hint": "95 confdence",
+          "group_level_label": "intervals",
+          "group_level_name": "intervals",
+          "group_order": 1,
+          "statistic_subtype": null,
+          "confidence": 0.9
+        },
+        {
+          "col_idx": 3,
+          "column_name": "P value",
+          "column_label": "P value",
+          "inferred_role": "p_value",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": "p_value",
+          "confidence": 0.97
+        }
+      ],
+      "confidence": 0.93
+    },
+    "notes": [],
+    "overall_confidence": 0.81
+  },
+  {
+    "table_id": "cobaltpaper-p5-t0",
+    "title": "Table 5",
+    "caption": "Table 5",
+    "variables": [
+      {
+        "variable_name": "Cobalt",
+        "variable_label": "Cobalt",
+        "variable_type": "unknown",
+        "row_start": 2,
+        "row_end": 2,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": null,
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Q1",
+        "variable_label": "Q1",
+        "variable_type": "categorical",
+        "row_start": 3,
+        "row_end": 6,
+        "levels": [
+          {
+            "level_name": "Q2",
+            "level_label": "Q2",
+            "row_idx": 4,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Q3",
+            "level_label": "Q3",
+            "row_idx": 5,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Q4",
+            "level_label": "Q4",
+            "row_idx": 6,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "P for trend",
+        "variable_label": "P for trend",
+        "variable_type": "categorical",
+        "row_start": 7,
+        "row_end": 10,
+        "levels": [
+          {
+            "level_name": "Age",
+            "level_label": "Age",
+            "row_idx": 8,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Female",
+            "level_label": "Female",
+            "row_idx": 9,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "BMI",
+            "level_label": "BMI",
+            "row_idx": 10,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Race",
+        "variable_label": "Race",
+        "variable_type": "unknown",
+        "row_start": 11,
+        "row_end": 11,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": null,
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Non Hispanic White",
+        "variable_label": "Non-Hispanic White",
+        "variable_type": "categorical",
+        "row_start": 12,
+        "row_end": 15,
+        "levels": [
+          {
+            "level_name": "Hispanic/Mexican",
+            "level_label": "Hispanic/Mexican",
+            "row_idx": 13,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Non-Hispanic Black",
+            "level_label": "Non-Hispanic Black",
+            "row_idx": 14,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Others",
+            "level_label": "Others",
+            "row_idx": 15,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Education",
+        "variable_label": "Education",
+        "variable_type": "categorical",
+        "row_start": 16,
+        "row_end": 19,
+        "levels": [
+          {
+            "level_name": "<High school",
+            "level_label": "<High school",
+            "row_idx": 17,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "High school",
+            "level_label": "High school",
+            "row_idx": 18,
+            "confidence": 0.92
+          },
+          {
+            "level_name": ">High school",
+            "level_label": ">High school",
+            "row_idx": 19,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Family poverty income ratio",
+        "variable_label": "Family poverty-income ratio",
+        "variable_type": "unknown",
+        "row_start": 20,
+        "row_end": 20,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": null,
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "1 0",
+        "variable_label": "<1.0",
+        "variable_type": "categorical",
+        "row_start": 21,
+        "row_end": 23,
+        "levels": [
+          {
+            "level_name": "1-4.99",
+            "level_label": "1-4.99",
+            "row_idx": 22,
+            "confidence": 0.92
+          },
+          {
+            "level_name": ">=5",
+            "level_label": "\u22655",
+            "row_idx": 23,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Smoke",
+        "variable_label": "Smoke",
+        "variable_type": "categorical",
+        "row_start": 24,
+        "row_end": 27,
+        "levels": [
+          {
+            "level_name": "Non-smoker",
+            "level_label": "Non-smoker",
+            "row_idx": 25,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Ex-smoker",
+            "level_label": "Ex-smoker",
+            "row_idx": 26,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Current-smoker",
+            "level_label": "Current-smoker",
+            "row_idx": 27,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      }
+    ],
+    "column_definition": {
+      "grouping_label": "95% confdence",
+      "grouping_name": "95 confdence",
+      "group_count": 1,
+      "columns": [
+        {
+          "col_idx": 1,
+          "column_name": "Adjusted odds ratio",
+          "column_label": "Adjusted odds ratio",
+          "inferred_role": "overall",
+          "grouping_variable_hint": "95 confdence",
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": null,
+          "confidence": 0.84
+        },
+        {
+          "col_idx": 2,
+          "column_name": "95 confdence intervals",
+          "column_label": "95% confdence intervals",
+          "inferred_role": "group",
+          "grouping_variable_hint": "95 confdence",
+          "group_level_label": "intervals",
+          "group_level_name": "intervals",
+          "group_order": 1,
+          "statistic_subtype": null,
+          "confidence": 0.9
+        },
+        {
+          "col_idx": 3,
+          "column_name": "P value",
+          "column_label": "P value",
+          "inferred_role": "p_value",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": "p_value",
+          "confidence": 0.97
+        }
+      ],
+      "confidence": 0.93
+    },
+    "notes": [],
+    "overall_confidence": 0.81
+  }
+]

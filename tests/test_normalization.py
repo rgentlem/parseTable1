@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from table1_parser.heuristics.table_definition_builder import build_table_definition
 from table1_parser.normalize.header_detector import detect_header_rows
 from table1_parser.normalize.io import load_normalized_tables, normalized_tables_to_payload, write_normalized_tables
 from table1_parser.normalize.pipeline import normalize_extracted_table
@@ -436,6 +437,54 @@ def test_normalization_repairs_split_count_percent_columns_and_promotes_followin
 
     assert normalized.header_rows == [0, 1]
     assert normalized.n_cols == 7
+
+
+def test_normalization_repairs_split_leading_label_fragments_for_table1_rows() -> None:
+    """Split NHANES-style row labels should be merged before variable grouping and column inference."""
+    rows = [
+        ["", "", "All (n=5611)", "0-1 (n=1815)", "2-3 (n=3233)", "4-6 (n=563)", "p value"],
+        ["Age (years),", "Mean (SD)", "52.09 (14.16)", "52.12 (13.51)", "52.33 (14.38)", "50.63 (14.82)", "0.03"],
+        ["Gender,", "n (%)", "", "", "", "", "<0.01"],
+        ["Male", "", "2935 (52.31)", "871 (47.99)", "1731 (53.54)", "333 (59.51)", ""],
+        ["Female", "", "2676 (47.69)", "944 (52.01)", "1502 (46.46)", "230 (20.85)", ""],
+        ["Family", "income-to-poverty ratio,", "n (%)", "", "", "", ""],
+        ["Low income", "(<=1.85)", "1998 (35.61)", "821 (45.23)", "1054 (32.60)", "123 (21.85)", "<0.01"],
+        ["High income", "(>1.85)", "3613 (64.39)", "994 (54.77)", "2179 (67.40)", "440 (78.15)", ""],
+    ]
+    cells: list[TableCell] = []
+    for row_idx, row in enumerate(rows):
+        for col_idx, value in enumerate(row):
+            cells.append(TableCell(row_idx=row_idx, col_idx=col_idx, text=value))
+
+    extracted = ExtractedTable(
+        table_id="tbl-leading-labels",
+        source_pdf="paper.pdf",
+        page_num=1,
+        n_rows=len(rows),
+        n_cols=len(rows[0]),
+        cells=cells,
+        extraction_backend="pymupdf4llm",
+    )
+
+    normalized = normalize_extracted_table(extracted)
+    definition = build_table_definition(normalized)
+
+    assert normalized.n_cols == 6
+    assert normalized.metadata["cleaned_rows"][1][0] == "Age (years), Mean (SD)"
+    assert normalized.metadata["cleaned_rows"][2][0] == "Gender, n (%)"
+    assert normalized.metadata["cleaned_rows"][5][0] == "Family income-to-poverty ratio, n (%)"
+    assert [variable.variable_name for variable in definition.variables] == [
+        "Age",
+        "Gender",
+        "Family income to poverty ratio",
+    ]
+    assert [column.column_label for column in definition.column_definition.columns] == [
+        "All (n=5611)",
+        "0-1 (n=1815)",
+        "2-3 (n=3233)",
+        "4-6 (n=563)",
+        "p value",
+    ]
 
 
 def test_normalization_repairs_broken_replacement_char_threshold_in_headers() -> None:

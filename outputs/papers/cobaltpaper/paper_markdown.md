@@ -1,0 +1,450 @@
+® Medicine 
+
+Observational Study 
+
+**==> picture [41 x 16] intentionally omitted <==**
+
+**----- Start of picture text -----**<br>
+OPEN<br>**----- End of picture text -----**<br>
+
+
+## Association of blood cobalt concentrations with dyslipidemia, hypertension, and diabetes in a US population 
+
+## A cross-sectional study 
+
+Hongxin Wang, MD[a,b] , Feng Li, MD[c] , Jianghua Xue, MD[d] , Yanshuang Li, MD[a,b,][∗] , Jiyu Li, MD[e] 
+
+## Abstract 
+
+Various heavy metal elements in the human body have been reported to be associated with dyslipidemia, hypertension, and diabetes. The role of cobalt in these conditions is unclear. The current study aimed to investigate the association of blood cobalt concentrations with dyslipidemia, hypertension, and diabetes. 
+
+Using the data collected from the National Health and Nutrition Examination Survey (2015-2018), we performed logistic regression to explore the association of blood cobalt concentrations with total cholesterol (TC), low-density lipoprotein cholesterol (LDL-C), highdensity lipoprotein cholesterol (HDL-C), triglycerides, hypertension, and diabetes. 
+
+A total of 6866 adults were included in this study. Participants with higher blood cobalt levels appeared to be older and have a lower body mass index and, were more likely to be female (P for trend < .05). After fully adjusting for demographic characteristics (Model 2), compared with the lowest quartile, the highest quartile of blood cobalt concentrations had lower odds ratios (ORs) for elevated TC [OR: 0.62, 95% confidential interval (CI): 0.53 to 0.72, P < .001], elevated LDL-C (OR: 0.65, 95% CI: 0.53-0.80, P < .001) and low HDL-C (OR: 0.81, 95% CI: 0.69-0.96, P = .013). The adjusted ORs for elevated TC, elevated LDL-C and low HDL-C were negatively correlated with increased blood cobalt concentrations (P for trend < .05). The adjusted ORs for hypertension and diabetes were not associated with blood cobalt concentrations (P > .05 and P for trend > .05). 
+
+In conclusion, higher blood cobalt concentrations were associated with a lower risk of dyslipidemia. However, blood cobalt concentrations were not associated with the risk of hypertension or diabetes. 
+
+Abbreviations: BMI = body mass index, CI = confidential interval, HDL-C = high-density lipoprotein cholesterol, LDL-C = lowdensity lipoprotein cholesterol, NHANES = National Health and Nutrition Examination Survey, OR = odds ratio, SBP = systolic blood pressure, TC = total cholesterol, TGs = triglycerides. 
+
+Keywords: cobalt, diabetes, dyslipidemia, hypertension, NHANES 
+
+## Editor: Mihnea-Alexandru Ga˘ man. 
+
+This study was funded by the Key Technology Research and Development Program of Shandong (No. 2019GSF108264). 
+
+The authors have no con icts of interest to disclose. 
+
+The datasets generated during and/or analyzed during the current study are publicly available. 
+
+> a Department of Neurology, Jinan Central Hospital, Cheeloo College of Medicine, Shandong University, Jinan, Shandong, China,[b] Department of Neurology, Jinan Central Hospital Affiliated to Shandong First Medical University, Jinan, Shandong, China,[c] Department of ENT (Ear-Nose-Throat), Jinan Central Hospital, Cheeloo College of Medicine, Shandong University, Jinan, Shandong, China,[d] Medical Imaging Center, Jinan Central Hospital, Cheeloo College of Medicine, Shandong University, Jinan, Shandong, China,[e] Department of Breast and Thyroid Surgery, Shandong Provincial Hospital Affiliated to Shandong First Medical University, Jinan, Shandong, China. 
+
+> ∗ Correspondence: Yanshuang Li, Jinan Central Hospital, Cheeloo College of Medicine, Jinan, Shandong, China (e-mail: lyansh@163.com). 
+
+Copyright © 2022 the Author(s). Published by Wolters Kluwer Health, Inc. This is an open access article distributed under the terms of the Creative Commons Attribution-Non Commercial License 4.0 (CCBY-NC), where it is permissible to download, share, remix, transform, and buildup the work provided it is properly cited. The work cannot be used commercially without permission from the journal. 
+
+How to cite this article: Wang H, Li F, Xue J, Li Y, Li J. Association of blood cobalt concentrations with dyslipidemia, hypertension, and diabetes in a US population: a cross-sectional study. Medicine 2022;101:2(e28568). 
+
+Received: 8 November 2020 / Received in final form: 20 November 2021 / Accepted: 22 December 2021 
+
+http://dx.doi.org/10.1097/MD.0000000000028568 
+
+## 1. Introduction 
+
+Dyslipidemia, hypertension, and diabetes are major modifiable risk factors for cardiovascular disease, which is the leading cause of death in many countries.[[1,2]] Heavy metal elements have functional roles that are essential for various physiological and biochemical activities in the body. Several studies have reported the association of circulating heavy metal element concentrations with dyslipidemia, hypertension, and diabetes. Kim reported that higher blood cadmium levels were associated with an increased risk of low high-density lipoprotein cholesterol (HDL-C).[[3]] Huang et al[[4]] found that higher circulating selenium levels are associated with an increased risk of dyslipidemia. Cho’s research indicated the potential association between mercury exposure and the risk of hypercholesterolemia in male adolescents.[[5]] Two studies suggested that exposure to lead can cause arterial hypertension.[[6,7]] Bastola et al[[8]] found a positive association between serum selenium levels and hypertension. A recent study reported decreased serum irisin levels as a potential marker for the diagnosis of gestational diabetes mellitus.[[9]] The association of heavy metal elements with dyslipidemia, hypertension, and diabetes has attracted extensive interest and attention. 
+
+Cobalt, a naturally occurring element, is a hard, gray metal that is found in rocks, soil, water, plants, and even the human body.[[10]] Cobalt is an essential component of vitamin B12, which is required for the development and function of various tissues and organs, including the brain, nerves, and cellular metabolism.[[11][–][13]] Cobalt 
+
+1 
+
+Wang et al. Medicine (2022) 101:2 
+
+Medicine 
+
+wasused as a foam stabilizer in beer andto treat anemia in the early 1960s.[[10,14]] Regardless of its advantages, a high level of cobalt causes damage to the human body.[[15]] Excessive cobalt levels can result in visual changes, peripheral neuropathy, hearing loss, hypothyroidism, and cancer.[[14,16,17]] It was reported that the release of cobalt to the bloodstream from cobalt-containing hip prostheses may cause systemic toxicity.[[18,19]] Environmental exposure as well as cobalt hip prostheses may cause an increase in blood cobalt levels. 
+
+The associations of blood cobalt concentrations with dyslipidemia, hypertension, and diabetes are still unclear. A new set of data on the concentrations of cobalt in adults in the US was issued in June 2020 by the National Health and Nutrition Examination Survey (NHANES). The aim of the present study was to investigate the association of blood cobalt concentrations with dyslipidemia, hypertension, and diabetes in the adult US population by using the 4-year data from NHANES (20152018). 
+
+## 2.5. Statistical analysis 
+
+The results are presented as the mean ± standard deviation for continuous variables or as the percentage for categorical variables. We compared these results according to the quartiles of blood cobalt concentrations. Comparisons of categorical variables were performed by Pearson chi-square tests, and continuous variables were compared by one-way ANOVA. Odds ratios (ORs) and 95% confidence intervals (CIs) for dyslipidemia were estimated by binary logistic regression analysis using the lowest quartile as the reference. Model 1 was adjusted for age, gender, and BMI. Model 2 was fully adjusted for age, sex, BMI, education level, race, family poverty-income ratio, smoking status and lipid-lowering drug therapy. P < .05 was considered to indicate statistically significant differences. Statistical analysis was performed using IBM SPSS software, version 20 (IBM Corp, Armonk, NY). 
+
+## 3. Results 
+
+## 2. Materials and methods 
+
+## 2.1. Study population 
+
+The data from the official NHANES website (https://www.cdc. gov/nchs/nhanes/) for the years 2015 to 2018 were used for the present study. NHANES is an ongoing survey designed to assess the health and nutritional status of adults and children in the United States. The detailed survey protocol of NHANES has been published previously.[[20]] The NHANES protocol was approved by the National Center for Health Statistics Research Ethics Review Board, and informed consent was obtained from all participants. 
+
+## 2.2. Survey data 
+
+Participants with cobalt and lipid data were included (n = 6866). Demographic characteristics of the participants, including age, gender, body mass index (BMI), education level, race, family poverty-income ratio and smoking status, were collected. Clinical data, such as blood pressure, total cholesterol (TC), low-density lipoprotein cholesterol (LDL-C), HDL-C, triglycerides (TGs), hypertension, diabetes and history of medication use, including antihypertensive drugs, hypoglycemic drugs, and lipid-lowering drugs, were extracted. 
+
+## 2.3. De nitions 
+
+Hypertension was defined as systolic blood pressure (SBP) ≥140 mm Hg, diastolic blood pressure ≥90mm Hg, or the use of antihypertensive medication. Diabetes was defined as fasting glucose > 110mg/dl, hemoglobin A1c (HbA1c) > 6.5% or a history of diabetes. High TC levels were defined as levels >200mg/dl. High LDL-C levels were defined as levels >130mg/ dl. Low HDL-C levels were defined as levels <40mg/dl in males and <50mg/dl in females. High TG levels were defined as levels >150mg/dl. 
+
+## 2.4. Cobalt measurement 
+
+The concentrations of cobalt in whole blood specimens are directly measured using inductively coupled plasma mass spectrometry. Examined participants aged 40years and older were eligible. The lower limit of detection for cobalt was 0.06 mg/l. 
+
+## 3.1. Baseline characteristics 
+
+The current study included 6866 US adults aged 40years or older. The demographic characteristics of quintile blood cobalt levels are presented in Table 1. Age, gender, BMI, education level, and race of different blood cobalt level groups were significantly different (all P < .05). Participants with higher blood cobalt levels appeared to be older, to be more likely to be female and to have a lower BMI (P for trend < .05). The family poverty-income ratio and smoking status were not significantly different between groups (P > .05). 
+
+The clinical characteristics according to the quintiles of blood cobalt levels are presented in Table 2. The SBP, diastolic blood pressure, TC level, LDL-C level, HDL-C level, TG level, proportion of elevated TC, proportion of elevated LDL-C, and proportion of elevated TGs values of different groups divided according to blood cobalt levels were significantly different (all P < .05). The proportion of low HDL-C in different groups was not significantly different (P > .05). Participants with higher blood cobalt levels appeared to have lower TC levels, lower LDLC levels, higher HDL-C levels, and higher proportions of elevated TC, elevated LDL-C, low HDL-C and elevated TGs (P for trend < .05). 
+
+## 3.2. Association between blood cobalt concentrations and dyslipidemia 
+
+The adjusted ORs and 95% CIs for the associations between quintiles of cobalt concentrations and dyslipidemia from binary logistic regression models are shown in Table 3. After adjusting for age, gender and BMI (model 1), compared with the lowest quartile, the highest quartile of blood cobalt concentrations had a lower OR of elevated TC (OR: 0.64, 95% CI: 0.55-0.74, P < .001) and elevated LDL-C (OR: 0.64, 95% CI: 0.53-0.78, P < .001). The adjusted ORs for elevated TC, elevated LDL-C, and low HDL-C were negatively correlated with increased blood cobalt concentrations (P for trend <.001). The adjusted ORs for elevated TGs were not significantly correlated with increased blood cobalt concentrations (P = .598). 
+
+After fully adjusting for demographic characteristics (model 2), compared with the lowest quartile, the highest quartile of blood cobalt concentrations had a lower OR of elevated TC elevated TC (OR: 0.62, 95% CI: 0.53-0.72, P < .001), elevated LDL-C 
+
+2 
+
+Wang et al. Medicine (2022) 101:2 
+
+www.md-journal.com 
+
+Table 1 
+
+Demographic characteristics by quintile blood cobalt levels among the participants. 
+
+|||Q1|Q2|Q3||Q4|||
+|---|---|---|---|---|---|---|---|---|
+|Cobalt quartiles (mg/l)|All|<=0.12|0.13-0.14|0.15-0.18|≥0.19||P value|P for trend|
+|Number|6866|1931|1418|1792|1725||||
+|Age (yrs), mean±SD|60.3±12.0|58.1±11.2|60.0±11.4|61.4±11.6|61.7±13.2||<.001|<.001|
+|Male, n (%)|3333 (48.5%)|1202 (62.2%)|749 (52.8%)|788 (44.0%)|594|(34.4%)|<.001|<.001|
+|BMI, mean±SD|30.0±6.9|30.3±6.7|30.1±6.8|29.8±6.9|29.7±7.2||.015|.002|
+|Education level, n (%)|||||||.046|.414|
+|<High school|849 (12.4%)|220 (11.4%)|182 (12.9%)|248 (13.9%)|199|(11.5%)|||
+|High school|2364 (34.5%)|706 (36.6%)|467 (33.3%)|618 (34.6%)|573|(33.2%)|||
+|>High school|3640 (53.1%)|1002 (52.0%)|765 (54.1%)|921 (51.5%)|952|(55.2%)|||
+|Race, n (%)|||||||<.001|.284|
+|Non-Hispanic White|2442 (35.6%)|646 (33.5%)|492 (34.7%)|618 (34.5%)|686|(39.8%)|||
+|Hispanic/Mexican|1822 (26.5%)|553 (28.6%)|379 (26.9%)|476 (26.6%)|414|(24.0%)|||
+|Non-Hispanic Black|1491 (21.7%)|480 (24.9%)|302 (21.3%)|352 (19.6%)|357|(20.7%)|||
+|Other|1111 (16.2%)|252 (13.1%)|245 (17.3%)|346 (19.3%)|268|(15.5%)|||
+|Family poverty-income ratio, n (%)|||||||.510|.574|
+|<1.0|1144 (18.9%)|325 (18.9%)|234 (18.8%)|282 (18.0%)|303 (20.1%1021)||||
+|1-4.99|3781 (62.6%)|1087 (63.2%)|762 (61.2%)|994 (63.3%)|938|(62.2%)|||
+|≥5|1118 (18.5%)|307 (17.9%)|250 (20.1%)|295 (18.8%)|266|(17.7%)|||
+|Smoking, n (%)|||||||.439|.085|
+|Non-smoker|3744 (54.6%)|1021 (52.9%)|762 (53.9%)|1015 (56.6%)|946|(54.9%)|||
+|Ex-smoker|1950 (28.4%)|564 (29.2%)|406 (28.7%)|491 (27.4%)|489|(28.4%)|||
+|Current-smoker|1165 (17.0%)|344 (17.8%)|247 (17.5%)|286 (16.0%)|288|(16.7%)|||
+
+
+
+BMI = body mass index, SD = standard deviation. 
+
+Table 2 
+
+Clinical characteristics by quintile blood cobalt concentration categories among the participants. 
+
+|||Q1|Q2|Q3|Q4|||
+|---|---|---|---|---|---|---|---|
+|Cobalt quartiles (mg/l)|All|<=0.12|0.13-0.14|0.15-0.18|≥0.19|P value|P for trend|
+|Number|6866|1931|1418|1792|1725|||
+|SBP (mm Hg), mean±SD|131.0±19.7|129.4±18.1|131.2±19.0|132.1±20.2|131.3±21.3|<.001|.002|
+|DBP (mm Hg), mean±SD|72.3±12.1|73.0±11.8|73.1±12.1|72.3±12.1|70.7±12.2|<.001|<.001|
+|TC (mg/dl), mean±SD|192.8±42.4|194.2±42.2|195.2±41.4|194.6±42.5|187.3.3±43.0|<.001|<.001|
+|LDL-C (mg/dl), mean±SD|110.2±37.0|113.5±36.4|112.5±35.8|111.0±37.1|104.2±37.9|<.001|<.001|
+|HDL-C (mg/dl), mean±SD|54.2±17.2|51.8±16.1|53.2±16.8|54.7±17.4|57.1±17.8|<.001|<.001|
+|TGs (mg/dl), mean±SD|142.07±111.0|137.9±93.4|148.6±129.7|150.2±108.3|131.5±111.5|<.001|.219|
+|Hypertension, n (%)||||||<.001|<.001|
+|Yes|3871 (57.4%)|1024 (53.9%)|789 (56.5%)|1055 (60.2%)|1003 (59.4%)|||
+|No|2868 (42.6%)|877 (46.1%)|607 (43.5%)|698 (39.8%)|686 (40.6%)|||
+|Diabetes, n (%)||||||.270|.135|
+|Yes|2263 (33.0%)|667 (34.5%)|468 (33.0%)|565 (31.5%)|563 (32.7%)|||
+|No|4602 (67.0%)|1264 (65.5%)|950 (67.0%)|1227 (68.5%)|1161 (67.3%)|||
+|Elevated TC, n (%)||||||<.001|<.001|
+|Yes|2770 (40.4%)|802 (41.5%)|630 (44.5%)|743 (41.5%)|595 (34.5%)|||
+|No|4093 (59.6%)|1129 (58.5%)|786 (55.5%)|1048 (58.5%)|1130 (65.5%)|||
+|Elevated LDL-C, n (%)||||||<.001|<.001|
+|Yes|1315 (27.1%)|335 (29.1%)|315 (30.7%)|386 (27.6%)|279 (22.0%)|||
+|No|3531 (72.9%)|818 (70.9%)|710 (69.3%)|1014 (72.4%)|989 (78.0%)|||
+|Low HDL-C, n (%)||||||.095|.020|
+|Yes|2056 (30.0%)|602 (31.2%)|440 (31.1%)|536 (29.9%)|478 (27.7%)|||
+|No|4807 (70.0%)|1329 (68.8%)|976 (68.9%)|1255 (70.1%)|1247 (72.3%)|||
+|Elevated TGs, n (%)||||||<.001|.018|
+|Yes|1591 (32.0%)|371 (31.4%)|363 (34.3%)|522 (36.2%)|335 (26.0%)|||
+|No|3376 (68.0%)|811 (68.6%)|694 (65.7%)|919 (63.8%)|952 (74.0%)|||
+|Antihypertensive drugs||||||.021|.034|
+|Yes|2771 (40.4%)|732 (37.9%)|571 (40.3%)|769 (42.9%)|699 (40.5%)|||
+|No|4095 (59.6%)|1199 (62.1%)|847 (59.7%)|1023 (57.1%)|1026 (59.5%)|||
+|Hypoglycemic drugs||||||.366|.137|
+|Yes|1187 (17.3%)|345 (17.9%)|261 (18.4%)|298 (16.6%)|283 (16.4%)|||
+|No|5679 (82.7%)|1586 (82.1%)|1157 (81.6%)|1494 (83.4%)|1442 (83.6%)|||
+|Lipid lowering drugs||||||.035|.024|
+|Yes|2037 (29.7%)|523 (27.1%)|438 (30.9%)|549 (30.6%)|527 (30.6%)|||
+|No|4829 (70.3%)|1408 (72.9%)|980 (69.1%)|1243 (69.4%)|1198 (69.4%)|||
+
+
+
+DBP = diastolic blood pressure, HDL-C = high-density lipoprotein cholesterol, LDL-C = low-density lipoprotein cholesterol, SBP = systolic blood pressure, SD = standard deviation, TC = total cholesterol. 
+
+3 
+
+Wang et al. Medicine (2022) 101:2 
+
+Medicine 
+
+Table 3 
+
+Adjusted odds ratios and 95% confidence intervals for the association between quintiles of cobalt and dyslipidemia by binary logistic regression models. 
+
+|regression models.||
+|---|---|
+|Dyslipidemia<br>measure|Quartile blood cobalt levels<br>Q1<br><=0.12 (n=1931)<br>Q2<br>0.13-0.14 (n=1418)<br>Q3<br>0.15-0.18 (n=1792)<br>Q4<br>≥0.19 (n=1725)<br>P for<br>trend|
+|Elevated TC<br>OR(95% CI), P<br>Model 1<br>Model 2<br>Elevated LDL-C<br>OR (95% CI), P<br>Model 1<br>Model 2<br>Low HDL-C<br>OR (95% CI), P<br>Model 1<br>Model 2<br>Elevated TGs<br>OR (95% CI), P<br>Model 1<br>Model 2|1(reference)<br>1.10 (0.96-1.27), P=.187<br>0.92 (0.80-1.05)<br>P=.222<br>0.64 (0.55-0.74)<br>P<.001<br><.001<br>1(reference)<br>1.11 (0.95-1.29)<br>P=.196<br>0.91 (0.78-1.05)<br>P=.205<br>0.62 (0.53-0.72)<br>P<.001<br><.001<br>1(reference)<br>1.07 (0.89-1.29)<br>P=.496<br>0.91 (0.76-1.09)<br>P=.289<br>0.64 (0.53-0.78)<br>P<.001<br><.001<br>1(reference)<br>1.10 (0.90-1.35)<br>P=.353<br>0.92 (0.75-1.11)<br>P=.378<br>0.65 (0.53-0.80)<br>P<.001<br><.001<br>1(reference)<br>1.02 (0.88-1.19)<br>P=.799<br>0.98 (0.84-1.14)<br>P=.805<br>0.88 (0.75-1.02)<br>P=.091<br><.001<br>1(reference)<br>0.94 (0.79-1.11)<br>P=.434<br>0.89 (0.76-1.04)<br>P=.137<br>0.81 (0.69-0.96)<br>P=.013<br>.011<br>1(reference)<br>1.21 (1.01-1.45)<br>P=.039<br>1.38 (1.17-1.63)<br>P<.001<br>0.89 (0.74-1.07)<br>P=.206<br>.598<br>1(reference)<br>1.12 (0.92-1.37)<br>P=.242<br>1.23 (0.92-1.37)<br>P=.126<br>0.83 (0.68-1.01)<br>P=.056<br>.059|
+
+
+
+Model 1 adjusted for age, gender and BMI; Model 2 adjusted for age, sex, BMI, education level, race, family poverty-income ratio, smoking status and lipid lowering drugs. BMI = body mass index, CI = confidential interval, HDL-C = high-density lipoprotein cholesterol, LDL-C = low-density lipoprotein cholesterol, OR = odds ratio, TC = total cholesterol, TGs = triglycerides. 
+
+(OR: 0.65, 95% CI: 0.53-0.80, P < .001) and low HDL-C (OR: 0.81, 95% CI: 0.69-0.96, P = .013). The adjusted ORs for elevated TC, elevated LDL-C, and low HDL-C were negatively correlated with increased blood cobalt concentrations (P for trend < .05). However, the adjusted ORs for elevated TGs were not significantly correlated with increased blood cobalt concentrations. 
+
+These results showed that a higher blood cobalt concentration was associated with a lower risk of elevated TC, elevated LDL-C, and low HDL-C. 
+
+## 3.3. Association between blood cobalt concentrations and hypertension 
+
+The adjusted ORs and 95% CIs for the associations between quintiles of cobalt concentrations and hypertension obtained from logistic regression models are shown in Table 4. Compared with Q1, the adjusted OR of Q2 was 0.97 (95% CI: 0.82-1.14, P = .679), that of Q3 was 1.10 (95% CI: 0.94-1.29, P = .228) and that of Q4 was 1.04 (95% CI: 0.88-1.23, P = .629). The adjusted ORs for hypertension were not significantly associated with increased blood cobalt concentrations (P for trend = .354). These results indicated that blood cobalt concentrations were not associated with the risk of hypertension. 
+
+## 3.4. Association between blood cobalt concentrations and diabetes 
+
+The results from the logistic regression model of diabetes are summarized in Table 5. Compared with Q1, the adjusted OR of 
+
+Table 4 
+
+Adjusted odds ratios and 95% confidence intervals for the association between quintiles of cobalt and hypertension by binary logistic regression models. 
+
+||Adjusted|95% confdence||
+|---|---|---|---|
+|Variable|odds ratio|intervals|P value|
+|Cobalt||||
+|Q1|1(reference)|||
+|Q2|0.97|0.82-1.14|.679|
+|Q3|1.10|0.94-1.29|.228|
+|Q4|1.04|0.88-1.23|.629|
+|P for trend|.354|||
+|Age|1.08|1.07-1.08|<.001|
+|Female|1.00|0.88-1.13|.973|
+|BMI|1.08|1.07-1.09|<.001|
+|Race||||
+|Non-Hispanic White|1(reference)|||
+|Hispanic/Mexican|0.92|0.78-1.07|.281|
+|Non-Hispanic Black|2.40|2.03-2.84|<.001|
+|Others|1.45|1.21-1.73|<.001|
+|Education||||
+|<High school|1(reference)|||
+|High school|1.03|0.84-1.28|.756|
+|>High school|0.90|0.73-1.11|.320|
+|Family poverty-income ratio,||||
+|<1.0|1(reference)|||
+|1-4.99|0.83|0.71-0.98|.025|
+|≥5|0.72|0.59-0.89|.002|
+|Smoke||||
+|Non-smoker|1(reference)|||
+|Ex-smoker|1.09|0.95-1.25|.232|
+|Current-smoker|1.17|0.99-1.38|.072|
+
+
+
+BMI = body mass index. 
+
+4 
+
+Wang et al. Medicine (2022) 101:2 
+
+www.md-journal.com 
+
+Table 5 
+
+Adjusted odds ratios and 95% confidence intervals for the association between quintiles of cobalt and diabetes by binary logistic regression models. 
+
+||Adjusted|95% confdence||
+|---|---|---|---|
+|Variable|odds ratio|intervals|P value|
+|Cobalt||||
+|Q1|1(reference)|||
+|Q2|0.86|0.71-1.01|.140|
+|Q3|0.88|0.72-1.03|.167|
+|Q4|0.91|0.77-1.07|.233|
+|P for trend|.196|||
+|Age|1.04|1.04-1.05|<.001|
+|Female|0.60|0.53-0.68|<.001|
+|BMI|1.09|1.08-1.10|<.001|
+|Race||||
+|Non-Hispanic White|1(reference)|||
+|Hispanic/Mexican|1.65|1.40-1.94|<.001|
+|Non-Hispanic Black|1.31|1.18-1.55|<.001|
+|Others|1.87|1.56-2.26|<.001|
+|Education||||
+|<High school|1(reference)|||
+|High school|0.81|0.67-0.99|.035|
+|>High school|0.71|0.58-0.87|<.001|
+|Family poverty-income ratio||||
+|<1.0|1(reference)|||
+|1-4.99|0.86|0.74-1.01|.060|
+|≥5|0.77|0.63-0.95|.015|
+|Smoke||||
+|Non-smoker|1(reference)|||
+|Ex-smoker|1.02|0.89-1.17|.808|
+|Current-smoker|0.96|0.81-1.14|.635|
+
+
+
+BMI = body mass index. 
+
+Q2 was 0.86 (95% CI: 0.71-1.01, P = .140), that of Q3 was 0.88 (95% CI: 0.72-1.03, P = .167) and that of Q4 was 0.91 (95% CI: 0.77-1.07, P = .233). The adjusted ORs for diabetes were not significantly associated with increased blood cobalt concentrations (P for trend = .196). These results suggested that blood cobalt concentrations were not associated with the risk of diabetes. 
+
+## 4. Discussion 
+
+In the present study, higher blood cobalt concentrations were associated with decreased ORs of dyslipidemia, including elevated TC, elevated LDL-C, and low HDL-C. To our knowledge, this is the first study to indicate that higher blood cobalt concentrations are associated with a lower risk of dyslipidemia. There are no other clinical studies or animal experiments investigating the correlation between blood cobalt levels and lipid profiles. Cobalt residing at the center of cobaltcorrinoid complexes is essential for the synthesis of vitamin B12.[[21]] Cobalt supplementation could increase vitamin B12 levels in dairy cows and goats.[[22,23]] A previous study suggested that vitamin B12 deficiency is associated with dyslipidemia.[[24,25]] We propose that a higher level of cobalt could increase the vitamin B12 level in humans, similar to that in animals, and consequently decrease the risk of dyslipidemia. This hypothesis could at least partly explain the finding of the current study that higher blood cobalt concentrations were associated with decreased ORs of dyslipidemia. Investigating the association 
+
+between cobalt levels and vitamin B12 levels in humans will help to test our hypothesis. In Vladov’s study, the serum LDL-C and TG levels of cobalt-exposed mice were significantly increased, while TC levels remained unchanged.[[26]] These results in animal experiments are not consistent with our findings. Further research is needed to confirm the correlation between cobalt levels and lipid profiles. 
+
+Hypertension is one of the prominent risk factors for cardiovascular and cerebrovascular disease.[[27]] Associations between heavy metal element levels and hypertension have been a hot topic in recent years. Bastola’s research demonstrated that serum selenium levels were positively associated with hypertension, but serum zinc and copper levels were not.[[8]] Vinceti et al[[28]] found a positive association between SBP and both serum and hair selenium levels but not nail selenium levels. Lead, mercury, zinc, cadmium, and other heavy metal levels in the blood were found to correlate with blood pressure.[[29][–][31]] In the present study, no association was observed between blood cobalt concentrations and hypertension. Linna et al[[32]] compared the blood pressure of cobalt-exposed workers with nonexposed workers; no significant difference was found. These results are consistent with our findings. However, cobalt levels correlated with hypertension in some other studies. Xu et al[[33]] found the highest risk of hypertension in women with the highest airborne cobalt concentrations. Lower maternal serum cobalt concentrations in the second trimester may be associated with the incidence of pregnancy-induced hypertension.[[34]] Shiue’s study demonstrated that urinary cobalt levels positively correlated with higher blood pressure.[[35]] Further study is needed to elucidate the association between blood cobalt concentrations and hypertension. 
+
+Patients with type 2 diabetes are considered to be at a high risk for cardiovascular disease.[[36]] Increasing heavy metal element levels have been reported to be associated with diabetes. Pitchika’s study suggested that serum ferritin concentrations were associated with a higher prevalence of T2DM, which was explained by ferritin-induced hepatic dysfunction.[[37]] A recent study indicated that serum chromium levels showed a significant negative correlation with fasting glucose levels and hemoglobin A1c levels in type 2 diabetic patients.[[38]] Torkian et al[[39]] reported that copper levels in patients with diabetes were higher than those in nondiabetic Iranian populations. In the current study, the trend of adjusted ORs for diabetes was not significantly correlated with increased blood cobalt concentrations, indicating that there is no association between blood cobalt concentrations and diabetes. These results were consistent with the results of Liu’s study.[[40]] They compared the cobalt levels in the hyperglycemia group with those in the normal glucose group, and no significant difference was found. 
+
+In the current study, the mean ages of the quartiles showed an increasing trend (P for trend < .001). A possible explanation for this observation could be the accumulation of cobalt in the body with age. This result is inconsistent with the results of Chang’s study.[[41]] Chang investigated the relationship between age and the concentrations of several elements, including cobalt, in human bone and blood, and found no clear correlation between age and the concentrations of cobalt in blood and bone. However, the sample size of their study was too small. More data are needed to confirm our findings. 
+
+The quartile with higher blood cobalt concentrations had a lower BMI in the present study (P for trend < .001). Heavy metal elements might contribute to obesity by affecting energy 
+
+5 
+
+Wang et al. Medicine (2022) 101:2 
+
+Medicine 
+
+production, carbohydrate tolerance, and other metabolic processes.[[42]] Knez et al[[43]] found that plasma Zn levels were positively associated with obesity. However, deficiencies of chromium, copper, iron, and magnesium could increase adiposity.[[44][–][46]] Padilla’s study revealed significant inverse associations between cadmium, cobalt, cesium, and lead levels and BMI, and these results were consistent with our findings.[[47]] 
+
+Heavy metal levels in males and females may be different. Li et al[[48]] reported that serum selenium was also lower in females than in males. The zinc concentrations in whole blood and serum in males are slightly higher than those in females.[[49]] The proportions of males in Q1, Q2, Q3, and Q4 were 62.2%, 52.8%, 44.0%, and 34.4%, respectively. We first reported that higher cobalt concentrations were more likely to occur in females (P for trend < .001). 
+
+Although it recruited a nationally representative sample from the general population, this study has several limitations. First, because of the cross-sectional nature of the NHANES, the association between blood cobalt concentrations and dyslipidemia may not imply a causal relationship. Second, due to the lack of data on vitamin B12, many interesting analyses could not be carried out in the present study. Third, we could not distinguish between type 1 diabetes and type 2 diabetes in this study. Fourth, although this study included adjustment for many factors, the results of this study may have been affected by some included factors, such as preexisting disease and alcohol consumption. Fifth, to our knowledge, this is the first study about the possible association of blood cobalt concentrations with dyslipidemia. The underlying mechanisms are still not well understood. Future prospective studies are warranted to confirm the association of blood cobalt concentrations with dyslipidemia. 
+
+## 5. Conclusions 
+
+In conclusion, higher blood cobalt concentrations were associated with a lower risk of dyslipidemia, mainly due to a decrease in the risk of elevated TC, elevated LDL-C and low HDL-C. Blood cobalt concentrations are not associated with the risk of hypertension or diabetes. Further study is needed to elucidate the causal relationship between blood cobalt concentrations and dyslipidemia and reveal the underlying mechanism. 
+
+## Author contributions 
+
+Conceptualization: Yanshuang Li. Data curation: Yanshuang Li, Jiyu Li. Formal analysis: Yanshuang Li, Jiyu Li. Funding acquisition: Hongxin Wang. 
+
+Methodology: Hongxin Wang, Feng Li, Jianghua Xue. Resources: Yanshuang Li. Software: Feng Li, Jianghua Xue. Supervision: Yanshuang Li. Validation: Yanshuang Li. 
+
+Writing – original draft: Hongxin Wang, Feng Li, Jiyu Li. Writing – review & editing: Hongxin Wang, Jiyu Li. 
+
+## References 
+
+- [1] Benjamin EJ, Muntner P, Alonso A, et al. Heart disease and stroke statistics-2019 update: a report from the American Heart Association. Circulation 2019;139:e56–28. 
+
+- [2] Lu S, Bao MY, Miao SM, et al. Prevalence of hypertension, diabetes, and dyslipidemia, and their additive effects on myocardial infarction and 
+
+stroke: a cross-sectional study in Nanjing, China. Ann Transl Med 2019;7:436. 
+
+- [3] Kim K. Blood cadmium concentration and lipid profile in Korean adults. Environ Res 2012;112:225–9. 
+
+- [4] Huang YQ, Shen G, Lo K, et al. Association of circulating selenium concentration with dyslipidemia: results from the NHANES. J Trace Elem Med Biol 2020;58:126438. 
+
+- [5] Cho HW, Kim SH, Park MJ. An association of blood mercury levels and hypercholesterolemia among Korean adolescents. Sci Total Environ 2020;709:135965. 
+
+- [6] Kasperczyk S, Kasperczyk J, Ostalowska A, et al. The role of the antioxidant enzymes in erythrocytes in the development of arterial hypertension among humans exposed to lead. Biol Trace Elem Res 2009;130:95–106. 
+
+- [7] Simoes MR, Ribeiro Junior RF, Vescovi MV, et al. Acute lead exposure increases arterial pressure: role of the renin-angiotensin system. PLoS One 2011;6:e18730. 
+
+- [8] Bastola MM, Locatis C, Maisiak R, Fontelo P. Selenium, copper, zinc and hypertension: an analysis of the National Health and Nutrition Examination Survey (2011-2016). BMC Cardiovasc Disord 2020;20:45. 
+
+- [9] Al-Ghazali MJ, Ali HA, Al-Rufaie MM. Serum irisin levels as a potential marker for diagnosis of gestational diabetes mellitus. Acta Biomed 2020;91:56–63. 
+
+- [10] Barceloux DG. Cobalt. J Toxicol Clin Toxicol 1999;37:201–6. 
+
+- [11] Al Amin ASM, Gupta V. Vitamin B12 (Cobalamin). StatPearls. Treasure Island (FL) 2020. 
+
+- [12] Schaffner A, Li X, Gomez-Llorente Y, et al. Vitamin B12 modulates Parkinson’s disease LRRK2 kinase activity through allosteric regulation and confers neuroprotection. Cell Res 2019;29:313–29. 
+
+- [13] Ued FV, Mathias MG, Toffano RBD, et al. Vitamin B2 and folate concentrations are associated with ARA, EPA and DHA fatty acids in red blood cells of Brazilian children and adolescents. Nutrients 2019;11: 2918. 
+
+- [14] Paustenbach DJ, Tvermoes BE, Unice KM, Finley BL, Kerger BD. A review of the health hazards posed by cobalt. Crit Rev Toxicol 2013;43:316–62. 
+
+- [15] Leyssens L, Vinck B, Van Der Straeten C, et al. The ototoxic potential of cobalt from metal-on-metal hip implants: objective auditory and vestibular outcome. Ear Hear 2020;41:217–30. 
+
+- [16] Garcia MD, Hur M, Chen JJ, Bhatti MT. Cobalt toxic optic neuropathy and retinopathy: case report and review of the literature. Am J Ophthalmol Case Rep 2020;17:100606. 
+
+- [17] Lim CA, Khan J, Chelva E, Khan R, Unsworth-Smith T. The effect of cobalt on the human eye. Doc Ophthalmol 2015;130:43–8. 
+
+- [18] Biglia A, Morandi V, Monti S, Delvino P, Cavagna L, Montecucco C. Cobalt hip prosthesis intoxication mimicking an autoimmune disease. Joint Bone Spine 2020;87:652–4. 
+
+- [19] Swiatkowska I, Henckel J, Sabah SA, Hart AJ. Self-reported neurotoxic symptoms in hip arthroplasty patients with highly elevated blood cobalt: a case-control study. J Patient Saf 2020;18:e10–7. 
+
+- [20] Johnson CL, Dohrmann SM, Burt VL, Mohadjer LK. National health and nutrition examination survey: sample design, 2011–2014. Vital Health Stat 2014;162:1–33. 
+
+- [21] Jones AR. The photochemistry and photobiology of vitamin B12. Photochem Photobiol Sci 2017;16:820–34. 
+
+- [22] Akins MS, Bertics SJ, Socha MT, Shaver RD. Effects of cobalt supplementation and vitamin B12 injections on lactation performance and metabolism of Holstein dairy cows. J Dairy Sci 2013;96:1755–68. 
+
+- [23] Grace ND, Knowles SO, Sinclair GR, Lee J. Growth response to increasing doses of microencapsulated vitamin B12 and related changes in tissue vitamin B12 concentrations in cobalt-deficient lambs. N Z Vet J 2003;51:89–92. 
+
+- [24] Mahalle N, Kulkarni MV, Garg MK, Naik SS. Vitamin B12 deficiency and hyperhomocysteinemia as correlates of cardiovascular risk factors in Indian subjects with coronary artery disease. J Cardiol 2013;61: 289–94. 
+
+- [25] Adaikalakoteswari A, Wood C, Mina TH, et al. Vitamin B12 deficiency and altered one-carbon metabolites in early pregnancy is associated with maternal obesity and dyslipidaemia. Sci Rep 2020;10:11066. 
+
+- [26] Vladov I, Petrova E, Pavlova E, et al. Alterations in blood metabolic parameters of immature mice after subchronic exposure to cobalt chloride. Biol Trace Elem Res 2021;199:588–93. 
+
+- [27] Saiz LC, Gorricho J, Garjon J, Celaya MC, Erviti J, Leache L. Blood pressure targets for the treatment of people with hypertension and cardiovascular disease. Cochrane Database Syst Rev 2018;7:CD010315. 
+
+6 
+
+Wang et al. Medicine (2022) 101:2 
+
+www.md-journal.com 
+
+- [28] Vinceti M, Chawla R, Filippini T, et al. Blood pressure levels and hypertension prevalence in a high selenium environment: results from a cross-sectional study. Nutr Metab Cardiovasc Dis 2019;29:398–408. 
+
+- [29] Tahir F, Majid Z, Qadar LT. Zinc deficiency: an independent risk factor for high blood pressure. J Pak Med Assoc 2019;69:1578. 
+
+- [30] Teye SO, Yanosky JD, Cuffee Y, et al. Association between blood lead levels and blood pressure in American adults: results from NHANES 1999–2016. Environ Sci Pollut Res Int 2020;27:45836–43. 
+
+- [31] Yao B, Lu X, Xu L, Wang Y, Qu H, Zhou H. Relationship between lowlevel lead, cadmium and mercury exposures and blood pressure in children and adolescents aged 8-17years: an exposure-response analysis of NHANES 2007–2016. Sci Total Environ 2020;726:138446. 
+
+- [32] Linna A, Uitti J, Oksa P, et al. Effects of occupational cobalt exposure on the heart in the production of cobalt and cobalt compounds: a 6-year follow-up. Int Arch Occup Environ Health 2020;93:365–74. 
+
+- [33] Xu J, White AJ, Niehoff NM, O’Brien KM, Sandler DP. Airborne metals exposure and risk of hypertension in the sister study. Environ Res 2020;191:110144. 
+
+- [34] Liang C, Wang J, Xia X, et al. Serum cobalt status during pregnancy and the risks of pregnancy-induced hypertension syndrome: a prospective birth cohort study. J Trace Elem Med Biol 2018;46:39–45. 
+
+- [35] Shiue I. Higher urinary heavy metal, arsenic, and phthalate concentrations in people with high blood pressure: US NHANES, 2009-2010. Blood Press 2014;23:363–9. 
+
+- [36] Honigberg MC, Chang LS, McGuire DK, Plutzky J, Aroda VR, Vaduganathan M. Use of glucagon-like peptide-1 receptor agonists in patients with type 2 diabetes and cardiovascular disease: a review. JAMA Cardiol 2020;5:1182–90. 
+
+- [37] Pitchika A, Schipf S, Nauck M, et al. Associations of iron markers with type 2 diabetes mellitus and metabolic syndrome: results from the prospective SHIP study. Diabetes Res Clin Pract 2020;163:108149. 
+
+- [38] Eva H, Akter QS, Alam MK. Relationship between glycemic status and serum chromium level with type 2 diabetes mellitus. Mymensingh Med J 2020;29:183–6. 
+
+- [39] Torkian S, Khanjani N, Mahmoodi MR, Khosravi V. A review of copper concentrations in Iranian populations. Environ Monit Assess 2019;191:537. 
+
+- [40] Liu A, Xu P, Gong C, et al. High serum concentration of selenium, but not calcium, cobalt, copper, iron, and magnesium, increased the risk of both hyperglycemia and dyslipidemia in adults: a health examination center based cross-sectional study. J Trace Elem Med Biol 2020;59: 126470. 
+
+- [41] Chang L, Shen S, Zhang Z, Song X, Jiang Q. Study on the relationship between age and the concentrations of heavy metal elements in human bone. Ann Transl Med 2018;6:320. 
+
+- [42] Katzen-Luchenta J. The declaration of nutrition, health, and intelligence for the child-to-be. Nutr Health 2007;19:85–102. 
+
+- [43] Knez M, Pantovic A, Zekovic M, Pavlovic Z, Glibetic M, Zec M. Is there a link between zinc intake and status with plasma fatty acid profile and desaturase activities in dyslipidemic subjects? Nutrients 2019;12:111. 
+
+- [44] Guerrero-Romero F, Rodriguez-Moran M. Hypomagnesemia, oxidative stress, inflammation, and metabolic syndrome. Diabetes Metab Res Rev 2006;22:471–6. 
+
+- [45] Komolova M, Bourque SL, Nakatsu K, Adams MA. Sedentariness and increased visceral adiposity in adult perinatally iron-deficient rats. Int J Obes (Lond) 2008;32:1441–4. 
+
+- [46] Padmavathi IJ, Rao KR, Venu L, et al. Chronic maternal dietary chromium restriction modulates visceral adiposity: probable underlying mechanisms. Diabetes 2010;59:98–104. 
+
+- [47] Padilla MA, Elobeid M, Ruden DM, Allison DB. An examination of the association of selected toxic metals with total and central obesity indices: NHANES 99-02. Int J Environ Res Public Health 2010;7:3332–47. 
+
+- [48] Li J, Lo K, Shen G, Feng YQ, Huang YQ. Gender difference in the association of serum selenium with all-cause and cardiovascular mortality. Postgrad Med 2020;132:148–55. 
+
+- [49] Buxaderas SC, Farre-Rovira R. Whole blood and serum zinc levels in relation to sex and age. Rev Esp Fisiol 1985;41:463–70. 
+
+7 
+

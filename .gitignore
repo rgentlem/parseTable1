@@ -22,7 +22,7 @@ debug_*.txt
 /out
 test-results/
 trace_output/
-outputs/
+# outputs/
 parse_runs/
 parseTable1.out/
 

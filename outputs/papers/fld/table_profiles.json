@@ -1,0 +1,54 @@
+[
+  {
+    "table_id": "fld-p5-t0",
+    "title": "Table 1 Baseline characteristics",
+    "caption": "Table 1 Baseline characteristics",
+    "table_family": "descriptive_characteristics",
+    "should_run_llm_semantics": true,
+    "family_confidence": 0.98,
+    "evidence": [
+      "title_or_caption_mentions_characteristics",
+      "body_contains_descriptive_summary_patterns",
+      "body_contains_multiple_count_percent_cells",
+      "row_structure_contains_parent_level_blocks",
+      "header_contains_group_or_overall_columns",
+      "p_value_column_matches_p_value_like_cells"
+    ],
+    "notes": []
+  },
+  {
+    "table_id": "fld-p6-t0",
+    "title": "Table 2 Univariate logistic regression examination of FLD",
+    "caption": "Table 2 Univariate logistic regression examination of FLD",
+    "table_family": "estimate_results",
+    "should_run_llm_semantics": false,
+    "family_confidence": 0.98,
+    "evidence": [
+      "title_caption_or_header_mentions_estimate_metric",
+      "header_mentions_estimate_metric_or_ci",
+      "body_contains_descriptive_summary_patterns",
+      "row_structure_contains_parent_level_blocks",
+      "body_contains_multiple_inline_estimate_intervals",
+      "p_value_column_matches_p_value_like_cells"
+    ],
+    "notes": []
+  },
+  {
+    "table_id": "fld-p9-t0",
+    "title": "Table 3 Relationship between AISI and FLD risk was examined using logistic regression analyses",
+    "caption": "Table 3 Relationship between AISI and FLD risk was examined using logistic regression analyses",
+    "table_family": "estimate_results",
+    "should_run_llm_semantics": false,
+    "family_confidence": 0.98,
+    "evidence": [
+      "title_caption_or_header_mentions_estimate_metric",
+      "header_mentions_estimate_metric_or_ci",
+      "header_mentions_model_or_adjustment",
+      "body_contains_descriptive_summary_patterns",
+      "row_structure_contains_parent_level_blocks",
+      "body_contains_multiple_inline_estimate_intervals",
+      "p_value_column_matches_p_value_like_cells"
+    ],
+    "notes": []
+  }
+]

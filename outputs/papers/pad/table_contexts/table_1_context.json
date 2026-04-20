@@ -1,0 +1,93 @@
+{
+  "table_id": "pad-p6-t0",
+  "table_index": 1,
+  "table_label": "Table 2",
+  "title": "Table 2 Association of blood lead and PAD",
+  "caption": "Table 2 Association of blood lead and PAD",
+  "row_terms": [
+    "Lead",
+    "Continuous",
+    "Categories",
+    "Q2",
+    "Q3",
+    "Q4",
+    "P for trend"
+  ],
+  "column_terms": [
+    "Model 2",
+    "Model 3"
+  ],
+  "grouping_terms": [],
+  "methods_like_section_ids": [
+    "section_5",
+    "section_6",
+    "section_7",
+    "section_8",
+    "section_9",
+    "section_11",
+    "section_12",
+    "section_19"
+  ],
+  "results_like_section_ids": [
+    "section_18",
+    "section_21"
+  ],
+  "passages": [
+    {
+      "passage_id": "section_20_p0",
+      "section_id": "section_20",
+      "heading": "**Association between blood lead level and PAD**",
+      "text": "As shown in Table 2, in unadjusted model 1, for every 1 unit increase in blood lead level, the risk of PAD increased by 11% (OR = 1.11, 95%CI: 1.07-1.15). After adjusting for demographic characteristics (Model 2), this association still existed but was attenuated (OR = 1.06, 95%CI: 1.02-1.10). After further adjusting for socioeconomic status, lifestyle and comorbid conditions (model 3), the association between blood lead level and PAD is still statistically significant (OR = 1.04, 95%CI: 1.001.09). Classification analysis showed that compared with the lowest quartile group, the risk of PAD in the highest quartile group was increased by 36% (OR = 1.36, 95%CI: 1.03-1.79), and there was a significant dose-response relationship (P for trend = 0.021). This persistent association and dose-dependent trend support the hypothesis that blood lead exposure may be an independent risk factor for PAD. The incidence of PAD is highest in developed countries such as the United States, Canada, and the United Kingdom (Fig. 2), but in terms of mortality, Russia and some Eastern European countries have the highest mortality rates in the world (Fig. 2).In addition, Fig. 3 further analyzes the trend of PAD mortality in different regions from 1990 to 2020 by social development index (SDI). The results show obvious regional differences: PAD mortality in high SDI and high-medium SDI regions showed a continuous downward trend, from about 1.8 and 2.2 in 1990 to 1.3 and 1.0 in 2020, respectively; medium SDI regions were relatively stable, maintaining at around 0.4; while low SDI and low-medium SDI regions showed an upward trend, from about 0.5 and 0.25 in 1990 to 0.7 and 0.4 in 2020, respectively. This difference is more obvious in the male population, suggesting that gender may be an important factor affecting the burden of PAD disease.",
+      "match_type": "table_reference",
+      "score": 1.0
+    },
+    {
+      "passage_id": "section_21_p0",
+      "section_id": "section_21",
+      "heading": "**Stratified analysis results**",
+      "text": "Figure 4 demonstrates the heterogeneity in the association between blood lead levels and PAD in different subgroups. The results showed that there were significant interactions in terms of gender (P for interaction < 0.001), education level (P for interaction < 0.001), income level (P for interaction < 0.001) and hypertension status (P for interaction = 0.008). The association between blood lead and PAD is higher among men (OR = 1.07, 95%CI: 1.05- 1.09), those with high education level (OR = 1.24, 95%CI: Yan _et al. Journal of Translational Medicine_ (2025) 23:463 Page 5 of 13 **Table 1** Baseline characteristics of participants from National health and nutrition examination survey (NHANES) 1999-2004 |**Variables**|**Overall**<br>**PAD**<br>**_P_-value**<br>**(****_n_ = 8636)**<br>**NO(****_n_ = 8108)**<br>**YES(****_n_ = 618)**| |---|---| |**Sex**,**n (%)**<br>Male<br>Female<br>**Age**,**Mean + SD**<br>**Age strata**,**n (%)**<br>20-40<br>40-60<br>>= 60<br>**Race**,**n (%)**<br>Mexican American<br>Other Hispanic<br>Non-Hispanic White<br>Non-Hispanic Black<br>Other Race<br>**Education level**,**n (%)**<br>Less than 9th grade<br>9-11th grade<br>High school graduate<br>Some college or associates degree<br>College graduate or above<br>**Marital status**,**n (%)**<br>Married/Living with a partner<br>Divorced/Separated/Widowed<br>Never married<br>**Income-to-poverty ratio**,**n (%)**<br>< 1.3<br>1.3-1.85<br>1.85-3.5<br>>= 3.5<br>**BMI**,**n (%)**<br>Underweight<br>Normal weight<br>Obese<br>Overweight<br>**Alcohol use**,**n (%)**<br>Yes<br>No<br>**Smoking**,**n (%)**<br>Yes<br>No<br>**Hypertension**,**n (%)**<br>Yes<br>No<br>**Diabetes**,**n (%)**<br>Yes<br>No<br>**LEAD**,**Mean + SD**|0.727<br>4309 (49.38%)<br>4008 (49.43%)<br>301 (48.71%)<br>4417 (50.62%)<br>4100 (50.57%)<br>317 (51.29%)<br>61.11 \u00b1 13.55<br>60.36 \u00b1 13.40<br>71.00 \u00b1 11.54<br>< 0.001<br>3994 (45.77%)<br>3900 (48.10%)<br>94 (15.21%)<br>3630 (41.60%)<br>3298 (40.68%)<br>332 (53.72%)<br>1102 (12.63%)<br>910 (11.22%)<br>192 (31.07%)<br>< 0.001<br>1852 (21.22%)<br>1754 (21.63%)<br>98 (15.86%)<br>339 (3.88%)<br>324 (4.00%)<br>15 (2.43%)<br>4689 (53.74%)<br>4336 (53.48%)<br>353 (57.12%)<br>1578 (18.08%)<br>1440 (17.76%)<br>138 (22.33%)<br>268 (3.07%)<br>254 (3.13%)<br>14 (2.27%)<br>< 0.001<br>1749 (20.04%)<br>1592 (19.63%)<br>157 (25.40%)<br>1397 (16.01%)<br>1284 (15.84%)<br>113 (18.28%)<br>2003 (22.95%)<br>1850 (22.82%)<br>153 (24.76%)<br>2034 (23.31%)<br>1911 (23.57%)<br>123 (19.90%)<br>1543 (17.68%)<br>1471 (18.14%)<br>72 (11.65%)<br>< 0.001<br>5577 (63.91%)<br>5245 (64.69%)<br>332 (53.72%)<br>2604 (29.84%)<br>2342 (28.89%)<br>262 (42.39%)<br>545 (6.25%)<br>521 (6.43%)<br>24 (3.88%)<br>< 0.001<br>2151 (24.65%)<br>1965 (24.24%)<br>186 (30.10%)<br>1039 (11.91%)<br>935 (11.53%)<br>104 (16.83%)<br>2833 (32.47%)<br>2628 (32.41%)<br>205 (33.17%)<br>2703 (30.98%)<br>2580(31.82%)<br>123 (19.90%)<br>0.170<br>98 (1.12%)<br>88 (1.09%)<br>10 (1.62%)<br>2252 (25.81%)<br>2078 (25.63%)<br>174 (28.16%)<br>3539 (40.56%)<br>3286 (40.53%)<br>253 (40.94%)<br>2837 (32.51)<br>2656 (32.76%)<br>181 (29.29%)<br>0.770<br>5512 (63.17%)<br>5125 (63.21%)<br>387 (62.62%)<br>3214 (36.83%)<br>2983 (36.79%)<br>231 (37.38%)<br>< 0.001<br>4604 (52.76%)<br>4198 (51.78%)<br>406 (65.70%)<br>4122 (47.24%)<br>3910 (48.22%)<br>212 (34.30%)<br>< 0.001<br>3788 (43.41%)<br>3409 (42.04%)<br>379 (61.33%)<br>4938 (56.59%)<br>4699 (57.96%)<br>239 (38.67%)<br>< 0.001<br>1257 (14.41%)<br>1117 (13.78%)<br>140 (22.65%)<br>7469 (85.59%)<br>6991 (86.22%)<br>478 (77.35%)<br>2.55 \u00b1 1.91<br>2.52 \u00b1 1.89<br>3.01 \u00b1 2.07<br>< 0.001| BMI: Body Mass Index Yan _et al. Journal of Translational Medicine_ (2025) 23:463 Page 6 of 13 **Table 2** Association of blood lead and PAD ||**Model 1**|**Model 2**|**Model 3**| |---|---|---|---| ||**OR(95% CI)**|**OR(95% CI)**|**OR(95% CI)**| |**Lead**|||| |Continuous|1.11 (1.07, 1.15)|1.06 (1.02, 1.10)|1.04 (1.00, 1.09)| |Categories|||| |Q1|Reference|Reference|Reference| |Q2|1.35 (1.03, 1.76)|1.13 (0.86, 1.49|1.11 (0.84, 1.46)| |Q3|1.61 (1.24, 2.09)|1.18 (0.90, 1.56)|1.16 (0.88, 1.53| |Q4|2.23 (1.74, 2.85)|1.45 (1.11, 1.90)|1.36 (1.03, 1.79)| |P for trend|< 0.001|0.003|0.021| Model 1: no covariates were adjusted Model 2: Sex, age, race, education level, marital status were adjusted Model 3: Sex, age, race, education level, marital status, PIR, BMI, alcohol use, smoking, diabetes, and hypertension were adjusted PIR: Poverty Income Ratio, BMI: Body Mass Index 1.16-1.32), and those with high income (OR = 1.10, 95% CI: 1.04-1.16) and patients with hypertension (OR = 1.07, 95%CI: 1.05-1.09) were more significant. It is particularly worth noting that in the body mass index stratified analysis, underweight people showed the strongest association (OR = 1.32, 95%CI: 1.09-1.59), which suggests that nutritional status may moderate the effect of blood lead exposure on vascular health. Influence.",
+      "match_type": "table_reference",
+      "score": 1.0
+    },
+    {
+      "passage_id": "section_7_p0",
+      "section_id": "section_7",
+      "heading": "**Study population**",
+      "text": "Inclusion criteria: (1) adults aged >= 18 years; (2) complete LEPAD and blood lead data. Exclusion criteria: (1) pregnant women; (2) patients with severe liver and kidney dysfunction; (3) patients with missing key data. GBD data analysis covers 195 countries and regions around the world, and countries are divided into four categories according to World Bank standards: high-income, uppermiddle-income, lower-middle-income, and low-income. The GWAS data used in the Mendelian randomization analysis were from people of European descent. **==> picture [235 x 141] intentionally omitted <==**",
+      "match_type": "methods_term_match",
+      "score": 0.4222
+    },
+    {
+      "passage_id": "section_9_p0",
+      "section_id": "section_9",
+      "heading": "**Lead exposure assessment**",
+      "text": "Fasting venous blood samples from the NHANES population were used to measure blood lead concentrations using inductively coupled plasma mass spectrometry (ICP-MS). Participants were divided into four groups, Q1-Q4, according to the quartiles of blood lead levels. Quality control included blank samples, standards, and repeated sample analysis.",
+      "match_type": "methods_term_match",
+      "score": 0.4222
+    },
+    {
+      "passage_id": "section_6_p0",
+      "section_id": "section_6",
+      "heading": "**Study design and data sources**",
+      "text": "This study adopted a cross-sectional study design integrating multiple data sources. As shown in Fig. 1, 31 and 126 participants were initially included in the NHANES database from 2011 to 2018. After excluding participants with missing LEPAD information ( _n_ = 21,981) and missing blood lead test data ( _n_ = 411), 8,735 eligible participants were finally included for analysis. In addition, the study also integrated the GBD database and GWAS data based on the European population. The study was approved by the relevant ethics committee, and all participants signed informed consent.",
+      "match_type": "methods_term_match",
+      "score": 0.3111
+    },
+    {
+      "passage_id": "section_11_p0",
+      "section_id": "section_11",
+      "heading": "**Covariate collection**",
+      "text": "Information on demographic characteristics (age, sex, race), socioeconomic status (education level, marital status, income), lifestyle factors (smoking, alcohol consumption, body mass index), and medical history (hypertension, diabetes) was collected through standardized questionnaires. Income levels were standardized using the income-to-poverty ratio (PIR). To capture the detailed characteristics and potential impacts of variables, we transformed continuous variables into categorical variables. Age was categorized into 20-40, 40-60, and >= 60 years; the PIR (Poverty Income Ratio) was divided into < 1.3, 1.3-1.85, 1.85-3.5, and >= 3.5; and BMI was categorized into Underweight (< 18.5), Normal weight (18.5-24.9), Overweight (25-29.9), and Obese (>= 30).",
+      "match_type": "methods_term_match",
+      "score": 0.3111
+    },
+    {
+      "passage_id": "section_19_p0",
+      "section_id": "section_19",
+      "heading": "**Baseline characteristics of the study population**",
+      "text": "As shown in Table 1, a total of 8,636 participants were included in this study, of which 618 (7.2%) had PAD. The average age of the PAD patient group (71.00 \u00b1 11.54 years old) was significantly higher than that of the nonPAD group (60.36 \u00b1 13.40 years old) ( _P_ < 0.001). Compared with the non-PAD group, the PAD group was African American (22.33% vs. 17.76%), had a low education level (25.40% vs. 19.63%), had a low income (30.10% vs. 24.24%), and smoked (65.70% vs. 51.78% ), hypertension (61.33% vs. 42.04%) and diabetes (22.65% vs. 13.78%) were all significantly higher (all _P_ < 0.001). There was no statistically significant difference in gender and BMI distribution between the two groups ( _P_ > 0.05). It is worth noting that the blood lead level in the PAD group (3.01 \u00b1 2.07 \u00b5g/dL) was significantly higher than that in the non-PAD group (2.52 \u00b1 1.89 \u00b5g/dL) ( _P_ < 0.001), which provides a basis for further exploring the association between blood lead exposure and PAD. provides the basis.",
+      "match_type": "methods_term_match",
+      "score": 0.3111
+    }
+  ]
+}

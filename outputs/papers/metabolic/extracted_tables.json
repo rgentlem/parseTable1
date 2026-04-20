@@ -1,0 +1,7843 @@
+[
+  {
+    "table_id": "metabolic-p5-t0",
+    "source_pdf": "papers/metabolic.pdf",
+    "page_num": 5,
+    "title": "Table 1 Baseline characteristics of the participants",
+    "caption": "Table 1 Baseline characteristics of the participants",
+    "n_rows": 35,
+    "n_cols": 5,
+    "cells": [
+      {
+        "row_idx": 0,
+        "col_idx": 0,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 0,
+        "col_idx": 1,
+        "text": "Lifestyle score",
+        "page_num": 5,
+        "bbox": [
+          216.86329650878906,
+          103.7650146484375,
+          265.7585144042969,
+          113.541015625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 0,
+        "col_idx": 2,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 0,
+        "col_idx": 3,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 0,
+        "col_idx": 4,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 1,
+        "col_idx": 0,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 1,
+        "col_idx": 1,
+        "text": "Low (n\u2009=\u20092561)",
+        "page_num": 5,
+        "bbox": [
+          216.86329650878906,
+          119.6610107421875,
+          267.5992736816406,
+          135.0690155029297
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 1,
+        "col_idx": 2,
+        "text": "Middle (n\u2009=\u20092076)",
+        "page_num": 5,
+        "bbox": [
+          311.85528564453125,
+          119.6610107421875,
+          372.51123046875,
+          135.0690155029297
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 1,
+        "col_idx": 3,
+        "text": "High (n\u2009=\u20092297)",
+        "page_num": 5,
+        "bbox": [
+          411.2472839355469,
+          119.6610107421875,
+          464.3192443847656,
+          135.0690155029297
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 1,
+        "col_idx": 4,
+        "text": "p",
+        "page_num": 5,
+        "bbox": [
+          506.2392883300781,
+          119.6610107421875,
+          510.5992736816406,
+          129.43701171875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 2,
+        "col_idx": 0,
+        "text": "Age, years",
+        "page_num": 5,
+        "bbox": [
+          56.679290771484375,
+          138.30099487304688,
+          88.88728332519531,
+          147.364990234375
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 2,
+        "col_idx": 1,
+        "text": "36.0 [27.0, 49.0]",
+        "page_num": 5,
+        "bbox": [
+          216.8472900390625,
+          138.30099487304688,
+          265.2953186035156,
+          147.364990234375
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 2,
+        "col_idx": 2,
+        "text": "44.0 [31.0, 58.0]",
+        "page_num": 5,
+        "bbox": [
+          311.83929443359375,
+          138.30099487304688,
+          360.2872314453125,
+          147.364990234375
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 2,
+        "col_idx": 3,
+        "text": "45.0 [32.0, 60.0]",
+        "page_num": 5,
+        "bbox": [
+          411.2312927246094,
+          138.30099487304688,
+          459.6792297363281,
+          147.364990234375
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 2,
+        "col_idx": 4,
+        "text": "<\u20090.001b",
+        "page_num": 5,
+        "bbox": [
+          506.87127685546875,
+          136.72280883789062,
+          534.976806640625,
+          147.364990234375
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 3,
+        "col_idx": 0,
+        "text": "<\u200965y",
+        "page_num": 5,
+        "bbox": [
+          65.44490051269531,
+          150.40200805664062,
+          82.5408935546875,
+          159.46600341796875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 3,
+        "col_idx": 1,
+        "text": "2396 (93.6%)",
+        "page_num": 5,
+        "bbox": [
+          216.86090087890625,
+          150.40200805664062,
+          257.46893310546875,
+          159.46600341796875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 3,
+        "col_idx": 2,
+        "text": "1772 (85.4%)",
+        "page_num": 5,
+        "bbox": [
+          311.8529052734375,
+          150.40200805664062,
+          352.4608459472656,
+          159.46600341796875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 3,
+        "col_idx": 3,
+        "text": "1908 (83.1%)",
+        "page_num": 5,
+        "bbox": [
+          411.2449035644531,
+          150.40200805664062,
+          451.85284423828125,
+          159.46600341796875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 3,
+        "col_idx": 4,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 0,
+        "text": "\u2265\u200965y",
+        "page_num": 5,
+        "bbox": [
+          65.43690490722656,
+          162.49801635742188,
+          83.7968978881836,
+          177.1940155029297
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 1,
+        "text": "165 (6.4%)",
+        "page_num": 5,
+        "bbox": [
+          216.8529052734375,
+          162.49801635742188,
+          249.65292358398438,
+          171.56201171875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 2,
+        "text": "304 (14.6%)",
+        "page_num": 5,
+        "bbox": [
+          311.84490966796875,
+          162.49801635742188,
+          348.5488586425781,
+          171.56201171875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 3,
+        "text": "389 (16.9%)",
+        "page_num": 5,
+        "bbox": [
+          411.2369079589844,
+          162.49801635742188,
+          447.94085693359375,
+          171.56201171875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 4,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 0,
+        "text": "Gender",
+        "page_num": 5,
+        "bbox": [
+          56.676910400390625,
+          174.59402465820312,
+          80.46891021728516,
+          183.65802001953125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 1,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 2,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 3,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 4,
+        "text": "<\u20090.001a",
+        "page_num": 5,
+        "bbox": [
+          506.8769226074219,
+          173.02279663085938,
+          534.5455932617188,
+          183.65802001953125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 0,
+        "text": "Men",
+        "page_num": 5,
+        "bbox": [
+          65.44490051269531,
+          186.70205688476562,
+          79.9009017944336,
+          195.76605224609375
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 1,
+        "text": "1450 (56.6%)",
+        "page_num": 5,
+        "bbox": [
+          216.86090087890625,
+          186.70205688476562,
+          257.46893310546875,
+          195.76605224609375
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 2,
+        "text": "987 (47.5%)",
+        "page_num": 5,
+        "bbox": [
+          311.8529052734375,
+          186.70205688476562,
+          348.5568542480469,
+          195.76605224609375
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 3,
+        "text": "1131 (49.2%)",
+        "page_num": 5,
+        "bbox": [
+          411.2449035644531,
+          186.70205688476562,
+          451.85284423828125,
+          195.76605224609375
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 4,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 0,
+        "text": "Women",
+        "page_num": 5,
+        "bbox": [
+          65.15690612792969,
+          198.79806518554688,
+          90.48490142822266,
+          207.862060546875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 1,
+        "text": "1111 (43.4%)",
+        "page_num": 5,
+        "bbox": [
+          216.8529052734375,
+          198.79806518554688,
+          257.4609375,
+          207.862060546875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 2,
+        "text": "1089 (52.5%)",
+        "page_num": 5,
+        "bbox": [
+          311.84490966796875,
+          198.79806518554688,
+          352.4528503417969,
+          207.862060546875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 3,
+        "text": "1166 (50.8%)",
+        "page_num": 5,
+        "bbox": [
+          411.2369079589844,
+          198.79806518554688,
+          451.8448486328125,
+          207.862060546875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 4,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 0,
+        "text": "Ethnicity",
+        "page_num": 5,
+        "bbox": [
+          56.676910400390625,
+          210.89407348632812,
+          84.44409942626953,
+          219.95806884765625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 1,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 2,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 3,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 4,
+        "text": "<\u20090.001a",
+        "page_num": 5,
+        "bbox": [
+          506.8769226074219,
+          209.32284545898438,
+          534.5455932617188,
+          219.95806884765625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 0,
+        "text": "Mexican American",
+        "page_num": 5,
+        "bbox": [
+          65.44490051269531,
+          223.00204467773438,
+          124.64410400390625,
+          232.0660400390625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 1,
+        "text": "261 (10.2%)",
+        "page_num": 5,
+        "bbox": [
+          216.86090087890625,
+          223.00204467773438,
+          253.56492614746094,
+          232.0660400390625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 2,
+        "text": "210 (10.1%)",
+        "page_num": 5,
+        "bbox": [
+          311.8529052734375,
+          223.00204467773438,
+          348.5568542480469,
+          232.0660400390625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 3,
+        "text": "390 (17.0%)",
+        "page_num": 5,
+        "bbox": [
+          411.2449035644531,
+          223.00204467773438,
+          447.9488525390625,
+          232.0660400390625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 4,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 0,
+        "text": "Other Hispanic",
+        "page_num": 5,
+        "bbox": [
+          65.43690490722656,
+          235.09805297851562,
+          113.10810852050781,
+          244.16204833984375
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 1,
+        "text": "211 (8.2%)",
+        "page_num": 5,
+        "bbox": [
+          216.8529052734375,
+          235.09805297851562,
+          249.65292358398438,
+          244.16204833984375
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 2,
+        "text": "164 (7.9%)",
+        "page_num": 5,
+        "bbox": [
+          311.84490966796875,
+          235.09805297851562,
+          344.6448669433594,
+          244.16204833984375
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 3,
+        "text": "265 (11.5%)",
+        "page_num": 5,
+        "bbox": [
+          411.2369079589844,
+          235.09805297851562,
+          447.94085693359375,
+          244.16204833984375
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 4,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 0,
+        "text": "Non-Hispanic White",
+        "page_num": 5,
+        "bbox": [
+          65.42890930175781,
+          247.19406127929688,
+          129.14892578125,
+          256.258056640625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 1,
+        "text": "1236 (48.3%)",
+        "page_num": 5,
+        "bbox": [
+          216.84490966796875,
+          247.19406127929688,
+          257.45294189453125,
+          256.258056640625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 2,
+        "text": "966 (46.5%)",
+        "page_num": 5,
+        "bbox": [
+          311.8369140625,
+          247.19406127929688,
+          348.5408630371094,
+          256.258056640625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 3,
+        "text": "993 (43.2%)",
+        "page_num": 5,
+        "bbox": [
+          411.2289123535156,
+          247.19406127929688,
+          447.932861328125,
+          256.258056640625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 4,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 0,
+        "text": "Non-Hispanic Black",
+        "page_num": 5,
+        "bbox": [
+          65.42091369628906,
+          259.2900695800781,
+          126.91613006591797,
+          268.35406494140625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 1,
+        "text": "604 (23.6%)",
+        "page_num": 5,
+        "bbox": [
+          216.8369140625,
+          259.2900695800781,
+          253.5409393310547,
+          268.35406494140625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 2,
+        "text": "414 (20.0%)",
+        "page_num": 5,
+        "bbox": [
+          311.82891845703125,
+          259.2900695800781,
+          348.5328674316406,
+          268.35406494140625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 3,
+        "text": "366 (15.9%)",
+        "page_num": 5,
+        "bbox": [
+          411.2209167480469,
+          259.2900695800781,
+          447.92486572265625,
+          268.35406494140625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 4,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 0,
+        "text": "Other race",
+        "page_num": 5,
+        "bbox": [
+          65.41291809082031,
+          271.3860778808594,
+          99.13291931152344,
+          280.4500732421875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 1,
+        "text": "249 (9.7%)",
+        "page_num": 5,
+        "bbox": [
+          216.82891845703125,
+          271.3860778808594,
+          249.62893676757812,
+          280.4500732421875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 2,
+        "text": "322 (15.5%)",
+        "page_num": 5,
+        "bbox": [
+          311.8209228515625,
+          271.3860778808594,
+          348.5248718261719,
+          280.4500732421875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 3,
+        "text": "283 (12.3%)",
+        "page_num": 5,
+        "bbox": [
+          411.2129211425781,
+          271.3860778808594,
+          447.9168701171875,
+          280.4500732421875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 4,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 0,
+        "text": "PIR",
+        "page_num": 5,
+        "bbox": [
+          56.652923583984375,
+          283.4820861816406,
+          66.39691925048828,
+          292.54608154296875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 1,
+        "text": "2.4 [1.2, 4.5]",
+        "page_num": 5,
+        "bbox": [
+          216.8209228515625,
+          283.4820861816406,
+          253.55694580078125,
+          292.54608154296875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 2,
+        "text": "3.5 [1.7, 5.0]",
+        "page_num": 5,
+        "bbox": [
+          311.81292724609375,
+          283.4820861816406,
+          348.54888916015625,
+          292.54608154296875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 3,
+        "text": "2.7 [1.3, 5.0]",
+        "page_num": 5,
+        "bbox": [
+          411.2049255371094,
+          283.4820861816406,
+          447.9408874511719,
+          292.54608154296875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 4,
+        "text": "<\u20090.001b",
+        "page_num": 5,
+        "bbox": [
+          506.84490966796875,
+          281.9228210449219,
+          534.976806640625,
+          292.54608154296875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 0,
+        "text": "Education",
+        "page_num": 5,
+        "bbox": [
+          56.692901611328125,
+          295.6020202636719,
+          88.87689971923828,
+          304.666015625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 1,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 2,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 3,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 4,
+        "text": "<\u20090.001a",
+        "page_num": 5,
+        "bbox": [
+          506.8929138183594,
+          294.0228271484375,
+          534.5455932617188,
+          304.666015625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 0,
+        "text": "Less than high school diploma",
+        "page_num": 5,
+        "bbox": [
+          65.44490051269531,
+          307.7020263671875,
+          162.6529083251953,
+          316.7660217285156
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 1,
+        "text": "372 (14.5%)",
+        "page_num": 5,
+        "bbox": [
+          216.86090087890625,
+          307.7020263671875,
+          253.56492614746094,
+          316.7660217285156
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 2,
+        "text": "188 (9.1%)",
+        "page_num": 5,
+        "bbox": [
+          311.8529052734375,
+          307.7020263671875,
+          344.6528625488281,
+          316.7660217285156
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 3,
+        "text": "393 (17.1%)",
+        "page_num": 5,
+        "bbox": [
+          411.2449035644531,
+          307.7020263671875,
+          447.9488525390625,
+          316.7660217285156
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 4,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 0,
+        "text": "High school graduate or equivalent",
+        "page_num": 5,
+        "bbox": [
+          65.43690490722656,
+          319.79803466796875,
+          178.11610412597656,
+          328.8620300292969
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 1,
+        "text": "613 (23.9%)",
+        "page_num": 5,
+        "bbox": [
+          216.8529052734375,
+          319.79803466796875,
+          253.5569305419922,
+          328.8620300292969
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 2,
+        "text": "319 (15.4%)",
+        "page_num": 5,
+        "bbox": [
+          311.84490966796875,
+          319.79803466796875,
+          348.5488586425781,
+          328.8620300292969
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 3,
+        "text": "434 (18.9%)",
+        "page_num": 5,
+        "bbox": [
+          411.2369079589844,
+          319.79803466796875,
+          447.94085693359375,
+          328.8620300292969
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 4,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 18,
+        "col_idx": 0,
+        "text": "Some college or associates",
+        "page_num": 5,
+        "bbox": [
+          65.42890930175781,
+          331.89404296875,
+          151.08326721191406,
+          340.9580383300781
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 18,
+        "col_idx": 1,
+        "text": "degree 927 (36.2%)",
+        "page_num": 5,
+        "bbox": [
+          152.83526611328125,
+          331.89404296875,
+          253.54893493652344,
+          340.9580383300781
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 18,
+        "col_idx": 2,
+        "text": "637 (30.7%)",
+        "page_num": 5,
+        "bbox": [
+          311.8369140625,
+          331.89404296875,
+          348.5408630371094,
+          340.9580383300781
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 18,
+        "col_idx": 3,
+        "text": "686 (29.9%)",
+        "page_num": 5,
+        "bbox": [
+          411.2289123535156,
+          331.89404296875,
+          447.932861328125,
+          340.9580383300781
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 18,
+        "col_idx": 4,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 0,
+        "text": "College or above",
+        "page_num": 5,
+        "bbox": [
+          65.42091369628906,
+          343.99005126953125,
+          119.5160903930664,
+          353.0540466308594
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 1,
+        "text": "646 (25.2%)",
+        "page_num": 5,
+        "bbox": [
+          216.8369140625,
+          343.99005126953125,
+          253.5409393310547,
+          353.0540466308594
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 2,
+        "text": "931 (44.8%)",
+        "page_num": 5,
+        "bbox": [
+          311.82891845703125,
+          343.99005126953125,
+          348.5328674316406,
+          353.0540466308594
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 3,
+        "text": "783 (34.1%)",
+        "page_num": 5,
+        "bbox": [
+          411.2209167480469,
+          343.99005126953125,
+          447.92486572265625,
+          353.0540466308594
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 4,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 0,
+        "text": "Smoking",
+        "page_num": 5,
+        "bbox": [
+          56.660919189453125,
+          356.0860595703125,
+          85.05211639404297,
+          365.1500549316406
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 1,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 2,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 3,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 4,
+        "text": "<\u20090.001a",
+        "page_num": 5,
+        "bbox": [
+          506.8609313964844,
+          354.5228271484375,
+          534.5455932617188,
+          365.1500549316406
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 0,
+        "text": "Never",
+        "page_num": 5,
+        "bbox": [
+          56.692901611328125,
+          368.2020263671875,
+          75.50889587402344,
+          377.2660217285156
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 1,
+        "text": "1281 (50.0%)",
+        "page_num": 5,
+        "bbox": [
+          216.86090087890625,
+          368.2020263671875,
+          257.46893310546875,
+          377.2660217285156
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 2,
+        "text": "1489 (71.7%)",
+        "page_num": 5,
+        "bbox": [
+          311.8529052734375,
+          368.2020263671875,
+          352.4608459472656,
+          377.2660217285156
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 3,
+        "text": "1755 (76.4%)",
+        "page_num": 5,
+        "bbox": [
+          411.2449035644531,
+          368.2020263671875,
+          451.85284423828125,
+          377.2660217285156
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 4,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 0,
+        "text": "Former",
+        "page_num": 5,
+        "bbox": [
+          56.684906005859375,
+          380.29803466796875,
+          79.57290649414062,
+          389.3620300292969
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 1,
+        "text": "407 (15.9%)",
+        "page_num": 5,
+        "bbox": [
+          216.8529052734375,
+          380.29803466796875,
+          253.5569305419922,
+          389.3620300292969
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 2,
+        "text": "519 (25.0%)",
+        "page_num": 5,
+        "bbox": [
+          311.84490966796875,
+          380.29803466796875,
+          348.5488586425781,
+          389.3620300292969
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 3,
+        "text": "542 (23.6%)",
+        "page_num": 5,
+        "bbox": [
+          411.2369079589844,
+          380.29803466796875,
+          447.94085693359375,
+          389.3620300292969
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 4,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 0,
+        "text": "Current",
+        "page_num": 5,
+        "bbox": [
+          56.676910400390625,
+          392.39404296875,
+          80.75691223144531,
+          401.4580383300781
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 1,
+        "text": "873 (34.1%)",
+        "page_num": 5,
+        "bbox": [
+          216.84490966796875,
+          392.39404296875,
+          253.54893493652344,
+          401.4580383300781
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 2,
+        "text": "68 (3.3%)",
+        "page_num": 5,
+        "bbox": [
+          311.8369140625,
+          392.39404296875,
+          340.7328796386719,
+          401.4580383300781
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 3,
+        "text": "0 (0%)",
+        "page_num": 5,
+        "bbox": [
+          411.2289123535156,
+          392.39404296875,
+          430.9248962402344,
+          401.4580383300781
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 4,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 0,
+        "text": "Alcohol consumption",
+        "page_num": 5,
+        "bbox": [
+          56.668914794921875,
+          404.49005126953125,
+          125.86090850830078,
+          413.5540466308594
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 1,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 2,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 3,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 4,
+        "text": "<\u20090.001a",
+        "page_num": 5,
+        "bbox": [
+          506.8689270019531,
+          402.9228210449219,
+          534.5455932617188,
+          413.5540466308594
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 0,
+        "text": "Binge drinking",
+        "page_num": 5,
+        "bbox": [
+          65.44490051269531,
+          416.6020202636719,
+          112.02809143066406,
+          425.666015625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 1,
+        "text": "1485 (58.0%)",
+        "page_num": 5,
+        "bbox": [
+          216.86090087890625,
+          416.6020202636719,
+          257.46893310546875,
+          425.666015625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 2,
+        "text": "791 (38.1%)",
+        "page_num": 5,
+        "bbox": [
+          311.8529052734375,
+          416.6020202636719,
+          348.5568542480469,
+          425.666015625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 3,
+        "text": "549 (23.9%)",
+        "page_num": 5,
+        "bbox": [
+          411.2449035644531,
+          416.6020202636719,
+          447.9488525390625,
+          425.666015625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 4,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 0,
+        "text": "Non-binge drinking",
+        "page_num": 5,
+        "bbox": [
+          65.43690490722656,
+          428.6980285644531,
+          128.4281005859375,
+          437.76202392578125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 1,
+        "text": "1076 (42.0%)",
+        "page_num": 5,
+        "bbox": [
+          216.8529052734375,
+          428.6980285644531,
+          257.4609375,
+          437.76202392578125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 2,
+        "text": "1285 (61.9%)",
+        "page_num": 5,
+        "bbox": [
+          311.84490966796875,
+          428.6980285644531,
+          352.4528503417969,
+          437.76202392578125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 3,
+        "text": "1748 (76.1%)",
+        "page_num": 5,
+        "bbox": [
+          411.2369079589844,
+          428.6980285644531,
+          451.8448486328125,
+          437.76202392578125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 4,
+        "text": "",
+        "page_num": 5,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 0,
+        "text": "Healthy diet",
+        "page_num": 5,
+        "bbox": [
+          56.676910400390625,
+          440.7940368652344,
+          95.25289916992188,
+          449.8580322265625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 1,
+        "text": "172 (6.7%)",
+        "page_num": 5,
+        "bbox": [
+          216.84490966796875,
+          440.7940368652344,
+          249.64492797851562,
+          449.8580322265625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 2,
+        "text": "1597 (76.9%)",
+        "page_num": 5,
+        "bbox": [
+          311.8369140625,
+          440.7940368652344,
+          352.4448547363281,
+          449.8580322265625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 3,
+        "text": "1540 (67.0%)",
+        "page_num": 5,
+        "bbox": [
+          411.2289123535156,
+          440.7940368652344,
+          451.83685302734375,
+          449.8580322265625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 4,
+        "text": "<\u20090.001a",
+        "page_num": 5,
+        "bbox": [
+          506.868896484375,
+          439.2228088378906,
+          534.5455932617188,
+          449.8580322265625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 0,
+        "text": "Regular physical activity",
+        "page_num": 5,
+        "bbox": [
+          56.692901611328125,
+          452.90203857421875,
+          132.93930053710938,
+          461.9660339355469
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 1,
+        "text": "1589 (62.0%)",
+        "page_num": 5,
+        "bbox": [
+          216.86090087890625,
+          452.90203857421875,
+          257.46893310546875,
+          461.9660339355469
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 2,
+        "text": "1364 (65.7%)",
+        "page_num": 5,
+        "bbox": [
+          311.8529052734375,
+          452.90203857421875,
+          352.4608459472656,
+          461.9660339355469
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 3,
+        "text": "1864 (81.1%)",
+        "page_num": 5,
+        "bbox": [
+          411.2449035644531,
+          452.90203857421875,
+          451.85284423828125,
+          461.9660339355469
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 4,
+        "text": "<\u20090.001a",
+        "page_num": 5,
+        "bbox": [
+          506.8848876953125,
+          451.32281494140625,
+          534.5455932617188,
+          461.9660339355469
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 0,
+        "text": "Adequate sleep duration",
+        "page_num": 5,
+        "bbox": [
+          56.692901611328125,
+          465.0020446777344,
+          135.68408203125,
+          474.0660400390625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 1,
+        "text": "1159 (42.3%)",
+        "page_num": 5,
+        "bbox": [
+          216.86090087890625,
+          465.0020446777344,
+          257.46893310546875,
+          474.0660400390625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 2,
+        "text": "1185 (57.1%)",
+        "page_num": 5,
+        "bbox": [
+          311.8529052734375,
+          465.0020446777344,
+          352.4608459472656,
+          474.0660400390625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 3,
+        "text": "1656 (72.1%)",
+        "page_num": 5,
+        "bbox": [
+          411.2449035644531,
+          465.0020446777344,
+          451.85284423828125,
+          474.0660400390625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 4,
+        "text": "<\u20090.001a",
+        "page_num": 5,
+        "bbox": [
+          506.8848876953125,
+          463.4228210449219,
+          534.5455932617188,
+          474.0660400390625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 0,
+        "text": "Less sedentary behaviors",
+        "page_num": 5,
+        "bbox": [
+          56.692901611328125,
+          477.1020202636719,
+          136.15528869628906,
+          486.166015625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 1,
+        "text": "225 (8.8%)",
+        "page_num": 5,
+        "bbox": [
+          216.86090087890625,
+          477.1020202636719,
+          249.66091918945312,
+          486.166015625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 2,
+        "text": "115 (5.5%)",
+        "page_num": 5,
+        "bbox": [
+          311.8529052734375,
+          477.1020202636719,
+          344.6528625488281,
+          486.166015625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 3,
+        "text": "1581 (68.8%)",
+        "page_num": 5,
+        "bbox": [
+          411.2449035644531,
+          477.1020202636719,
+          451.85284423828125,
+          486.166015625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 4,
+        "text": "<\u20090.001a",
+        "page_num": 5,
+        "bbox": [
+          506.8848876953125,
+          475.5228271484375,
+          534.5455932617188,
+          486.166015625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 0,
+        "text": "LDL-cholesterol (mg/dL)",
+        "page_num": 5,
+        "bbox": [
+          56.692901611328125,
+          489.2020263671875,
+          133.9561004638672,
+          498.2660217285156
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 1,
+        "text": "112.0 [90.0, 138.0]",
+        "page_num": 5,
+        "bbox": [
+          216.86090087890625,
+          489.2020263671875,
+          273.1169128417969,
+          498.2660217285156
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 2,
+        "text": "111.0 [91.0, 132.0]",
+        "page_num": 5,
+        "bbox": [
+          311.8529052734375,
+          489.2020263671875,
+          368.10882568359375,
+          498.2660217285156
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 3,
+        "text": "112.0 [90.0, 137.0]",
+        "page_num": 5,
+        "bbox": [
+          411.2449035644531,
+          489.2020263671875,
+          467.5008239746094,
+          498.2660217285156
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 4,
+        "text": "0.584b",
+        "page_num": 5,
+        "bbox": [
+          513.0369262695312,
+          488.1212463378906,
+          533.1438598632812,
+          498.2660217285156
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 32,
+        "col_idx": 0,
+        "text": "HDL-cholesterol (mg/dL)",
+        "page_num": 5,
+        "bbox": [
+          56.692901611328125,
+          501.3020324707031,
+          135.412109375,
+          510.36602783203125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 32,
+        "col_idx": 1,
+        "text": "49.0 [40.0, 60.0]",
+        "page_num": 5,
+        "bbox": [
+          216.86090087890625,
+          501.3020324707031,
+          265.3089294433594,
+          510.36602783203125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 32,
+        "col_idx": 2,
+        "text": "54.0 [44.0, 65.0]",
+        "page_num": 5,
+        "bbox": [
+          311.8529052734375,
+          501.3020324707031,
+          360.30084228515625,
+          510.36602783203125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 32,
+        "col_idx": 3,
+        "text": "53.0 [44.0, 65.0]",
+        "page_num": 5,
+        "bbox": [
+          411.2449035644531,
+          501.3020324707031,
+          459.6928405761719,
+          510.36602783203125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 32,
+        "col_idx": 4,
+        "text": "<\u20090.001b",
+        "page_num": 5,
+        "bbox": [
+          506.8848876953125,
+          499.7228088378906,
+          534.976806640625,
+          510.36602783203125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 0,
+        "text": "Triglycerides (mg/dL)",
+        "page_num": 5,
+        "bbox": [
+          56.692901611328125,
+          513.4020385742188,
+          124.0840835571289,
+          522.466064453125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 1,
+        "text": "119.0[76.5, 186.0]",
+        "page_num": 5,
+        "bbox": [
+          216.86090087890625,
+          513.4020385742188,
+          271.3648986816406,
+          522.466064453125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 2,
+        "text": "110.0 [75.0, 171.0]",
+        "page_num": 5,
+        "bbox": [
+          311.8529052734375,
+          513.4020385742188,
+          368.10882568359375,
+          522.466064453125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 3,
+        "text": "108.0 [72.0, 168.0]",
+        "page_num": 5,
+        "bbox": [
+          411.2449035644531,
+          513.4020385742188,
+          467.5008239746094,
+          522.466064453125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 4,
+        "text": "<\u20090.001b",
+        "page_num": 5,
+        "bbox": [
+          506.8848876953125,
+          511.8227844238281,
+          534.976806640625,
+          522.466064453125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 34,
+        "col_idx": 0,
+        "text": "HbA1c%",
+        "page_num": 5,
+        "bbox": [
+          56.692901611328125,
+          525.552001953125,
+          84.31690979003906,
+          534.6160278320312
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 34,
+        "col_idx": 1,
+        "text": "5.4 [5.1, 5.7]",
+        "page_num": 5,
+        "bbox": [
+          216.86090087890625,
+          525.552001953125,
+          253.596923828125,
+          534.6160278320312
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 34,
+        "col_idx": 2,
+        "text": "5.4 [5.1, 5.7]",
+        "page_num": 5,
+        "bbox": [
+          311.8529052734375,
+          525.552001953125,
+          348.5888671875,
+          534.6160278320312
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 34,
+        "col_idx": 3,
+        "text": "5.4 [5.2, 5.7]",
+        "page_num": 5,
+        "bbox": [
+          411.2449035644531,
+          525.552001953125,
+          447.9808654785156,
+          534.6160278320312
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 34,
+        "col_idx": 4,
+        "text": "<\u20090.001b",
+        "page_num": 5,
+        "bbox": [
+          506.8848876953125,
+          523.9728393554688,
+          534.976806640625,
+          534.6160278320312
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.95
+      }
+    ],
+    "extraction_backend": "pymupdf4llm",
+    "metadata": {
+      "layout_source": "pymupdf4llm_json",
+      "caption_source": "page_text_fallback",
+      "primary_representation": "json",
+      "extractor_used": "pymupdf4llm",
+      "fallback_used": false,
+      "row_count": 3,
+      "col_count": 2,
+      "explicit_grid_refined_from_words": true,
+      "grid_refinement_source": "collapsed_explicit_grid_word_positions",
+      "geometry_coordinate_frame": "page",
+      "table_markdown": "||**Lifestyle score**|\n|---|---|\n||**Low (n**=**2561)**<br>**Middle (n**=**2076)**<br>**High (n**=**2297)**<br>**_p_**|\n|Age, years<br>< 65y<br> \u226565y<br>Gender<br>Men<br>Women<br>Ethnicity<br>Mexican American<br>Other Hispanic<br>Non-Hispanic White<br>Non-Hispanic Black<br>Other race<br>PIR<br>Education<br>Less than high school diploma<br>High school graduate or equivalent<br>Some college or associates degree<br>College or above<br>Smoking<br>Never<br>Former<br>Current<br>Alcohol consumption<br>Binge drinking<br>Non-binge drinking<br>Healthy diet<br>Regular physical activity<br>Adequate sleep duration<br>Less sedentary behaviors<br>LDL-cholesterol (mg/dL)<br>HDL-cholesterol (mg/dL)<br>Triglycerides (mg/dL)<br>HbA1c%|36.0 [27.0, 49.0]<br>44.0 [31.0, 58.0]<br>45.0 [32.0, 60.0]<br>**< 0.001b**<br>2396 (93.6%)<br>1772 (85.4%)<br>1908 (83.1%)<br>165 (6.4%)<br>304 (14.6%)<br>389 (16.9%)<br>**< 0.001a**<br>1450 (56.6%)<br>987 (47.5%)<br>1131 (49.2%)<br>1111 (43.4%)<br>1089 (52.5%)<br>1166 (50.8%)<br>**< 0.001a**<br>261 (10.2%)<br>210 (10.1%)<br>390 (17.0%)<br>211 (8.2%)<br>164 (7.9%)<br>265 (11.5%)<br>1236 (48.3%)<br>966 (46.5%)<br>993 (43.2%)<br>604 (23.6%)<br>414 (20.0%)<br>366 (15.9%)<br>249 (9.7%)<br>322 (15.5%)<br>283 (12.3%)<br>2.4 [1.2, 4.5]<br>3.5 [1.7, 5.0]<br>2.7 [1.3, 5.0]<br>**< 0.001b**<br>**< 0.001a**<br>372 (14.5%)<br>188 (9.1%)<br>393 (17.1%)<br>613 (23.9%)<br>319 (15.4%)<br>434 (18.9%)<br>927 (36.2%)<br>637 (30.7%)<br>686 (29.9%)<br>646 (25.2%)<br>931 (44.8%)<br>783 (34.1%)<br>**< 0.001a**<br>1281 (50.0%)<br>1489 (71.7%)<br>1755 (76.4%)<br>407 (15.9%)<br>519 (25.0%)<br>542 (23.6%)<br>873 (34.1%)<br>68 (3.3%)<br>0 (0%)<br>**< 0.001a**<br>1485 (58.0%)<br>791 (38.1%)<br>549 (23.9%)<br>1076 (42.0%)<br>1285 (61.9%)<br>1748 (76.1%)<br>172 (6.7%)<br>1597 (76.9%)<br>1540 (67.0%)<br>**< 0.001a**<br>1589 (62.0%)<br>1364 (65.7%)<br>1864 (81.1%)<br>**< 0.001a**<br>1159 (42.3%)<br>1185 (57.1%)<br>1656 (72.1%)<br>**< 0.001a**<br>225 (8.8%)<br>115 (5.5%)<br>1581 (68.8%)<br>**< 0.001a**<br>112.0 [90.0, 138.0]<br>111.0 [91.0, 132.0]<br>112.0 [90.0, 137.0]<br>0.584b<br>49.0 [40.0, 60.0]<br>54.0 [44.0, 65.0]<br>53.0 [44.0, 65.0]<br>**< 0.001b**<br>119.0[76.5, 186.0]<br>110.0 [75.0, 171.0]<br>108.0 [72.0, 168.0]<br>**< 0.001b**<br>5.4 [5.1, 5.7]<br>5.4 [5.1, 5.7]<br>5.4 [5.2, 5.7]<br>**< 0.001b**|\n\n",
+      "table_cells": [
+        [
+          null,
+          [
+            216.86329650878906,
+            103.7650146484375,
+            265.7585144042969,
+            113.541015625
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          [
+            216.86329650878906,
+            119.6610107421875,
+            267.5992736816406,
+            135.0690155029297
+          ],
+          [
+            311.85528564453125,
+            119.6610107421875,
+            372.51123046875,
+            135.0690155029297
+          ],
+          [
+            411.2472839355469,
+            119.6610107421875,
+            464.3192443847656,
+            135.0690155029297
+          ],
+          [
+            506.2392883300781,
+            119.6610107421875,
+            510.5992736816406,
+            129.43701171875
+          ]
+        ],
+        [
+          [
+            56.679290771484375,
+            138.30099487304688,
+            88.88728332519531,
+            147.364990234375
+          ],
+          [
+            216.8472900390625,
+            138.30099487304688,
+            265.2953186035156,
+            147.364990234375
+          ],
+          [
+            311.83929443359375,
+            138.30099487304688,
+            360.2872314453125,
+            147.364990234375
+          ],
+          [
+            411.2312927246094,
+            138.30099487304688,
+            459.6792297363281,
+            147.364990234375
+          ],
+          [
+            506.87127685546875,
+            136.72280883789062,
+            534.976806640625,
+            147.364990234375
+          ]
+        ],
+        [
+          [
+            65.44490051269531,
+            150.40200805664062,
+            82.5408935546875,
+            159.46600341796875
+          ],
+          [
+            216.86090087890625,
+            150.40200805664062,
+            257.46893310546875,
+            159.46600341796875
+          ],
+          [
+            311.8529052734375,
+            150.40200805664062,
+            352.4608459472656,
+            159.46600341796875
+          ],
+          [
+            411.2449035644531,
+            150.40200805664062,
+            451.85284423828125,
+            159.46600341796875
+          ],
+          null
+        ],
+        [
+          [
+            65.43690490722656,
+            162.49801635742188,
+            83.7968978881836,
+            177.1940155029297
+          ],
+          [
+            216.8529052734375,
+            162.49801635742188,
+            249.65292358398438,
+            171.56201171875
+          ],
+          [
+            311.84490966796875,
+            162.49801635742188,
+            348.5488586425781,
+            171.56201171875
+          ],
+          [
+            411.2369079589844,
+            162.49801635742188,
+            447.94085693359375,
+            171.56201171875
+          ],
+          null
+        ],
+        [
+          [
+            56.676910400390625,
+            174.59402465820312,
+            80.46891021728516,
+            183.65802001953125
+          ],
+          null,
+          null,
+          null,
+          [
+            506.8769226074219,
+            173.02279663085938,
+            534.5455932617188,
+            183.65802001953125
+          ]
+        ],
+        [
+          [
+            65.44490051269531,
+            186.70205688476562,
+            79.9009017944336,
+            195.76605224609375
+          ],
+          [
+            216.86090087890625,
+            186.70205688476562,
+            257.46893310546875,
+            195.76605224609375
+          ],
+          [
+            311.8529052734375,
+            186.70205688476562,
+            348.5568542480469,
+            195.76605224609375
+          ],
+          [
+            411.2449035644531,
+            186.70205688476562,
+            451.85284423828125,
+            195.76605224609375
+          ],
+          null
+        ],
+        [
+          [
+            65.15690612792969,
+            198.79806518554688,
+            90.48490142822266,
+            207.862060546875
+          ],
+          [
+            216.8529052734375,
+            198.79806518554688,
+            257.4609375,
+            207.862060546875
+          ],
+          [
+            311.84490966796875,
+            198.79806518554688,
+            352.4528503417969,
+            207.862060546875
+          ],
+          [
+            411.2369079589844,
+            198.79806518554688,
+            451.8448486328125,
+            207.862060546875
+          ],
+          null
+        ],
+        [
+          [
+            56.676910400390625,
+            210.89407348632812,
+            84.44409942626953,
+            219.95806884765625
+          ],
+          null,
+          null,
+          null,
+          [
+            506.8769226074219,
+            209.32284545898438,
+            534.5455932617188,
+            219.95806884765625
+          ]
+        ],
+        [
+          [
+            65.44490051269531,
+            223.00204467773438,
+            124.64410400390625,
+            232.0660400390625
+          ],
+          [
+            216.86090087890625,
+            223.00204467773438,
+            253.56492614746094,
+            232.0660400390625
+          ],
+          [
+            311.8529052734375,
+            223.00204467773438,
+            348.5568542480469,
+            232.0660400390625
+          ],
+          [
+            411.2449035644531,
+            223.00204467773438,
+            447.9488525390625,
+            232.0660400390625
+          ],
+          null
+        ],
+        [
+          [
+            65.43690490722656,
+            235.09805297851562,
+            113.10810852050781,
+            244.16204833984375
+          ],
+          [
+            216.8529052734375,
+            235.09805297851562,
+            249.65292358398438,
+            244.16204833984375
+          ],
+          [
+            311.84490966796875,
+            235.09805297851562,
+            344.6448669433594,
+            244.16204833984375
+          ],
+          [
+            411.2369079589844,
+            235.09805297851562,
+            447.94085693359375,
+            244.16204833984375
+          ],
+          null
+        ],
+        [
+          [
+            65.42890930175781,
+            247.19406127929688,
+            129.14892578125,
+            256.258056640625
+          ],
+          [
+            216.84490966796875,
+            247.19406127929688,
+            257.45294189453125,
+            256.258056640625
+          ],
+          [
+            311.8369140625,
+            247.19406127929688,
+            348.5408630371094,
+            256.258056640625
+          ],
+          [
+            411.2289123535156,
+            247.19406127929688,
+            447.932861328125,
+            256.258056640625
+          ],
+          null
+        ],
+        [
+          [
+            65.42091369628906,
+            259.2900695800781,
+            126.91613006591797,
+            268.35406494140625
+          ],
+          [
+            216.8369140625,
+            259.2900695800781,
+            253.5409393310547,
+            268.35406494140625
+          ],
+          [
+            311.82891845703125,
+            259.2900695800781,
+            348.5328674316406,
+            268.35406494140625
+          ],
+          [
+            411.2209167480469,
+            259.2900695800781,
+            447.92486572265625,
+            268.35406494140625
+          ],
+          null
+        ],
+        [
+          [
+            65.41291809082031,
+            271.3860778808594,
+            99.13291931152344,
+            280.4500732421875
+          ],
+          [
+            216.82891845703125,
+            271.3860778808594,
+            249.62893676757812,
+            280.4500732421875
+          ],
+          [
+            311.8209228515625,
+            271.3860778808594,
+            348.5248718261719,
+            280.4500732421875
+          ],
+          [
+            411.2129211425781,
+            271.3860778808594,
+            447.9168701171875,
+            280.4500732421875
+          ],
+          null
+        ],
+        [
+          [
+            56.652923583984375,
+            283.4820861816406,
+            66.39691925048828,
+            292.54608154296875
+          ],
+          [
+            216.8209228515625,
+            283.4820861816406,
+            253.55694580078125,
+            292.54608154296875
+          ],
+          [
+            311.81292724609375,
+            283.4820861816406,
+            348.54888916015625,
+            292.54608154296875
+          ],
+          [
+            411.2049255371094,
+            283.4820861816406,
+            447.9408874511719,
+            292.54608154296875
+          ],
+          [
+            506.84490966796875,
+            281.9228210449219,
+            534.976806640625,
+            292.54608154296875
+          ]
+        ],
+        [
+          [
+            56.692901611328125,
+            295.6020202636719,
+            88.87689971923828,
+            304.666015625
+          ],
+          null,
+          null,
+          null,
+          [
+            506.8929138183594,
+            294.0228271484375,
+            534.5455932617188,
+            304.666015625
+          ]
+        ],
+        [
+          [
+            65.44490051269531,
+            307.7020263671875,
+            162.6529083251953,
+            316.7660217285156
+          ],
+          [
+            216.86090087890625,
+            307.7020263671875,
+            253.56492614746094,
+            316.7660217285156
+          ],
+          [
+            311.8529052734375,
+            307.7020263671875,
+            344.6528625488281,
+            316.7660217285156
+          ],
+          [
+            411.2449035644531,
+            307.7020263671875,
+            447.9488525390625,
+            316.7660217285156
+          ],
+          null
+        ],
+        [
+          [
+            65.43690490722656,
+            319.79803466796875,
+            178.11610412597656,
+            328.8620300292969
+          ],
+          [
+            216.8529052734375,
+            319.79803466796875,
+            253.5569305419922,
+            328.8620300292969
+          ],
+          [
+            311.84490966796875,
+            319.79803466796875,
+            348.5488586425781,
+            328.8620300292969
+          ],
+          [
+            411.2369079589844,
+            319.79803466796875,
+            447.94085693359375,
+            328.8620300292969
+          ],
+          null
+        ],
+        [
+          [
+            65.42890930175781,
+            331.89404296875,
+            151.08326721191406,
+            340.9580383300781
+          ],
+          [
+            152.83526611328125,
+            331.89404296875,
+            253.54893493652344,
+            340.9580383300781
+          ],
+          [
+            311.8369140625,
+            331.89404296875,
+            348.5408630371094,
+            340.9580383300781
+          ],
+          [
+            411.2289123535156,
+            331.89404296875,
+            447.932861328125,
+            340.9580383300781
+          ],
+          null
+        ],
+        [
+          [
+            65.42091369628906,
+            343.99005126953125,
+            119.5160903930664,
+            353.0540466308594
+          ],
+          [
+            216.8369140625,
+            343.99005126953125,
+            253.5409393310547,
+            353.0540466308594
+          ],
+          [
+            311.82891845703125,
+            343.99005126953125,
+            348.5328674316406,
+            353.0540466308594
+          ],
+          [
+            411.2209167480469,
+            343.99005126953125,
+            447.92486572265625,
+            353.0540466308594
+          ],
+          null
+        ],
+        [
+          [
+            56.660919189453125,
+            356.0860595703125,
+            85.05211639404297,
+            365.1500549316406
+          ],
+          null,
+          null,
+          null,
+          [
+            506.8609313964844,
+            354.5228271484375,
+            534.5455932617188,
+            365.1500549316406
+          ]
+        ],
+        [
+          [
+            56.692901611328125,
+            368.2020263671875,
+            75.50889587402344,
+            377.2660217285156
+          ],
+          [
+            216.86090087890625,
+            368.2020263671875,
+            257.46893310546875,
+            377.2660217285156
+          ],
+          [
+            311.8529052734375,
+            368.2020263671875,
+            352.4608459472656,
+            377.2660217285156
+          ],
+          [
+            411.2449035644531,
+            368.2020263671875,
+            451.85284423828125,
+            377.2660217285156
+          ],
+          null
+        ],
+        [
+          [
+            56.684906005859375,
+            380.29803466796875,
+            79.57290649414062,
+            389.3620300292969
+          ],
+          [
+            216.8529052734375,
+            380.29803466796875,
+            253.5569305419922,
+            389.3620300292969
+          ],
+          [
+            311.84490966796875,
+            380.29803466796875,
+            348.5488586425781,
+            389.3620300292969
+          ],
+          [
+            411.2369079589844,
+            380.29803466796875,
+            447.94085693359375,
+            389.3620300292969
+          ],
+          null
+        ],
+        [
+          [
+            56.676910400390625,
+            392.39404296875,
+            80.75691223144531,
+            401.4580383300781
+          ],
+          [
+            216.84490966796875,
+            392.39404296875,
+            253.54893493652344,
+            401.4580383300781
+          ],
+          [
+            311.8369140625,
+            392.39404296875,
+            340.7328796386719,
+            401.4580383300781
+          ],
+          [
+            411.2289123535156,
+            392.39404296875,
+            430.9248962402344,
+            401.4580383300781
+          ],
+          null
+        ],
+        [
+          [
+            56.668914794921875,
+            404.49005126953125,
+            125.86090850830078,
+            413.5540466308594
+          ],
+          null,
+          null,
+          null,
+          [
+            506.8689270019531,
+            402.9228210449219,
+            534.5455932617188,
+            413.5540466308594
+          ]
+        ],
+        [
+          [
+            65.44490051269531,
+            416.6020202636719,
+            112.02809143066406,
+            425.666015625
+          ],
+          [
+            216.86090087890625,
+            416.6020202636719,
+            257.46893310546875,
+            425.666015625
+          ],
+          [
+            311.8529052734375,
+            416.6020202636719,
+            348.5568542480469,
+            425.666015625
+          ],
+          [
+            411.2449035644531,
+            416.6020202636719,
+            447.9488525390625,
+            425.666015625
+          ],
+          null
+        ],
+        [
+          [
+            65.43690490722656,
+            428.6980285644531,
+            128.4281005859375,
+            437.76202392578125
+          ],
+          [
+            216.8529052734375,
+            428.6980285644531,
+            257.4609375,
+            437.76202392578125
+          ],
+          [
+            311.84490966796875,
+            428.6980285644531,
+            352.4528503417969,
+            437.76202392578125
+          ],
+          [
+            411.2369079589844,
+            428.6980285644531,
+            451.8448486328125,
+            437.76202392578125
+          ],
+          null
+        ],
+        [
+          [
+            56.676910400390625,
+            440.7940368652344,
+            95.25289916992188,
+            449.8580322265625
+          ],
+          [
+            216.84490966796875,
+            440.7940368652344,
+            249.64492797851562,
+            449.8580322265625
+          ],
+          [
+            311.8369140625,
+            440.7940368652344,
+            352.4448547363281,
+            449.8580322265625
+          ],
+          [
+            411.2289123535156,
+            440.7940368652344,
+            451.83685302734375,
+            449.8580322265625
+          ],
+          [
+            506.868896484375,
+            439.2228088378906,
+            534.5455932617188,
+            449.8580322265625
+          ]
+        ],
+        [
+          [
+            56.692901611328125,
+            452.90203857421875,
+            132.93930053710938,
+            461.9660339355469
+          ],
+          [
+            216.86090087890625,
+            452.90203857421875,
+            257.46893310546875,
+            461.9660339355469
+          ],
+          [
+            311.8529052734375,
+            452.90203857421875,
+            352.4608459472656,
+            461.9660339355469
+          ],
+          [
+            411.2449035644531,
+            452.90203857421875,
+            451.85284423828125,
+            461.9660339355469
+          ],
+          [
+            506.8848876953125,
+            451.32281494140625,
+            534.5455932617188,
+            461.9660339355469
+          ]
+        ],
+        [
+          [
+            56.692901611328125,
+            465.0020446777344,
+            135.68408203125,
+            474.0660400390625
+          ],
+          [
+            216.86090087890625,
+            465.0020446777344,
+            257.46893310546875,
+            474.0660400390625
+          ],
+          [
+            311.8529052734375,
+            465.0020446777344,
+            352.4608459472656,
+            474.0660400390625
+          ],
+          [
+            411.2449035644531,
+            465.0020446777344,
+            451.85284423828125,
+            474.0660400390625
+          ],
+          [
+            506.8848876953125,
+            463.4228210449219,
+            534.5455932617188,
+            474.0660400390625
+          ]
+        ],
+        [
+          [
+            56.692901611328125,
+            477.1020202636719,
+            136.15528869628906,
+            486.166015625
+          ],
+          [
+            216.86090087890625,
+            477.1020202636719,
+            249.66091918945312,
+            486.166015625
+          ],
+          [
+            311.8529052734375,
+            477.1020202636719,
+            344.6528625488281,
+            486.166015625
+          ],
+          [
+            411.2449035644531,
+            477.1020202636719,
+            451.85284423828125,
+            486.166015625
+          ],
+          [
+            506.8848876953125,
+            475.5228271484375,
+            534.5455932617188,
+            486.166015625
+          ]
+        ],
+        [
+          [
+            56.692901611328125,
+            489.2020263671875,
+            133.9561004638672,
+            498.2660217285156
+          ],
+          [
+            216.86090087890625,
+            489.2020263671875,
+            273.1169128417969,
+            498.2660217285156
+          ],
+          [
+            311.8529052734375,
+            489.2020263671875,
+            368.10882568359375,
+            498.2660217285156
+          ],
+          [
+            411.2449035644531,
+            489.2020263671875,
+            467.5008239746094,
+            498.2660217285156
+          ],
+          [
+            513.0369262695312,
+            488.1212463378906,
+            533.1438598632812,
+            498.2660217285156
+          ]
+        ],
+        [
+          [
+            56.692901611328125,
+            501.3020324707031,
+            135.412109375,
+            510.36602783203125
+          ],
+          [
+            216.86090087890625,
+            501.3020324707031,
+            265.3089294433594,
+            510.36602783203125
+          ],
+          [
+            311.8529052734375,
+            501.3020324707031,
+            360.30084228515625,
+            510.36602783203125
+          ],
+          [
+            411.2449035644531,
+            501.3020324707031,
+            459.6928405761719,
+            510.36602783203125
+          ],
+          [
+            506.8848876953125,
+            499.7228088378906,
+            534.976806640625,
+            510.36602783203125
+          ]
+        ],
+        [
+          [
+            56.692901611328125,
+            513.4020385742188,
+            124.0840835571289,
+            522.466064453125
+          ],
+          [
+            216.86090087890625,
+            513.4020385742188,
+            271.3648986816406,
+            522.466064453125
+          ],
+          [
+            311.8529052734375,
+            513.4020385742188,
+            368.10882568359375,
+            522.466064453125
+          ],
+          [
+            411.2449035644531,
+            513.4020385742188,
+            467.5008239746094,
+            522.466064453125
+          ],
+          [
+            506.8848876953125,
+            511.8227844238281,
+            534.976806640625,
+            522.466064453125
+          ]
+        ],
+        [
+          [
+            56.692901611328125,
+            525.552001953125,
+            84.31690979003906,
+            534.6160278320312
+          ],
+          [
+            216.86090087890625,
+            525.552001953125,
+            253.596923828125,
+            534.6160278320312
+          ],
+          [
+            311.8529052734375,
+            525.552001953125,
+            348.5888671875,
+            534.6160278320312
+          ],
+          [
+            411.2449035644531,
+            525.552001953125,
+            447.9808654785156,
+            534.6160278320312
+          ],
+          [
+            506.8848876953125,
+            523.9728393554688,
+            534.976806640625,
+            534.6160278320312
+          ]
+        ]
+      ],
+      "refined_table_cells": [
+        [
+          null,
+          [
+            216.86329650878906,
+            103.7650146484375,
+            265.7585144042969,
+            113.541015625
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          [
+            216.86329650878906,
+            119.6610107421875,
+            267.5992736816406,
+            135.0690155029297
+          ],
+          [
+            311.85528564453125,
+            119.6610107421875,
+            372.51123046875,
+            135.0690155029297
+          ],
+          [
+            411.2472839355469,
+            119.6610107421875,
+            464.3192443847656,
+            135.0690155029297
+          ],
+          [
+            506.2392883300781,
+            119.6610107421875,
+            510.5992736816406,
+            129.43701171875
+          ]
+        ],
+        [
+          [
+            56.679290771484375,
+            138.30099487304688,
+            88.88728332519531,
+            147.364990234375
+          ],
+          [
+            216.8472900390625,
+            138.30099487304688,
+            265.2953186035156,
+            147.364990234375
+          ],
+          [
+            311.83929443359375,
+            138.30099487304688,
+            360.2872314453125,
+            147.364990234375
+          ],
+          [
+            411.2312927246094,
+            138.30099487304688,
+            459.6792297363281,
+            147.364990234375
+          ],
+          [
+            506.87127685546875,
+            136.72280883789062,
+            534.976806640625,
+            147.364990234375
+          ]
+        ],
+        [
+          [
+            65.44490051269531,
+            150.40200805664062,
+            82.5408935546875,
+            159.46600341796875
+          ],
+          [
+            216.86090087890625,
+            150.40200805664062,
+            257.46893310546875,
+            159.46600341796875
+          ],
+          [
+            311.8529052734375,
+            150.40200805664062,
+            352.4608459472656,
+            159.46600341796875
+          ],
+          [
+            411.2449035644531,
+            150.40200805664062,
+            451.85284423828125,
+            159.46600341796875
+          ],
+          null
+        ],
+        [
+          [
+            65.43690490722656,
+            162.49801635742188,
+            83.7968978881836,
+            177.1940155029297
+          ],
+          [
+            216.8529052734375,
+            162.49801635742188,
+            249.65292358398438,
+            171.56201171875
+          ],
+          [
+            311.84490966796875,
+            162.49801635742188,
+            348.5488586425781,
+            171.56201171875
+          ],
+          [
+            411.2369079589844,
+            162.49801635742188,
+            447.94085693359375,
+            171.56201171875
+          ],
+          null
+        ],
+        [
+          [
+            56.676910400390625,
+            174.59402465820312,
+            80.46891021728516,
+            183.65802001953125
+          ],
+          null,
+          null,
+          null,
+          [
+            506.8769226074219,
+            173.02279663085938,
+            534.5455932617188,
+            183.65802001953125
+          ]
+        ],
+        [
+          [
+            65.44490051269531,
+            186.70205688476562,
+            79.9009017944336,
+            195.76605224609375
+          ],
+          [
+            216.86090087890625,
+            186.70205688476562,
+            257.46893310546875,
+            195.76605224609375
+          ],
+          [
+            311.8529052734375,
+            186.70205688476562,
+            348.5568542480469,
+            195.76605224609375
+          ],
+          [
+            411.2449035644531,
+            186.70205688476562,
+            451.85284423828125,
+            195.76605224609375
+          ],
+          null
+        ],
+        [
+          [
+            65.15690612792969,
+            198.79806518554688,
+            90.48490142822266,
+            207.862060546875
+          ],
+          [
+            216.8529052734375,
+            198.79806518554688,
+            257.4609375,
+            207.862060546875
+          ],
+          [
+            311.84490966796875,
+            198.79806518554688,
+            352.4528503417969,
+            207.862060546875
+          ],
+          [
+            411.2369079589844,
+            198.79806518554688,
+            451.8448486328125,
+            207.862060546875
+          ],
+          null
+        ],
+        [
+          [
+            56.676910400390625,
+            210.89407348632812,
+            84.44409942626953,
+            219.95806884765625
+          ],
+          null,
+          null,
+          null,
+          [
+            506.8769226074219,
+            209.32284545898438,
+            534.5455932617188,
+            219.95806884765625
+          ]
+        ],
+        [
+          [
+            65.44490051269531,
+            223.00204467773438,
+            124.64410400390625,
+            232.0660400390625
+          ],
+          [
+            216.86090087890625,
+            223.00204467773438,
+            253.56492614746094,
+            232.0660400390625
+          ],
+          [
+            311.8529052734375,
+            223.00204467773438,
+            348.5568542480469,
+            232.0660400390625
+          ],
+          [
+            411.2449035644531,
+            223.00204467773438,
+            447.9488525390625,
+            232.0660400390625
+          ],
+          null
+        ],
+        [
+          [
+            65.43690490722656,
+            235.09805297851562,
+            113.10810852050781,
+            244.16204833984375
+          ],
+          [
+            216.8529052734375,
+            235.09805297851562,
+            249.65292358398438,
+            244.16204833984375
+          ],
+          [
+            311.84490966796875,
+            235.09805297851562,
+            344.6448669433594,
+            244.16204833984375
+          ],
+          [
+            411.2369079589844,
+            235.09805297851562,
+            447.94085693359375,
+            244.16204833984375
+          ],
+          null
+        ],
+        [
+          [
+            65.42890930175781,
+            247.19406127929688,
+            129.14892578125,
+            256.258056640625
+          ],
+          [
+            216.84490966796875,
+            247.19406127929688,
+            257.45294189453125,
+            256.258056640625
+          ],
+          [
+            311.8369140625,
+            247.19406127929688,
+            348.5408630371094,
+            256.258056640625
+          ],
+          [
+            411.2289123535156,
+            247.19406127929688,
+            447.932861328125,
+            256.258056640625
+          ],
+          null
+        ],
+        [
+          [
+            65.42091369628906,
+            259.2900695800781,
+            126.91613006591797,
+            268.35406494140625
+          ],
+          [
+            216.8369140625,
+            259.2900695800781,
+            253.5409393310547,
+            268.35406494140625
+          ],
+          [
+            311.82891845703125,
+            259.2900695800781,
+            348.5328674316406,
+            268.35406494140625
+          ],
+          [
+            411.2209167480469,
+            259.2900695800781,
+            447.92486572265625,
+            268.35406494140625
+          ],
+          null
+        ],
+        [
+          [
+            65.41291809082031,
+            271.3860778808594,
+            99.13291931152344,
+            280.4500732421875
+          ],
+          [
+            216.82891845703125,
+            271.3860778808594,
+            249.62893676757812,
+            280.4500732421875
+          ],
+          [
+            311.8209228515625,
+            271.3860778808594,
+            348.5248718261719,
+            280.4500732421875
+          ],
+          [
+            411.2129211425781,
+            271.3860778808594,
+            447.9168701171875,
+            280.4500732421875
+          ],
+          null
+        ],
+        [
+          [
+            56.652923583984375,
+            283.4820861816406,
+            66.39691925048828,
+            292.54608154296875
+          ],
+          [
+            216.8209228515625,
+            283.4820861816406,
+            253.55694580078125,
+            292.54608154296875
+          ],
+          [
+            311.81292724609375,
+            283.4820861816406,
+            348.54888916015625,
+            292.54608154296875
+          ],
+          [
+            411.2049255371094,
+            283.4820861816406,
+            447.9408874511719,
+            292.54608154296875
+          ],
+          [
+            506.84490966796875,
+            281.9228210449219,
+            534.976806640625,
+            292.54608154296875
+          ]
+        ],
+        [
+          [
+            56.692901611328125,
+            295.6020202636719,
+            88.87689971923828,
+            304.666015625
+          ],
+          null,
+          null,
+          null,
+          [
+            506.8929138183594,
+            294.0228271484375,
+            534.5455932617188,
+            304.666015625
+          ]
+        ],
+        [
+          [
+            65.44490051269531,
+            307.7020263671875,
+            162.6529083251953,
+            316.7660217285156
+          ],
+          [
+            216.86090087890625,
+            307.7020263671875,
+            253.56492614746094,
+            316.7660217285156
+          ],
+          [
+            311.8529052734375,
+            307.7020263671875,
+            344.6528625488281,
+            316.7660217285156
+          ],
+          [
+            411.2449035644531,
+            307.7020263671875,
+            447.9488525390625,
+            316.7660217285156
+          ],
+          null
+        ],
+        [
+          [
+            65.43690490722656,
+            319.79803466796875,
+            178.11610412597656,
+            328.8620300292969
+          ],
+          [
+            216.8529052734375,
+            319.79803466796875,
+            253.5569305419922,
+            328.8620300292969
+          ],
+          [
+            311.84490966796875,
+            319.79803466796875,
+            348.5488586425781,
+            328.8620300292969
+          ],
+          [
+            411.2369079589844,
+            319.79803466796875,
+            447.94085693359375,
+            328.8620300292969
+          ],
+          null
+        ],
+        [
+          [
+            65.42890930175781,
+            331.89404296875,
+            151.08326721191406,
+            340.9580383300781
+          ],
+          [
+            152.83526611328125,
+            331.89404296875,
+            253.54893493652344,
+            340.9580383300781
+          ],
+          [
+            311.8369140625,
+            331.89404296875,
+            348.5408630371094,
+            340.9580383300781
+          ],
+          [
+            411.2289123535156,
+            331.89404296875,
+            447.932861328125,
+            340.9580383300781
+          ],
+          null
+        ],
+        [
+          [
+            65.42091369628906,
+            343.99005126953125,
+            119.5160903930664,
+            353.0540466308594
+          ],
+          [
+            216.8369140625,
+            343.99005126953125,
+            253.5409393310547,
+            353.0540466308594
+          ],
+          [
+            311.82891845703125,
+            343.99005126953125,
+            348.5328674316406,
+            353.0540466308594
+          ],
+          [
+            411.2209167480469,
+            343.99005126953125,
+            447.92486572265625,
+            353.0540466308594
+          ],
+          null
+        ],
+        [
+          [
+            56.660919189453125,
+            356.0860595703125,
+            85.05211639404297,
+            365.1500549316406
+          ],
+          null,
+          null,
+          null,
+          [
+            506.8609313964844,
+            354.5228271484375,
+            534.5455932617188,
+            365.1500549316406
+          ]
+        ],
+        [
+          [
+            56.692901611328125,
+            368.2020263671875,
+            75.50889587402344,
+            377.2660217285156
+          ],
+          [
+            216.86090087890625,
+            368.2020263671875,
+            257.46893310546875,
+            377.2660217285156
+          ],
+          [
+            311.8529052734375,
+            368.2020263671875,
+            352.4608459472656,
+            377.2660217285156
+          ],
+          [
+            411.2449035644531,
+            368.2020263671875,
+            451.85284423828125,
+            377.2660217285156
+          ],
+          null
+        ],
+        [
+          [
+            56.684906005859375,
+            380.29803466796875,
+            79.57290649414062,
+            389.3620300292969
+          ],
+          [
+            216.8529052734375,
+            380.29803466796875,
+            253.5569305419922,
+            389.3620300292969
+          ],
+          [
+            311.84490966796875,
+            380.29803466796875,
+            348.5488586425781,
+            389.3620300292969
+          ],
+          [
+            411.2369079589844,
+            380.29803466796875,
+            447.94085693359375,
+            389.3620300292969
+          ],
+          null
+        ],
+        [
+          [
+            56.676910400390625,
+            392.39404296875,
+            80.75691223144531,
+            401.4580383300781
+          ],
+          [
+            216.84490966796875,
+            392.39404296875,
+            253.54893493652344,
+            401.4580383300781
+          ],
+          [
+            311.8369140625,
+            392.39404296875,
+            340.7328796386719,
+            401.4580383300781
+          ],
+          [
+            411.2289123535156,
+            392.39404296875,
+            430.9248962402344,
+            401.4580383300781
+          ],
+          null
+        ],
+        [
+          [
+            56.668914794921875,
+            404.49005126953125,
+            125.86090850830078,
+            413.5540466308594
+          ],
+          null,
+          null,
+          null,
+          [
+            506.8689270019531,
+            402.9228210449219,
+            534.5455932617188,
+            413.5540466308594
+          ]
+        ],
+        [
+          [
+            65.44490051269531,
+            416.6020202636719,
+            112.02809143066406,
+            425.666015625
+          ],
+          [
+            216.86090087890625,
+            416.6020202636719,
+            257.46893310546875,
+            425.666015625
+          ],
+          [
+            311.8529052734375,
+            416.6020202636719,
+            348.5568542480469,
+            425.666015625
+          ],
+          [
+            411.2449035644531,
+            416.6020202636719,
+            447.9488525390625,
+            425.666015625
+          ],
+          null
+        ],
+        [
+          [
+            65.43690490722656,
+            428.6980285644531,
+            128.4281005859375,
+            437.76202392578125
+          ],
+          [
+            216.8529052734375,
+            428.6980285644531,
+            257.4609375,
+            437.76202392578125
+          ],
+          [
+            311.84490966796875,
+            428.6980285644531,
+            352.4528503417969,
+            437.76202392578125
+          ],
+          [
+            411.2369079589844,
+            428.6980285644531,
+            451.8448486328125,
+            437.76202392578125
+          ],
+          null
+        ],
+        [
+          [
+            56.676910400390625,
+            440.7940368652344,
+            95.25289916992188,
+            449.8580322265625
+          ],
+          [
+            216.84490966796875,
+            440.7940368652344,
+            249.64492797851562,
+            449.8580322265625
+          ],
+          [
+            311.8369140625,
+            440.7940368652344,
+            352.4448547363281,
+            449.8580322265625
+          ],
+          [
+            411.2289123535156,
+            440.7940368652344,
+            451.83685302734375,
+            449.8580322265625
+          ],
+          [
+            506.868896484375,
+            439.2228088378906,
+            534.5455932617188,
+            449.8580322265625
+          ]
+        ],
+        [
+          [
+            56.692901611328125,
+            452.90203857421875,
+            132.93930053710938,
+            461.9660339355469
+          ],
+          [
+            216.86090087890625,
+            452.90203857421875,
+            257.46893310546875,
+            461.9660339355469
+          ],
+          [
+            311.8529052734375,
+            452.90203857421875,
+            352.4608459472656,
+            461.9660339355469
+          ],
+          [
+            411.2449035644531,
+            452.90203857421875,
+            451.85284423828125,
+            461.9660339355469
+          ],
+          [
+            506.8848876953125,
+            451.32281494140625,
+            534.5455932617188,
+            461.9660339355469
+          ]
+        ],
+        [
+          [
+            56.692901611328125,
+            465.0020446777344,
+            135.68408203125,
+            474.0660400390625
+          ],
+          [
+            216.86090087890625,
+            465.0020446777344,
+            257.46893310546875,
+            474.0660400390625
+          ],
+          [
+            311.8529052734375,
+            465.0020446777344,
+            352.4608459472656,
+            474.0660400390625
+          ],
+          [
+            411.2449035644531,
+            465.0020446777344,
+            451.85284423828125,
+            474.0660400390625
+          ],
+          [
+            506.8848876953125,
+            463.4228210449219,
+            534.5455932617188,
+            474.0660400390625
+          ]
+        ],
+        [
+          [
+            56.692901611328125,
+            477.1020202636719,
+            136.15528869628906,
+            486.166015625
+          ],
+          [
+            216.86090087890625,
+            477.1020202636719,
+            249.66091918945312,
+            486.166015625
+          ],
+          [
+            311.8529052734375,
+            477.1020202636719,
+            344.6528625488281,
+            486.166015625
+          ],
+          [
+            411.2449035644531,
+            477.1020202636719,
+            451.85284423828125,
+            486.166015625
+          ],
+          [
+            506.8848876953125,
+            475.5228271484375,
+            534.5455932617188,
+            486.166015625
+          ]
+        ],
+        [
+          [
+            56.692901611328125,
+            489.2020263671875,
+            133.9561004638672,
+            498.2660217285156
+          ],
+          [
+            216.86090087890625,
+            489.2020263671875,
+            273.1169128417969,
+            498.2660217285156
+          ],
+          [
+            311.8529052734375,
+            489.2020263671875,
+            368.10882568359375,
+            498.2660217285156
+          ],
+          [
+            411.2449035644531,
+            489.2020263671875,
+            467.5008239746094,
+            498.2660217285156
+          ],
+          [
+            513.0369262695312,
+            488.1212463378906,
+            533.1438598632812,
+            498.2660217285156
+          ]
+        ],
+        [
+          [
+            56.692901611328125,
+            501.3020324707031,
+            135.412109375,
+            510.36602783203125
+          ],
+          [
+            216.86090087890625,
+            501.3020324707031,
+            265.3089294433594,
+            510.36602783203125
+          ],
+          [
+            311.8529052734375,
+            501.3020324707031,
+            360.30084228515625,
+            510.36602783203125
+          ],
+          [
+            411.2449035644531,
+            501.3020324707031,
+            459.6928405761719,
+            510.36602783203125
+          ],
+          [
+            506.8848876953125,
+            499.7228088378906,
+            534.976806640625,
+            510.36602783203125
+          ]
+        ],
+        [
+          [
+            56.692901611328125,
+            513.4020385742188,
+            124.0840835571289,
+            522.466064453125
+          ],
+          [
+            216.86090087890625,
+            513.4020385742188,
+            271.3648986816406,
+            522.466064453125
+          ],
+          [
+            311.8529052734375,
+            513.4020385742188,
+            368.10882568359375,
+            522.466064453125
+          ],
+          [
+            411.2449035644531,
+            513.4020385742188,
+            467.5008239746094,
+            522.466064453125
+          ],
+          [
+            506.8848876953125,
+            511.8227844238281,
+            534.976806640625,
+            522.466064453125
+          ]
+        ],
+        [
+          [
+            56.692901611328125,
+            525.552001953125,
+            84.31690979003906,
+            534.6160278320312
+          ],
+          [
+            216.86090087890625,
+            525.552001953125,
+            253.596923828125,
+            534.6160278320312
+          ],
+          [
+            311.8529052734375,
+            525.552001953125,
+            348.5888671875,
+            534.6160278320312
+          ],
+          [
+            411.2449035644531,
+            525.552001953125,
+            447.9808654785156,
+            534.6160278320312
+          ],
+          [
+            506.8848876953125,
+            523.9728393554688,
+            534.976806640625,
+            534.6160278320312
+          ]
+        ]
+      ],
+      "original_table_cells": [
+        [
+          [
+            55.308950424194336,
+            105.0,
+            214.78829956054688,
+            133.9410400390625
+          ],
+          [
+            214.78829956054688,
+            105.0,
+            539.0,
+            117.863037109375
+          ]
+        ],
+        [
+          null,
+          [
+            214.78829956054688,
+            117.863037109375,
+            539.0,
+            133.9410400390625
+          ]
+        ],
+        [
+          [
+            55.308950424194336,
+            133.9410400390625,
+            214.78829956054688,
+            534.0
+          ],
+          [
+            214.78829956054688,
+            133.9410400390625,
+            539.0,
+            534.0
+          ]
+        ]
+      ],
+      "original_backend_rows": [
+        [
+          "",
+          "Lifestyle score"
+        ],
+        [
+          null,
+          "Low (n = 2561)\nMiddle (n = 2076)\nHigh (n = 2297)\np"
+        ],
+        [
+          "Age, years\n < 65y\n \u2265 65y\nGender\n Men\n Women\nEthnicity\n Mexican American\n Other Hispanic\n Non-Hispanic White\n Non-Hispanic Black\n Other race\nPIR\nEducation\n Less than high school diploma\n High school graduate or equivalent\n Some college or associates degree\n College or above\nSmoking\nNever\nFormer\nCurrent\nAlcohol consumption\n Binge drinking\n Non-binge drinking\nHealthy diet\nRegular physical activity\nAdequate sleep duration\nLess sedentary behaviors\nLDL-cholesterol (mg/dL)\nHDL-cholesterol (mg/dL)\nTriglycerides (mg/dL)\nHbA1c%",
+          "36.0 [27.0, 49.0]\n44.0 [31.0, 58.0]\n45.0 [32.0, 60.0]\n< 0.001b\n2396 (93.6%)\n1772 (85.4%)\n1908 (83.1%)\n165 (6.4%)\n304 (14.6%)\n389 (16.9%)\n< 0.001a\n1450 (56.6%)\n987 (47.5%)\n1131 (49.2%)\n1111 (43.4%)\n1089 (52.5%)\n1166 (50.8%)\n< 0.001a\n261 (10.2%)\n210 (10.1%)\n390 (17.0%)\n211 (8.2%)\n164 (7.9%)\n265 (11.5%)\n1236 (48.3%)\n966 (46.5%)\n993 (43.2%)\n604 (23.6%)\n414 (20.0%)\n366 (15.9%)\n249 (9.7%)\n322 (15.5%)\n283 (12.3%)\n2.4 [1.2, 4.5]\n3.5 [1.7, 5.0]\n2.7 [1.3, 5.0]\n< 0.001b\n< 0.001a\n372 (14.5%)\n188 (9.1%)\n393 (17.1%)\n613 (23.9%)\n319 (15.4%)\n434 (18.9%)\n927 (36.2%)\n637 (30.7%)\n686 (29.9%)\n646 (25.2%)\n931 (44.8%)\n783 (34.1%)\n< 0.001a\n1281 (50.0%)\n1489 (71.7%)\n1755 (76.4%)\n407 (15.9%)\n519 (25.0%)\n542 (23.6%)\n873 (34.1%)\n68 (3.3%)\n0 (0%)\n< 0.001a\n1485 (58.0%)\n791 (38.1%)\n549 (23.9%)\n1076 (42.0%)\n1285 (61.9%)\n1748 (76.1%)\n172 (6.7%)\n1597 (76.9%)\n1540 (67.0%)\n< 0.001a\n1589 (62.0%)\n1364 (65.7%)\n1864 (81.1%)\n< 0.001a\n1159 (42.3%)\n1185 (57.1%)\n1656 (72.1%)\n< 0.001a\n225 (8.8%)\n115 (5.5%)\n1581 (68.8%)\n< 0.001a\n112.0 [90.0, 138.0]\n111.0 [91.0, 132.0]\n112.0 [90.0, 137.0]\n0.584b\n49.0 [40.0, 60.0]\n54.0 [44.0, 65.0]\n53.0 [44.0, 65.0]\n< 0.001b\n119.0[76.5, 186.0]\n110.0 [75.0, 171.0]\n108.0 [72.0, 168.0]\n< 0.001b\n5.4 [5.1, 5.7]\n5.4 [5.1, 5.7]\n5.4 [5.2, 5.7]\n< 0.001b"
+        ]
+      ],
+      "row_bounds": [
+        [
+          103.7650146484375,
+          113.541015625
+        ],
+        [
+          119.6610107421875,
+          135.0690155029297
+        ],
+        [
+          136.72280883789062,
+          147.364990234375
+        ],
+        [
+          150.40200805664062,
+          159.46600341796875
+        ],
+        [
+          162.49801635742188,
+          177.1940155029297
+        ],
+        [
+          173.02279663085938,
+          183.65802001953125
+        ],
+        [
+          186.70205688476562,
+          195.76605224609375
+        ],
+        [
+          198.79806518554688,
+          207.862060546875
+        ],
+        [
+          209.32284545898438,
+          219.95806884765625
+        ],
+        [
+          223.00204467773438,
+          232.0660400390625
+        ],
+        [
+          235.09805297851562,
+          244.16204833984375
+        ],
+        [
+          247.19406127929688,
+          256.258056640625
+        ],
+        [
+          259.2900695800781,
+          268.35406494140625
+        ],
+        [
+          271.3860778808594,
+          280.4500732421875
+        ],
+        [
+          281.9228210449219,
+          292.54608154296875
+        ],
+        [
+          294.0228271484375,
+          304.666015625
+        ],
+        [
+          307.7020263671875,
+          316.7660217285156
+        ],
+        [
+          319.79803466796875,
+          328.8620300292969
+        ],
+        [
+          331.89404296875,
+          340.9580383300781
+        ],
+        [
+          343.99005126953125,
+          353.0540466308594
+        ],
+        [
+          354.5228271484375,
+          365.1500549316406
+        ],
+        [
+          368.2020263671875,
+          377.2660217285156
+        ],
+        [
+          380.29803466796875,
+          389.3620300292969
+        ],
+        [
+          392.39404296875,
+          401.4580383300781
+        ],
+        [
+          402.9228210449219,
+          413.5540466308594
+        ],
+        [
+          416.6020202636719,
+          425.666015625
+        ],
+        [
+          428.6980285644531,
+          437.76202392578125
+        ],
+        [
+          439.2228088378906,
+          449.8580322265625
+        ],
+        [
+          451.32281494140625,
+          461.9660339355469
+        ],
+        [
+          463.4228210449219,
+          474.0660400390625
+        ],
+        [
+          475.5228271484375,
+          486.166015625
+        ],
+        [
+          488.1212463378906,
+          498.2660217285156
+        ],
+        [
+          499.7228088378906,
+          510.36602783203125
+        ],
+        [
+          511.8227844238281,
+          522.466064453125
+        ],
+        [
+          523.9728393554688,
+          534.6160278320312
+        ]
+      ],
+      "horizontal_rules": [
+        105.0,
+        133.9410400390625,
+        534.0,
+        101.9410400390625,
+        105.0,
+        133.9410400390625,
+        534.0,
+        538.3160400390625
+      ],
+      "table_orientation": "upright",
+      "rotation_source": "pymupdf_line_direction",
+      "rotation_direction": "upright",
+      "rotation_confidence": 1.0,
+      "signals": {
+        "caption_match": true,
+        "table_1_match": true,
+        "caption_table_number": 1,
+        "caption_is_continuation": false,
+        "first_column_text_ratio": 1.0,
+        "later_column_numeric_ratio": 0.9808,
+        "rectangular": false
+      },
+      "table_number": 1,
+      "is_continuation": false,
+      "continuation_of_table_number": null,
+      "bbox": [
+        55.308950424194336,
+        105.0,
+        539.0,
+        534.0
+      ],
+      "candidate_score": 0.95,
+      "table_numbering_audit": {
+        "observed_table_numbers": [
+          1,
+          2
+        ],
+        "missing_table_numbers": []
+      }
+    }
+  },
+  {
+    "table_id": "metabolic-p6-t0",
+    "source_pdf": "papers/metabolic.pdf",
+    "page_num": 6,
+    "title": "Table 2 RRs (95% CI) of all-cause mortality according to lifestyle category, age, and sex",
+    "caption": "Table 2 RRs (95% CI) of all-cause mortality according to lifestyle category, age, and sex",
+    "n_rows": 39,
+    "n_cols": 4,
+    "cells": [
+      {
+        "row_idx": 0,
+        "col_idx": 0,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 0,
+        "col_idx": 1,
+        "text": "Risk ratio (95%",
+        "page_num": 6,
+        "bbox": [
+          122.32689666748047,
+          114.7650146484375,
+          173.59010314941406,
+          124.541015625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 0,
+        "col_idx": 2,
+        "text": "CI)",
+        "page_num": 6,
+        "bbox": [
+          175.24610900878906,
+          114.7650146484375,
+          184.47010803222656,
+          124.541015625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 0,
+        "col_idx": 3,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 1,
+        "col_idx": 0,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 1,
+        "col_idx": 1,
+        "text": "Model 1",
+        "page_num": 6,
+        "bbox": [
+          122.32689666748047,
+          130.6610107421875,
+          150.27088928222656,
+          140.43701171875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 1,
+        "col_idx": 2,
+        "text": "Model 2",
+        "page_num": 6,
+        "bbox": [
+          180.39889526367188,
+          130.6610107421875,
+          208.34288024902344,
+          140.43701171875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 1,
+        "col_idx": 3,
+        "text": "Model 3",
+        "page_num": 6,
+        "bbox": [
+          238.47088623046875,
+          130.6610107421875,
+          266.41485595703125,
+          140.43701171875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 2,
+        "col_idx": 0,
+        "text": "The overall popu-",
+        "page_num": 6,
+        "bbox": [
+          56.6868896484375,
+          149.30099487304688,
+          112.80687713623047,
+          158.364990234375
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 2,
+        "col_idx": 1,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 2,
+        "col_idx": 2,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 2,
+        "col_idx": 3,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 3,
+        "col_idx": 0,
+        "text": "lation",
+        "page_num": 6,
+        "bbox": [
+          56.6868896484375,
+          158.30099487304688,
+          74.70288848876953,
+          167.364990234375
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 3,
+        "col_idx": 1,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 3,
+        "col_idx": 2,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 3,
+        "col_idx": 3,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 0,
+        "text": "Low lifestyle",
+        "page_num": 6,
+        "bbox": [
+          65.43888854980469,
+          170.39700317382812,
+          104.49406433105469,
+          179.46099853515625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 1,
+        "text": "1 (Reference)",
+        "page_num": 6,
+        "bbox": [
+          122.31889343261719,
+          170.39700317382812,
+          163.91807556152344,
+          179.46099853515625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 2,
+        "text": "1 (Reference)",
+        "page_num": 6,
+        "bbox": [
+          180.39089965820312,
+          170.39700317382812,
+          221.99008178710938,
+          179.46099853515625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 3,
+        "text": "1 (Reference)",
+        "page_num": 6,
+        "bbox": [
+          238.462890625,
+          170.39700317382812,
+          280.0628967285156,
+          179.46099853515625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 0,
+        "text": "score",
+        "page_num": 6,
+        "bbox": [
+          65.6868896484375,
+          179.39700317382812,
+          82.64688873291016,
+          188.46099853515625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 1,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 2,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 3,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 0,
+        "text": "Middle lifestyle",
+        "page_num": 6,
+        "bbox": [
+          65.43089294433594,
+          191.50100708007812,
+          113.35006713867188,
+          200.56500244140625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 1,
+        "text": "0.51 (0.30, 0.88)*",
+        "page_num": 6,
+        "bbox": [
+          122.31089782714844,
+          191.50100708007812,
+          173.88693237304688,
+          200.56500244140625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 2,
+        "text": "0.55 (0.32, 0.94)*",
+        "page_num": 6,
+        "bbox": [
+          180.38290405273438,
+          191.50100708007812,
+          231.95895385742188,
+          200.56500244140625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 3,
+        "text": "0.56 (0.33, 0.97)*",
+        "page_num": 6,
+        "bbox": [
+          238.45489501953125,
+          191.50100708007812,
+          290.0308532714844,
+          200.56500244140625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 0,
+        "text": "score",
+        "page_num": 6,
+        "bbox": [
+          65.67889404296875,
+          200.50100708007812,
+          82.6388931274414,
+          209.56500244140625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 1,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 2,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 3,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 0,
+        "text": "High lifestyle",
+        "page_num": 6,
+        "bbox": [
+          65.42289733886719,
+          212.60501098632812,
+          106.51008605957031,
+          221.66900634765625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 1,
+        "text": "0.26 (0.15, 0.48)*",
+        "page_num": 6,
+        "bbox": [
+          122.30290222167969,
+          212.60501098632812,
+          173.87893676757812,
+          221.66900634765625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 2,
+        "text": "0.27 (0.15, 0.48)*",
+        "page_num": 6,
+        "bbox": [
+          180.37490844726562,
+          212.60501098632812,
+          231.95095825195312,
+          221.66900634765625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 3,
+        "text": "0.26 (0.14, 0.47)*",
+        "page_num": 6,
+        "bbox": [
+          238.4468994140625,
+          212.60501098632812,
+          290.0228576660156,
+          221.66900634765625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 0,
+        "text": "score",
+        "page_num": 6,
+        "bbox": [
+          65.6708984375,
+          221.60501098632812,
+          82.63089752197266,
+          230.66900634765625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 1,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 2,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 3,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 0,
+        "text": "Male",
+        "page_num": 6,
+        "bbox": [
+          56.66290283203125,
+          233.70901489257812,
+          72.15889739990234,
+          242.77301025390625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 1,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 2,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 3,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 0,
+        "text": "Low lifestyle",
+        "page_num": 6,
+        "bbox": [
+          65.41490173339844,
+          245.80502319335938,
+          104.47007751464844,
+          254.8690185546875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 1,
+        "text": "1 (Reference)",
+        "page_num": 6,
+        "bbox": [
+          122.29490661621094,
+          245.80502319335938,
+          163.8940887451172,
+          254.8690185546875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 2,
+        "text": "1 (Reference)",
+        "page_num": 6,
+        "bbox": [
+          180.36691284179688,
+          245.80502319335938,
+          221.96609497070312,
+          254.8690185546875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 3,
+        "text": "1 (Reference)",
+        "page_num": 6,
+        "bbox": [
+          238.43890380859375,
+          245.80502319335938,
+          280.0389099121094,
+          254.8690185546875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 0,
+        "text": "score",
+        "page_num": 6,
+        "bbox": [
+          65.66290283203125,
+          254.80502319335938,
+          82.6229019165039,
+          263.8690185546875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 1,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 2,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 3,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 0,
+        "text": "Middle lifestyle",
+        "page_num": 6,
+        "bbox": [
+          65.40690612792969,
+          266.9010314941406,
+          113.32608032226562,
+          275.96502685546875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 1,
+        "text": "0.59 (0.24, 1.45)",
+        "page_num": 6,
+        "bbox": [
+          122.28691101074219,
+          266.9010314941406,
+          170.7349395751953,
+          275.96502685546875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 2,
+        "text": "0.61 (0.26, 1.41)",
+        "page_num": 6,
+        "bbox": [
+          180.35891723632812,
+          266.9010314941406,
+          228.8069610595703,
+          275.96502685546875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 3,
+        "text": "0.61 (0.26, 1.40)",
+        "page_num": 6,
+        "bbox": [
+          238.430908203125,
+          266.9010314941406,
+          286.8788757324219,
+          275.96502685546875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 0,
+        "text": "score",
+        "page_num": 6,
+        "bbox": [
+          65.6549072265625,
+          275.9010314941406,
+          82.61490631103516,
+          284.96502685546875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 1,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 2,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 3,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 0,
+        "text": "High lifestyle",
+        "page_num": 6,
+        "bbox": [
+          65.39891052246094,
+          288.0050354003906,
+          106.48609924316406,
+          297.06903076171875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 1,
+        "text": "0.33 (0.13, 0.83)*",
+        "page_num": 6,
+        "bbox": [
+          122.27891540527344,
+          288.0050354003906,
+          173.85494995117188,
+          297.06903076171875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 2,
+        "text": "0.35 (0.14, 0.88)*",
+        "page_num": 6,
+        "bbox": [
+          180.35092163085938,
+          288.0050354003906,
+          231.92697143554688,
+          297.06903076171875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 3,
+        "text": "0.33 (0.13, 0.85)*",
+        "page_num": 6,
+        "bbox": [
+          238.42291259765625,
+          288.0050354003906,
+          289.9988708496094,
+          297.06903076171875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 0,
+        "text": "score",
+        "page_num": 6,
+        "bbox": [
+          65.64691162109375,
+          297.0050354003906,
+          82.6069107055664,
+          306.06903076171875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 1,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 2,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 3,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 0,
+        "text": "Female",
+        "page_num": 6,
+        "bbox": [
+          56.638916015625,
+          309.1090393066406,
+          79.70291900634766,
+          318.17303466796875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 1,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 2,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 3,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 18,
+        "col_idx": 0,
+        "text": "Low lifestyle",
+        "page_num": 6,
+        "bbox": [
+          65.39091491699219,
+          321.2050476074219,
+          104.44609069824219,
+          330.26904296875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 18,
+        "col_idx": 1,
+        "text": "1 (Reference)",
+        "page_num": 6,
+        "bbox": [
+          122.27091979980469,
+          321.2050476074219,
+          163.87010192871094,
+          330.26904296875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 18,
+        "col_idx": 2,
+        "text": "1 (Reference)",
+        "page_num": 6,
+        "bbox": [
+          180.34292602539062,
+          321.2050476074219,
+          221.94210815429688,
+          330.26904296875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 18,
+        "col_idx": 3,
+        "text": "1 (Reference)",
+        "page_num": 6,
+        "bbox": [
+          238.4149169921875,
+          321.2050476074219,
+          280.0149230957031,
+          330.26904296875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 0,
+        "text": "score",
+        "page_num": 6,
+        "bbox": [
+          65.638916015625,
+          330.2050476074219,
+          82.59891510009766,
+          339.26904296875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 1,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 2,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 3,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 0,
+        "text": "Middle lifestyle",
+        "page_num": 6,
+        "bbox": [
+          65.38291931152344,
+          342.3090515136719,
+          113.30209350585938,
+          351.373046875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 1,
+        "text": "0.47 (0.23, 0.96)*",
+        "page_num": 6,
+        "bbox": [
+          122.26292419433594,
+          342.3090515136719,
+          173.83895874023438,
+          351.373046875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 2,
+        "text": "0.50 (0.24, 1.03)",
+        "page_num": 6,
+        "bbox": [
+          180.33493041992188,
+          342.3090515136719,
+          228.78297424316406,
+          351.373046875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 3,
+        "text": "0.52 (0.25, 1.08)",
+        "page_num": 6,
+        "bbox": [
+          238.40692138671875,
+          342.3090515136719,
+          286.8548889160156,
+          351.373046875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 0,
+        "text": "score",
+        "page_num": 6,
+        "bbox": [
+          65.63092041015625,
+          351.3090515136719,
+          82.5909194946289,
+          360.373046875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 1,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 2,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 3,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 0,
+        "text": "High lifestyle",
+        "page_num": 6,
+        "bbox": [
+          65.37492370605469,
+          363.4130554199219,
+          106.46211242675781,
+          372.47705078125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 1,
+        "text": "0.21 (0.09, 0.46)*",
+        "page_num": 6,
+        "bbox": [
+          122.25492858886719,
+          363.4130554199219,
+          173.83096313476562,
+          372.47705078125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 2,
+        "text": "0.21 (0.09, 0.47)*",
+        "page_num": 6,
+        "bbox": [
+          180.32693481445312,
+          363.4130554199219,
+          231.90298461914062,
+          372.47705078125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 3,
+        "text": "0.19 (0.08, 0.44)*",
+        "page_num": 6,
+        "bbox": [
+          238.39892578125,
+          363.4130554199219,
+          289.9748840332031,
+          372.47705078125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 0,
+        "text": "score",
+        "page_num": 6,
+        "bbox": [
+          65.6229248046875,
+          372.4130554199219,
+          82.58292388916016,
+          381.47705078125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 1,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 2,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 3,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 0,
+        "text": "By age group",
+        "page_num": 6,
+        "bbox": [
+          56.61492919921875,
+          384.5170593261719,
+          99.10212707519531,
+          393.5810546875
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 1,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 2,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 3,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 0,
+        "text": "<\u200965 years old",
+        "page_num": 6,
+        "bbox": [
+          65.36692810058594,
+          396.6130676269531,
+          109.07091522216797,
+          405.67706298828125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 1,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 2,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 3,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 0,
+        "text": "Low lifestyle",
+        "page_num": 6,
+        "bbox": [
+          70.11892700195312,
+          408.7170715332031,
+          109.17410278320312,
+          417.78106689453125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 1,
+        "text": "1 (Reference)",
+        "page_num": 6,
+        "bbox": [
+          122.24693298339844,
+          408.7170715332031,
+          163.8461151123047,
+          417.78106689453125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 2,
+        "text": "1 (Reference)",
+        "page_num": 6,
+        "bbox": [
+          180.31893920898438,
+          408.7170715332031,
+          221.91812133789062,
+          417.78106689453125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 3,
+        "text": "1 (Reference)",
+        "page_num": 6,
+        "bbox": [
+          238.39093017578125,
+          408.7170715332031,
+          279.9909362792969,
+          417.78106689453125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 0,
+        "text": "score",
+        "page_num": 6,
+        "bbox": [
+          70.61492919921875,
+          417.7170715332031,
+          87.5749282836914,
+          426.78106689453125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 1,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 2,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 3,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 0,
+        "text": "Middle life-",
+        "page_num": 6,
+        "bbox": [
+          70.11093139648438,
+          429.8210754394531,
+          105.98294067382812,
+          438.88507080078125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 1,
+        "text": "0.34 (0.12, 0.98)*",
+        "page_num": 6,
+        "bbox": [
+          122.23893737792969,
+          429.8210754394531,
+          173.81497192382812,
+          438.88507080078125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 2,
+        "text": "0.34 (0.12, 1.00)*",
+        "page_num": 6,
+        "bbox": [
+          180.31094360351562,
+          429.8210754394531,
+          231.88699340820312,
+          438.88507080078125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 3,
+        "text": "0.35 (0.12, 1.03)",
+        "page_num": 6,
+        "bbox": [
+          238.3829345703125,
+          429.8210754394531,
+          286.8309020996094,
+          438.88507080078125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 0,
+        "text": "style score",
+        "page_num": 6,
+        "bbox": [
+          70.60693359375,
+          438.8210754394531,
+          103.95812225341797,
+          447.88507080078125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 1,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 2,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 3,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 0,
+        "text": "High lifestyle",
+        "page_num": 6,
+        "bbox": [
+          70.10293579101562,
+          450.9250793457031,
+          111.19012451171875,
+          459.98907470703125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 1,
+        "text": "0.06 (0.01, 0.26)*",
+        "page_num": 6,
+        "bbox": [
+          122.23094177246094,
+          450.9250793457031,
+          173.80697631835938,
+          459.98907470703125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 2,
+        "text": "0.06 (0.01, 0.27)*",
+        "page_num": 6,
+        "bbox": [
+          180.30294799804688,
+          450.9250793457031,
+          231.87899780273438,
+          459.98907470703125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 3,
+        "text": "0.06 (0.01, 0.29)*",
+        "page_num": 6,
+        "bbox": [
+          238.37493896484375,
+          450.9250793457031,
+          289.9508972167969,
+          459.98907470703125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 0,
+        "text": "score",
+        "page_num": 6,
+        "bbox": [
+          70.59893798828125,
+          459.9250793457031,
+          87.5589370727539,
+          468.98907470703125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 1,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 2,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 3,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 32,
+        "col_idx": 0,
+        "text": "\u2265\u200965 years old",
+        "page_num": 6,
+        "bbox": [
+          65.34294128417969,
+          472.0290832519531,
+          110.31092834472656,
+          486.7250671386719
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 32,
+        "col_idx": 1,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 32,
+        "col_idx": 2,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 32,
+        "col_idx": 3,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 0,
+        "text": "Low lifestyle",
+        "page_num": 6,
+        "bbox": [
+          65.34294128417969,
+          484.1250915527344,
+          104.39811706542969,
+          493.1890869140625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 1,
+        "text": "1 (Reference)",
+        "page_num": 6,
+        "bbox": [
+          122.22294616699219,
+          484.1250915527344,
+          163.82212829589844,
+          493.1890869140625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 2,
+        "text": "1 (Reference)",
+        "page_num": 6,
+        "bbox": [
+          180.29495239257812,
+          484.1250915527344,
+          221.89413452148438,
+          493.1890869140625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 3,
+        "text": "1 (Reference)",
+        "page_num": 6,
+        "bbox": [
+          238.366943359375,
+          484.1250915527344,
+          279.9669494628906,
+          493.1890869140625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 34,
+        "col_idx": 0,
+        "text": "score",
+        "page_num": 6,
+        "bbox": [
+          65.5909423828125,
+          493.1250915527344,
+          82.55094146728516,
+          502.1890869140625
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 34,
+        "col_idx": 1,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 34,
+        "col_idx": 2,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 34,
+        "col_idx": 3,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 35,
+        "col_idx": 0,
+        "text": "Middle life-",
+        "page_num": 6,
+        "bbox": [
+          70.08694458007812,
+          505.2290954589844,
+          105.95895385742188,
+          514.2930908203125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 35,
+        "col_idx": 1,
+        "text": "0.70 (0.37, 1.34)",
+        "page_num": 6,
+        "bbox": [
+          122.21495056152344,
+          505.2290954589844,
+          170.66297912597656,
+          514.2930908203125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 35,
+        "col_idx": 2,
+        "text": "0.71 (0.38, 1.33)",
+        "page_num": 6,
+        "bbox": [
+          180.28695678710938,
+          505.2290954589844,
+          228.73500061035156,
+          514.2930908203125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 35,
+        "col_idx": 3,
+        "text": "0.73 (0.39, 1.36)",
+        "page_num": 6,
+        "bbox": [
+          238.35894775390625,
+          505.2290954589844,
+          286.8069152832031,
+          514.2930908203125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 36,
+        "col_idx": 0,
+        "text": "style score",
+        "page_num": 6,
+        "bbox": [
+          70.58294677734375,
+          514.2290649414062,
+          103.93413543701172,
+          523.2930908203125
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 36,
+        "col_idx": 1,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 36,
+        "col_idx": 2,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 36,
+        "col_idx": 3,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 37,
+        "col_idx": 0,
+        "text": "High lifestyle",
+        "page_num": 6,
+        "bbox": [
+          70.07894897460938,
+          526.3810424804688,
+          111.1661376953125,
+          535.445068359375
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 37,
+        "col_idx": 1,
+        "text": "0.45 (0.22, 0.91)*",
+        "page_num": 6,
+        "bbox": [
+          122.20695495605469,
+          526.3810424804688,
+          173.78298950195312,
+          535.445068359375
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 37,
+        "col_idx": 2,
+        "text": "0.43 (0.21, 0.89)*",
+        "page_num": 6,
+        "bbox": [
+          180.27896118164062,
+          526.3810424804688,
+          231.85501098632812,
+          535.445068359375
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 37,
+        "col_idx": 3,
+        "text": "0.41 (0.20, 0.87)*",
+        "page_num": 6,
+        "bbox": [
+          238.3509521484375,
+          526.3810424804688,
+          289.9269104003906,
+          535.445068359375
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 38,
+        "col_idx": 0,
+        "text": "score",
+        "page_num": 6,
+        "bbox": [
+          70.574951171875,
+          535.3810424804688,
+          87.53495025634766,
+          544.445068359375
+        ],
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 38,
+        "col_idx": 1,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 38,
+        "col_idx": 2,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "row_idx": 38,
+        "col_idx": 3,
+        "text": "",
+        "page_num": 6,
+        "bbox": null,
+        "extractor_name": "pymupdf4llm",
+        "confidence": 0.9000000000000001
+      }
+    ],
+    "extraction_backend": "pymupdf4llm",
+    "metadata": {
+      "layout_source": "pymupdf4llm_json",
+      "caption_source": "page_text_fallback",
+      "primary_representation": "json",
+      "extractor_used": "pymupdf4llm",
+      "fallback_used": false,
+      "row_count": 3,
+      "col_count": 2,
+      "explicit_grid_refined_from_words": true,
+      "grid_refinement_source": "collapsed_explicit_grid_word_positions",
+      "geometry_coordinate_frame": "page",
+      "table_markdown": "||**Risk ratio (95% CI)**|\n|---|---|\n||**Model 1**<br>**Model 2**<br>**Model 3**|\n|The overall popu-<br>lation<br>Low lifestyle<br>score<br>Middle lifestyle<br>score<br>High lifestyle<br>score<br>Male<br>Low lifestyle<br>score<br>Middle lifestyle<br>score<br>High lifestyle<br>score<br>Female<br>Low lifestyle<br>score<br>Middle lifestyle<br>score<br>High lifestyle<br>score<br>By age group<br>< 65 years old<br>Low lifestyle<br>score<br>Middle life-<br>style score<br>High lifestyle<br>score<br> \u226565 years old<br>Low lifestyle<br>score<br>Middle life-<br>style score<br>High lifestyle<br>score|1 (Reference)<br>1 (Reference)<br>1 (Reference)<br>0.51 (0.30, 0.88)*<br>0.55 (0.32, 0.94)*<br>0.56 (0.33, 0.97)*<br>0.26 (0.15, 0.48)*<br>0.27 (0.15, 0.48)*<br>0.26 (0.14, 0.47)*<br>1 (Reference)<br>1 (Reference)<br>1 (Reference)<br>0.59 (0.24, 1.45)<br>0.61 (0.26, 1.41)<br>0.61 (0.26, 1.40)<br>0.33 (0.13, 0.83)*<br>0.35 (0.14, 0.88)*<br>0.33 (0.13, 0.85)*<br>1 (Reference)<br>1 (Reference)<br>1 (Reference)<br>0.47 (0.23, 0.96)*<br>0.50 (0.24, 1.03)<br>0.52 (0.25, 1.08)<br>0.21 (0.09, 0.46)*<br>0.21 (0.09, 0.47)*<br>0.19 (0.08, 0.44)*<br>1 (Reference)<br>1 (Reference)<br>1 (Reference)<br>0.34 (0.12, 0.98)*<br>0.34 (0.12, 1.00)*<br>0.35 (0.12, 1.03)<br>0.06 (0.01, 0.26)*<br>0.06 (0.01, 0.27)*<br>0.06 (0.01, 0.29)*<br>1 (Reference)<br>1 (Reference)<br>1 (Reference)<br>0.70 (0.37, 1.34)<br>0.71 (0.38, 1.33)<br>0.73 (0.39, 1.36)<br>0.45 (0.22, 0.91)*<br>0.43 (0.21, 0.89)*<br>0.41 (0.20, 0.87)*|\n\n",
+      "table_cells": [
+        [
+          null,
+          [
+            122.32689666748047,
+            114.7650146484375,
+            173.59010314941406,
+            124.541015625
+          ],
+          [
+            175.24610900878906,
+            114.7650146484375,
+            184.47010803222656,
+            124.541015625
+          ],
+          null
+        ],
+        [
+          null,
+          [
+            122.32689666748047,
+            130.6610107421875,
+            150.27088928222656,
+            140.43701171875
+          ],
+          [
+            180.39889526367188,
+            130.6610107421875,
+            208.34288024902344,
+            140.43701171875
+          ],
+          [
+            238.47088623046875,
+            130.6610107421875,
+            266.41485595703125,
+            140.43701171875
+          ]
+        ],
+        [
+          [
+            56.6868896484375,
+            149.30099487304688,
+            112.80687713623047,
+            158.364990234375
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            56.6868896484375,
+            158.30099487304688,
+            74.70288848876953,
+            167.364990234375
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            65.43888854980469,
+            170.39700317382812,
+            104.49406433105469,
+            179.46099853515625
+          ],
+          [
+            122.31889343261719,
+            170.39700317382812,
+            163.91807556152344,
+            179.46099853515625
+          ],
+          [
+            180.39089965820312,
+            170.39700317382812,
+            221.99008178710938,
+            179.46099853515625
+          ],
+          [
+            238.462890625,
+            170.39700317382812,
+            280.0628967285156,
+            179.46099853515625
+          ]
+        ],
+        [
+          [
+            65.6868896484375,
+            179.39700317382812,
+            82.64688873291016,
+            188.46099853515625
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            65.43089294433594,
+            191.50100708007812,
+            113.35006713867188,
+            200.56500244140625
+          ],
+          [
+            122.31089782714844,
+            191.50100708007812,
+            173.88693237304688,
+            200.56500244140625
+          ],
+          [
+            180.38290405273438,
+            191.50100708007812,
+            231.95895385742188,
+            200.56500244140625
+          ],
+          [
+            238.45489501953125,
+            191.50100708007812,
+            290.0308532714844,
+            200.56500244140625
+          ]
+        ],
+        [
+          [
+            65.67889404296875,
+            200.50100708007812,
+            82.6388931274414,
+            209.56500244140625
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            65.42289733886719,
+            212.60501098632812,
+            106.51008605957031,
+            221.66900634765625
+          ],
+          [
+            122.30290222167969,
+            212.60501098632812,
+            173.87893676757812,
+            221.66900634765625
+          ],
+          [
+            180.37490844726562,
+            212.60501098632812,
+            231.95095825195312,
+            221.66900634765625
+          ],
+          [
+            238.4468994140625,
+            212.60501098632812,
+            290.0228576660156,
+            221.66900634765625
+          ]
+        ],
+        [
+          [
+            65.6708984375,
+            221.60501098632812,
+            82.63089752197266,
+            230.66900634765625
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            56.66290283203125,
+            233.70901489257812,
+            72.15889739990234,
+            242.77301025390625
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            65.41490173339844,
+            245.80502319335938,
+            104.47007751464844,
+            254.8690185546875
+          ],
+          [
+            122.29490661621094,
+            245.80502319335938,
+            163.8940887451172,
+            254.8690185546875
+          ],
+          [
+            180.36691284179688,
+            245.80502319335938,
+            221.96609497070312,
+            254.8690185546875
+          ],
+          [
+            238.43890380859375,
+            245.80502319335938,
+            280.0389099121094,
+            254.8690185546875
+          ]
+        ],
+        [
+          [
+            65.66290283203125,
+            254.80502319335938,
+            82.6229019165039,
+            263.8690185546875
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            65.40690612792969,
+            266.9010314941406,
+            113.32608032226562,
+            275.96502685546875
+          ],
+          [
+            122.28691101074219,
+            266.9010314941406,
+            170.7349395751953,
+            275.96502685546875
+          ],
+          [
+            180.35891723632812,
+            266.9010314941406,
+            228.8069610595703,
+            275.96502685546875
+          ],
+          [
+            238.430908203125,
+            266.9010314941406,
+            286.8788757324219,
+            275.96502685546875
+          ]
+        ],
+        [
+          [
+            65.6549072265625,
+            275.9010314941406,
+            82.61490631103516,
+            284.96502685546875
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            65.39891052246094,
+            288.0050354003906,
+            106.48609924316406,
+            297.06903076171875
+          ],
+          [
+            122.27891540527344,
+            288.0050354003906,
+            173.85494995117188,
+            297.06903076171875
+          ],
+          [
+            180.35092163085938,
+            288.0050354003906,
+            231.92697143554688,
+            297.06903076171875
+          ],
+          [
+            238.42291259765625,
+            288.0050354003906,
+            289.9988708496094,
+            297.06903076171875
+          ]
+        ],
+        [
+          [
+            65.64691162109375,
+            297.0050354003906,
+            82.6069107055664,
+            306.06903076171875
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            56.638916015625,
+            309.1090393066406,
+            79.70291900634766,
+            318.17303466796875
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            65.39091491699219,
+            321.2050476074219,
+            104.44609069824219,
+            330.26904296875
+          ],
+          [
+            122.27091979980469,
+            321.2050476074219,
+            163.87010192871094,
+            330.26904296875
+          ],
+          [
+            180.34292602539062,
+            321.2050476074219,
+            221.94210815429688,
+            330.26904296875
+          ],
+          [
+            238.4149169921875,
+            321.2050476074219,
+            280.0149230957031,
+            330.26904296875
+          ]
+        ],
+        [
+          [
+            65.638916015625,
+            330.2050476074219,
+            82.59891510009766,
+            339.26904296875
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            65.38291931152344,
+            342.3090515136719,
+            113.30209350585938,
+            351.373046875
+          ],
+          [
+            122.26292419433594,
+            342.3090515136719,
+            173.83895874023438,
+            351.373046875
+          ],
+          [
+            180.33493041992188,
+            342.3090515136719,
+            228.78297424316406,
+            351.373046875
+          ],
+          [
+            238.40692138671875,
+            342.3090515136719,
+            286.8548889160156,
+            351.373046875
+          ]
+        ],
+        [
+          [
+            65.63092041015625,
+            351.3090515136719,
+            82.5909194946289,
+            360.373046875
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            65.37492370605469,
+            363.4130554199219,
+            106.46211242675781,
+            372.47705078125
+          ],
+          [
+            122.25492858886719,
+            363.4130554199219,
+            173.83096313476562,
+            372.47705078125
+          ],
+          [
+            180.32693481445312,
+            363.4130554199219,
+            231.90298461914062,
+            372.47705078125
+          ],
+          [
+            238.39892578125,
+            363.4130554199219,
+            289.9748840332031,
+            372.47705078125
+          ]
+        ],
+        [
+          [
+            65.6229248046875,
+            372.4130554199219,
+            82.58292388916016,
+            381.47705078125
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            56.61492919921875,
+            384.5170593261719,
+            99.10212707519531,
+            393.5810546875
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            65.36692810058594,
+            396.6130676269531,
+            109.07091522216797,
+            405.67706298828125
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            70.11892700195312,
+            408.7170715332031,
+            109.17410278320312,
+            417.78106689453125
+          ],
+          [
+            122.24693298339844,
+            408.7170715332031,
+            163.8461151123047,
+            417.78106689453125
+          ],
+          [
+            180.31893920898438,
+            408.7170715332031,
+            221.91812133789062,
+            417.78106689453125
+          ],
+          [
+            238.39093017578125,
+            408.7170715332031,
+            279.9909362792969,
+            417.78106689453125
+          ]
+        ],
+        [
+          [
+            70.61492919921875,
+            417.7170715332031,
+            87.5749282836914,
+            426.78106689453125
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            70.11093139648438,
+            429.8210754394531,
+            105.98294067382812,
+            438.88507080078125
+          ],
+          [
+            122.23893737792969,
+            429.8210754394531,
+            173.81497192382812,
+            438.88507080078125
+          ],
+          [
+            180.31094360351562,
+            429.8210754394531,
+            231.88699340820312,
+            438.88507080078125
+          ],
+          [
+            238.3829345703125,
+            429.8210754394531,
+            286.8309020996094,
+            438.88507080078125
+          ]
+        ],
+        [
+          [
+            70.60693359375,
+            438.8210754394531,
+            103.95812225341797,
+            447.88507080078125
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            70.10293579101562,
+            450.9250793457031,
+            111.19012451171875,
+            459.98907470703125
+          ],
+          [
+            122.23094177246094,
+            450.9250793457031,
+            173.80697631835938,
+            459.98907470703125
+          ],
+          [
+            180.30294799804688,
+            450.9250793457031,
+            231.87899780273438,
+            459.98907470703125
+          ],
+          [
+            238.37493896484375,
+            450.9250793457031,
+            289.9508972167969,
+            459.98907470703125
+          ]
+        ],
+        [
+          [
+            70.59893798828125,
+            459.9250793457031,
+            87.5589370727539,
+            468.98907470703125
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            65.34294128417969,
+            472.0290832519531,
+            110.31092834472656,
+            486.7250671386719
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            65.34294128417969,
+            484.1250915527344,
+            104.39811706542969,
+            493.1890869140625
+          ],
+          [
+            122.22294616699219,
+            484.1250915527344,
+            163.82212829589844,
+            493.1890869140625
+          ],
+          [
+            180.29495239257812,
+            484.1250915527344,
+            221.89413452148438,
+            493.1890869140625
+          ],
+          [
+            238.366943359375,
+            484.1250915527344,
+            279.9669494628906,
+            493.1890869140625
+          ]
+        ],
+        [
+          [
+            65.5909423828125,
+            493.1250915527344,
+            82.55094146728516,
+            502.1890869140625
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            70.08694458007812,
+            505.2290954589844,
+            105.95895385742188,
+            514.2930908203125
+          ],
+          [
+            122.21495056152344,
+            505.2290954589844,
+            170.66297912597656,
+            514.2930908203125
+          ],
+          [
+            180.28695678710938,
+            505.2290954589844,
+            228.73500061035156,
+            514.2930908203125
+          ],
+          [
+            238.35894775390625,
+            505.2290954589844,
+            286.8069152832031,
+            514.2930908203125
+          ]
+        ],
+        [
+          [
+            70.58294677734375,
+            514.2290649414062,
+            103.93413543701172,
+            523.2930908203125
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            70.07894897460938,
+            526.3810424804688,
+            111.1661376953125,
+            535.445068359375
+          ],
+          [
+            122.20695495605469,
+            526.3810424804688,
+            173.78298950195312,
+            535.445068359375
+          ],
+          [
+            180.27896118164062,
+            526.3810424804688,
+            231.85501098632812,
+            535.445068359375
+          ],
+          [
+            238.3509521484375,
+            526.3810424804688,
+            289.9269104003906,
+            535.445068359375
+          ]
+        ],
+        [
+          [
+            70.574951171875,
+            535.3810424804688,
+            87.53495025634766,
+            544.445068359375
+          ],
+          null,
+          null,
+          null
+        ]
+      ],
+      "refined_table_cells": [
+        [
+          null,
+          [
+            122.32689666748047,
+            114.7650146484375,
+            173.59010314941406,
+            124.541015625
+          ],
+          [
+            175.24610900878906,
+            114.7650146484375,
+            184.47010803222656,
+            124.541015625
+          ],
+          null
+        ],
+        [
+          null,
+          [
+            122.32689666748047,
+            130.6610107421875,
+            150.27088928222656,
+            140.43701171875
+          ],
+          [
+            180.39889526367188,
+            130.6610107421875,
+            208.34288024902344,
+            140.43701171875
+          ],
+          [
+            238.47088623046875,
+            130.6610107421875,
+            266.41485595703125,
+            140.43701171875
+          ]
+        ],
+        [
+          [
+            56.6868896484375,
+            149.30099487304688,
+            112.80687713623047,
+            158.364990234375
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            56.6868896484375,
+            158.30099487304688,
+            74.70288848876953,
+            167.364990234375
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            65.43888854980469,
+            170.39700317382812,
+            104.49406433105469,
+            179.46099853515625
+          ],
+          [
+            122.31889343261719,
+            170.39700317382812,
+            163.91807556152344,
+            179.46099853515625
+          ],
+          [
+            180.39089965820312,
+            170.39700317382812,
+            221.99008178710938,
+            179.46099853515625
+          ],
+          [
+            238.462890625,
+            170.39700317382812,
+            280.0628967285156,
+            179.46099853515625
+          ]
+        ],
+        [
+          [
+            65.6868896484375,
+            179.39700317382812,
+            82.64688873291016,
+            188.46099853515625
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            65.43089294433594,
+            191.50100708007812,
+            113.35006713867188,
+            200.56500244140625
+          ],
+          [
+            122.31089782714844,
+            191.50100708007812,
+            173.88693237304688,
+            200.56500244140625
+          ],
+          [
+            180.38290405273438,
+            191.50100708007812,
+            231.95895385742188,
+            200.56500244140625
+          ],
+          [
+            238.45489501953125,
+            191.50100708007812,
+            290.0308532714844,
+            200.56500244140625
+          ]
+        ],
+        [
+          [
+            65.67889404296875,
+            200.50100708007812,
+            82.6388931274414,
+            209.56500244140625
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            65.42289733886719,
+            212.60501098632812,
+            106.51008605957031,
+            221.66900634765625
+          ],
+          [
+            122.30290222167969,
+            212.60501098632812,
+            173.87893676757812,
+            221.66900634765625
+          ],
+          [
+            180.37490844726562,
+            212.60501098632812,
+            231.95095825195312,
+            221.66900634765625
+          ],
+          [
+            238.4468994140625,
+            212.60501098632812,
+            290.0228576660156,
+            221.66900634765625
+          ]
+        ],
+        [
+          [
+            65.6708984375,
+            221.60501098632812,
+            82.63089752197266,
+            230.66900634765625
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            56.66290283203125,
+            233.70901489257812,
+            72.15889739990234,
+            242.77301025390625
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            65.41490173339844,
+            245.80502319335938,
+            104.47007751464844,
+            254.8690185546875
+          ],
+          [
+            122.29490661621094,
+            245.80502319335938,
+            163.8940887451172,
+            254.8690185546875
+          ],
+          [
+            180.36691284179688,
+            245.80502319335938,
+            221.96609497070312,
+            254.8690185546875
+          ],
+          [
+            238.43890380859375,
+            245.80502319335938,
+            280.0389099121094,
+            254.8690185546875
+          ]
+        ],
+        [
+          [
+            65.66290283203125,
+            254.80502319335938,
+            82.6229019165039,
+            263.8690185546875
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            65.40690612792969,
+            266.9010314941406,
+            113.32608032226562,
+            275.96502685546875
+          ],
+          [
+            122.28691101074219,
+            266.9010314941406,
+            170.7349395751953,
+            275.96502685546875
+          ],
+          [
+            180.35891723632812,
+            266.9010314941406,
+            228.8069610595703,
+            275.96502685546875
+          ],
+          [
+            238.430908203125,
+            266.9010314941406,
+            286.8788757324219,
+            275.96502685546875
+          ]
+        ],
+        [
+          [
+            65.6549072265625,
+            275.9010314941406,
+            82.61490631103516,
+            284.96502685546875
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            65.39891052246094,
+            288.0050354003906,
+            106.48609924316406,
+            297.06903076171875
+          ],
+          [
+            122.27891540527344,
+            288.0050354003906,
+            173.85494995117188,
+            297.06903076171875
+          ],
+          [
+            180.35092163085938,
+            288.0050354003906,
+            231.92697143554688,
+            297.06903076171875
+          ],
+          [
+            238.42291259765625,
+            288.0050354003906,
+            289.9988708496094,
+            297.06903076171875
+          ]
+        ],
+        [
+          [
+            65.64691162109375,
+            297.0050354003906,
+            82.6069107055664,
+            306.06903076171875
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            56.638916015625,
+            309.1090393066406,
+            79.70291900634766,
+            318.17303466796875
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            65.39091491699219,
+            321.2050476074219,
+            104.44609069824219,
+            330.26904296875
+          ],
+          [
+            122.27091979980469,
+            321.2050476074219,
+            163.87010192871094,
+            330.26904296875
+          ],
+          [
+            180.34292602539062,
+            321.2050476074219,
+            221.94210815429688,
+            330.26904296875
+          ],
+          [
+            238.4149169921875,
+            321.2050476074219,
+            280.0149230957031,
+            330.26904296875
+          ]
+        ],
+        [
+          [
+            65.638916015625,
+            330.2050476074219,
+            82.59891510009766,
+            339.26904296875
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            65.38291931152344,
+            342.3090515136719,
+            113.30209350585938,
+            351.373046875
+          ],
+          [
+            122.26292419433594,
+            342.3090515136719,
+            173.83895874023438,
+            351.373046875
+          ],
+          [
+            180.33493041992188,
+            342.3090515136719,
+            228.78297424316406,
+            351.373046875
+          ],
+          [
+            238.40692138671875,
+            342.3090515136719,
+            286.8548889160156,
+            351.373046875
+          ]
+        ],
+        [
+          [
+            65.63092041015625,
+            351.3090515136719,
+            82.5909194946289,
+            360.373046875
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            65.37492370605469,
+            363.4130554199219,
+            106.46211242675781,
+            372.47705078125
+          ],
+          [
+            122.25492858886719,
+            363.4130554199219,
+            173.83096313476562,
+            372.47705078125
+          ],
+          [
+            180.32693481445312,
+            363.4130554199219,
+            231.90298461914062,
+            372.47705078125
+          ],
+          [
+            238.39892578125,
+            363.4130554199219,
+            289.9748840332031,
+            372.47705078125
+          ]
+        ],
+        [
+          [
+            65.6229248046875,
+            372.4130554199219,
+            82.58292388916016,
+            381.47705078125
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            56.61492919921875,
+            384.5170593261719,
+            99.10212707519531,
+            393.5810546875
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            65.36692810058594,
+            396.6130676269531,
+            109.07091522216797,
+            405.67706298828125
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            70.11892700195312,
+            408.7170715332031,
+            109.17410278320312,
+            417.78106689453125
+          ],
+          [
+            122.24693298339844,
+            408.7170715332031,
+            163.8461151123047,
+            417.78106689453125
+          ],
+          [
+            180.31893920898438,
+            408.7170715332031,
+            221.91812133789062,
+            417.78106689453125
+          ],
+          [
+            238.39093017578125,
+            408.7170715332031,
+            279.9909362792969,
+            417.78106689453125
+          ]
+        ],
+        [
+          [
+            70.61492919921875,
+            417.7170715332031,
+            87.5749282836914,
+            426.78106689453125
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            70.11093139648438,
+            429.8210754394531,
+            105.98294067382812,
+            438.88507080078125
+          ],
+          [
+            122.23893737792969,
+            429.8210754394531,
+            173.81497192382812,
+            438.88507080078125
+          ],
+          [
+            180.31094360351562,
+            429.8210754394531,
+            231.88699340820312,
+            438.88507080078125
+          ],
+          [
+            238.3829345703125,
+            429.8210754394531,
+            286.8309020996094,
+            438.88507080078125
+          ]
+        ],
+        [
+          [
+            70.60693359375,
+            438.8210754394531,
+            103.95812225341797,
+            447.88507080078125
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            70.10293579101562,
+            450.9250793457031,
+            111.19012451171875,
+            459.98907470703125
+          ],
+          [
+            122.23094177246094,
+            450.9250793457031,
+            173.80697631835938,
+            459.98907470703125
+          ],
+          [
+            180.30294799804688,
+            450.9250793457031,
+            231.87899780273438,
+            459.98907470703125
+          ],
+          [
+            238.37493896484375,
+            450.9250793457031,
+            289.9508972167969,
+            459.98907470703125
+          ]
+        ],
+        [
+          [
+            70.59893798828125,
+            459.9250793457031,
+            87.5589370727539,
+            468.98907470703125
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            65.34294128417969,
+            472.0290832519531,
+            110.31092834472656,
+            486.7250671386719
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            65.34294128417969,
+            484.1250915527344,
+            104.39811706542969,
+            493.1890869140625
+          ],
+          [
+            122.22294616699219,
+            484.1250915527344,
+            163.82212829589844,
+            493.1890869140625
+          ],
+          [
+            180.29495239257812,
+            484.1250915527344,
+            221.89413452148438,
+            493.1890869140625
+          ],
+          [
+            238.366943359375,
+            484.1250915527344,
+            279.9669494628906,
+            493.1890869140625
+          ]
+        ],
+        [
+          [
+            65.5909423828125,
+            493.1250915527344,
+            82.55094146728516,
+            502.1890869140625
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            70.08694458007812,
+            505.2290954589844,
+            105.95895385742188,
+            514.2930908203125
+          ],
+          [
+            122.21495056152344,
+            505.2290954589844,
+            170.66297912597656,
+            514.2930908203125
+          ],
+          [
+            180.28695678710938,
+            505.2290954589844,
+            228.73500061035156,
+            514.2930908203125
+          ],
+          [
+            238.35894775390625,
+            505.2290954589844,
+            286.8069152832031,
+            514.2930908203125
+          ]
+        ],
+        [
+          [
+            70.58294677734375,
+            514.2290649414062,
+            103.93413543701172,
+            523.2930908203125
+          ],
+          null,
+          null,
+          null
+        ],
+        [
+          [
+            70.07894897460938,
+            526.3810424804688,
+            111.1661376953125,
+            535.445068359375
+          ],
+          [
+            122.20695495605469,
+            526.3810424804688,
+            173.78298950195312,
+            535.445068359375
+          ],
+          [
+            180.27896118164062,
+            526.3810424804688,
+            231.85501098632812,
+            535.445068359375
+          ],
+          [
+            238.3509521484375,
+            526.3810424804688,
+            289.9269104003906,
+            535.445068359375
+          ]
+        ],
+        [
+          [
+            70.574951171875,
+            535.3810424804688,
+            87.53495025634766,
+            544.445068359375
+          ],
+          null,
+          null,
+          null
+        ]
+      ],
+      "original_table_cells": [
+        [
+          [
+            55.308950424194336,
+            116.0,
+            120.25189971923828,
+            144.9410400390625
+          ],
+          [
+            120.25189971923828,
+            116.0,
+            291.0,
+            128.863037109375
+          ]
+        ],
+        [
+          null,
+          [
+            120.25189971923828,
+            128.863037109375,
+            291.0,
+            144.9410400390625
+          ]
+        ],
+        [
+          [
+            55.308950424194336,
+            144.9410400390625,
+            120.25189971923828,
+            543.0
+          ],
+          [
+            120.25189971923828,
+            144.9410400390625,
+            291.0,
+            543.0
+          ]
+        ]
+      ],
+      "original_backend_rows": [
+        [
+          "",
+          "Risk ratio (95% CI)"
+        ],
+        [
+          null,
+          "Model 1\nModel 2\nModel 3"
+        ],
+        [
+          "The overall popu-\nlation\n Low lifestyle \nscore\n Middle lifestyle \nscore\n High lifestyle \nscore\nMale\n Low lifestyle \nscore\n Middle lifestyle \nscore\n High lifestyle \nscore\nFemale\n Low lifestyle \nscore\n Middle lifestyle \nscore\n High lifestyle \nscore\nBy age group\n < 65 years old\n  Low lifestyle \nscore\n  Middle life-\nstyle score\n  High lifestyle \nscore\n \u2265 65 years old\n Low lifestyle \nscore\n  Middle life-\nstyle score\n  High lifestyle \nscore",
+          "1 (Reference)\n1 (Reference)\n1 (Reference)\n0.51 (0.30, 0.88)*\n0.55 (0.32, 0.94)*\n0.56 (0.33, 0.97)*\n0.26 (0.15, 0.48)*\n0.27 (0.15, 0.48)*\n0.26 (0.14, 0.47)*\n1 (Reference)\n1 (Reference)\n1 (Reference)\n0.59 (0.24, 1.45)\n0.61 (0.26, 1.41)\n0.61 (0.26, 1.40)\n0.33 (0.13, 0.83)*\n0.35 (0.14, 0.88)*\n0.33 (0.13, 0.85)*\n1 (Reference)\n1 (Reference)\n1 (Reference)\n0.47 (0.23, 0.96)*\n0.50 (0.24, 1.03)\n0.52 (0.25, 1.08)\n0.21 (0.09, 0.46)*\n0.21 (0.09, 0.47)*\n0.19 (0.08, 0.44)*\n1 (Reference)\n1 (Reference)\n1 (Reference)\n0.34 (0.12, 0.98)*\n0.34 (0.12, 1.00)*\n0.35 (0.12, 1.03)\n0.06 (0.01, 0.26)*\n0.06 (0.01, 0.27)*\n0.06 (0.01, 0.29)*\n1 (Reference)\n1 (Reference)\n1 (Reference)\n0.70 (0.37, 1.34)\n0.71 (0.38, 1.33)\n0.73 (0.39, 1.36)\n0.45 (0.22, 0.91)*\n0.43 (0.21, 0.89)*\n0.41 (0.20, 0.87)*"
+        ]
+      ],
+      "row_bounds": [
+        [
+          114.7650146484375,
+          124.541015625
+        ],
+        [
+          130.6610107421875,
+          140.43701171875
+        ],
+        [
+          149.30099487304688,
+          158.364990234375
+        ],
+        [
+          158.30099487304688,
+          167.364990234375
+        ],
+        [
+          170.39700317382812,
+          179.46099853515625
+        ],
+        [
+          179.39700317382812,
+          188.46099853515625
+        ],
+        [
+          191.50100708007812,
+          200.56500244140625
+        ],
+        [
+          200.50100708007812,
+          209.56500244140625
+        ],
+        [
+          212.60501098632812,
+          221.66900634765625
+        ],
+        [
+          221.60501098632812,
+          230.66900634765625
+        ],
+        [
+          233.70901489257812,
+          242.77301025390625
+        ],
+        [
+          245.80502319335938,
+          254.8690185546875
+        ],
+        [
+          254.80502319335938,
+          263.8690185546875
+        ],
+        [
+          266.9010314941406,
+          275.96502685546875
+        ],
+        [
+          275.9010314941406,
+          284.96502685546875
+        ],
+        [
+          288.0050354003906,
+          297.06903076171875
+        ],
+        [
+          297.0050354003906,
+          306.06903076171875
+        ],
+        [
+          309.1090393066406,
+          318.17303466796875
+        ],
+        [
+          321.2050476074219,
+          330.26904296875
+        ],
+        [
+          330.2050476074219,
+          339.26904296875
+        ],
+        [
+          342.3090515136719,
+          351.373046875
+        ],
+        [
+          351.3090515136719,
+          360.373046875
+        ],
+        [
+          363.4130554199219,
+          372.47705078125
+        ],
+        [
+          372.4130554199219,
+          381.47705078125
+        ],
+        [
+          384.5170593261719,
+          393.5810546875
+        ],
+        [
+          396.6130676269531,
+          405.67706298828125
+        ],
+        [
+          408.7170715332031,
+          417.78106689453125
+        ],
+        [
+          417.7170715332031,
+          426.78106689453125
+        ],
+        [
+          429.8210754394531,
+          438.88507080078125
+        ],
+        [
+          438.8210754394531,
+          447.88507080078125
+        ],
+        [
+          450.9250793457031,
+          459.98907470703125
+        ],
+        [
+          459.9250793457031,
+          468.98907470703125
+        ],
+        [
+          472.0290832519531,
+          486.7250671386719
+        ],
+        [
+          484.1250915527344,
+          493.1890869140625
+        ],
+        [
+          493.1250915527344,
+          502.1890869140625
+        ],
+        [
+          505.2290954589844,
+          514.2930908203125
+        ],
+        [
+          514.2290649414062,
+          523.2930908203125
+        ],
+        [
+          526.3810424804688,
+          535.445068359375
+        ],
+        [
+          535.3810424804688,
+          544.445068359375
+        ]
+      ],
+      "horizontal_rules": [
+        116.0,
+        144.9410400390625,
+        543.0,
+        112.9410400390625,
+        116.0,
+        144.9410400390625,
+        543.0,
+        548.1160278320312
+      ],
+      "table_orientation": "upright",
+      "rotation_source": "pymupdf_line_direction",
+      "rotation_direction": "upright",
+      "rotation_confidence": 1.0,
+      "signals": {
+        "caption_match": true,
+        "table_1_match": false,
+        "caption_table_number": 2,
+        "caption_is_continuation": false,
+        "first_column_text_ratio": 1.0,
+        "later_column_numeric_ratio": 0.98,
+        "rectangular": false
+      },
+      "table_number": 2,
+      "is_continuation": false,
+      "continuation_of_table_number": null,
+      "bbox": [
+        55.308950424194336,
+        116.0,
+        291.0,
+        543.0
+      ],
+      "candidate_score": 0.9000000000000001,
+      "table_numbering_audit": {
+        "observed_table_numbers": [
+          1,
+          2
+        ],
+        "missing_table_numbers": []
+      }
+    }
+  }
+]

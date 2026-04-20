@@ -1,0 +1,78 @@
+[
+  {
+    "table_id": "cobaltpaper-p3-t0",
+    "title": "Table 1",
+    "caption": "Table 1",
+    "table_family": "descriptive_characteristics",
+    "should_run_llm_semantics": true,
+    "family_confidence": 0.98,
+    "evidence": [
+      "body_contains_descriptive_summary_patterns",
+      "body_contains_multiple_count_percent_cells",
+      "row_structure_contains_parent_level_blocks",
+      "header_contains_group_or_overall_columns",
+      "p_value_column_matches_p_value_like_cells"
+    ],
+    "notes": []
+  },
+  {
+    "table_id": "cobaltpaper-p3-t1",
+    "title": "Table 2",
+    "caption": "Table 2",
+    "table_family": "descriptive_characteristics",
+    "should_run_llm_semantics": true,
+    "family_confidence": 0.98,
+    "evidence": [
+      "body_contains_descriptive_summary_patterns",
+      "body_contains_multiple_count_percent_cells",
+      "row_structure_contains_parent_level_blocks",
+      "header_contains_group_or_overall_columns",
+      "p_value_column_matches_p_value_like_cells"
+    ],
+    "notes": []
+  },
+  {
+    "table_id": "cobaltpaper-p4-t0",
+    "title": "Table 3",
+    "caption": "Table 3",
+    "table_family": "unknown",
+    "should_run_llm_semantics": false,
+    "family_confidence": 0.45,
+    "evidence": [
+      "title_caption_or_header_mentions_estimate_metric"
+    ],
+    "notes": []
+  },
+  {
+    "table_id": "cobaltpaper-p4-t1",
+    "title": "Table 4",
+    "caption": "Table 4",
+    "table_family": "estimate_results",
+    "should_run_llm_semantics": false,
+    "family_confidence": 0.98,
+    "evidence": [
+      "title_caption_or_header_mentions_estimate_metric",
+      "header_mentions_estimate_metric_or_ci",
+      "header_mentions_model_or_adjustment",
+      "row_structure_contains_parent_level_blocks",
+      "p_value_column_matches_p_value_like_cells"
+    ],
+    "notes": []
+  },
+  {
+    "table_id": "cobaltpaper-p5-t0",
+    "title": "Table 5",
+    "caption": "Table 5",
+    "table_family": "estimate_results",
+    "should_run_llm_semantics": false,
+    "family_confidence": 0.98,
+    "evidence": [
+      "title_caption_or_header_mentions_estimate_metric",
+      "header_mentions_estimate_metric_or_ci",
+      "header_mentions_model_or_adjustment",
+      "row_structure_contains_parent_level_blocks",
+      "p_value_column_matches_p_value_like_cells"
+    ],
+    "notes": []
+  }
+]

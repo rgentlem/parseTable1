@@ -1,0 +1,33 @@
+{
+  "table_id": "periodontitis-p11-t0",
+  "table_index": 3,
+  "table_label": null,
+  "title": null,
+  "caption": null,
+  "row_terms": [
+    "SD"
+  ],
+  "column_terms": [
+    "National Health and Nutrition Examination Survey"
+  ],
+  "grouping_terms": [
+    "NHANES"
+  ],
+  "methods_like_section_ids": [
+    "section_6",
+    "section_7"
+  ],
+  "results_like_section_ids": [
+    "section_11"
+  ],
+  "passages": [
+    {
+      "passage_id": "section_7_p0",
+      "section_id": "section_7",
+      "heading": "**Study design and populations**",
+      "text": "A total of 5,611 individuals were included in this study for the analysis using NHANES 2009-2014 data (Fig. 1). Participants were invited to complete oral examination and health examination in the mobile examination centers (MECs). Based on a computerized 24-hour dietary Page 3 of 12 Xu _et al. BMC Oral Health_ (2024) 24:182 **==> picture [427 x 320] intentionally omitted <==** **Fig. 1** Data analysis screening flow chart recall method, the first dietary measurement was administered via a face-to-face interview and the second was collected by telephone. Age, gender, ethnicity, educational level, smoking and drinking habits, sleep patterns, physical activity and medical history were collected by self-reported questionnaires. All NHANES protocols that generated the data used were approved by the National Center for Health Statistics (NCHS) at the Centers for Disease Control and Prevention (CDC).",
+      "match_type": "methods_term_match",
+      "score": 0.5333
+    }
+  ]
+}

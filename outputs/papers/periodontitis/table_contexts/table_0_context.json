@@ -1,0 +1,54 @@
+{
+  "table_id": "periodontitis-p5-t0",
+  "table_index": 0,
+  "table_label": "Table 1",
+  "title": "Table 1 Demographic baseline characteristics: NHANES (2009 to 2014)",
+  "caption": "Table 1 Demographic baseline characteristics: NHANES (2009 to 2014)",
+  "row_terms": [
+    "Age (years), Mean (SD)",
+    "Gender, n (%)",
+    "Ethnicity, n (%)",
+    "Marital status, n (%)",
+    "Educational level, n (%)",
+    "Family income-to-poverty ratio, n (%)",
+    "Smoking status, n (%)",
+    "Drinking status, n (%)",
+    "Sleeping status, n (%)",
+    "BMI status, n (%)",
+    "Physical activity level, n (%)",
+    "Energy intake level, n (%)",
+    "History of diabetes, n (%)",
+    "Self-reported oral health, n (%)"
+  ],
+  "column_terms": [
+    "0-1 (n=1815)",
+    "2-3 (n=3233)",
+    "4-6 (n=563)"
+  ],
+  "grouping_terms": [],
+  "methods_like_section_ids": [
+    "section_6",
+    "section_7"
+  ],
+  "results_like_section_ids": [
+    "section_11"
+  ],
+  "passages": [
+    {
+      "passage_id": "section_12_p0",
+      "section_id": "section_12",
+      "heading": "**Demographic and periodontal characteristics**",
+      "text": "Baseline characteristics by each lifestyle score group were presented in Table 1. There were 5,611 participants included in this study: 1,815 participants with 0-1 healthy lifestyle factor (mean age 52.12 (13.51)), 3,233 with 2-3 healthy lifestyle factors (mean age 52.33 (14.38)), and 563 with 4-6 healthy lifestyle factors (mean age 50.63 (14.82)). Four lifestyle factors, including nonsmoking, moderate alcohol consumption, healthy BMI, and healthy sleep, had significant difference between the periodontitis and healthy groups ( _p_ < 0.05, Table 2).",
+      "match_type": "table_reference",
+      "score": 1.0
+    },
+    {
+      "passage_id": "section_13_p0",
+      "section_id": "section_13",
+      "heading": "**Associations of single lifestyle factor with periodontitis**",
+      "text": "Results showed that the prevalence of periodontitis was the highest in current smokers (OR: 2.22, 95% CI: 1.82 to 2.71), followed by former smokers (OR: 1.36, 95% CI: 1.14 to 1.64) and non-smokers (Figure S1). The restricted cubic splines model revealed the non-linear relationship between the prevalence of periodontitis and alcohol consumption quantity ( _p_ Drinking-Female for nonlinearity = 0.006, Fig. 2A; _p_ Drinking-Male = 0.047, Fig. 2B). Furthermore, the logistic regression model indicated that heavy drinking (> 56 g/d) significantly increased periodontitis prevalence (OR: 1.51, 95% CI: 1.14 to 1.99), however, no statistical difference (OR: 0.96, 95% CI: 0.81 to 1.14) was identified between the association of moderate drinking (14-56 g/d) and periodontitis prevalence (Figure S1). Moreover, obese (BMI >= 30) (OR: 1.38, 95% CI: 1.16 to 1.64) and overweight populations (25 <= BMI < 30) (OR: 1.38, 95% CI: 1.17 to 1.62) had a higher periodontitis prevalence than normal weight populations (18.5 <= BMI < 25.0) (Figure S1). Regarding sleep duration, the non-linear dose-response relationship was found between periodontitis prevalence and sleep duration ( _p_ Sleep for nonlinearity = 0.004) (Fig. 2D). Additionally, the logistic regression model revealed that sleep deprivation (< 7 h) had a higher periodontitis prevalence than their counterparts (7-9 h) (OR: 1.28, 95% CI: 1.08 to 1.53) (Figure S1). For energy intake and physical exercise, insufficient intake (OR: 1.17, 95% CI: 1.01 to 1.35) and overactivity (OR: 1.21, 95% CI: 1.01 to 1.45) was found associated with an increased prevalence of periodontitis in the initial model (Figure S1). However, we found no evidence of nonlinearity in associations between the prevalence of periodontitis and lifestyles including BMI, energy intake and physical activity ( _p_ values > 0.05, Fig. 2C, E, F). Page 5 of 12 Xu _et al. BMC Oral Health_ (2024) 24:182 **Table 1** Demographic baseline characteristics: NHANES (2009 to 2014) |**Characteristics**|**Healthy lifestyle score**| |---|---| ||**All(****_n_=5611)**<br>**0-1(****_n_=1815)**<br>**2-3(****_n_=3233)**<br>**4-6(****_n_=563)**<br>**p value**| |**Age (years), Mean**(**SD)**<br>**Gender, n (%)**<br>Male<br>Female<br>**Ethnicity, n (%)**<br>Mexican American<br>Other Hispanic<br>Non-Hispanic White<br>Non-Hispanic Black<br>Other Race-Including Multi-Racial<br>**Marital status, n (%)**<br>Married/Living with Partner<br>Widowed/Divorced/Separated/Never married<br>**Educational level, n (%)**<br>Less than high school<br>High school or higher<br>**Family income-to-poverty ratio, n (%)**<br>Low income (<=1.85)<br>High income (>1.85)<br>**Smoking status, n (%)**<br>No smoking<br>Former smoking<br>Current smoking<br>**Drinking status, n (%)**<br>0-14 g/d<br>14-56 g/d<br>>56 g/d<br>**Sleeping status, n (%)**<br>0-6 h<br>7-9 h<br>>9 h<br>**BMI status, n (%)**<br>Underweight (18.5 kg/m2)<br>Normal (18.5-30 kg/m2)<br>Obese (>30 kg/m2)<br>**Physical activity level, n (%)**<br>Lower 1/3 MET<br>Middle 1/3 MET<br>Upper 1/3 MET<br>**Energy intake level, n (%)**<br>Insufcient intake<br>Adequate intake<br>Excess intake<br>**History of diabetes, n (%)**<br>No<br>Yes<br>Unknown or missing<br>**Self-reported oral health, n (%)**<br>Excellent/Very good/Good<br>Fair/Poor<br>Unknown or missing|52.09 (14.16)<br>52.12 (13.51)<br>52.33 (14.38)<br>50.63 (14.82)<br>0.03<br><0.01<br>2935 (52.31)<br>871(47.99)<br>1731 (53.54)<br>333 (59.51)<br>2676 (47.69)<br>944 (52.01)<br>1502 (46.46)<br>230 (20.85)<br><0.01<br>666 (11.87)<br>242 (13.33)<br>380 (11.75)<br>44 (7.82)<br>495 (8.82)<br>191(10.52)<br>267 (8.26)<br>37(6.57)<br>2849 (50.78)<br>862 (47.49)<br>1668 (51.59)<br>319 (56.66)<br>1050 (18.71)<br>417 (22.98)<br>582 (18.00)<br>51 (9.06)<br>551 (9.82)<br>103 (5.67)<br>336 (10.39)<br>112 (19.89)<br><0.01<br>3690 (65.76)<br>1070 (58.95)<br>2205 (68.20)<br>415 (73.71)<br>1921 (34.24)<br>745 (41.05)<br>1028 (31.80)<br>148 (26.29)<br><0.01<br>1013 (18.05)<br>428 (23.58)<br>537 (16.61)<br>48 (8.53)<br>4589 (81.95)<br>1387 (76.42)<br>2696 (83.39)<br>515 (91.47)<br>1998 (35.61)<br>821 (45.23)<br>1054 (32.60)<br>123 (21.85)<br><0.01<br>3613 (64.39)<br>994 (54.77)<br>2179 (67.40)<br>440 (78.15)<br>2881 (51.35)<br>396 (21.82)<br>1991 (61.58)<br>494 (87.74)<br><0.01<br>1583 (28.21)<br>772 (42.53)<br>770 (23.82)<br>41 (7.28)<br>1147 (20.44)<br>647 (35.65)<br>472 (14.60)<br>28 (4.97)<br><0.01<br>1008 (17.96)<br>98 (5.40)<br>667 (20.63)<br>243 (43.16)<br>3884 (69.22)<br>1362 (75.04)<br>2218 (68.61)<br>304 (54.00)<br>719 (12.81)<br>355 (19.56)<br>348 (10.76)<br>16 (2.84)<br><0.01<br>2146 (38.25)<br>1213 (66.83)<br>895 (27.68)<br>38 (6.75)<br>3093 (55.12)<br>477 (26.28)<br>2128 (65.82)<br>488 (86.68)<br>372 (6.63)<br>125 (6.89)<br>210 (6.50)<br>37 (6.57)<br><0.01<br>63 (1.12)<br>33 (1.82)<br>27 (0.84)<br>3 (0.53)<br>3488 (62.16)<br>895 (49.31)<br>2106 (65.14)<br>487 (86.50)<br>2060 (36.71)<br>887 (48.87)<br>1100 (34.02)<br>73 (12.97)<br><0.01<br>2521 (44.93)<br>1042 (57.41)<br>1361 (42.10)<br>118 (20.96)<br>1843 (32.85)<br>280 (15.43)<br>1176 (36.37)<br>387 (68.74)<br>1247 (22.22)<br>493 (27.16)<br>696 (21.53)<br>58 (10.30)<br><0.01<br>2441 (43.50)<br>864 (47.60)<br>1380 (42.68)<br>197 (34.99)<br>2513 (44.79)<br>878 (48.37)<br>1426 (44.11)<br>209 (37.12)<br>657 (11.71)<br>73 (4.02)<br>427 (13.21)<br>157 (27.89)<br><0.01<br>4858 (86.58)<br>1507 (83.03)<br>2829 (87.50)<br>522 (92.72)<br>633 (11.28)<br>258 (14.21)<br>340 (10.52)<br>35 (6.22)<br>120 (2.14)<br>50 (2.75)<br>64 (1.98)<br>6 (1.07)<br><0.01<br>3930 (70.04)<br>1104 (60.83)<br>2359 (72.97)<br>469 (82.95)<br>1610 (28.69)<br>681 (37.52)<br>835 (25.83)<br>94 (16.07)<br>71(1.27)<br>30(1.65)<br>39(1.21)<br>2(0.36)| Descriptive data were shown as mean (SD) while categorical variables were reported as n (%). P-values less than 0.05 ( _p_ < 0.05) were considered significant. n: number Page 6 of 12 Xu _et al. BMC Oral Health_ (2024) 24:182 **Table 2** Differences between periodontitis and healthy groups regarding lifestyles characteristics ||**Healthy**|**Periodonti-**|**p**| |---|---|---|---| ||**Control**|**tis (****_n_ = 3338)**|**value**| ||**(****_n_ = 2273)**||| |**Age (years), Mean**(**SD)**|49.14 (14.03)|54.11 (13.89)|< 0.01| |**Gender, n (%)**|||< 0.01| |Male|968 (42.59)|1967 (58.93)|| |Female|1305 (57.41)|1371 (41.07)|| |**Ethnicity, n (%)**|||< 0.01| |Mexican American|192 (8.45)|474 (14.20)|| |Other Hispanic|193 (8.49)|302 (9.05)|| |Non-Hispanic White|1334 (58.69)|1515 (45.39)|| |Non-Hispanic Black|364 (16.01)|686 (20.55)|| |Other Race-Including|190 (8.36)|361 (10.81)|| |Multi-Racial|||| |**Marital status, n (%)**|||0.13| |Married/Living with Partner|1521 (66.92)|2169 (64.98)|| |Widowed/Divorced/Separated/|752 (33.08)|1169 (35.02)|| |Never married|||| |**Educational level, n (%)**|||< 0.01| |Less than high school|310 (13.64)|703 (21.06)|| |High school or higher|1963 (86.36)|2635 (78.94)|| |**Family income-to-poverty ratio,**|**n (%)**||< 0.01| |Low income (<= 1.85)|681 (29.96)|1317 (39.45)|| |High income (> 1.85)|1592 (70.04)|2021 (60.55)|| |**History of diabetes, n (%)**|||< 0.01| |No|2012 (88.52)|2846 (85.26)|| |Yes|215 (9.46)|418 (12.52)|| |Unknown or missing|46 (2.02)|74 (2.22)|| |**Self-reported oral health, n (%)**|||< 0.01| |Excellent/Very good/Good|1821 (80.11)|2109 (63.18)|| |Fair/Poor|391 (17.20)|1219 (36.52)|| |Unknown or missing|61(2.68)|10 (0.30)|| |**No Smoking, n (%)**|||< 0.01| |No|948 (41.71)|1782 (53.39)|| |Yes|1325 (58.29)|1556 (46.61)|| |**Healthy drinking, n (%)**|||0.01| |No|188 (8.27)|353 (10.58)|| |Yes|2085 (91.73)|2985 (89.42)|| |**Healthy sleeping, n (%)**|||< 0.01| |No|858 (37.75)|1403 (42.03)|| |Yes|1415 (62.25)|1935 (57.97)|| |**Healthy BMI, n (%)**|||< 0.01| |No|1615 (71.05)|2515 (75.34)|| |Yes|658 (28.95)|823 (24.66)|| |**Healthy energy intake, n (%)**|||0.90| |No|2005 (88.21)|2948 (88.32)|| |Yes|268 (11.79)|390 (11.68)|| |**Healthy physical activities, n (%)**|||0.38| |No|1754 (77.17)|2609 (78.16)|| |Yes|519(22.83)|729(21.84)|| Descriptive data were shown as mean (SD) while categorical variables were reported as n (%). P-values less than 0.05 ( _p_ < 0.05) were considered significant. N: number",
+      "match_type": "table_reference",
+      "score": 1.0
+    }
+  ]
+}

@@ -624,6 +624,52 @@ def _refine_explicit_table_candidate_grid(
                     "geometry_coordinate_frame": "table_local_rotated_normalized",
                 }
 
+    if collapsed_explicit_grid:
+        refined_lines = build_word_lines(clipped_words)
+        if len(horizontal_rules) >= 3:
+            footer_boundary = sorted(horizontal_rules)[-1]
+            refined_lines = [
+                line
+                for line in refined_lines
+                if float(line["bottom"]) <= footer_boundary + 1.5
+            ]
+        refined_rows, refined_cell_bboxes = build_row_grid_from_lines(
+            refined_lines,
+            page_chars=clipped_chars,
+        )
+        if refined_rows:
+            keep_indices = [
+                col_idx
+                for col_idx in range(len(refined_rows[0]))
+                if any(col_idx < len(row) and row[col_idx].strip() for row in refined_rows)
+            ]
+            if keep_indices:
+                refined_rows = [
+                    [row[col_idx] for col_idx in keep_indices]
+                    for row in refined_rows
+                ]
+                refined_cell_bboxes = [
+                    [row[col_idx] for col_idx in keep_indices]
+                    for row in refined_cell_bboxes
+                ]
+            if (
+                len(refined_rows) >= len(raw_rows) + 4
+                and max((len(row) for row in refined_rows), default=0)
+                > max((len(row) for row in raw_rows), default=0)
+            ):
+                return {
+                    "raw_rows": refined_rows,
+                    "table_cells": refined_cell_bboxes,
+                    "refined_table_cells": refined_cell_bboxes,
+                    "row_bounds": [
+                        (float(line["top"]), float(line["bottom"]))
+                        for line in refined_lines
+                    ],
+                    "horizontal_rules": horizontal_rules,
+                    "grid_refinement_source": "collapsed_explicit_grid_word_positions",
+                    "geometry_coordinate_frame": "page",
+                }
+
     header_text = " ".join(
         cell
         for row in raw_rows[:2]

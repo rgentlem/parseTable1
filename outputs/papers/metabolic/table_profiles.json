@@ -1,0 +1,36 @@
+[
+  {
+    "table_id": "metabolic-p5-t0",
+    "title": "Table 1 Baseline characteristics of the participants",
+    "caption": "Table 1 Baseline characteristics of the participants",
+    "table_family": "descriptive_characteristics",
+    "should_run_llm_semantics": true,
+    "family_confidence": 0.98,
+    "evidence": [
+      "title_or_caption_mentions_characteristics",
+      "body_contains_descriptive_summary_patterns",
+      "body_contains_multiple_count_percent_cells",
+      "row_structure_contains_parent_level_blocks",
+      "body_contains_multiple_inline_estimate_intervals"
+    ],
+    "notes": []
+  },
+  {
+    "table_id": "metabolic-p6-t0",
+    "title": "Table 2 RRs (95% CI) of all-cause mortality according to lifestyle category, age, and sex",
+    "caption": "Table 2 RRs (95% CI) of all-cause mortality according to lifestyle category, age, and sex",
+    "table_family": "estimate_results",
+    "should_run_llm_semantics": false,
+    "family_confidence": 0.98,
+    "evidence": [
+      "title_caption_or_header_mentions_estimate_metric",
+      "header_mentions_estimate_metric_or_ci",
+      "header_mentions_model_or_adjustment",
+      "body_contains_descriptive_summary_patterns",
+      "row_structure_contains_parent_level_blocks",
+      "header_contains_group_or_overall_columns",
+      "body_contains_multiple_inline_estimate_intervals"
+    ],
+    "notes": []
+  }
+]

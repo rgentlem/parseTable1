@@ -1,0 +1,65 @@
+{
+  "table_id": "fld-p5-t0",
+  "table_index": 0,
+  "table_label": "Table 1",
+  "title": "Table 1 Baseline characteristics",
+  "caption": "Table 1 Baseline characteristics",
+  "row_terms": [
+    "Sex, n (%)",
+    "Age, years, mean(SD)",
+    "Weight, kg, mean(SD)",
+    "Height, cm, mean(SD)",
+    "BMI, kg/m2, mean(SD)",
+    "Race, n (%)",
+    "Family PIR",
+    "Education, n (%)",
+    "Marital status, n (%)",
+    "Alcohol user, n (%)",
+    "Smoking status, n (%)",
+    "Hypertension, n (%)",
+    "Diabetes, n (%)",
+    "AISI",
+    "log2-AISI"
+  ],
+  "column_terms": [
+    "Non-FLD group (n = 1,584)",
+    "FLD group (n = 2,377)"
+  ],
+  "grouping_terms": [
+    "Table 1 Baseline characteristics Variables"
+  ],
+  "methods_like_section_ids": [
+    "section_6",
+    "section_9",
+    "section_10"
+  ],
+  "results_like_section_ids": [
+    "section_12"
+  ],
+  "passages": [
+    {
+      "passage_id": "section_13_p0",
+      "section_id": "section_13",
+      "heading": "**Fundamental characteristics**",
+      "text": "Table 1 outlines the core attributes of NHANES carried out between 2017 and 2020. There were 3,961 participants, among whom 2,377 were diagnosed with FLD. This group comprised 1,313 males (55.24%) and 1,064 females (44.76%). The mean age was 47.11 \u00b1 18.46 years for the non-FLD group, and 53.21 \u00b1 16.03 years for the FLD group. The non-FLD group had a mean BMI of 25.90 \u00b1 5.24, as opposed to 32.66 \u00b1 7.31 for the FLD group. In contrast to individuals without FLD, those diagnosed with FLD tended to be older and exhibited elevated weight and BMI. Additionally, the two groups showed significant differences in height, race, marital status, education, smoking status, and medical histories of hypertension and diabetes ( _P_ < 0.05). The two groups showed no significant differences in family PIR, or alcohol consumption. Patients with FLD showed significantly higher average values for both the AISI and log2-AISI. This disparity was notable when compared to the nonFLD population.",
+      "match_type": "table_reference",
+      "score": 1.0
+    },
+    {
+      "passage_id": "section_15_p0",
+      "section_id": "section_15",
+      "heading": "**Multiple logistic regression models**",
+      "text": "Figure 2 showed a multiple logistic regression model. In this model, the primary variable was log2-AISI, with sex, age, BMI, race, education, marital status, alcohol use, hypertension, and diabetes serving as covariates. After accounting for the multiple logistic regression model, the AISI score was still an important marker of FLD risk. Individuals with higher log2-AISI values had an increased likelihood of developing FLD (OR = 1.08, 95% CI: 1.01, 1.16, _P_ = 0.021). Age (OR = 1.02, 95% CI: 1.02, 1.03, _P_ < 0.001) and BMI (OR = 1.23, 95% CI: 1.21, 1.25, _P_ < 0.001) were positively correlated with increased FLD risk. Women had a lower FLD risk than men (OR = 0.64, 95% CI: 0.54, 0.74, _P_ < 0.001). Compared to Mexican American, FLD risk was significantly lower in Other Hispanic (OR = 0.63, 95% CI: 0.45, 0.88, _P_ = 0.006), Non-Hispanic White (OR = 0.52, 95% CI: 0.40, 0.69, _P_ < 0.001), and Non-Hispanic Black (OR = 0.27, 95% CI: 0.20, 0.36, _P_ < 0.001). Unmarried individuals exhibited a notably reduced FLD risk compared to those who were married or living with partner (OR = 0.83, 95% CI: 0.71, 0.98, _P_ = 0.024). Patients with a history of hypertension Page 5 of 12 Zhang _et al. BMC Gastroenterology_ (2025) 25:399 **Table 1** Baseline characteristics |**Table 1**Baseline characteristics||||| |---|---|---|---|---| |**Variables**|**Overall(****_n_ = 3,961)**|**Non-FLDgroup (****_n_ = 1,584)**|**FLDgroup (****_n_ = 2,377)**|**_P_-value**| |Sex, n (%)||||**< 0.001**| |Male|2,058 (51.96%)|745 (47.03%)|1,313 (55.24%)|| |Female|1,903 (48.04%)|839 (52.97%)|1,064 (44.76%)|| |Age, years, mean(SD)|50.77 \u00b1 17.30|47.11 \u00b1 18.46|53.21 \u00b1 16.03|**< 0.001**| |< 60years|2,512 (63.42%)|1,105 (69.76%)|1,407 (59.19%)|**< 0.001**| |>= 60years|1,449 (36.58%)|479 (30.24%)|970 (40.81%)|| |Weight, kg, mean(SD)|84.05 \u00b1 22.53|72.03 \u00b1 16.04|92.07 \u00b1 22.68|**< 0.001**| |Height, cm, mean(SD)|167.28 \u00b1 9.75|166.64 \u00b1 9.54|167.71 \u00b1 9.86|**< 0.001**| |BMI, kg/m2, mean(SD)|29.95 \u00b1 7.34|25.90 \u00b1 5.24|32.66 \u00b1 7.31|**< 0.001**| |Race, n (%)||||**< 0.001**| |Mexican American|513 (12.95%)|139 (8.78%)|374 (15.73%)|| |Other Hispanic|359 (9.06%)|132 (8.33%)|227 (9.55%)|| |Non-Hispanic White|1,563 (39.46%)|610 (38.51%)|953 (40.09%)|| |Non-Hispanic Black|864 (21.81%)|423 (26.70%)|441 (18.55%)|| |Other race (including multi-racial)|662 (16.71%)|280 (17.68%)|382 (16.07%)|| |Family PIR||||0.511| |< 1.5|1,300 (32.82%)|531 (33.52%)|769 (32.35%)|| |1.5-3.5|1,415 (35.72%)|549 (34.66%)|866 (36.43%)|| |>= 3.5|1,246 (31.46%)|504 (31.82%)|742 (31.22%)|| |Education, n (%)||||**0.029**| |Less than high school|673 (16.99%)|240 (15.15%)|433 (18.22%)|| |High school or GED|972 (24.54%)|386 (24.37%)|586 (24.65%)|| |Some college or AA degree above|2,316 (58.47%)|958 (60.48%)|1,358 (57.13%)|| |Marital status, n (%)||||**< 0.001**| |Married/Living with partner|2,350 (59.33%)|868 (54.80%)|1,482 (62.35%)|| |Living alone|1,611 (40.67%)|716 (45.20%)|895 (37.65%)|| |Alcohol user, n (%)||||0.099| |Yes|2,642 (66.70%)|1,081 (68.24%)|1,561 (65.67%)|| |No|1,319 (33.30%)|503 (31.76%)|816 (34.33%)|| |Smoking status, n (%)||||**0.002**| |Yes|1,857 (46.88%)|694 (43.81%)|1,163 (48.93%)|| |No|2,104 (53.12%)|890 (56.19%)|1,214 (51.07%)|| |Hypertension, n (%)||||**< 0.001**| |Yes|1,499 (37.84%)|417 (26.33%)|1,082 (45.52%)|| |No|2,462 (62.16%)|1,167 (73.67%)|1,295 (54.48%)|| |Diabetes, n (%)||||**< 0.001**| |Yes|632 (15.96%)|116 (7.32%)|516 (21.71%)|| |No|3,329 (84.04%)|1,468 (92.68%)|1,861 (78.29%)|| |AISI|392.15 \u00b1 383.54|346.37 \u00b1 331.30|422.65 \u00b1 411.97|**< 0.001**| |log2-AISI|8.16 \u00b1 1.13|8.00 \u00b1 1.12|8.27 \u00b1 1.12|**< 0.001**| (OR = 1.22, 95% CI: 1.02, 1.47, _P_ = 0.030) or diabetes (OR = 1.79, 95% CI: 1.39, 2.31, _P_ < 0.001) were at increased risk of FLD.",
+      "match_type": "table_reference",
+      "score": 1.0
+    },
+    {
+      "passage_id": "section_16_p0",
+      "section_id": "section_16",
+      "heading": "**Nomogram to predict FLD**",
+      "text": "Based on significant risk factors identified through multivariate logistic regression analysis, we developed a nomogram (Fig. 3) to predict FLD risk. The model demonstrated a C-index of 0.814 and an AIC value of 4015.7, with no multicollinearity among the variables (Supplementary Table 1) nor interaction effects (Supplementary Table 2). The results showed that higher AISI, male, older age, obesity, Mexican American, married/living with partner, hypertension, and diabetes were risk factors for FLD. Clinicians could obtain corresponding scores from the nomogram based on the patient\u2019s specific characteristics. By summing these scores, the probability associated with the total score could be used to estimate the risk of developing FLD. A higher total score indicated a greater risk, which can aid in implementing stratified management and personalized interventions. Nomogram demonstrated good discriminatory performance, with an AUC of 0.814 (95% CI: 0.800, 0.827) (Fig. 4). Compared to the model excluding log2-AISI Page 6 of 12 Zhang _et al. BMC Gastroenterology_ (2025) 25:399 **Table 2** Univariate logistic regression examination of FLD |**Variables**|**OR(95%CI)**|**_P_-value**| |---|---|---| |Sex, n (%)||| |Male|Reference|| |Female|0.72 (0.63, 0.82)|**< 0.001**| |Age, years, mean(SD)|1.02 (1.02, 1.02)|**< 0.001**| |< 60years|Reference|| |>= 60years|1.59 (1.39, 1.82)|**< 0.001**| |Weight, kg, mean(SD)|1.06 (1.06, 1.06)|**< 0.001**| |Height, cm, mean(SD)|1.01 (1.00, 1.02)|**< 0.001**| |BMI, kg/m2, mean(SD)|1.22 (1.20, 1.24)|**< 0.001**| |Race, n (%)||| |Mexican American|Reference|| |Other Hispanic|0.64 (0.48, 0.85)|**0.003**| |Non-Hispanic White|0.58 (0.47, 0.72)|**< 0.001**| |Non-Hispanic Black|0.39 (0.31, 0.49)|**< 0.001**| |Other race (including multi-racial)|0.51 (0.40, 0.65)|**< 0.001**| |Family PIR||| |< 1.5|Reference|| |1.5-3.5|1.09 (0.93, 1.27)|0.277| |>= 3.5|1.02 (0.87, 1.19)|0.839| |Education, n (%)||| |Less than high school|Reference|| |High school or GED|0.84 (0.69, 1.03)|0.096| |Some college or AA degree above|0.79 (0.66, 0.94)|**0.008**| |Marital status, n (%)||| |Married/Living with Partner|Reference|| |Living alone|0.73 (0.64, 0.83)|**< 0.001**| |Alcohol user, n (%)||| |No|Reference|| |Yes|0.89 (0.78, 1.02)|0.092| |Smoking status, n (%)||| |No|Reference|| |Yes|1.23 (1.08, 1.40)|**0.002**| |Hypertension, n (%)||| |No|Reference|| |Yes|2.34 (2.04, 2.68)|**< 0.001**| |Diabetes, n (%)||| |No|Reference|| |Yes|3.50 (2.84, 4.35)|**< 0.001**| |AISI|1.00 (1.00, 1.00)|**< 0.001**| |log2-AISI|1.20(1.13,1.27)|**< 0.001**| (AUC = 0.807, 95% CI: 0.794, 0.821), the inclusion of log2-AISI provided a statistically meaningful improvement in predictive accuracy. The optimal cutoff value was 0.082, with the maximum Youden index of 0.459, yielding a sensitivity of 74.9% and a specificity of 71.0% for prediction. The calibration curve results (Fig. 5) showed a high level of agreement between the model\u2019s predicted probabilities and the actual observed probabilities, with a mean absolute error of only 0.021, indicating that the model was well-calibrated. DCA (Fig. 6) demonstrated that the nomogram offered a greater net benefit compared to both the \u201ctreat-all\u201d and \u201ctreat-none\u201d approaches over a threshold probability range from 10 to 95%, confirming its clinical utility in routine practice.",
+      "match_type": "table_reference",
+      "score": 1.0
+    }
+  ]
+}

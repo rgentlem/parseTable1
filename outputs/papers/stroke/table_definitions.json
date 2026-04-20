@@ -1,0 +1,677 @@
+[
+  {
+    "table_id": "stroke-p6-t0",
+    "title": "Table 1 Baseline characteristics of the study participants grouped by stroke status",
+    "caption": "Table 1 Baseline characteristics of the study participants grouped by stroke status",
+    "variables": [
+      {
+        "variable_name": "Sex man",
+        "variable_label": "Sex-man, n (%)",
+        "variable_type": "unknown",
+        "row_start": 3,
+        "row_end": 3,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Race",
+        "variable_label": "Race, n (%)",
+        "variable_type": "categorical",
+        "row_start": 4,
+        "row_end": 9,
+        "levels": [
+          {
+            "level_name": "Non-Hispanic White",
+            "level_label": "Non-Hispanic White",
+            "row_idx": 5,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Non-Hispanic Black",
+            "level_label": "Non-Hispanic Black",
+            "row_idx": 6,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Mexican American",
+            "level_label": "Mexican American",
+            "row_idx": 7,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Other Hispanic",
+            "level_label": "Other Hispanic",
+            "row_idx": 8,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Other",
+            "level_label": "Other",
+            "row_idx": 9,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Smoking",
+        "variable_label": "Smoking, n (%)",
+        "variable_type": "unknown",
+        "row_start": 10,
+        "row_end": 10,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Drinking",
+        "variable_label": "Drinking, n (%)",
+        "variable_type": "unknown",
+        "row_start": 11,
+        "row_end": 11,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Education level",
+        "variable_label": "Education level, n (%)",
+        "variable_type": "categorical",
+        "row_start": 12,
+        "row_end": 17,
+        "levels": [
+          {
+            "level_name": "Below high school",
+            "level_label": "Below high school",
+            "row_idx": 13,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "High school",
+            "level_label": "High school",
+            "row_idx": 14,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Above high school",
+            "level_label": "Above high school",
+            "row_idx": 15,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "SBP, mmHg",
+            "level_label": "SBP, mmHg",
+            "row_idx": 16,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "DBP, mmHg",
+            "level_label": "DBP, mmHg",
+            "row_idx": 17,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Diabetes",
+        "variable_label": "Diabetes, n (%)",
+        "variable_type": "categorical",
+        "row_start": 18,
+        "row_end": 32,
+        "levels": [
+          {
+            "level_name": "FBG, mmol/L",
+            "level_label": "FBG, mmol/L",
+            "row_idx": 19,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "HbA1c, %",
+            "level_label": "HbA1c, %",
+            "row_idx": 20,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "eGFR, ml/min/1.73m2",
+            "level_label": "eGFR, ml/min/1.73m2",
+            "row_idx": 21,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "TG, mmol/L",
+            "level_label": "TG, mmol/L",
+            "row_idx": 22,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "TC, mmol/L",
+            "level_label": "TC, mmol/L",
+            "row_idx": 23,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "LDL-C, mmol/L",
+            "level_label": "LDL-C, mmol/L",
+            "row_idx": 24,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "HDL-C, mmol/L",
+            "level_label": "HDL-C, mmol/L",
+            "row_idx": 25,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "RBC, \u00d7109/L",
+            "level_label": "RBC, \u00d7109/L",
+            "row_idx": 26,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "WBC, \u00d7109/L",
+            "level_label": "WBC, \u00d7109/L",
+            "row_idx": 27,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "NE, \u00d7109/L",
+            "level_label": "NE, \u00d7109/L",
+            "row_idx": 28,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Monocyte, \u00d7109/L",
+            "level_label": "Monocyte, \u00d7109/L",
+            "row_idx": 29,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "LY, \u00d7109/L",
+            "level_label": "LY, \u00d7109/L",
+            "row_idx": 30,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "PLT, \u00d7106/L",
+            "level_label": "PLT, \u00d7106/L",
+            "row_idx": 31,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Hemoglobin, g/L",
+            "level_label": "Hemoglobin, g/L",
+            "row_idx": 32,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      }
+    ],
+    "column_definition": {
+      "grouping_label": "stroke status",
+      "grouping_name": "stroke status",
+      "group_count": 2,
+      "columns": [
+        {
+          "col_idx": 1,
+          "column_name": "Overall n 44 019",
+          "column_label": "Overall (n = 44,019)",
+          "inferred_role": "overall",
+          "grouping_variable_hint": "stroke status",
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": null,
+          "confidence": 0.84
+        },
+        {
+          "col_idx": 2,
+          "column_name": "Non Stroke n 42 533",
+          "column_label": "Non- Stroke (n = 42,533)",
+          "inferred_role": "group",
+          "grouping_variable_hint": "stroke status",
+          "group_level_label": "(n = 42,533)",
+          "group_level_name": "n 42 533",
+          "group_order": 1,
+          "statistic_subtype": null,
+          "confidence": 0.9
+        },
+        {
+          "col_idx": 3,
+          "column_name": "Stroke n 1486",
+          "column_label": "Stroke (n = 1486)",
+          "inferred_role": "group",
+          "grouping_variable_hint": "stroke status",
+          "group_level_label": "(n = 1486)",
+          "group_level_name": "n 1486",
+          "group_order": 2,
+          "statistic_subtype": null,
+          "confidence": 0.9
+        },
+        {
+          "col_idx": 4,
+          "column_name": "P value",
+          "column_label": "P value",
+          "inferred_role": "p_value",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": "p_value",
+          "confidence": 0.97
+        }
+      ],
+      "confidence": 0.93
+    },
+    "notes": [],
+    "overall_confidence": 0.7629
+  },
+  {
+    "table_id": "stroke-p7-t0",
+    "title": "Table 2 Dietary intake of each DII component grouped by stroke status",
+    "caption": "Table 2 Dietary intake of each DII component grouped by stroke status",
+    "variables": [],
+    "column_definition": {
+      "grouping_label": "stroke status",
+      "grouping_name": "stroke status",
+      "group_count": 2,
+      "columns": [
+        {
+          "col_idx": 1,
+          "column_name": "Overall n 44 019",
+          "column_label": "Overall (n = 44,019)",
+          "inferred_role": "overall",
+          "grouping_variable_hint": "stroke status",
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": null,
+          "confidence": 0.84
+        },
+        {
+          "col_idx": 2,
+          "column_name": "Non stroke n 42 533",
+          "column_label": "Non-stroke (n = 42,533)",
+          "inferred_role": "group",
+          "grouping_variable_hint": "stroke status",
+          "group_level_label": "(n = 42,533)",
+          "group_level_name": "n 42 533",
+          "group_order": 1,
+          "statistic_subtype": null,
+          "confidence": 0.9
+        },
+        {
+          "col_idx": 3,
+          "column_name": "Stroke n 1 486",
+          "column_label": "Stroke (n = 1,486)",
+          "inferred_role": "group",
+          "grouping_variable_hint": "stroke status",
+          "group_level_label": "(n = 1,486)",
+          "group_level_name": "n 1 486",
+          "group_order": 2,
+          "statistic_subtype": null,
+          "confidence": 0.9
+        },
+        {
+          "col_idx": 4,
+          "column_name": "P value",
+          "column_label": "P value",
+          "inferred_role": "p_value",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": "p_value",
+          "confidence": 0.97
+        }
+      ],
+      "confidence": 0.93
+    },
+    "notes": [],
+    "overall_confidence": 0.93
+  },
+  {
+    "table_id": "stroke-p7-t1",
+    "title": "Table 3 Weighted logistic regression analysis on the association between DII and stroke",
+    "caption": "Table 3 Weighted logistic regression analysis on the association between DII and stroke",
+    "variables": [
+      {
+        "variable_name": "DII",
+        "variable_label": "DII",
+        "variable_type": "categorical",
+        "row_start": 2,
+        "row_end": 6,
+        "levels": [
+          {
+            "level_name": "Q1",
+            "level_label": "Q1",
+            "row_idx": 3,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Q2",
+            "level_label": "Q2",
+            "row_idx": 4,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Q3",
+            "level_label": "Q3",
+            "row_idx": 5,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Q4",
+            "level_label": "Q4",
+            "row_idx": 6,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      }
+    ],
+    "column_definition": {
+      "grouping_label": null,
+      "grouping_name": null,
+      "group_count": 5,
+      "columns": [
+        {
+          "col_idx": 1,
+          "column_name": "Non adjusted OR 95",
+          "column_label": "Non-adjusted OR [95%",
+          "inferred_role": "overall",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": null,
+          "confidence": 0.84
+        },
+        {
+          "col_idx": 2,
+          "column_name": "model CI",
+          "column_label": "model CI]",
+          "inferred_role": "group",
+          "grouping_variable_hint": null,
+          "group_level_label": "CI]",
+          "group_level_name": "CI",
+          "group_order": 1,
+          "statistic_subtype": null,
+          "confidence": 0.8200000000000001
+        },
+        {
+          "col_idx": 3,
+          "column_name": "Pvalue",
+          "column_label": "Pvalue",
+          "inferred_role": "p_value",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": "p_value",
+          "confidence": 0.97
+        },
+        {
+          "col_idx": 4,
+          "column_name": "Model OR 95",
+          "column_label": "Model OR [95%",
+          "inferred_role": "group",
+          "grouping_variable_hint": null,
+          "group_level_label": "OR [95%",
+          "group_level_name": "OR 95",
+          "group_order": 2,
+          "statistic_subtype": null,
+          "confidence": 0.8200000000000001
+        },
+        {
+          "col_idx": 5,
+          "column_name": "I CI",
+          "column_label": "I CI]",
+          "inferred_role": "group",
+          "grouping_variable_hint": null,
+          "group_level_label": "CI]",
+          "group_level_name": "CI",
+          "group_order": 3,
+          "statistic_subtype": null,
+          "confidence": 0.8200000000000001
+        },
+        {
+          "col_idx": 6,
+          "column_name": "Pvalue",
+          "column_label": "Pvalue",
+          "inferred_role": "p_value",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": "p_value",
+          "confidence": 0.97
+        },
+        {
+          "col_idx": 7,
+          "column_name": "Model OR 95",
+          "column_label": "Model OR [95%",
+          "inferred_role": "group",
+          "grouping_variable_hint": null,
+          "group_level_label": "OR [95%",
+          "group_level_name": "OR 95",
+          "group_order": 4,
+          "statistic_subtype": null,
+          "confidence": 0.8200000000000001
+        },
+        {
+          "col_idx": 8,
+          "column_name": "II CI",
+          "column_label": "II CI]",
+          "inferred_role": "group",
+          "grouping_variable_hint": null,
+          "group_level_label": "CI]",
+          "group_level_name": "CI",
+          "group_order": 5,
+          "statistic_subtype": null,
+          "confidence": 0.8200000000000001
+        },
+        {
+          "col_idx": 9,
+          "column_name": "Pvalue",
+          "column_label": "Pvalue",
+          "inferred_role": "p_value",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": "p_value",
+          "confidence": 0.97
+        }
+      ],
+      "confidence": 0.8722
+    },
+    "notes": [],
+    "overall_confidence": 0.8961
+  },
+  {
+    "table_id": "stroke-p12-t0",
+    "title": null,
+    "caption": null,
+    "variables": [
+      {
+        "variable_name": "IL 1",
+        "variable_label": "IL-1\u03b2",
+        "variable_type": "categorical",
+        "row_start": 18,
+        "row_end": 22,
+        "levels": [
+          {
+            "level_name": "IL-6",
+            "level_label": "IL-6",
+            "row_idx": 19,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "LA",
+            "level_label": "LA",
+            "row_idx": 20,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "LASSO",
+            "level_label": "LASSO",
+            "row_idx": 21,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "LDL-C",
+            "level_label": "LDL-C",
+            "row_idx": 22,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Lp PLA2",
+        "variable_label": "Lp-PLA2",
+        "variable_type": "categorical",
+        "row_start": 23,
+        "row_end": 37,
+        "levels": [
+          {
+            "level_name": "MEC",
+            "level_label": "MEC",
+            "row_idx": 24,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "MUFA",
+            "level_label": "MUFA",
+            "row_idx": 25,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "NCHS",
+            "level_label": "NCHS",
+            "row_idx": 26,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "NHANES",
+            "level_label": "NHANES",
+            "row_idx": 27,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "NLRP3",
+            "level_label": "NLRP3",
+            "row_idx": 28,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "2h-OGTT",
+            "level_label": "2h-OGTT",
+            "row_idx": 29,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "OR",
+            "level_label": "OR",
+            "row_idx": 30,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "PCSK9",
+            "level_label": "PCSK9",
+            "row_idx": 31,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "PUFA",
+            "level_label": "PUFA",
+            "row_idx": 32,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "RBC",
+            "level_label": "RBC",
+            "row_idx": 33,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "RCS",
+            "level_label": "RCS",
+            "row_idx": 34,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "ROC",
+            "level_label": "ROC",
+            "row_idx": 35,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "SBP",
+            "level_label": "SBP",
+            "row_idx": 36,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "SCr",
+            "level_label": "SCr",
+            "row_idx": 37,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "SD",
+        "variable_label": "SD",
+        "variable_type": "continuous",
+        "row_start": 38,
+        "row_end": 38,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": null,
+        "confidence": 0.9
+      }
+    ],
+    "column_definition": {
+      "grouping_label": "ASCVD",
+      "grouping_name": "ASCVD",
+      "group_count": 1,
+      "columns": [
+        {
+          "col_idx": 1,
+          "column_name": "Atherosclerotic cardiovascular disease",
+          "column_label": "Atherosclerotic cardiovascular disease",
+          "inferred_role": "group",
+          "grouping_variable_hint": "ASCVD",
+          "group_level_label": "Atherosclerotic cardiovascular disease",
+          "group_level_name": "Atherosclerotic cardiovascular disease",
+          "group_order": 1,
+          "statistic_subtype": null,
+          "confidence": 0.82
+        }
+      ],
+      "confidence": 0.82
+    },
+    "notes": [],
+    "overall_confidence": 0.89
+  }
+]

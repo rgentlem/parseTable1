@@ -1377,6 +1377,97 @@ def test_pymupdf4llm_extractor_refines_model_table_columns_from_words_and_rules(
     assert tables[0].metadata["original_backend_rows"] is not None
 
 
+def test_pymupdf4llm_extractor_refines_collapsed_table1_grid_from_words_in_bbox(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    """Collapsed Table 1-style explicit grids should be rebuilt from words inside the table bbox."""
+    pdf_path = tmp_path / "paper.pdf"
+    pdf_path.write_text("placeholder")
+    _install_fake_pymupdf4llm(
+        monkeypatch,
+        {
+            "pages": [
+                {
+                    "page_number": 1,
+                    "boxes": [
+                        {
+                            "bbox": [40, 50, 260, 66],
+                            "boxclass": "text",
+                            "textlines": [{"spans": [{"text": "Table 1. Baseline characteristics"}]}],
+                        },
+                        {
+                            "bbox": [40, 90, 560, 170],
+                            "boxclass": "table",
+                            "table": {
+                                "bbox": [40, 90, 560, 170],
+                                "extract": [
+                                    ["Variables", "Overall\nNO\nYES\nP-value"],
+                                    [
+                                        "Age\nSex\nMale\nFemale\nBMI",
+                                        "61.1\n0.727\n4309 (49.4)\n4417 (50.6)\n29.1",
+                                    ],
+                                ],
+                                "cells": [
+                                    [[40, 90, 160, 110], [160, 90, 560, 110]],
+                                    [[40, 110, 160, 170], [160, 110, 560, 170]],
+                                ],
+                            },
+                        },
+                    ],
+                }
+            ]
+        },
+    )
+    _install_fake_pymupdf_document(
+        monkeypatch,
+        [
+            FakePyMuPage(
+                text="Table 1. Baseline characteristics",
+                words=[
+                    {"text": "Variables", "x0": 50.0, "x1": 94.0, "top": 92.0, "bottom": 100.0},
+                    {"text": "Overall", "x0": 220.0, "x1": 252.0, "top": 92.0, "bottom": 100.0},
+                    {"text": "NO", "x0": 330.0, "x1": 344.0, "top": 92.0, "bottom": 100.0},
+                    {"text": "YES", "x0": 430.0, "x1": 450.0, "top": 92.0, "bottom": 100.0},
+                    {"text": "P-value", "x0": 510.0, "x1": 546.0, "top": 92.0, "bottom": 100.0},
+                    {"text": "Age", "x0": 50.0, "x1": 68.0, "top": 106.0, "bottom": 114.0},
+                    {"text": "61.1", "x0": 220.0, "x1": 238.0, "top": 106.0, "bottom": 114.0},
+                    {"text": "60.3", "x0": 330.0, "x1": 348.0, "top": 106.0, "bottom": 114.0},
+                    {"text": "71.0", "x0": 430.0, "x1": 448.0, "top": 106.0, "bottom": 114.0},
+                    {"text": "0.03", "x0": 510.0, "x1": 528.0, "top": 106.0, "bottom": 114.0},
+                    {"text": "Sex", "x0": 50.0, "x1": 66.0, "top": 120.0, "bottom": 128.0},
+                    {"text": "0.727", "x0": 510.0, "x1": 532.0, "top": 120.0, "bottom": 128.0},
+                    {"text": "Male", "x0": 50.0, "x1": 72.0, "top": 134.0, "bottom": 142.0},
+                    {"text": "4309", "x0": 220.0, "x1": 240.0, "top": 134.0, "bottom": 142.0},
+                    {"text": "4008", "x0": 330.0, "x1": 350.0, "top": 134.0, "bottom": 142.0},
+                    {"text": "301", "x0": 430.0, "x1": 444.0, "top": 134.0, "bottom": 142.0},
+                    {"text": "Female", "x0": 50.0, "x1": 82.0, "top": 148.0, "bottom": 156.0},
+                    {"text": "4417", "x0": 220.0, "x1": 240.0, "top": 148.0, "bottom": 156.0},
+                    {"text": "4100", "x0": 330.0, "x1": 350.0, "top": 148.0, "bottom": 156.0},
+                    {"text": "317", "x0": 430.0, "x1": 444.0, "top": 148.0, "bottom": 156.0},
+                    {"text": "BMI", "x0": 50.0, "x1": 70.0, "top": 162.0, "bottom": 170.0},
+                    {"text": "29.1", "x0": 220.0, "x1": 238.0, "top": 162.0, "bottom": 170.0},
+                    {"text": "27.4", "x0": 330.0, "x1": 348.0, "top": 162.0, "bottom": 170.0},
+                    {"text": "34.9", "x0": 430.0, "x1": 448.0, "top": 162.0, "bottom": 170.0},
+                    {"text": "0.01", "x0": 510.0, "x1": 528.0, "top": 162.0, "bottom": 170.0},
+                ],
+            )
+        ],
+    )
+
+    tables = PyMuPDF4LLMExtractor(max_candidates=5, heuristic_confidence_threshold=0.0).extract(str(pdf_path))
+
+    assert len(tables) == 1
+    assert tables[0].n_rows == 6
+    assert tables[0].n_cols >= 4
+    nonempty_texts = [cell.text for cell in tables[0].cells if cell.text]
+    assert any("4309" in text for text in nonempty_texts)
+    assert any("Male" in text or "Female" in text for text in nonempty_texts)
+    assert any("0.727" in text or "0.03" in text for text in nonempty_texts)
+    assert tables[0].metadata["explicit_grid_refined_from_words"] is True
+    assert tables[0].metadata["grid_refinement_source"] == "collapsed_explicit_grid_word_positions"
+
+
 def test_text_layout_fallback_restores_spaces_in_collapsed_first_column_tokens(
     tmp_path,
     monkeypatch,

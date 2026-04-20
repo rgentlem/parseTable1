@@ -1,0 +1,2120 @@
+[
+  {
+    "table_id": "metabolic-p5-t0",
+    "title": "Table 1 Baseline characteristics of the participants",
+    "caption": "Table 1 Baseline characteristics of the participants",
+    "variables": [
+      {
+        "variable_name": "Age years",
+        "variable_label": "Age, years",
+        "variable_type": "categorical",
+        "row_start": 2,
+        "row_end": 4,
+        "levels": [
+          {
+            "label": "<\u200965y",
+            "row_idx": 3
+          },
+          {
+            "label": "\u2265\u200965y",
+            "row_idx": 4
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Gender",
+        "variable_label": "Gender",
+        "variable_type": "categorical",
+        "row_start": 5,
+        "row_end": 7,
+        "levels": [
+          {
+            "label": "Men",
+            "row_idx": 6
+          },
+          {
+            "label": "Women",
+            "row_idx": 7
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Ethnicity",
+        "variable_label": "Ethnicity",
+        "variable_type": "categorical",
+        "row_start": 8,
+        "row_end": 14,
+        "levels": [
+          {
+            "label": "Mexican American",
+            "row_idx": 9
+          },
+          {
+            "label": "Other Hispanic",
+            "row_idx": 10
+          },
+          {
+            "label": "Non-Hispanic White",
+            "row_idx": 11
+          },
+          {
+            "label": "Non-Hispanic Black",
+            "row_idx": 12
+          },
+          {
+            "label": "Other race",
+            "row_idx": 13
+          },
+          {
+            "label": "PIR",
+            "row_idx": 14
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Education",
+        "variable_label": "Education",
+        "variable_type": "categorical",
+        "row_start": 15,
+        "row_end": 19,
+        "levels": [
+          {
+            "label": "Less than high school diploma",
+            "row_idx": 16
+          },
+          {
+            "label": "High school graduate or equivalent",
+            "row_idx": 17
+          },
+          {
+            "label": "Some college or associates degree 927 (36.2%)",
+            "row_idx": 18
+          },
+          {
+            "label": "College or above",
+            "row_idx": 19
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Smoking",
+        "variable_label": "Smoking",
+        "variable_type": "categorical",
+        "row_start": 20,
+        "row_end": 23,
+        "levels": [
+          {
+            "label": "Never",
+            "row_idx": 21
+          },
+          {
+            "label": "Former",
+            "row_idx": 22
+          },
+          {
+            "label": "Current",
+            "row_idx": 23
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Alcohol consumption",
+        "variable_label": "Alcohol consumption",
+        "variable_type": "categorical",
+        "row_start": 24,
+        "row_end": 34,
+        "levels": [
+          {
+            "label": "Binge drinking",
+            "row_idx": 25
+          },
+          {
+            "label": "Non-binge drinking",
+            "row_idx": 26
+          },
+          {
+            "label": "Healthy diet",
+            "row_idx": 27
+          },
+          {
+            "label": "Regular physical activity",
+            "row_idx": 28
+          },
+          {
+            "label": "Adequate sleep duration",
+            "row_idx": 29
+          },
+          {
+            "label": "Less sedentary behaviors",
+            "row_idx": 30
+          },
+          {
+            "label": "LDL-cholesterol (mg/dL)",
+            "row_idx": 31
+          },
+          {
+            "label": "HDL-cholesterol (mg/dL)",
+            "row_idx": 32
+          },
+          {
+            "label": "Triglycerides (mg/dL)",
+            "row_idx": 33
+          },
+          {
+            "label": "HbA1c%",
+            "row_idx": 34
+          }
+        ],
+        "confidence": 0.92
+      }
+    ],
+    "columns": [
+      {
+        "col_idx": 1,
+        "column_name": "Lifestyle score Low n 2561",
+        "column_label": "Lifestyle score Low (n = 2561)",
+        "inferred_role": "overall",
+        "confidence": 0.84
+      },
+      {
+        "col_idx": 2,
+        "column_name": "Middle n 2076",
+        "column_label": "Middle (n = 2076)",
+        "inferred_role": "group",
+        "confidence": 0.78
+      },
+      {
+        "col_idx": 3,
+        "column_name": "High n 2297",
+        "column_label": "High (n = 2297)",
+        "inferred_role": "group",
+        "confidence": 0.78
+      },
+      {
+        "col_idx": 4,
+        "column_name": "p",
+        "column_label": "p",
+        "inferred_role": "p_value",
+        "confidence": 0.97
+      }
+    ],
+    "values": [
+      {
+        "row_idx": 3,
+        "col_idx": 1,
+        "variable_name": "Age years",
+        "level_label": "<\u200965y",
+        "column_name": "Lifestyle score Low n 2561",
+        "raw_value": "2396 (93.6%)",
+        "value_type": "count",
+        "parsed_numeric": 2396.0,
+        "parsed_secondary_numeric": 93.6,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 3,
+        "col_idx": 2,
+        "variable_name": "Age years",
+        "level_label": "<\u200965y",
+        "column_name": "Middle n 2076",
+        "raw_value": "1772 (85.4%)",
+        "value_type": "count",
+        "parsed_numeric": 1772.0,
+        "parsed_secondary_numeric": 85.4,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 3,
+        "col_idx": 3,
+        "variable_name": "Age years",
+        "level_label": "<\u200965y",
+        "column_name": "High n 2297",
+        "raw_value": "1908 (83.1%)",
+        "value_type": "count",
+        "parsed_numeric": 1908.0,
+        "parsed_secondary_numeric": 83.1,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 1,
+        "variable_name": "Age years",
+        "level_label": "\u2265\u200965y",
+        "column_name": "Lifestyle score Low n 2561",
+        "raw_value": "165 (6.4%)",
+        "value_type": "count",
+        "parsed_numeric": 165.0,
+        "parsed_secondary_numeric": 6.4,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 2,
+        "variable_name": "Age years",
+        "level_label": "\u2265\u200965y",
+        "column_name": "Middle n 2076",
+        "raw_value": "304 (14.6%)",
+        "value_type": "count",
+        "parsed_numeric": 304.0,
+        "parsed_secondary_numeric": 14.6,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 3,
+        "variable_name": "Age years",
+        "level_label": "\u2265\u200965y",
+        "column_name": "High n 2297",
+        "raw_value": "389 (16.9%)",
+        "value_type": "count",
+        "parsed_numeric": 389.0,
+        "parsed_secondary_numeric": 16.9,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 1,
+        "variable_name": "Gender",
+        "level_label": "Men",
+        "column_name": "Lifestyle score Low n 2561",
+        "raw_value": "1450 (56.6%)",
+        "value_type": "count",
+        "parsed_numeric": 1450.0,
+        "parsed_secondary_numeric": 56.6,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 2,
+        "variable_name": "Gender",
+        "level_label": "Men",
+        "column_name": "Middle n 2076",
+        "raw_value": "987 (47.5%)",
+        "value_type": "count",
+        "parsed_numeric": 987.0,
+        "parsed_secondary_numeric": 47.5,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 3,
+        "variable_name": "Gender",
+        "level_label": "Men",
+        "column_name": "High n 2297",
+        "raw_value": "1131 (49.2%)",
+        "value_type": "count",
+        "parsed_numeric": 1131.0,
+        "parsed_secondary_numeric": 49.2,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 1,
+        "variable_name": "Gender",
+        "level_label": "Women",
+        "column_name": "Lifestyle score Low n 2561",
+        "raw_value": "1111 (43.4%)",
+        "value_type": "count",
+        "parsed_numeric": 1111.0,
+        "parsed_secondary_numeric": 43.4,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 2,
+        "variable_name": "Gender",
+        "level_label": "Women",
+        "column_name": "Middle n 2076",
+        "raw_value": "1089 (52.5%)",
+        "value_type": "count",
+        "parsed_numeric": 1089.0,
+        "parsed_secondary_numeric": 52.5,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 3,
+        "variable_name": "Gender",
+        "level_label": "Women",
+        "column_name": "High n 2297",
+        "raw_value": "1166 (50.8%)",
+        "value_type": "count",
+        "parsed_numeric": 1166.0,
+        "parsed_secondary_numeric": 50.8,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 1,
+        "variable_name": "Ethnicity",
+        "level_label": "Mexican American",
+        "column_name": "Lifestyle score Low n 2561",
+        "raw_value": "261 (10.2%)",
+        "value_type": "count",
+        "parsed_numeric": 261.0,
+        "parsed_secondary_numeric": 10.2,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 2,
+        "variable_name": "Ethnicity",
+        "level_label": "Mexican American",
+        "column_name": "Middle n 2076",
+        "raw_value": "210 (10.1%)",
+        "value_type": "count",
+        "parsed_numeric": 210.0,
+        "parsed_secondary_numeric": 10.1,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 3,
+        "variable_name": "Ethnicity",
+        "level_label": "Mexican American",
+        "column_name": "High n 2297",
+        "raw_value": "390 (17.0%)",
+        "value_type": "count",
+        "parsed_numeric": 390.0,
+        "parsed_secondary_numeric": 17.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 1,
+        "variable_name": "Ethnicity",
+        "level_label": "Other Hispanic",
+        "column_name": "Lifestyle score Low n 2561",
+        "raw_value": "211 (8.2%)",
+        "value_type": "count",
+        "parsed_numeric": 211.0,
+        "parsed_secondary_numeric": 8.2,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 2,
+        "variable_name": "Ethnicity",
+        "level_label": "Other Hispanic",
+        "column_name": "Middle n 2076",
+        "raw_value": "164 (7.9%)",
+        "value_type": "count",
+        "parsed_numeric": 164.0,
+        "parsed_secondary_numeric": 7.9,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 3,
+        "variable_name": "Ethnicity",
+        "level_label": "Other Hispanic",
+        "column_name": "High n 2297",
+        "raw_value": "265 (11.5%)",
+        "value_type": "count",
+        "parsed_numeric": 265.0,
+        "parsed_secondary_numeric": 11.5,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 1,
+        "variable_name": "Ethnicity",
+        "level_label": "Non-Hispanic White",
+        "column_name": "Lifestyle score Low n 2561",
+        "raw_value": "1236 (48.3%)",
+        "value_type": "count",
+        "parsed_numeric": 1236.0,
+        "parsed_secondary_numeric": 48.3,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 2,
+        "variable_name": "Ethnicity",
+        "level_label": "Non-Hispanic White",
+        "column_name": "Middle n 2076",
+        "raw_value": "966 (46.5%)",
+        "value_type": "count",
+        "parsed_numeric": 966.0,
+        "parsed_secondary_numeric": 46.5,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 3,
+        "variable_name": "Ethnicity",
+        "level_label": "Non-Hispanic White",
+        "column_name": "High n 2297",
+        "raw_value": "993 (43.2%)",
+        "value_type": "count",
+        "parsed_numeric": 993.0,
+        "parsed_secondary_numeric": 43.2,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 1,
+        "variable_name": "Ethnicity",
+        "level_label": "Non-Hispanic Black",
+        "column_name": "Lifestyle score Low n 2561",
+        "raw_value": "604 (23.6%)",
+        "value_type": "count",
+        "parsed_numeric": 604.0,
+        "parsed_secondary_numeric": 23.6,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 2,
+        "variable_name": "Ethnicity",
+        "level_label": "Non-Hispanic Black",
+        "column_name": "Middle n 2076",
+        "raw_value": "414 (20.0%)",
+        "value_type": "count",
+        "parsed_numeric": 414.0,
+        "parsed_secondary_numeric": 20.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 3,
+        "variable_name": "Ethnicity",
+        "level_label": "Non-Hispanic Black",
+        "column_name": "High n 2297",
+        "raw_value": "366 (15.9%)",
+        "value_type": "count",
+        "parsed_numeric": 366.0,
+        "parsed_secondary_numeric": 15.9,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 1,
+        "variable_name": "Ethnicity",
+        "level_label": "Other race",
+        "column_name": "Lifestyle score Low n 2561",
+        "raw_value": "249 (9.7%)",
+        "value_type": "count",
+        "parsed_numeric": 249.0,
+        "parsed_secondary_numeric": 9.7,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 2,
+        "variable_name": "Ethnicity",
+        "level_label": "Other race",
+        "column_name": "Middle n 2076",
+        "raw_value": "322 (15.5%)",
+        "value_type": "count",
+        "parsed_numeric": 322.0,
+        "parsed_secondary_numeric": 15.5,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 3,
+        "variable_name": "Ethnicity",
+        "level_label": "Other race",
+        "column_name": "High n 2297",
+        "raw_value": "283 (12.3%)",
+        "value_type": "count",
+        "parsed_numeric": 283.0,
+        "parsed_secondary_numeric": 12.3,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 1,
+        "variable_name": "Ethnicity",
+        "level_label": "PIR",
+        "column_name": "Lifestyle score Low n 2561",
+        "raw_value": "2.4 [1.2, 4.5]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 2,
+        "variable_name": "Ethnicity",
+        "level_label": "PIR",
+        "column_name": "Middle n 2076",
+        "raw_value": "3.5 [1.7, 5.0]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 3,
+        "variable_name": "Ethnicity",
+        "level_label": "PIR",
+        "column_name": "High n 2297",
+        "raw_value": "2.7 [1.3, 5.0]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 4,
+        "variable_name": "Ethnicity",
+        "level_label": "PIR",
+        "column_name": "p",
+        "raw_value": "<\u20090.001b",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 1,
+        "variable_name": "Education",
+        "level_label": "Less than high school diploma",
+        "column_name": "Lifestyle score Low n 2561",
+        "raw_value": "372 (14.5%)",
+        "value_type": "count",
+        "parsed_numeric": 372.0,
+        "parsed_secondary_numeric": 14.5,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 2,
+        "variable_name": "Education",
+        "level_label": "Less than high school diploma",
+        "column_name": "Middle n 2076",
+        "raw_value": "188 (9.1%)",
+        "value_type": "count",
+        "parsed_numeric": 188.0,
+        "parsed_secondary_numeric": 9.1,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 3,
+        "variable_name": "Education",
+        "level_label": "Less than high school diploma",
+        "column_name": "High n 2297",
+        "raw_value": "393 (17.1%)",
+        "value_type": "count",
+        "parsed_numeric": 393.0,
+        "parsed_secondary_numeric": 17.1,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 1,
+        "variable_name": "Education",
+        "level_label": "High school graduate or equivalent",
+        "column_name": "Lifestyle score Low n 2561",
+        "raw_value": "613 (23.9%)",
+        "value_type": "count",
+        "parsed_numeric": 613.0,
+        "parsed_secondary_numeric": 23.9,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 2,
+        "variable_name": "Education",
+        "level_label": "High school graduate or equivalent",
+        "column_name": "Middle n 2076",
+        "raw_value": "319 (15.4%)",
+        "value_type": "count",
+        "parsed_numeric": 319.0,
+        "parsed_secondary_numeric": 15.4,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 3,
+        "variable_name": "Education",
+        "level_label": "High school graduate or equivalent",
+        "column_name": "High n 2297",
+        "raw_value": "434 (18.9%)",
+        "value_type": "count",
+        "parsed_numeric": 434.0,
+        "parsed_secondary_numeric": 18.9,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 18,
+        "col_idx": 2,
+        "variable_name": "Education",
+        "level_label": "Some college or associates degree 927 (36.2%)",
+        "column_name": "Middle n 2076",
+        "raw_value": "637 (30.7%)",
+        "value_type": "count",
+        "parsed_numeric": 637.0,
+        "parsed_secondary_numeric": 30.7,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 18,
+        "col_idx": 3,
+        "variable_name": "Education",
+        "level_label": "Some college or associates degree 927 (36.2%)",
+        "column_name": "High n 2297",
+        "raw_value": "686 (29.9%)",
+        "value_type": "count",
+        "parsed_numeric": 686.0,
+        "parsed_secondary_numeric": 29.9,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 1,
+        "variable_name": "Education",
+        "level_label": "College or above",
+        "column_name": "Lifestyle score Low n 2561",
+        "raw_value": "646 (25.2%)",
+        "value_type": "count",
+        "parsed_numeric": 646.0,
+        "parsed_secondary_numeric": 25.2,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 2,
+        "variable_name": "Education",
+        "level_label": "College or above",
+        "column_name": "Middle n 2076",
+        "raw_value": "931 (44.8%)",
+        "value_type": "count",
+        "parsed_numeric": 931.0,
+        "parsed_secondary_numeric": 44.8,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 3,
+        "variable_name": "Education",
+        "level_label": "College or above",
+        "column_name": "High n 2297",
+        "raw_value": "783 (34.1%)",
+        "value_type": "count",
+        "parsed_numeric": 783.0,
+        "parsed_secondary_numeric": 34.1,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 1,
+        "variable_name": "Smoking",
+        "level_label": "Never",
+        "column_name": "Lifestyle score Low n 2561",
+        "raw_value": "1281 (50.0%)",
+        "value_type": "count",
+        "parsed_numeric": 1281.0,
+        "parsed_secondary_numeric": 50.0,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 2,
+        "variable_name": "Smoking",
+        "level_label": "Never",
+        "column_name": "Middle n 2076",
+        "raw_value": "1489 (71.7%)",
+        "value_type": "count",
+        "parsed_numeric": 1489.0,
+        "parsed_secondary_numeric": 71.7,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 3,
+        "variable_name": "Smoking",
+        "level_label": "Never",
+        "column_name": "High n 2297",
+        "raw_value": "1755 (76.4%)",
+        "value_type": "count",
+        "parsed_numeric": 1755.0,
+        "parsed_secondary_numeric": 76.4,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 1,
+        "variable_name": "Smoking",
+        "level_label": "Former",
+        "column_name": "Lifestyle score Low n 2561",
+        "raw_value": "407 (15.9%)",
+        "value_type": "count",
+        "parsed_numeric": 407.0,
+        "parsed_secondary_numeric": 15.9,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 2,
+        "variable_name": "Smoking",
+        "level_label": "Former",
+        "column_name": "Middle n 2076",
+        "raw_value": "519 (25.0%)",
+        "value_type": "count",
+        "parsed_numeric": 519.0,
+        "parsed_secondary_numeric": 25.0,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 3,
+        "variable_name": "Smoking",
+        "level_label": "Former",
+        "column_name": "High n 2297",
+        "raw_value": "542 (23.6%)",
+        "value_type": "count",
+        "parsed_numeric": 542.0,
+        "parsed_secondary_numeric": 23.6,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 1,
+        "variable_name": "Smoking",
+        "level_label": "Current",
+        "column_name": "Lifestyle score Low n 2561",
+        "raw_value": "873 (34.1%)",
+        "value_type": "count",
+        "parsed_numeric": 873.0,
+        "parsed_secondary_numeric": 34.1,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 2,
+        "variable_name": "Smoking",
+        "level_label": "Current",
+        "column_name": "Middle n 2076",
+        "raw_value": "68 (3.3%)",
+        "value_type": "count",
+        "parsed_numeric": 68.0,
+        "parsed_secondary_numeric": 3.3,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 3,
+        "variable_name": "Smoking",
+        "level_label": "Current",
+        "column_name": "High n 2297",
+        "raw_value": "0 (0%)",
+        "value_type": "count",
+        "parsed_numeric": 0.0,
+        "parsed_secondary_numeric": 0.0,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 1,
+        "variable_name": "Alcohol consumption",
+        "level_label": "Binge drinking",
+        "column_name": "Lifestyle score Low n 2561",
+        "raw_value": "1485 (58.0%)",
+        "value_type": "count",
+        "parsed_numeric": 1485.0,
+        "parsed_secondary_numeric": 58.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 2,
+        "variable_name": "Alcohol consumption",
+        "level_label": "Binge drinking",
+        "column_name": "Middle n 2076",
+        "raw_value": "791 (38.1%)",
+        "value_type": "count",
+        "parsed_numeric": 791.0,
+        "parsed_secondary_numeric": 38.1,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 3,
+        "variable_name": "Alcohol consumption",
+        "level_label": "Binge drinking",
+        "column_name": "High n 2297",
+        "raw_value": "549 (23.9%)",
+        "value_type": "count",
+        "parsed_numeric": 549.0,
+        "parsed_secondary_numeric": 23.9,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 1,
+        "variable_name": "Alcohol consumption",
+        "level_label": "Non-binge drinking",
+        "column_name": "Lifestyle score Low n 2561",
+        "raw_value": "1076 (42.0%)",
+        "value_type": "count",
+        "parsed_numeric": 1076.0,
+        "parsed_secondary_numeric": 42.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 2,
+        "variable_name": "Alcohol consumption",
+        "level_label": "Non-binge drinking",
+        "column_name": "Middle n 2076",
+        "raw_value": "1285 (61.9%)",
+        "value_type": "count",
+        "parsed_numeric": 1285.0,
+        "parsed_secondary_numeric": 61.9,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 3,
+        "variable_name": "Alcohol consumption",
+        "level_label": "Non-binge drinking",
+        "column_name": "High n 2297",
+        "raw_value": "1748 (76.1%)",
+        "value_type": "count",
+        "parsed_numeric": 1748.0,
+        "parsed_secondary_numeric": 76.1,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 1,
+        "variable_name": "Alcohol consumption",
+        "level_label": "Healthy diet",
+        "column_name": "Lifestyle score Low n 2561",
+        "raw_value": "172 (6.7%)",
+        "value_type": "count",
+        "parsed_numeric": 172.0,
+        "parsed_secondary_numeric": 6.7,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 2,
+        "variable_name": "Alcohol consumption",
+        "level_label": "Healthy diet",
+        "column_name": "Middle n 2076",
+        "raw_value": "1597 (76.9%)",
+        "value_type": "count",
+        "parsed_numeric": 1597.0,
+        "parsed_secondary_numeric": 76.9,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 3,
+        "variable_name": "Alcohol consumption",
+        "level_label": "Healthy diet",
+        "column_name": "High n 2297",
+        "raw_value": "1540 (67.0%)",
+        "value_type": "count",
+        "parsed_numeric": 1540.0,
+        "parsed_secondary_numeric": 67.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 4,
+        "variable_name": "Alcohol consumption",
+        "level_label": "Healthy diet",
+        "column_name": "p",
+        "raw_value": "<\u20090.001a",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 1,
+        "variable_name": "Alcohol consumption",
+        "level_label": "Regular physical activity",
+        "column_name": "Lifestyle score Low n 2561",
+        "raw_value": "1589 (62.0%)",
+        "value_type": "count",
+        "parsed_numeric": 1589.0,
+        "parsed_secondary_numeric": 62.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 2,
+        "variable_name": "Alcohol consumption",
+        "level_label": "Regular physical activity",
+        "column_name": "Middle n 2076",
+        "raw_value": "1364 (65.7%)",
+        "value_type": "count",
+        "parsed_numeric": 1364.0,
+        "parsed_secondary_numeric": 65.7,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 3,
+        "variable_name": "Alcohol consumption",
+        "level_label": "Regular physical activity",
+        "column_name": "High n 2297",
+        "raw_value": "1864 (81.1%)",
+        "value_type": "count",
+        "parsed_numeric": 1864.0,
+        "parsed_secondary_numeric": 81.1,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 4,
+        "variable_name": "Alcohol consumption",
+        "level_label": "Regular physical activity",
+        "column_name": "p",
+        "raw_value": "<\u20090.001a",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 1,
+        "variable_name": "Alcohol consumption",
+        "level_label": "Adequate sleep duration",
+        "column_name": "Lifestyle score Low n 2561",
+        "raw_value": "1159 (42.3%)",
+        "value_type": "count",
+        "parsed_numeric": 1159.0,
+        "parsed_secondary_numeric": 42.3,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 2,
+        "variable_name": "Alcohol consumption",
+        "level_label": "Adequate sleep duration",
+        "column_name": "Middle n 2076",
+        "raw_value": "1185 (57.1%)",
+        "value_type": "count",
+        "parsed_numeric": 1185.0,
+        "parsed_secondary_numeric": 57.1,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 3,
+        "variable_name": "Alcohol consumption",
+        "level_label": "Adequate sleep duration",
+        "column_name": "High n 2297",
+        "raw_value": "1656 (72.1%)",
+        "value_type": "count",
+        "parsed_numeric": 1656.0,
+        "parsed_secondary_numeric": 72.1,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 4,
+        "variable_name": "Alcohol consumption",
+        "level_label": "Adequate sleep duration",
+        "column_name": "p",
+        "raw_value": "<\u20090.001a",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 1,
+        "variable_name": "Alcohol consumption",
+        "level_label": "Less sedentary behaviors",
+        "column_name": "Lifestyle score Low n 2561",
+        "raw_value": "225 (8.8%)",
+        "value_type": "count",
+        "parsed_numeric": 225.0,
+        "parsed_secondary_numeric": 8.8,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 2,
+        "variable_name": "Alcohol consumption",
+        "level_label": "Less sedentary behaviors",
+        "column_name": "Middle n 2076",
+        "raw_value": "115 (5.5%)",
+        "value_type": "count",
+        "parsed_numeric": 115.0,
+        "parsed_secondary_numeric": 5.5,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 3,
+        "variable_name": "Alcohol consumption",
+        "level_label": "Less sedentary behaviors",
+        "column_name": "High n 2297",
+        "raw_value": "1581 (68.8%)",
+        "value_type": "count",
+        "parsed_numeric": 1581.0,
+        "parsed_secondary_numeric": 68.8,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 4,
+        "variable_name": "Alcohol consumption",
+        "level_label": "Less sedentary behaviors",
+        "column_name": "p",
+        "raw_value": "<\u20090.001a",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 1,
+        "variable_name": "Alcohol consumption",
+        "level_label": "LDL-cholesterol (mg/dL)",
+        "column_name": "Lifestyle score Low n 2561",
+        "raw_value": "112.0 [90.0, 138.0]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 2,
+        "variable_name": "Alcohol consumption",
+        "level_label": "LDL-cholesterol (mg/dL)",
+        "column_name": "Middle n 2076",
+        "raw_value": "111.0 [91.0, 132.0]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 3,
+        "variable_name": "Alcohol consumption",
+        "level_label": "LDL-cholesterol (mg/dL)",
+        "column_name": "High n 2297",
+        "raw_value": "112.0 [90.0, 137.0]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 4,
+        "variable_name": "Alcohol consumption",
+        "level_label": "LDL-cholesterol (mg/dL)",
+        "column_name": "p",
+        "raw_value": "0.584b",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 32,
+        "col_idx": 1,
+        "variable_name": "Alcohol consumption",
+        "level_label": "HDL-cholesterol (mg/dL)",
+        "column_name": "Lifestyle score Low n 2561",
+        "raw_value": "49.0 [40.0, 60.0]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 32,
+        "col_idx": 2,
+        "variable_name": "Alcohol consumption",
+        "level_label": "HDL-cholesterol (mg/dL)",
+        "column_name": "Middle n 2076",
+        "raw_value": "54.0 [44.0, 65.0]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 32,
+        "col_idx": 3,
+        "variable_name": "Alcohol consumption",
+        "level_label": "HDL-cholesterol (mg/dL)",
+        "column_name": "High n 2297",
+        "raw_value": "53.0 [44.0, 65.0]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 32,
+        "col_idx": 4,
+        "variable_name": "Alcohol consumption",
+        "level_label": "HDL-cholesterol (mg/dL)",
+        "column_name": "p",
+        "raw_value": "<\u20090.001b",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 1,
+        "variable_name": "Alcohol consumption",
+        "level_label": "Triglycerides (mg/dL)",
+        "column_name": "Lifestyle score Low n 2561",
+        "raw_value": "119.0[76.5, 186.0]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 2,
+        "variable_name": "Alcohol consumption",
+        "level_label": "Triglycerides (mg/dL)",
+        "column_name": "Middle n 2076",
+        "raw_value": "110.0 [75.0, 171.0]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 3,
+        "variable_name": "Alcohol consumption",
+        "level_label": "Triglycerides (mg/dL)",
+        "column_name": "High n 2297",
+        "raw_value": "108.0 [72.0, 168.0]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 4,
+        "variable_name": "Alcohol consumption",
+        "level_label": "Triglycerides (mg/dL)",
+        "column_name": "p",
+        "raw_value": "<\u20090.001b",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      },
+      {
+        "row_idx": 34,
+        "col_idx": 1,
+        "variable_name": "Alcohol consumption",
+        "level_label": "HbA1c%",
+        "column_name": "Lifestyle score Low n 2561",
+        "raw_value": "5.4 [5.1, 5.7]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 34,
+        "col_idx": 2,
+        "variable_name": "Alcohol consumption",
+        "level_label": "HbA1c%",
+        "column_name": "Middle n 2076",
+        "raw_value": "5.4 [5.1, 5.7]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 34,
+        "col_idx": 3,
+        "variable_name": "Alcohol consumption",
+        "level_label": "HbA1c%",
+        "column_name": "High n 2297",
+        "raw_value": "5.4 [5.2, 5.7]",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 34,
+        "col_idx": 4,
+        "variable_name": "Alcohol consumption",
+        "level_label": "HbA1c%",
+        "column_name": "p",
+        "raw_value": "<\u20090.001b",
+        "value_type": "text",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.6
+      }
+    ],
+    "notes": [
+      "count_pct_group_share_mismatch: variable=Age years column=Middle n 2076 observed=100.0 expected=81.1",
+      "count_pct_group_share_mismatch: variable=Age years column=High n 2297 observed=100.0 expected=89.7",
+      "count_pct_group_share_mismatch: variable=Gender column=Middle n 2076 observed=100.0 expected=81.1",
+      "count_pct_group_share_mismatch: variable=Gender column=High n 2297 observed=100.0 expected=89.7",
+      "count_pct_group_share_mismatch: variable=Education column=Middle n 2076 observed=100.0 expected=81.1",
+      "count_pct_group_share_mismatch: variable=Education column=High n 2297 observed=100.0 expected=89.7",
+      "count_pct_group_share_mismatch: variable=Smoking column=Middle n 2076 observed=100.0 expected=81.1",
+      "count_pct_group_share_mismatch: variable=Smoking column=High n 2297 observed=100.0 expected=89.7"
+    ],
+    "overall_confidence": 0.8086
+  },
+  {
+    "table_id": "metabolic-p6-t0",
+    "title": "Table 2 RRs (95% CI) of all-cause mortality according to lifestyle category, age, and sex",
+    "caption": "Table 2 RRs (95% CI) of all-cause mortality according to lifestyle category, age, and sex",
+    "variables": [
+      {
+        "variable_name": "lation",
+        "variable_label": "lation",
+        "variable_type": "categorical",
+        "row_start": 3,
+        "row_end": 4,
+        "levels": [
+          {
+            "label": "Low lifestyle",
+            "row_idx": 4
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "score",
+        "variable_label": "score",
+        "variable_type": "categorical",
+        "row_start": 5,
+        "row_end": 6,
+        "levels": [
+          {
+            "label": "Middle lifestyle",
+            "row_idx": 6
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "score",
+        "variable_label": "score",
+        "variable_type": "categorical",
+        "row_start": 7,
+        "row_end": 8,
+        "levels": [
+          {
+            "label": "High lifestyle",
+            "row_idx": 8
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "score",
+        "variable_label": "score",
+        "variable_type": "unknown",
+        "row_start": 9,
+        "row_end": 9,
+        "levels": [],
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Male",
+        "variable_label": "Male",
+        "variable_type": "categorical",
+        "row_start": 10,
+        "row_end": 11,
+        "levels": [
+          {
+            "label": "Low lifestyle",
+            "row_idx": 11
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "score",
+        "variable_label": "score",
+        "variable_type": "unknown",
+        "row_start": 12,
+        "row_end": 12,
+        "levels": [],
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Middle lifestyle",
+        "variable_label": "Middle lifestyle",
+        "variable_type": "continuous",
+        "row_start": 13,
+        "row_end": 13,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "score",
+        "variable_label": "score",
+        "variable_type": "categorical",
+        "row_start": 14,
+        "row_end": 15,
+        "levels": [
+          {
+            "label": "High lifestyle",
+            "row_idx": 15
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "score",
+        "variable_label": "score",
+        "variable_type": "unknown",
+        "row_start": 16,
+        "row_end": 16,
+        "levels": [],
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Female",
+        "variable_label": "Female",
+        "variable_type": "categorical",
+        "row_start": 17,
+        "row_end": 18,
+        "levels": [
+          {
+            "label": "Low lifestyle",
+            "row_idx": 18
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "score",
+        "variable_label": "score",
+        "variable_type": "unknown",
+        "row_start": 19,
+        "row_end": 19,
+        "levels": [],
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Middle lifestyle",
+        "variable_label": "Middle lifestyle",
+        "variable_type": "continuous",
+        "row_start": 20,
+        "row_end": 20,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "score",
+        "variable_label": "score",
+        "variable_type": "categorical",
+        "row_start": 21,
+        "row_end": 22,
+        "levels": [
+          {
+            "label": "High lifestyle",
+            "row_idx": 22
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "score",
+        "variable_label": "score",
+        "variable_type": "unknown",
+        "row_start": 23,
+        "row_end": 23,
+        "levels": [],
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "By age group",
+        "variable_label": "By age group",
+        "variable_type": "unknown",
+        "row_start": 24,
+        "row_end": 24,
+        "levels": [],
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "65 years old",
+        "variable_label": "<\u200965 years old",
+        "variable_type": "categorical",
+        "row_start": 25,
+        "row_end": 26,
+        "levels": [
+          {
+            "label": "Low lifestyle",
+            "row_idx": 26
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "score",
+        "variable_label": "score",
+        "variable_type": "categorical",
+        "row_start": 27,
+        "row_end": 28,
+        "levels": [
+          {
+            "label": "Middle life-",
+            "row_idx": 28
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "style score",
+        "variable_label": "style score",
+        "variable_type": "categorical",
+        "row_start": 29,
+        "row_end": 30,
+        "levels": [
+          {
+            "label": "High lifestyle",
+            "row_idx": 30
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "65 years old",
+        "variable_label": "\u2265\u200965 years old",
+        "variable_type": "categorical",
+        "row_start": 32,
+        "row_end": 33,
+        "levels": [
+          {
+            "label": "Low lifestyle",
+            "row_idx": 33
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "score",
+        "variable_label": "score",
+        "variable_type": "unknown",
+        "row_start": 34,
+        "row_end": 34,
+        "levels": [],
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Middle life",
+        "variable_label": "Middle life-",
+        "variable_type": "continuous",
+        "row_start": 35,
+        "row_end": 35,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "style score",
+        "variable_label": "style score",
+        "variable_type": "categorical",
+        "row_start": 36,
+        "row_end": 37,
+        "levels": [
+          {
+            "label": "High lifestyle",
+            "row_idx": 37
+          }
+        ],
+        "confidence": 0.92
+      }
+    ],
+    "columns": [
+      {
+        "col_idx": 1,
+        "column_name": "Risk ratio 95 Model 1",
+        "column_label": "Risk ratio (95% Model 1",
+        "inferred_role": "overall",
+        "confidence": 0.84
+      },
+      {
+        "col_idx": 2,
+        "column_name": "CI Model 2",
+        "column_label": "CI) Model 2",
+        "inferred_role": "group",
+        "confidence": 0.9
+      },
+      {
+        "col_idx": 3,
+        "column_name": "Model 3",
+        "column_label": "Model 3",
+        "inferred_role": "group",
+        "confidence": 0.82
+      }
+    ],
+    "values": [
+      {
+        "row_idx": 4,
+        "col_idx": 1,
+        "variable_name": "lation",
+        "level_label": "Low lifestyle",
+        "column_name": "Risk ratio 95 Model 1",
+        "raw_value": "1 (Reference)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 2,
+        "variable_name": "lation",
+        "level_label": "Low lifestyle",
+        "column_name": "CI Model 2",
+        "raw_value": "1 (Reference)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 3,
+        "variable_name": "lation",
+        "level_label": "Low lifestyle",
+        "column_name": "Model 3",
+        "raw_value": "1 (Reference)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 1,
+        "variable_name": "score",
+        "level_label": "Middle lifestyle",
+        "column_name": "Risk ratio 95 Model 1",
+        "raw_value": "0.51 (0.30, 0.88)*",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 2,
+        "variable_name": "score",
+        "level_label": "Middle lifestyle",
+        "column_name": "CI Model 2",
+        "raw_value": "0.55 (0.32, 0.94)*",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 3,
+        "variable_name": "score",
+        "level_label": "Middle lifestyle",
+        "column_name": "Model 3",
+        "raw_value": "0.56 (0.33, 0.97)*",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 1,
+        "variable_name": "score",
+        "level_label": "High lifestyle",
+        "column_name": "Risk ratio 95 Model 1",
+        "raw_value": "0.26 (0.15, 0.48)*",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 2,
+        "variable_name": "score",
+        "level_label": "High lifestyle",
+        "column_name": "CI Model 2",
+        "raw_value": "0.27 (0.15, 0.48)*",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 3,
+        "variable_name": "score",
+        "level_label": "High lifestyle",
+        "column_name": "Model 3",
+        "raw_value": "0.26 (0.14, 0.47)*",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 1,
+        "variable_name": "Male",
+        "level_label": "Low lifestyle",
+        "column_name": "Risk ratio 95 Model 1",
+        "raw_value": "1 (Reference)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 2,
+        "variable_name": "Male",
+        "level_label": "Low lifestyle",
+        "column_name": "CI Model 2",
+        "raw_value": "1 (Reference)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 3,
+        "variable_name": "Male",
+        "level_label": "Low lifestyle",
+        "column_name": "Model 3",
+        "raw_value": "1 (Reference)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 1,
+        "variable_name": "Middle lifestyle",
+        "level_label": null,
+        "column_name": "Risk ratio 95 Model 1",
+        "raw_value": "0.59 (0.24, 1.45)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 2,
+        "variable_name": "Middle lifestyle",
+        "level_label": null,
+        "column_name": "CI Model 2",
+        "raw_value": "0.61 (0.26, 1.41)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 3,
+        "variable_name": "Middle lifestyle",
+        "level_label": null,
+        "column_name": "Model 3",
+        "raw_value": "0.61 (0.26, 1.40)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 1,
+        "variable_name": "score",
+        "level_label": "High lifestyle",
+        "column_name": "Risk ratio 95 Model 1",
+        "raw_value": "0.33 (0.13, 0.83)*",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 2,
+        "variable_name": "score",
+        "level_label": "High lifestyle",
+        "column_name": "CI Model 2",
+        "raw_value": "0.35 (0.14, 0.88)*",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 3,
+        "variable_name": "score",
+        "level_label": "High lifestyle",
+        "column_name": "Model 3",
+        "raw_value": "0.33 (0.13, 0.85)*",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 18,
+        "col_idx": 1,
+        "variable_name": "Female",
+        "level_label": "Low lifestyle",
+        "column_name": "Risk ratio 95 Model 1",
+        "raw_value": "1 (Reference)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 18,
+        "col_idx": 2,
+        "variable_name": "Female",
+        "level_label": "Low lifestyle",
+        "column_name": "CI Model 2",
+        "raw_value": "1 (Reference)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 18,
+        "col_idx": 3,
+        "variable_name": "Female",
+        "level_label": "Low lifestyle",
+        "column_name": "Model 3",
+        "raw_value": "1 (Reference)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 1,
+        "variable_name": "Middle lifestyle",
+        "level_label": null,
+        "column_name": "Risk ratio 95 Model 1",
+        "raw_value": "0.47 (0.23, 0.96)*",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 2,
+        "variable_name": "Middle lifestyle",
+        "level_label": null,
+        "column_name": "CI Model 2",
+        "raw_value": "0.50 (0.24, 1.03)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 3,
+        "variable_name": "Middle lifestyle",
+        "level_label": null,
+        "column_name": "Model 3",
+        "raw_value": "0.52 (0.25, 1.08)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 1,
+        "variable_name": "score",
+        "level_label": "High lifestyle",
+        "column_name": "Risk ratio 95 Model 1",
+        "raw_value": "0.21 (0.09, 0.46)*",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 2,
+        "variable_name": "score",
+        "level_label": "High lifestyle",
+        "column_name": "CI Model 2",
+        "raw_value": "0.21 (0.09, 0.47)*",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 3,
+        "variable_name": "score",
+        "level_label": "High lifestyle",
+        "column_name": "Model 3",
+        "raw_value": "0.19 (0.08, 0.44)*",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 1,
+        "variable_name": "65 years old",
+        "level_label": "Low lifestyle",
+        "column_name": "Risk ratio 95 Model 1",
+        "raw_value": "1 (Reference)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 2,
+        "variable_name": "65 years old",
+        "level_label": "Low lifestyle",
+        "column_name": "CI Model 2",
+        "raw_value": "1 (Reference)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 3,
+        "variable_name": "65 years old",
+        "level_label": "Low lifestyle",
+        "column_name": "Model 3",
+        "raw_value": "1 (Reference)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 1,
+        "variable_name": "score",
+        "level_label": "Middle life-",
+        "column_name": "Risk ratio 95 Model 1",
+        "raw_value": "0.34 (0.12, 0.98)*",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 2,
+        "variable_name": "score",
+        "level_label": "Middle life-",
+        "column_name": "CI Model 2",
+        "raw_value": "0.34 (0.12, 1.00)*",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 3,
+        "variable_name": "score",
+        "level_label": "Middle life-",
+        "column_name": "Model 3",
+        "raw_value": "0.35 (0.12, 1.03)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 1,
+        "variable_name": "style score",
+        "level_label": "High lifestyle",
+        "column_name": "Risk ratio 95 Model 1",
+        "raw_value": "0.06 (0.01, 0.26)*",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 2,
+        "variable_name": "style score",
+        "level_label": "High lifestyle",
+        "column_name": "CI Model 2",
+        "raw_value": "0.06 (0.01, 0.27)*",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 3,
+        "variable_name": "style score",
+        "level_label": "High lifestyle",
+        "column_name": "Model 3",
+        "raw_value": "0.06 (0.01, 0.29)*",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 1,
+        "variable_name": "65 years old",
+        "level_label": "Low lifestyle",
+        "column_name": "Risk ratio 95 Model 1",
+        "raw_value": "1 (Reference)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 2,
+        "variable_name": "65 years old",
+        "level_label": "Low lifestyle",
+        "column_name": "CI Model 2",
+        "raw_value": "1 (Reference)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 3,
+        "variable_name": "65 years old",
+        "level_label": "Low lifestyle",
+        "column_name": "Model 3",
+        "raw_value": "1 (Reference)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 35,
+        "col_idx": 1,
+        "variable_name": "Middle life",
+        "level_label": null,
+        "column_name": "Risk ratio 95 Model 1",
+        "raw_value": "0.70 (0.37, 1.34)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 35,
+        "col_idx": 2,
+        "variable_name": "Middle life",
+        "level_label": null,
+        "column_name": "CI Model 2",
+        "raw_value": "0.71 (0.38, 1.33)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 35,
+        "col_idx": 3,
+        "variable_name": "Middle life",
+        "level_label": null,
+        "column_name": "Model 3",
+        "raw_value": "0.73 (0.39, 1.36)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 37,
+        "col_idx": 1,
+        "variable_name": "style score",
+        "level_label": "High lifestyle",
+        "column_name": "Risk ratio 95 Model 1",
+        "raw_value": "0.45 (0.22, 0.91)*",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 37,
+        "col_idx": 2,
+        "variable_name": "style score",
+        "level_label": "High lifestyle",
+        "column_name": "CI Model 2",
+        "raw_value": "0.43 (0.21, 0.89)*",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 37,
+        "col_idx": 3,
+        "variable_name": "style score",
+        "level_label": "High lifestyle",
+        "column_name": "Model 3",
+        "raw_value": "0.41 (0.20, 0.87)*",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      }
+    ],
+    "notes": [],
+    "overall_confidence": 0.545
+  }
+]

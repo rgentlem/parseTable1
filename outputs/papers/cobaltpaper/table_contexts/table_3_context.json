@@ -1,0 +1,68 @@
+{
+  "table_id": "cobaltpaper-p4-t1",
+  "table_index": 3,
+  "table_label": "Table 4",
+  "title": "Table 4",
+  "caption": "Table 4",
+  "row_terms": [
+    "Cobalt",
+    "Q1",
+    "P for trend",
+    "Race",
+    "Non-Hispanic White",
+    "Education",
+    "Family poverty-income ratio,",
+    "<1.0",
+    "Smoke"
+  ],
+  "column_terms": [
+    "95% confdence intervals"
+  ],
+  "grouping_terms": [
+    "95% confdence",
+    "95 confdence"
+  ],
+  "methods_like_section_ids": [
+    "section_6",
+    "section_8",
+    "section_9",
+    "section_12"
+  ],
+  "results_like_section_ids": [
+    "section_7"
+  ],
+  "passages": [
+    {
+      "passage_id": "section_15_p0",
+      "section_id": "section_15",
+      "heading": "3.3. Association between blood cobalt concentrations and hypertension",
+      "text": "The adjusted ORs and 95% CIs for the associations between quintiles of cobalt concentrations and hypertension obtained from logistic regression models are shown in Table 4. Compared with Q1, the adjusted OR of Q2 was 0.97 (95% CI: 0.82-1.14, P = .679), that of Q3 was 1.10 (95% CI: 0.94-1.29, P = .228) and that of Q4 was 1.04 (95% CI: 0.88-1.23, P = .629). The adjusted ORs for hypertension were not significantly associated with increased blood cobalt concentrations (P for trend = .354). These results indicated that blood cobalt concentrations were not associated with the risk of hypertension.",
+      "match_type": "table_reference",
+      "score": 1.0
+    },
+    {
+      "passage_id": "section_16_p0",
+      "section_id": "section_16",
+      "heading": "3.4. Association between blood cobalt concentrations and diabetes",
+      "text": "The results from the logistic regression model of diabetes are summarized in Table 5. Compared with Q1, the adjusted OR of Table 4 Adjusted odds ratios and 95% confidence intervals for the association between quintiles of cobalt and hypertension by binary logistic regression models. ||Adjusted|95% confdence|| |---|---|---|---| |Variable|odds ratio|intervals|P value| |Cobalt|||| |Q1|1(reference)||| |Q2|0.97|0.82-1.14|.679| |Q3|1.10|0.94-1.29|.228| |Q4|1.04|0.88-1.23|.629| |P for trend|.354||| |Age|1.08|1.07-1.08|<.001| |Female|1.00|0.88-1.13|.973| |BMI|1.08|1.07-1.09|<.001| |Race|||| |Non-Hispanic White|1(reference)||| |Hispanic/Mexican|0.92|0.78-1.07|.281| |Non-Hispanic Black|2.40|2.03-2.84|<.001| |Others|1.45|1.21-1.73|<.001| |Education|||| |<High school|1(reference)||| |High school|1.03|0.84-1.28|.756| |>High school|0.90|0.73-1.11|.320| |Family poverty-income ratio,|||| |<1.0|1(reference)||| |1-4.99|0.83|0.71-0.98|.025| |>=5|0.72|0.59-0.89|.002| |Smoke|||| |Non-smoker|1(reference)||| |Ex-smoker|1.09|0.95-1.25|.232| |Current-smoker|1.17|0.99-1.38|.072| BMI = body mass index. 4 Wang et al. Medicine (2022) 101:2 www.md-journal.com Table 5 Adjusted odds ratios and 95% confidence intervals for the association between quintiles of cobalt and diabetes by binary logistic regression models. ||Adjusted|95% confdence|| |---|---|---|---| |Variable|odds ratio|intervals|P value| |Cobalt|||| |Q1|1(reference)||| |Q2|0.86|0.71-1.01|.140| |Q3|0.88|0.72-1.03|.167| |Q4|0.91|0.77-1.07|.233| |P for trend|.196||| |Age|1.04|1.04-1.05|<.001| |Female|0.60|0.53-0.68|<.001| |BMI|1.09|1.08-1.10|<.001| |Race|||| |Non-Hispanic White|1(reference)||| |Hispanic/Mexican|1.65|1.40-1.94|<.001| |Non-Hispanic Black|1.31|1.18-1.55|<.001| |Others|1.87|1.56-2.26|<.001| |Education|||| |<High school|1(reference)||| |High school|0.81|0.67-0.99|.035| |>High school|0.71|0.58-0.87|<.001| |Family poverty-income ratio|||| |<1.0|1(reference)||| |1-4.99|0.86|0.74-1.01|.060| |>=5|0.77|0.63-0.95|.015| |Smoke|||| |Non-smoker|1(reference)||| |Ex-smoker|1.02|0.89-1.17|.808| |Current-smoker|0.96|0.81-1.14|.635| BMI = body mass index. Q2 was 0.86 (95% CI: 0.71-1.01, P = .140), that of Q3 was 0.88 (95% CI: 0.72-1.03, P = .167) and that of Q4 was 0.91 (95% CI: 0.77-1.07, P = .233). The adjusted ORs for diabetes were not significantly associated with increased blood cobalt concentrations (P for trend = .196). These results suggested that blood cobalt concentrations were not associated with the risk of diabetes.",
+      "match_type": "table_reference",
+      "score": 1.0
+    },
+    {
+      "passage_id": "section_6_p0",
+      "section_id": "section_6",
+      "heading": "2.5. Statistical analysis",
+      "text": "The results are presented as the mean \u00b1 standard deviation for continuous variables or as the percentage for categorical variables. We compared these results according to the quartiles of blood cobalt concentrations. Comparisons of categorical variables were performed by Pearson chi-square tests, and continuous variables were compared by one-way ANOVA. Odds ratios (ORs) and 95% confidence intervals (CIs) for dyslipidemia were estimated by binary logistic regression analysis using the lowest quartile as the reference. Model 1 was adjusted for age, gender, and BMI. Model 2 was fully adjusted for age, sex, BMI, education level, race, family poverty-income ratio, smoking status and lipid-lowering drug therapy. P < .05 was considered to indicate statistically significant differences. Statistical analysis was performed using IBM SPSS software, version 20 (IBM Corp, Armonk, NY).",
+      "match_type": "methods_term_match",
+      "score": 0.5636
+    },
+    {
+      "passage_id": "section_12_p0",
+      "section_id": "section_12",
+      "heading": "2.4. Cobalt measurement",
+      "text": "The concentrations of cobalt in whole blood specimens are directly measured using inductively coupled plasma mass spectrometry. Examined participants aged 40years and older were eligible. The lower limit of detection for cobalt was 0.06 mg/l.",
+      "match_type": "methods_term_match",
+      "score": 0.2909
+    }
+  ]
+}

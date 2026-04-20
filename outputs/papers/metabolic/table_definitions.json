@@ -1,0 +1,680 @@
+[
+  {
+    "table_id": "metabolic-p5-t0",
+    "title": "Table 1 Baseline characteristics of the participants",
+    "caption": "Table 1 Baseline characteristics of the participants",
+    "variables": [
+      {
+        "variable_name": "Age years",
+        "variable_label": "Age, years",
+        "variable_type": "categorical",
+        "row_start": 2,
+        "row_end": 4,
+        "levels": [
+          {
+            "level_name": "< 65y",
+            "level_label": "<\u200965y",
+            "row_idx": 3,
+            "confidence": 0.92
+          },
+          {
+            "level_name": ">= 65y",
+            "level_label": "\u2265\u200965y",
+            "row_idx": 4,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": "years",
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Gender",
+        "variable_label": "Gender",
+        "variable_type": "categorical",
+        "row_start": 5,
+        "row_end": 7,
+        "levels": [
+          {
+            "level_name": "Men",
+            "level_label": "Men",
+            "row_idx": 6,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Women",
+            "level_label": "Women",
+            "row_idx": 7,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Ethnicity",
+        "variable_label": "Ethnicity",
+        "variable_type": "categorical",
+        "row_start": 8,
+        "row_end": 14,
+        "levels": [
+          {
+            "level_name": "Mexican American",
+            "level_label": "Mexican American",
+            "row_idx": 9,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Other Hispanic",
+            "level_label": "Other Hispanic",
+            "row_idx": 10,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Non-Hispanic White",
+            "level_label": "Non-Hispanic White",
+            "row_idx": 11,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Non-Hispanic Black",
+            "level_label": "Non-Hispanic Black",
+            "row_idx": 12,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Other race",
+            "level_label": "Other race",
+            "row_idx": 13,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "PIR",
+            "level_label": "PIR",
+            "row_idx": 14,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Education",
+        "variable_label": "Education",
+        "variable_type": "categorical",
+        "row_start": 15,
+        "row_end": 19,
+        "levels": [
+          {
+            "level_name": "Less than high school diploma",
+            "level_label": "Less than high school diploma",
+            "row_idx": 16,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "High school graduate or equivalent",
+            "level_label": "High school graduate or equivalent",
+            "row_idx": 17,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Some college or associates degree 927 (36.2%)",
+            "level_label": "Some college or associates degree 927 (36.2%)",
+            "row_idx": 18,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "College or above",
+            "level_label": "College or above",
+            "row_idx": 19,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Smoking",
+        "variable_label": "Smoking",
+        "variable_type": "categorical",
+        "row_start": 20,
+        "row_end": 23,
+        "levels": [
+          {
+            "level_name": "Never",
+            "level_label": "Never",
+            "row_idx": 21,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Former",
+            "level_label": "Former",
+            "row_idx": 22,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Current",
+            "level_label": "Current",
+            "row_idx": 23,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Alcohol consumption",
+        "variable_label": "Alcohol consumption",
+        "variable_type": "categorical",
+        "row_start": 24,
+        "row_end": 34,
+        "levels": [
+          {
+            "level_name": "Binge drinking",
+            "level_label": "Binge drinking",
+            "row_idx": 25,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Non-binge drinking",
+            "level_label": "Non-binge drinking",
+            "row_idx": 26,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Healthy diet",
+            "level_label": "Healthy diet",
+            "row_idx": 27,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Regular physical activity",
+            "level_label": "Regular physical activity",
+            "row_idx": 28,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Adequate sleep duration",
+            "level_label": "Adequate sleep duration",
+            "row_idx": 29,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Less sedentary behaviors",
+            "level_label": "Less sedentary behaviors",
+            "row_idx": 30,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "LDL-cholesterol (mg/dL)",
+            "level_label": "LDL-cholesterol (mg/dL)",
+            "row_idx": 31,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "HDL-cholesterol (mg/dL)",
+            "level_label": "HDL-cholesterol (mg/dL)",
+            "row_idx": 32,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Triglycerides (mg/dL)",
+            "level_label": "Triglycerides (mg/dL)",
+            "row_idx": 33,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "HbA1c%",
+            "level_label": "HbA1c%",
+            "row_idx": 34,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      }
+    ],
+    "column_definition": {
+      "grouping_label": null,
+      "grouping_name": null,
+      "group_count": 2,
+      "columns": [
+        {
+          "col_idx": 1,
+          "column_name": "Lifestyle score Low n 2561",
+          "column_label": "Lifestyle score Low (n = 2561)",
+          "inferred_role": "overall",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": null,
+          "confidence": 0.84
+        },
+        {
+          "col_idx": 2,
+          "column_name": "Middle n 2076",
+          "column_label": "Middle (n = 2076)",
+          "inferred_role": "group",
+          "grouping_variable_hint": null,
+          "group_level_label": "Middle (n = 2076)",
+          "group_level_name": "Middle n 2076",
+          "group_order": 1,
+          "statistic_subtype": null,
+          "confidence": 0.78
+        },
+        {
+          "col_idx": 3,
+          "column_name": "High n 2297",
+          "column_label": "High (n = 2297)",
+          "inferred_role": "group",
+          "grouping_variable_hint": null,
+          "group_level_label": "High (n = 2297)",
+          "group_level_name": "High n 2297",
+          "group_order": 2,
+          "statistic_subtype": null,
+          "confidence": 0.78
+        },
+        {
+          "col_idx": 4,
+          "column_name": "p",
+          "column_label": "p",
+          "inferred_role": "p_value",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": "p_value",
+          "confidence": 0.97
+        }
+      ],
+      "confidence": 0.87
+    },
+    "notes": [],
+    "overall_confidence": 0.9129
+  },
+  {
+    "table_id": "metabolic-p6-t0",
+    "title": "Table 2 RRs (95% CI) of all-cause mortality according to lifestyle category, age, and sex",
+    "caption": "Table 2 RRs (95% CI) of all-cause mortality according to lifestyle category, age, and sex",
+    "variables": [
+      {
+        "variable_name": "lation",
+        "variable_label": "lation",
+        "variable_type": "categorical",
+        "row_start": 3,
+        "row_end": 4,
+        "levels": [
+          {
+            "level_name": "Low lifestyle",
+            "level_label": "Low lifestyle",
+            "row_idx": 4,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "score",
+        "variable_label": "score",
+        "variable_type": "categorical",
+        "row_start": 5,
+        "row_end": 6,
+        "levels": [
+          {
+            "level_name": "Middle lifestyle",
+            "level_label": "Middle lifestyle",
+            "row_idx": 6,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "score",
+        "variable_label": "score",
+        "variable_type": "categorical",
+        "row_start": 7,
+        "row_end": 8,
+        "levels": [
+          {
+            "level_name": "High lifestyle",
+            "level_label": "High lifestyle",
+            "row_idx": 8,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "score",
+        "variable_label": "score",
+        "variable_type": "unknown",
+        "row_start": 9,
+        "row_end": 9,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": null,
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Male",
+        "variable_label": "Male",
+        "variable_type": "categorical",
+        "row_start": 10,
+        "row_end": 11,
+        "levels": [
+          {
+            "level_name": "Low lifestyle",
+            "level_label": "Low lifestyle",
+            "row_idx": 11,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "score",
+        "variable_label": "score",
+        "variable_type": "unknown",
+        "row_start": 12,
+        "row_end": 12,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": null,
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Middle lifestyle",
+        "variable_label": "Middle lifestyle",
+        "variable_type": "continuous",
+        "row_start": 13,
+        "row_end": 13,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "median_iqr",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "score",
+        "variable_label": "score",
+        "variable_type": "categorical",
+        "row_start": 14,
+        "row_end": 15,
+        "levels": [
+          {
+            "level_name": "High lifestyle",
+            "level_label": "High lifestyle",
+            "row_idx": 15,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "score",
+        "variable_label": "score",
+        "variable_type": "unknown",
+        "row_start": 16,
+        "row_end": 16,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": null,
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Female",
+        "variable_label": "Female",
+        "variable_type": "categorical",
+        "row_start": 17,
+        "row_end": 18,
+        "levels": [
+          {
+            "level_name": "Low lifestyle",
+            "level_label": "Low lifestyle",
+            "row_idx": 18,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "score",
+        "variable_label": "score",
+        "variable_type": "unknown",
+        "row_start": 19,
+        "row_end": 19,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": null,
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Middle lifestyle",
+        "variable_label": "Middle lifestyle",
+        "variable_type": "continuous",
+        "row_start": 20,
+        "row_end": 20,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "median_iqr",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "score",
+        "variable_label": "score",
+        "variable_type": "categorical",
+        "row_start": 21,
+        "row_end": 22,
+        "levels": [
+          {
+            "level_name": "High lifestyle",
+            "level_label": "High lifestyle",
+            "row_idx": 22,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "score",
+        "variable_label": "score",
+        "variable_type": "unknown",
+        "row_start": 23,
+        "row_end": 23,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": null,
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "By age group",
+        "variable_label": "By age group",
+        "variable_type": "unknown",
+        "row_start": 24,
+        "row_end": 24,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": null,
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "65 years old",
+        "variable_label": "<\u200965 years old",
+        "variable_type": "categorical",
+        "row_start": 25,
+        "row_end": 26,
+        "levels": [
+          {
+            "level_name": "Low lifestyle",
+            "level_label": "Low lifestyle",
+            "row_idx": 26,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "score",
+        "variable_label": "score",
+        "variable_type": "categorical",
+        "row_start": 27,
+        "row_end": 28,
+        "levels": [
+          {
+            "level_name": "Middle life-",
+            "level_label": "Middle life-",
+            "row_idx": 28,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "style score",
+        "variable_label": "style score",
+        "variable_type": "categorical",
+        "row_start": 29,
+        "row_end": 30,
+        "levels": [
+          {
+            "level_name": "High lifestyle",
+            "level_label": "High lifestyle",
+            "row_idx": 30,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "65 years old",
+        "variable_label": "\u2265\u200965 years old",
+        "variable_type": "categorical",
+        "row_start": 32,
+        "row_end": 33,
+        "levels": [
+          {
+            "level_name": "Low lifestyle",
+            "level_label": "Low lifestyle",
+            "row_idx": 33,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "score",
+        "variable_label": "score",
+        "variable_type": "unknown",
+        "row_start": 34,
+        "row_end": 34,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": null,
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Middle life",
+        "variable_label": "Middle life-",
+        "variable_type": "continuous",
+        "row_start": 35,
+        "row_end": 35,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "median_iqr",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "style score",
+        "variable_label": "style score",
+        "variable_type": "categorical",
+        "row_start": 36,
+        "row_end": 37,
+        "levels": [
+          {
+            "level_name": "High lifestyle",
+            "level_label": "High lifestyle",
+            "row_idx": 37,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      }
+    ],
+    "column_definition": {
+      "grouping_label": "CI)",
+      "grouping_name": "CI",
+      "group_count": 2,
+      "columns": [
+        {
+          "col_idx": 1,
+          "column_name": "Risk ratio 95 Model 1",
+          "column_label": "Risk ratio (95% Model 1",
+          "inferred_role": "overall",
+          "grouping_variable_hint": "CI",
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": null,
+          "confidence": 0.84
+        },
+        {
+          "col_idx": 2,
+          "column_name": "CI Model 2",
+          "column_label": "CI) Model 2",
+          "inferred_role": "group",
+          "grouping_variable_hint": "CI",
+          "group_level_label": "Model 2",
+          "group_level_name": "Model 2",
+          "group_order": 1,
+          "statistic_subtype": null,
+          "confidence": 0.9
+        },
+        {
+          "col_idx": 3,
+          "column_name": "Model 3",
+          "column_label": "Model 3",
+          "inferred_role": "group",
+          "grouping_variable_hint": "CI",
+          "group_level_label": "Model 3",
+          "group_level_name": "Model 3",
+          "group_order": 2,
+          "statistic_subtype": null,
+          "confidence": 0.82
+        }
+      ],
+      "confidence": 0.8675
+    },
+    "notes": [],
+    "overall_confidence": 0.8025
+  }
+]
