@@ -1,0 +1,1030 @@
+[
+  {
+    "table_id": "Sarcopenia-p5-t0",
+    "title": "Table 1 Baseline characteristics of the participants in NHANES 2011\u20132018",
+    "caption": "Table 1 Baseline characteristics of the participants in NHANES 2011\u20132018",
+    "variables": [
+      {
+        "variable_name": "Age",
+        "variable_label": "Age(Mean \u00b1 SD)",
+        "variable_type": "continuous",
+        "row_start": 4,
+        "row_end": 4,
+        "levels": [],
+        "units_hint": "Mean \u00b1 SD",
+        "summary_style_hint": "mean_sd",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "PHQ 9",
+        "variable_label": "PHQ-9",
+        "variable_type": "continuous",
+        "row_start": 5,
+        "row_end": 5,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "mean_sd",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "score",
+        "variable_label": "score(Mean \u00b1 SD)",
+        "variable_type": "unknown",
+        "row_start": 6,
+        "row_end": 6,
+        "levels": [],
+        "units_hint": "Mean \u00b1 SD",
+        "summary_style_hint": null,
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Sex",
+        "variable_label": "Sex",
+        "variable_type": "binary",
+        "row_start": 7,
+        "row_end": 9,
+        "levels": [
+          {
+            "level_name": "Male",
+            "level_label": "Male",
+            "row_idx": 8,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Female",
+            "level_label": "Female",
+            "row_idx": 9,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Race",
+        "variable_label": "Race",
+        "variable_type": "categorical",
+        "row_start": 10,
+        "row_end": 11,
+        "levels": [
+          {
+            "level_name": "Mexican",
+            "level_label": "Mexican",
+            "row_idx": 11,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "American",
+        "variable_label": "American",
+        "variable_type": "categorical",
+        "row_start": 12,
+        "row_end": 13,
+        "levels": [
+          {
+            "level_name": "Non-Hispanic",
+            "level_label": "Non-Hispanic",
+            "row_idx": 13,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "white",
+        "variable_label": "white",
+        "variable_type": "categorical",
+        "row_start": 14,
+        "row_end": 15,
+        "levels": [
+          {
+            "level_name": "Non-Hispanic",
+            "level_label": "Non-Hispanic",
+            "row_idx": 15,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "black",
+        "variable_label": "black",
+        "variable_type": "categorical",
+        "row_start": 16,
+        "row_end": 17,
+        "levels": [
+          {
+            "level_name": "Other",
+            "level_label": "Other",
+            "row_idx": 17,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Marital status",
+        "variable_label": "Marital status",
+        "variable_type": "categorical",
+        "row_start": 18,
+        "row_end": 20,
+        "levels": [
+          {
+            "level_name": "Married",
+            "level_label": "Married",
+            "row_idx": 19,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Unmarried",
+            "level_label": "Unmarried",
+            "row_idx": 20,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Education level",
+        "variable_label": "Education level",
+        "variable_type": "categorical",
+        "row_start": 21,
+        "row_end": 23,
+        "levels": [
+          {
+            "level_name": "Below high school",
+            "level_label": "Below high school",
+            "row_idx": 22,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "High school or",
+            "level_label": "High school or",
+            "row_idx": 23,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "above",
+        "variable_label": "above",
+        "variable_type": "unknown",
+        "row_start": 24,
+        "row_end": 24,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": null,
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "ratio",
+        "variable_label": "ratio",
+        "variable_type": "categorical",
+        "row_start": 26,
+        "row_end": 28,
+        "levels": [
+          {
+            "level_name": "Poor",
+            "level_label": "Poor",
+            "row_idx": 27,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Not poor",
+            "level_label": "Not poor",
+            "row_idx": 28,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "status",
+        "variable_label": "status",
+        "variable_type": "categorical",
+        "row_start": 30,
+        "row_end": 33,
+        "levels": [
+          {
+            "level_name": "Normal",
+            "level_label": "Normal",
+            "row_idx": 31,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Overweight",
+            "level_label": "Overweight",
+            "row_idx": 32,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Obesity",
+            "level_label": "Obesity",
+            "row_idx": 33,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Smoking",
+        "variable_label": "Smoking",
+        "variable_type": "binary",
+        "row_start": 34,
+        "row_end": 36,
+        "levels": [
+          {
+            "level_name": "Yes",
+            "level_label": "Yes",
+            "row_idx": 35,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "No",
+            "level_label": "No",
+            "row_idx": 36,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Alcohol use",
+        "variable_label": "Alcohol use",
+        "variable_type": "binary",
+        "row_start": 37,
+        "row_end": 39,
+        "levels": [
+          {
+            "level_name": "Yes",
+            "level_label": "Yes",
+            "row_idx": 38,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "No",
+            "level_label": "No",
+            "row_idx": 39,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Diabetes",
+        "variable_label": "Diabetes",
+        "variable_type": "binary",
+        "row_start": 40,
+        "row_end": 42,
+        "levels": [
+          {
+            "level_name": "Yes",
+            "level_label": "Yes",
+            "row_idx": 41,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "No",
+            "level_label": "No",
+            "row_idx": 42,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Hypertension",
+        "variable_label": "Hypertension",
+        "variable_type": "binary",
+        "row_start": 43,
+        "row_end": 45,
+        "levels": [
+          {
+            "level_name": "Yes",
+            "level_label": "Yes",
+            "row_idx": 44,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "No",
+            "level_label": "No",
+            "row_idx": 45,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Hyperlipidemia",
+        "variable_label": "Hyperlipidemia",
+        "variable_type": "binary",
+        "row_start": 46,
+        "row_end": 48,
+        "levels": [
+          {
+            "level_name": "Yes",
+            "level_label": "Yes",
+            "row_idx": 47,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "No",
+            "level_label": "No",
+            "row_idx": 48,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.95
+      }
+    ],
+    "column_definition": {
+      "grouping_label": "2011-2018 Characteristic",
+      "grouping_name": "2011 2018 Characteristic",
+      "group_count": 2,
+      "columns": [
+        {
+          "col_idx": 1,
+          "column_name": "Total",
+          "column_label": "Total",
+          "inferred_role": "overall",
+          "grouping_variable_hint": "2011 2018 Characteristic",
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": null,
+          "confidence": 0.96
+        },
+        {
+          "col_idx": 2,
+          "column_name": "Non sarco",
+          "column_label": "Non-sarco-",
+          "inferred_role": "group",
+          "grouping_variable_hint": "2011 2018 Characteristic",
+          "group_level_label": "Non-sarco-",
+          "group_level_name": "Non sarco",
+          "group_order": 1,
+          "statistic_subtype": null,
+          "confidence": 0.82
+        },
+        {
+          "col_idx": 3,
+          "column_name": "Sarcope",
+          "column_label": "Sarcope-",
+          "inferred_role": "group",
+          "grouping_variable_hint": "2011 2018 Characteristic",
+          "group_level_label": "Sarcope-",
+          "group_level_name": "Sarcope",
+          "group_order": 2,
+          "statistic_subtype": null,
+          "confidence": 0.82
+        },
+        {
+          "col_idx": 4,
+          "column_name": "p value",
+          "column_label": "p-value",
+          "inferred_role": "p_value",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": "p_value",
+          "confidence": 0.97
+        }
+      ],
+      "confidence": 0.93
+    },
+    "notes": [],
+    "overall_confidence": 0.8889
+  },
+  {
+    "table_id": "Sarcopenia-p7-t0",
+    "title": "Table 2 Association between METs different intensity of PA and Sarcopenia",
+    "caption": "Table 2 Association between METs different intensity of PA and Sarcopenia",
+    "variables": [
+      {
+        "variable_name": "Total METs",
+        "variable_label": "Total METs",
+        "variable_type": "categorical",
+        "row_start": 2,
+        "row_end": 3,
+        "levels": [
+          {
+            "level_name": "None",
+            "level_label": "None",
+            "row_idx": 3,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Low",
+        "variable_label": "Low (1-1000)",
+        "variable_type": "continuous",
+        "row_start": 4,
+        "row_end": 4,
+        "levels": [],
+        "units_hint": "1-1000",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Moderate",
+        "variable_label": "Moderate (1001\u20132000)",
+        "variable_type": "continuous",
+        "row_start": 5,
+        "row_end": 5,
+        "levels": [],
+        "units_hint": "1001-2000",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "High",
+        "variable_label": "High (2001-)",
+        "variable_type": "continuous",
+        "row_start": 6,
+        "row_end": 6,
+        "levels": [],
+        "units_hint": "2001-",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Low",
+        "variable_label": "Low (1-1000)",
+        "variable_type": "continuous",
+        "row_start": 9,
+        "row_end": 9,
+        "levels": [],
+        "units_hint": "1-1000",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Moderate",
+        "variable_label": "Moderate (1001\u20132000)",
+        "variable_type": "continuous",
+        "row_start": 10,
+        "row_end": 10,
+        "levels": [],
+        "units_hint": "1001-2000",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "High",
+        "variable_label": "High (2001-)",
+        "variable_type": "continuous",
+        "row_start": 11,
+        "row_end": 11,
+        "levels": [],
+        "units_hint": "2001-",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Low",
+        "variable_label": "Low (1-1000)",
+        "variable_type": "continuous",
+        "row_start": 14,
+        "row_end": 14,
+        "levels": [],
+        "units_hint": "1-1000",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Moderate",
+        "variable_label": "Moderate (1001\u20132000)",
+        "variable_type": "continuous",
+        "row_start": 15,
+        "row_end": 15,
+        "levels": [],
+        "units_hint": "1001-2000",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "High",
+        "variable_label": "High (2001-)",
+        "variable_type": "continuous",
+        "row_start": 16,
+        "row_end": 16,
+        "levels": [],
+        "units_hint": "2001-",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      }
+    ],
+    "column_definition": {
+      "grouping_label": null,
+      "grouping_name": null,
+      "group_count": 5,
+      "columns": [
+        {
+          "col_idx": 1,
+          "column_name": "Model OR",
+          "column_label": "Model OR",
+          "inferred_role": "overall",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": null,
+          "confidence": 0.84
+        },
+        {
+          "col_idx": 2,
+          "column_name": "1 95 CI",
+          "column_label": "1 95% CI",
+          "inferred_role": "group",
+          "grouping_variable_hint": null,
+          "group_level_label": "95% CI",
+          "group_level_name": "95 CI",
+          "group_order": 1,
+          "statistic_subtype": null,
+          "confidence": 0.8200000000000001
+        },
+        {
+          "col_idx": 3,
+          "column_name": "p value",
+          "column_label": "p-value",
+          "inferred_role": "p_value",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": "p_value",
+          "confidence": 0.97
+        },
+        {
+          "col_idx": 4,
+          "column_name": "Model OR",
+          "column_label": "Model OR",
+          "inferred_role": "group",
+          "grouping_variable_hint": null,
+          "group_level_label": "OR",
+          "group_level_name": "OR",
+          "group_order": 2,
+          "statistic_subtype": null,
+          "confidence": 0.8200000000000001
+        },
+        {
+          "col_idx": 5,
+          "column_name": "2 95 CI",
+          "column_label": "2 95% CI",
+          "inferred_role": "group",
+          "grouping_variable_hint": null,
+          "group_level_label": "95% CI",
+          "group_level_name": "95 CI",
+          "group_order": 3,
+          "statistic_subtype": null,
+          "confidence": 0.8200000000000001
+        },
+        {
+          "col_idx": 6,
+          "column_name": "p value",
+          "column_label": "p-value",
+          "inferred_role": "p_value",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": "p_value",
+          "confidence": 0.97
+        },
+        {
+          "col_idx": 7,
+          "column_name": "Model OR",
+          "column_label": "Model OR",
+          "inferred_role": "group",
+          "grouping_variable_hint": null,
+          "group_level_label": "OR",
+          "group_level_name": "OR",
+          "group_order": 4,
+          "statistic_subtype": null,
+          "confidence": 0.8200000000000001
+        },
+        {
+          "col_idx": 8,
+          "column_name": "3 95 CI",
+          "column_label": "3 95% CI",
+          "inferred_role": "group",
+          "grouping_variable_hint": null,
+          "group_level_label": "95% CI",
+          "group_level_name": "95 CI",
+          "group_order": 5,
+          "statistic_subtype": null,
+          "confidence": 0.8200000000000001
+        },
+        {
+          "col_idx": 9,
+          "column_name": "p value",
+          "column_label": "p-value",
+          "inferred_role": "p_value",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": "p_value",
+          "confidence": 0.97
+        }
+      ],
+      "confidence": 0.8722
+    },
+    "notes": [],
+    "overall_confidence": 0.8993
+  },
+  {
+    "table_id": "Sarcopenia-p8-t0",
+    "title": "Table 3 Association between METs of occupational and recreational PA and Sarcopenia",
+    "caption": "Table 3 Association between METs of occupational and recreational PA and Sarcopenia",
+    "variables": [
+      {
+        "variable_name": "Total METs",
+        "variable_label": "Total METs",
+        "variable_type": "categorical",
+        "row_start": 3,
+        "row_end": 4,
+        "levels": [
+          {
+            "level_name": "None",
+            "level_label": "None",
+            "row_idx": 4,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Low",
+        "variable_label": "Low (1-1000)",
+        "variable_type": "continuous",
+        "row_start": 5,
+        "row_end": 5,
+        "levels": [],
+        "units_hint": "1-1000",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Moderate",
+        "variable_label": "Moderate (1001\u20132000)",
+        "variable_type": "continuous",
+        "row_start": 6,
+        "row_end": 6,
+        "levels": [],
+        "units_hint": "1001-2000",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "High",
+        "variable_label": "High (2001-)",
+        "variable_type": "continuous",
+        "row_start": 7,
+        "row_end": 7,
+        "levels": [],
+        "units_hint": "2001-",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Low",
+        "variable_label": "Low (1-1000)",
+        "variable_type": "continuous",
+        "row_start": 10,
+        "row_end": 10,
+        "levels": [],
+        "units_hint": "1-1000",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Moderate",
+        "variable_label": "Moderate (1001\u20132000)",
+        "variable_type": "continuous",
+        "row_start": 11,
+        "row_end": 11,
+        "levels": [],
+        "units_hint": "1001-2000",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "High",
+        "variable_label": "High (2001-)",
+        "variable_type": "continuous",
+        "row_start": 12,
+        "row_end": 12,
+        "levels": [],
+        "units_hint": "2001-",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Low",
+        "variable_label": "Low (1-1000)",
+        "variable_type": "continuous",
+        "row_start": 15,
+        "row_end": 15,
+        "levels": [],
+        "units_hint": "1-1000",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Moderate",
+        "variable_label": "Moderate (1001\u20132000)",
+        "variable_type": "continuous",
+        "row_start": 16,
+        "row_end": 16,
+        "levels": [],
+        "units_hint": "1001-2000",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "High",
+        "variable_label": "High (2001-)",
+        "variable_type": "continuous",
+        "row_start": 17,
+        "row_end": 17,
+        "levels": [],
+        "units_hint": "2001-",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Total METs",
+        "variable_label": "Total METs",
+        "variable_type": "categorical",
+        "row_start": 19,
+        "row_end": 20,
+        "levels": [
+          {
+            "level_name": "None",
+            "level_label": "None",
+            "row_idx": 20,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Low",
+        "variable_label": "Low (1-1000)",
+        "variable_type": "continuous",
+        "row_start": 21,
+        "row_end": 21,
+        "levels": [],
+        "units_hint": "1-1000",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Moderate",
+        "variable_label": "Moderate (1001\u20132000)",
+        "variable_type": "continuous",
+        "row_start": 22,
+        "row_end": 22,
+        "levels": [],
+        "units_hint": "1001-2000",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "High",
+        "variable_label": "High (2001-)",
+        "variable_type": "continuous",
+        "row_start": 23,
+        "row_end": 23,
+        "levels": [],
+        "units_hint": "2001-",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Low",
+        "variable_label": "Low (1-1000)",
+        "variable_type": "continuous",
+        "row_start": 26,
+        "row_end": 26,
+        "levels": [],
+        "units_hint": "1-1000",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Moderate",
+        "variable_label": "Moderate (1001\u20132000)",
+        "variable_type": "continuous",
+        "row_start": 27,
+        "row_end": 27,
+        "levels": [],
+        "units_hint": "1001-2000",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "High",
+        "variable_label": "High (2001-)",
+        "variable_type": "continuous",
+        "row_start": 28,
+        "row_end": 28,
+        "levels": [],
+        "units_hint": "2001-",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Low",
+        "variable_label": "Low (1-1000)",
+        "variable_type": "continuous",
+        "row_start": 31,
+        "row_end": 31,
+        "levels": [],
+        "units_hint": "1-1000",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Moderate",
+        "variable_label": "Moderate (1001\u20132000)",
+        "variable_type": "continuous",
+        "row_start": 32,
+        "row_end": 32,
+        "levels": [],
+        "units_hint": "1001-2000",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "High",
+        "variable_label": "High (2001-)",
+        "variable_type": "continuous",
+        "row_start": 33,
+        "row_end": 33,
+        "levels": [],
+        "units_hint": "2001-",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      }
+    ],
+    "column_definition": {
+      "grouping_label": null,
+      "grouping_name": null,
+      "group_count": 5,
+      "columns": [
+        {
+          "col_idx": 1,
+          "column_name": "Model OR",
+          "column_label": "Model OR",
+          "inferred_role": "overall",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": null,
+          "confidence": 0.84
+        },
+        {
+          "col_idx": 2,
+          "column_name": "1 95 CI",
+          "column_label": "1 95% CI",
+          "inferred_role": "group",
+          "grouping_variable_hint": null,
+          "group_level_label": "95% CI",
+          "group_level_name": "95 CI",
+          "group_order": 1,
+          "statistic_subtype": null,
+          "confidence": 0.8200000000000001
+        },
+        {
+          "col_idx": 3,
+          "column_name": "p value",
+          "column_label": "p-value",
+          "inferred_role": "p_value",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": "p_value",
+          "confidence": 0.97
+        },
+        {
+          "col_idx": 4,
+          "column_name": "Model OR",
+          "column_label": "Model OR",
+          "inferred_role": "group",
+          "grouping_variable_hint": null,
+          "group_level_label": "OR",
+          "group_level_name": "OR",
+          "group_order": 2,
+          "statistic_subtype": null,
+          "confidence": 0.8200000000000001
+        },
+        {
+          "col_idx": 5,
+          "column_name": "2 95 CI",
+          "column_label": "2 95% CI",
+          "inferred_role": "group",
+          "grouping_variable_hint": null,
+          "group_level_label": "95% CI",
+          "group_level_name": "95 CI",
+          "group_order": 3,
+          "statistic_subtype": null,
+          "confidence": 0.8200000000000001
+        },
+        {
+          "col_idx": 6,
+          "column_name": "p value",
+          "column_label": "p-value",
+          "inferred_role": "p_value",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": "p_value",
+          "confidence": 0.97
+        },
+        {
+          "col_idx": 7,
+          "column_name": "Model OR",
+          "column_label": "Model OR",
+          "inferred_role": "group",
+          "grouping_variable_hint": null,
+          "group_level_label": "OR",
+          "group_level_name": "OR",
+          "group_order": 4,
+          "statistic_subtype": null,
+          "confidence": 0.8200000000000001
+        },
+        {
+          "col_idx": 8,
+          "column_name": "3 95 CI",
+          "column_label": "3 95% CI",
+          "inferred_role": "group",
+          "grouping_variable_hint": null,
+          "group_level_label": "95% CI",
+          "group_level_name": "95 CI",
+          "group_order": 5,
+          "statistic_subtype": null,
+          "confidence": 0.8200000000000001
+        },
+        {
+          "col_idx": 9,
+          "column_name": "p value",
+          "column_label": "p-value",
+          "inferred_role": "p_value",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": "p_value",
+          "confidence": 0.97
+        }
+      ],
+      "confidence": 0.8722
+    },
+    "notes": [],
+    "overall_confidence": 0.9006
+  }
+]

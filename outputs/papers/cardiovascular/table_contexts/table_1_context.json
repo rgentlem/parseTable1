@@ -1,0 +1,45 @@
+{
+  "table_id": "cardiovascular-p5-t0",
+  "table_index": 1,
+  "table_label": "Table 2",
+  "title": "Table 2 AUC score of all models",
+  "caption": "Table 2 AUC score of all models",
+  "row_terms": [
+    "Logistic",
+    "Regression",
+    "Ridge Regression",
+    "SVM",
+    "Random Forest",
+    "XGBoost",
+    "Cox proportional"
+  ],
+  "column_terms": [
+    "The AUC of the"
+  ],
+  "grouping_terms": [],
+  "methods_like_section_ids": [
+    "section_6",
+    "section_7"
+  ],
+  "results_like_section_ids": [
+    "section_12"
+  ],
+  "passages": [
+    {
+      "passage_id": "section_13_p0",
+      "section_id": "section_13",
+      "heading": "**Baseline characteristics**",
+      "text": "The cohort consisted of 7921 participants, with average age of 60.79 \u00b1 12.18, and 3866(48.81%) males. During an average follow-up period of 9.75 years, there were 1,911 deaths (24.13%), with 585 cases attributed to cardiovascular diseases. The detailed information was shown in the Table 1. In terms of lifestyle, there are differences between the all-cause mortality group and the cardiovascular disease mortality group and the alive group. After considering sample weights, the distribution of samples is shown in Supplementary Table 3. **Table 1** Baseline characteristics of participants ||**All**|**Live**|**Dead**|**Dead cause of cardiovascular**| |---|---|---|---|---| ||**(****_n_ = 7921)**|**(****_n_ = 6010)**|**(****_n_ = 1911)**|**(****_n_ = 585)**| |**Age(years)**|60.79 \u00b1 12.18|57.55 \u00b1 10.95|70.97 \u00b1 10.05\u2021|72.75 \u00b1 9.52\u2021| |**Male**|3866(48.81%)|2800(46.59%)|1066(55.78%)|322(55.04%)| |**BMI(Kg/m2)**|28.57 \u00b1 7.13|29.01 \u00b1 6.83|27.2 \u00b1 7.86\u2021|27.28 \u00b1 8.26\u2021| |**Education level**|||\u2020|| |Less Than 9th Grade|1287(16.25%)|929(15.46%)|358(18.73%)|106(18.12%)| |9-11th Grade|1318(16.64%)|931(15.49%)|387(20.25%)|127(21.71%)| |High School Grad/GED or Equivalent|1853(23.39%)|1381(22.98%)|472(24.70%)|153(26.15%)| |Some College or AA degree|1937(24.45%)|1513(25.17%)|424(22.19%)|122(20.85%)| |College Graduate or above|1526(19.27%)|1256(20.90%)|270(14.13%)|77(13.16%)| |**Ethnicity**|||\u2021|\u2021| |Mexican American|1256(15.86%)|1095(18.22%)|161(8.42%)|34(5.81%)| |Other Hispanic|825(10.42%)|689(11.46%)|136(7.12%)|46(7.86%)| |Non-Hispanic White|3961(50.01%)|2786(46.36%)|1175(61.49%)|372(63.59%)| |Non-Hispanic Black|1537(19.40%)|1165(19.38%)|372(19.47%)|110(18.80%)| |Other Race - Including Multi-Racial|342(4.32%)|275(4.58%)|67(3.51%)|23(3.93%)| |**The ratio of household income to poverty line**|2.33 \u00b1 1.72|2.45 \u00b1 1.78|1.94 \u00b1 1.47\u2021|1.93 \u00b1 1.43\u2021| |**Hypertension**|4453(56.22%)|3048(50.72%)|1405(73.52%)\u2021|456(77.95%)\u2021| |**Diabetes**|||\u2021|\u2021| |No diabetes|5856(73.93%)|4678(77.84%)|1178(61.64%)|346(59.15%)| |Diabetes|1557(19.66%)|977(16.26%)|580(30.35%)|190(32.48%)| |Prediabetes|508(6.41%)|355(5.91%)|153(8.01%)|49(8.38%)| |**Close relative heart attack**|1322(16.69%)|946(15.74%)|376(19.68%)\u2021|125(21.37%)\u2021| |**Close relative diabetes**|3455(43.62%)|2688(44.73%)|767(40.14%)\u2021|227(38.80%)\u2021| |**non_HDL (mmol/L)**|3.57 \u00b1 1.31|3.69 \u00b1 1.27|3.2 \u00b1 1.36\u2021|3.17 \u00b1 1.35\u2021| |**CRP**|0.42 \u00b1 0.86|0.38 \u00b1 0.73|0.53 \u00b1 1.17|0.53 \u00b1 1.09| |**diet score**|47.55 \u00b1 16.59|48.37 \u00b1 16.07|44.99 \u00b1 17.88\u2021|44.08 \u00b1 18.51\u2021| |**physical level**|||\u2021|\u2021| |inactive|2825(35.66%)|1820(30.28%)|1005(52.59%)|316(54.02%)| |insufcient active|1129(14.25%)|863(14.36%)|266(13.92%)|80(13.68%)| |active|949(11.98%)|765(12.73%)|184(9.63%)|66(11.28%)| |highly active|3018(38.10%)|2562(42.63%)|456(23.86%)|123(21.03%)| |**Sedentary minutes**|331.98 \u00b1 411.55|317.34 \u00b1 403.55|378.01 \u00b1 432.64\u2021|374.89 \u00b1 194.81\u2021| |**sleep level**|||\u2021|\u2021| |Poor|1586(20.02%)|1123(18.69%)|463(24.23%)|134(22.91%)| |intermediate|396(5.00%)|265(4.41%)|131(6.86%)|48(8.21%)| |optimal|5939(74.98%)|4622(76.91%)|1317(68.92%)|403(68.89%)| |**Smoking**|||\u2021|\u2021| |No smoking|3946(49.82%)|3175(52.83%)|771(40.35%)|269(45.98%)| |Smoking before|2495(31.50%)|1718(28.59%)|777(40.66%)|230(39.32%)| |Smoking|1480(18.68%)|1117(18.59%)|363(19.00%)|86(14.70%)| |**Alcohol consumptionper day**|3.99 \u00b1 14.33|4.31 \u00b1 12.83|2.96 \u00b1 18.24\u2021|3.36 \u00b1 23.74\u2021| Continuous variables as mean \u00b1 SD, categorical variables as n (%) \u2020: _p_ < 0.01; \u2021: _p_ < 0.001 vs. participants alive in follow-up, unpaired Student\u2019s _t_ -test or Mann-Whitney U test for continuous variables, Chi-squared or Fisher\u2019s exact test for categorical variables Page 5 of 10 Guo _et al. BMC Public Health_ (2025) 25:319 **Table 2** AUC score of all models ||**The AUC of the optimal**|**The AUC of the optimal**|**The AUC of the**|**The AUC of the**| |---|---|---|---|---| ||**parameter combination**||**optimal parameter**|| ||**in the training cohort**||**combination**|| ||||**in the testing cohort**|| ||All-cause|Cardio-|All-cause|Cardio-| ||mortality|vascular|mortality|vascular| |||mortality||mortality| |Logistic|0.860|0.831|0.852|0.829| |Regression||||| |Ridge Regression|0.860|0.829|0.852|0.829| |SVM|0.851|0.782|0.849|0.737| |Random Forest|0.859|0.851|0.842|0.825| |XGBoost|0.881|0.853|0.862|0.836| |Cox proportional|0.850|0.824|0.844|0.823| |hazards||||| in Supplementary Table 9, the performance of the model and the conclusion is similar to above. The AUC curve of the XGBoost model is shown in Fig. 1. Before calibration, the AUC for predicting allcause mortality and cardiovascular disease mortality were 0.862 and 0.835, respectively. After calibration, these values improved to 0.864 and 0.843, respectively.",
+      "match_type": "table_reference",
+      "score": 1.0
+    },
+    {
+      "passage_id": "section_15_p0",
+      "section_id": "section_15",
+      "heading": "**Performance of models**",
+      "text": "Table 2 presents the AUC scores for all models in predicting all-cause mortality and cardiovascular disease mortality. XGBoost demonstrated notable performance, achieving an AUC score of 0.862 for predicting all-cause mortality and 0.836 for predicting cardiovascular disease mortality, establishing it as the top-performing model. Cox proportional hazards performed well, with no significant difference in performance compared to other models, but overall XGBoost performed the best. The grid search parameters dictionary and the optimal parameter values were displayed in the Supplementary Table 4. Following calibration, there was an improvement in Brier scores, and detailed information was described in the Supplementary Table 5. Model performance in the use of mean value and the number to fill in the data shown",
+      "match_type": "table_reference",
+      "score": 1.0
+    }
+  ]
+}

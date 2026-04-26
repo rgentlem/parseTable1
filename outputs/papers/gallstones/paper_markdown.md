@@ -1,0 +1,512 @@
+BMC Public Health 
+
+Wu _et al. BMC Public Health_ (2025) 25:976 https://doi.org/10.1186/s12889-025-21783-8 
+
+## **Open Access** 
+
+## **RESEARCH** 
+
+**==> picture [29 x 29] intentionally omitted <==**
+
+## Association of dietary quality indicators with gallstones in the US: NHANES 2017–2020 
+
+Weigen Wu[1,2†] , Yuchen Pei[1,2†] , Junlong Wang[1,2] , Qizhi Liang[1,2] and Wei Chen[1,2*] 
+
+## **Abstract** 
+
+**Background** While dietary factors are known to influence gallstone development, the specific relationships between comprehensive dietary quality indicators and gallstone risk remain poorly understood. This study aimed to explore the association between dietary quality indicators and gallstones using data from the 2017 to 2020 US National Health and Nutrition Examination Survey (NHANES). 
+
+**Methods** A total of 6,623 US adults were extracted from the 2017–2020 NHANES, of which 734 participants selfreported having gallstones. Dietary quality indicators were assessed using 24-hour dietary recall data. We used multivariate logistic regression analysis to evaluate the association between dietary quality indicators and the likelihood of gallstones. To delineate the non-linear relationships and threshold effects, we utilized a restricted cubic spline (RCS) regression model. Subgroup analyses were also performed. 
+
+**Results** After adjusting for sex, age, race, education, poverty-to-income ratio, body mass index, large weight loss, alcohol use, smoking, physical activity, diabetes, hypertension, heart failure, coronary heart disease, angina pectoris, heart attack, total calories, total cholesterol, estrogen use, antihyperglycemic drug use, statin use, and glucocorticosteroid use (Model 4), a higher Dietary Inflammatory Index (DII) and lower Alternative Healthy Eating Index (AHEI), Healthy Eating Index (HEI-2020), Dietary Approaches to Stop Hypertension (DASH), and Mediterranean Diet (MED) were all significantly associated with gallstones. Further RCS analysis revealed a nonlinear relationship between the DII and gallstones, with a threshold value of 1.842. Above this threshold, for each unit increase in the DII score, the odds of developing gallstones increased by 27.5%. Subgroup analysis demonstrated that this association was consistent across all subgroups. 
+
+**Conclusion** Participants with gallstones exhibited poor dietary habits. Adopting a diet that reduces inflammation and supports overall health may help lower the risk of gallstone development, with potential implications for dietary recommendations in clinical practice. 
+
+**Keywords** Nutrition, Dietary quality indicators, Gallstones, NHANES 
+
+†Weigen Wu and Yuchen Pei contributed equally to this work. 
+
+*Correspondence: Wei Chen chenw57@mail.sysu.edu.cn 1Center of Hepato-Pancreato-Biliary Surgery, The First Affiliated Hospital, Sun Yat-sen University, No.58 Zhongshan Er Road, Guangzhou 510080, Guangdong Province, P.R. China 2Department of Pancreato-Biliary Surgery, The First Affiliated Hospital, Sun Yat-sen University, No.58 Zhongshan Er Road, Guangzhou 510080, Guangdong Province, P.R. China 
+
+**==> picture [39 x 33] intentionally omitted <==**
+
+© The Author(s) 2025. **Open Access** This article is licensed under a Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License, which permits any non-commercial use, sharing, distribution and reproduction in any medium or format, as long as you give appropriate credit to the original author(s) and the source, provide a link to the Creative Commons licence, and indicate if you modified the licensed material. You do not have permission under this licence to share adapted material derived from this article or parts of it. The images or other third party material in this article are included in the article’s Creative Commons licence, unless indicated otherwise in a credit line to the material. If material is not included in the article’s Creative Commons licence and your intended use is not permitted by statutory regulation or exceeds the permitted use, you will need to obtain permission directly from the copyright holder. To view a copy of this licence, visit  h t t p : / / c r e a t i v e c o m m o n s . o r g / l i c e n s e s / b y - n c - n d / 4 . 0 /. 
+
+Page 2 of 13 
+
+Wu _et al. BMC Public Health_ (2025) 25:976 
+
+## **Introduction** 
+
+Gallstones are a widespread disorder of the digestive system worldwide and primarily affect the gallbladder and bile ducts [1, 2]. Epidemiological studies have indicated that approximately 10–20% of the adult population has gallstone disease, and its prevalence continues to increase [3, 4]. Although gallstones generally remain asymptomatic, > 20% of patients may experience difficulties such as biliary colic or infections during adulthood, with 1–2% potentially experiencing significant complications [4–6]. Gallstones pose a considerable burden on individuals and society. The annual medical costs related to the treatment of gallstones in the US amount to $6.5 billion, while approximately 50,000 cholecystectomies are conducted annually in the UK, consuming significant medical resources [4]. Furthermore, the presence of gallstones significantly affects patient quality of life, particularly because of indigestion and other health complications that may arise postoperatively [4, 6]. Previous studies confirmed that age, sex, obesity, race, genetics, and poor 2, lifestyle habits are significant risk factors for gallstones [ 7]. Diet plays a crucial role in the formation of gallstones. Diets high in fat, sugar, and processed foods and low in fiber increase gallstone risk, whereas diets rich in vegetables, fruits, and fish may reduce it [8–10]. This highlights the importance of a balanced diet as a preventive strategy [2, 11–13]. However, the specific dietary patterns that contribute to gallstones are not well understood, making it essential to identify reliable clinical indicators for predicting risk. 
+
+Gallstone formation involves several mechanisms, including bile oversaturation, cholesterol precipitation, impaired gallbladder function, inflammation, and intestinal factors [14–16]. High cholesterol and low fiber intakes promote bile supersaturation, which is a key factor in cholesterol stone formation [17–20]. Additionally, proinflammatory diets high in fat and sugar and low in antioxidants can trigger inflammation and alter the gut microbiota, further contributing to gallstone formation [21, 22]. Thus, precise insight into the relationships between these mechanisms and diet-related factors is essential. 
+
+Given the crucial role of dietary components in gallstone formation, researchers have recently begun to explore how to assess and regulate these risk factors through overall dietary patterns, thereby establishing a scientific basis for the prevention of gallstones. Currently, global studies have utilized various indicators of diet quality to evaluate the risk of several disorders, including gallstones [10, 23]. The Mediterranean Diet (MED), the Dietary Approaches to Stop Hypertension (DASH), the Alternative Healthy Eating Index (AHEI), the Healthy Eating Index (HEI), and the Dietary Inflammation Index (DII) are a few of the major overall dietary quality 
+
+indicators. The MED promotes a diverse range of vegetables, fruits, whole grains, and nutritious fats, particularly olive oil [24, 25]. It also encourages healthy intake of seafood and alcohol [24, 26]. The DASH diet is specifically formulated to address hypertension by promoting a diet consisting of vegetables, fruits, whole grains, and dairy products with low fat content, while recommending a decrease in salt and red meat consumption [27–29]. The AHEI emphasizes high-quality protein and fat sources, including limited quantities of processed and red meat, aiming to mitigate the likelihood of chronic diseases [30, 31]. In contrast, the HEI assesses the overall quality of food according to the United States Dietary Guidelines with a focus on balanced nutrition [30, 32]. Conversely, the DII assesses foods based on their anti-inflammatory or proinflammatory properties to help reduce inflammation [33, 34]. Although each of these indicators provides a different perspective on dietary behavior, they share the common goal of promoting health through improved dietary patterns and nutrient intake. They emphasize key principles such as the importance of whole foods, reduced consumption of processed foods, and a balanced intake of nutrients. These factors are believed to influence the risk of chronic diseases including gallstones. 
+
+Numerous studies have revealed significant associations between these indicators and a wide range of disorders, including gallstones, cardiovascular disease, and metabolic syndrome [35–37]. Research on dietary patterns and gallstones suggests that higher adherence to MED and AHEI may reduce the gallstone risk. For example, a cohort study reported that higher MED adherence was associated with a lower risk of symptomatic gallstones [10]. However, other studies, including a large cross-sectional study, have found that higher MED scores may increase gallstone incidence [38], possibly due to regional dietary differences. Additionally, higher DII scores have been linked to an increased gallstone risk [39, 40]. Despite these findings, most studies have focused on single dietary indices, limiting a comprehensive understanding of the diet-gallstone relationship. 
+
+Therefore, we investigated the association between dietary quality indicators and the likelihood of gallstone development using data from the National Health and Nutrition Examination Survey (NHANES). These indicators reflect distinct dietary patterns: the DII examines the inflammatory potential, whereas the AHEI, HEI2020, DASH, and MED focus on the overall diet quality, nutrient balance, and key food groups. Despite these differences, each indicator prioritizes healthy food and nutrient balance. This consistency across dietary patterns strengthens the evidence supporting the relationship between diet and gallstones and provides a more comprehensive scientific understanding of gallstone prevention. We also analyzed these associations across population 
+
+Page 3 of 13 
+
+Wu _et al. BMC Public Health_ (2025) 25:976 
+
+subgroups to ensure that the findings were robust and applicable to diverse groups. 
+
+## **Methods** 
+
+## **Study design and participants** 
+
+The NHANES database, which is administered by the National Center for Health Statistics (NCHS) within the Centers for Disease Control and Prevention (CDC), is a substantial health and nutrition survey initiative that began in the 1960s. The fundamental objective is to gather comprehensive data spanning various demographics, encompassing both adults and children, to estimate the health and nutritional status of the American population. This study employed NHANES data collected between 2017 and March 2020. The exclusion criteria are shown in Fig. 1: (1) age < 20 years, (2) incomplete gallstone questionnaire, and (3) missing dietary quality indicator information. A total of 6623 samples were analyzed. 
+
+All participants provided written informed consent before participation. The NHANES protocol was approved by the CDC Institutional Review Board. According to the policy of our local Research Ethics Committee, secondary analyses of publicly available data that have already received proper approval are not subject to further review. 
+
+## **Definition of gallstones** 
+
+To determine whether individuals had gallstones, the survey asked “Has the DR ever diagnosed you with gallstones?” Respondents answering yes to this question were categorized as gallstone patients, while those answering no were assigned to the non-gallstone category [3, 41, 42]. 
+
+## **Dietary quality indicators** 
+
+Detailed information on dietary intake was collected from the NHANES participants to estimate the energy, nutrient content, and other food components consumed within 24 h prior to the interview. All participants completed two 24-hour dietary interviews to ensure accurate and comprehensive data. The first interview occurred face-to-face at the mobile examination center, while the second was recorded over the phone 3–10 days later. The two interviews served as critical data sources and were used jointly to assess dietary quality. 
+
+Previous studies calculated the DII using 26 dietary components. The DII score for each food component was determined by comparing its intake with the global dietary average, followed by standardization. The standardized scores were then weighted according to the proinflammatory or anti-inflammatory potential of each 
+
+**==> picture [483 x 320] intentionally omitted <==**
+
+**Fig. 1** Flowchart of participant selection criteria for the study on dietary quality indicators and gallstones occurrence 
+
+Page 4 of 13 
+
+Wu _et al. BMC Public Health_ (2025) 25:976 
+
+component, and the final overall DII score was derived by summing the weighted scores [33]. 
+
+While the DII specifically evaluates the inflammatory potential of the diet, other indices, like the AHEI and HEI-2020, assess overall diet quality based on different criteria. The AHEI evaluates the intake of nine key dietary elements. The final score, ranging from 0 to 110, reflects how well a diet supports cardiovascular health, with higher scores indicating better quality [43]. In contrast, HEI-2020 is derived from the 2020–2025 US Dietary Guidelines and includes 13 components. The score assesses the degree to which a diet adheres to these guidelines. Higher scores represent greater alignment with the recommended dietary patterns, signifying a more balanced and nutritious diet [44]. 
+
+The MED is a scoring system designed around the Mediterranean dietary pattern and is used to determine how well an individual’s eating habits align with this pattern [45]. MED encourages the consumption of plantbased foods, while minimizing the intake of red meat, processed meats, sugars, and saturated fats [46]. 
+
+The DASH was specifically developed to prevent and treat hypertension. The DASH evaluates the intake of ten key dietary elements [47]. To assess how closely the participants’ diets meet the DASH guidelines, the scoring system assigns corresponding points based on the intake of each component. The individual scores are then combined to obtain the DASH score. The higher the score, the closer the individual’s diet is to the DASH diet pattern, which is typically linked to improved blood pressure regulation and cardiovascular health. 
+
+The detailed calculation methods for each dietary index, including DII [33], AHEI [43], HEI-2020 [44], MED [45, 46], and DASH [47], are provided in the **Supplementary Material 1** . 
+
+## **Covariates** 
+
+Sex, age, race, education, poverty-to-income ratio, and total calories were adjusted for demographic and dietary covariates. Covariates from physical and laboratory measurements included body mass index (BMI) and total cholesterol levels. Variables derived from questionnaires included large weight loss (5% or more weight loss in one year), smoking (classified into four categories: never smoked, previous smoker, occasional smoker, and daily smoker), alcohol use (those who had consumed alcohol), physical activity, medication history (estrogen, statins, antihyperglycemic drugs, and glucocorticoids), and a history of medical conditions such as diabetes, hypertension, heart failure, coronary heart disease, angina pectoris, and heart attack were also collected via affirmative responses from participants. 
+
+## **Statistical analysis** 
+
+Dietary quality indicators were grouped into quartiles, with the lowest quartile serving as the reference group. Because of their non-normal distribution, continuous variables are described as median and interquartile range according to the Kolmogorov–Smirnov test (TableS1 and Fig. S1), and categorical variables are reported as proportions. Intergroup differences in categorical variables were evaluated using the chi-square test, whereas intergroup differences in continuous variables were assessed using the Mann–Whitney U test. 
+
+Multivariate logistic regression was used to investigate the odds ratios (ORs) and 95% confidence intervals (CIs) between gallstones and dietary quality indicators. Four models were established: Model 1 (unadjusted), Model 2 (adjusted for age, sex, and race), Model 3 (adjusted for age, sex, race, BMI, and total calorie intake), and Model 4 (completely adjusted for all factors). Additionally, we evaluated the possible nonlinear relationship between gallstones and dietary quality indicators using a restricted cubic spline (RCS) regression model. A segmented linear regression model was employed to the threshold effect of gallstones on dietary quality indicators. Subgroup and interaction analyses were conducted to explore potential differences between the different populations. The robustness of the results was further assessed using a sensitivity analysis adjusted for hyperlipidemia to minimize its impact on gallstones. Multiple imputations were used to impute missing values. Statistical significance was defined as _P_ < 0.05. The analyses were conducted using the R and EmpowerStats software. 
+
+## **Results** 
+
+## **Baseline characteristics** 
+
+The study included 6623 individuals who met the inclusion and exclusion criteria. The mean age of participants was 50.85 ± 17.27 years, and 52.24% were female. In total, 734 participants (11.08%) had gallstones. The mean DII score was 1.26 ± 1.69. Table 1 provides a detailed description of the participants. Compared with participants who did not have gallstones, individuals with gallstones demonstrated a greater tendency towards the following characteristics: older age, female, non-Hispanic white, higher educational level, higher BMI, no significant weight loss, smoking, hypertension, history of undiagnosed diabetes mellitus and cardiovascular disease, no use of estrogen, statins, glucose-lowering medications, or glucocorticoids, lower energy intake, and higher DII (each _P_ < 0.05). 
+
+## **Association between unhealthy dietary pattern and gallstones** 
+
+Table 2 shows the correlation between the DII score and gallstone occurrence. In the model with comprehensive adjustments for confounders (model 4), when the DII 
+
+Page 5 of 13 
+
+Wu _et al. BMC Public Health_ (2025) 25:976 
+
+**Table 1** Baseline characteristics of participants in a cross-sectional study on Dietary Quality indicators and gallstones based on the National Health and Nutrition Examination Survey (NHANES) 2017–2020 
+
+|**Variables**<br>**Overall**<br>**(****_n_ = 6623)**|**Gallstones**<br>**_P_-value**<br>**NO(****_n_ = 5889)**<br>**YES(****_n_ = 734)**|
+|---|---|
+|**Age**,**Median (Q1-Q3)**<br>52.00 (36.00–64.00)<br>**Age**,**n (%)**<br>< 40<br>1993 (30.09%)<br>40–60<br>2210 (33.37%)<br>≥ 60<br>2420 (36.54%)<br>**Gender**,**n (%)**<br>Male<br>3163 (47.76%)<br>Female<br>3460 (52.24%)<br>**Race**,**n (%)**<br>Mexican American<br>736 (11.11%)<br>Other Hispanic<br>655 (9.89%)<br>Non-Hispanic White<br>2390 (36.09%)<br>Non-Hispanic Black<br>1859 (28.07%)<br>Other Race<br>983 (14.84%)<br>**Education level**,**n (%)**<br>Less than 9th grade<br>390 (5.89%)<br>9-11th grade<br>689 (10.40%)<br>High school graduate/GED or equivalent<br>1562 (23.58%)<br>Some college or AA degree<br>2259 (34.11%)<br>College graduate or above<br>1723 (26.02%)<br>**Income-to-poverty ratio**,**n (%)**<br>2.32 (1.35–3.98)<br>**BMI**,**Median (Q1-Q3)**<br>29.00 (25.10–33.90)<br>**BMI**,**kg/m2**,**n (%)**<br>Normal weight<br>1603 (24.20%)<br>Overweight<br>2095 (31.63%)<br>Obese<br>2925 (44.16%)<br>**Large weight loss**,**n (%)**<br>Yes<br>1461 (22.06%)<br>No<br>5162 (77.94%)<br>**Alcohol use**,**n (%)**<br>Yes<br>6046 (91.29%)<br>No<br>577 (8.71%)<br>**Smoking**,**n (%)**<br>Never smokers<br>3831 (57.84%)<br>Previous smokers<br>1611 (24.32%)<br>Occasional smokers<br>268 (4.05%)<br>Daily smokers<br>913 (13.79%)<br>**Physical activity**,**n (%)**<br>Yes<br>2995 (45.22%)<br>No<br>3628 (54.78%)<br>**Diabetes**,**n (%)**<br>Yes<br>1053 (15.90%)<br>No<br>5570 (84.10%)<br>**Hypertension**,**n (%)**<br>Yes<br>2598 (39.23%)<br>No<br>4025 (60.77%)<br>**Heart failure**,**n (%)**<br>Yes<br>243 (3.67%)<br>No<br>6380 (96.33%)<br>**Coronary heart disease**,**n (%)**<br>Yes<br>310(4.68%)|51.00 (35.00–63.00)<br>61.00 (46.25-71.00)<br>< 0.001<br>< 0.001<br>1881 (31.94%)<br>112 (15.26%)<br>1975 (33.54%)<br>235 (32.02%)<br>2033 (34.52%)<br>387 (52.72%)<br>< 0.001<br>2951 (50.11%)<br>212 (28.88%)<br>2938 (49.89%)<br>522 (71.12%)<br>< 0.001<br>652 (11.07%)<br>84 (11.44%)<br>574 (9.75%)<br>81 (11.04%)<br>2064 (35.05%)<br>326 (44.41%)<br>1701 (28.88%)<br>158 (21.53%)<br>898 (15.25%)<br>85 (11.58%)<br>0.014<br>354 (6.01%)<br>36 (4.90%)<br>609 (10.34%)<br>78 (10.63%)<br>1379 (23.42%)<br>185 (25.20%)<br>1981 (33.64%)<br>278 (37.87%)<br>1566 (26.59%)<br>157 (21.39%)<br>2.32 (1.35–3.98)<br>2.32 (1.35–3.70)<br>0.207<br>28.70 (24.80–33.50)<br>31.90 (27.90–37.90)<br>< 0.001<br>< 0.001<br>1520 (25.81%)<br>83 (11.31%)<br>1888 (32.06%)<br>207 (28.20%)<br>2481 (42.13%)<br>444 (60.49%)<br>< 0.001<br>1262 (21.43%)<br>199 (27.11%)<br>4627 (78.57%)<br>535 (72.89%)<br>0.895<br>5375 (91.27%)<br>671 (91.42%)<br>514 (8.73%)<br>63 (8.58%)<br>< 0.001<br>3445 (58.50%)<br>386 (52.59%)<br>1378 (23.40%)<br>233 (31.74%)<br>248 (4.21%)<br>20 (2.72%)<br>818 (13.89%)<br>95 (12.94%)<br>0.210<br>2679 (45.49%)<br>316 (43.05%)<br>3210 (54.51%)<br>418 (56.95%)<br>< 0.001<br>855 (14.52%)<br>198 (26.98%)<br>5034 (85.48%)<br>536 (73.02%)<br>< 0.001<br>2189 (37.17%)<br>409 (55.72%)<br>3700 (62.83%)<br>325 (44.28%)<br>< 0.001<br>189 (3.21%)<br>54 (7.36%)<br>5700 (96.79%)<br>680 (92.64%)<br>< 0.001<br>243(4.13%)<br>67(9.13%)|
+
+
+
+Page 6 of 13 
+
+Wu _et al. BMC Public Health_ (2025) 25:976 
+
+**Table 1** (continued) 
+
+|**Table 1**(continued)||
+|---|---|
+|**Variables**<br>**Overall**<br>**(****_n_ = 6623)**|**Gallstones**<br>**_P_-value**<br>**NO(****_n_ = 5889)**<br>**YES(****_n_ = 734)**|
+|No<br>6313 (95.32%)<br>**Angina pectoris**,**n (%)**<br>Yes<br>175 (2.64%)<br>No<br>6448 (97.36%)<br>**Heart attack**,**n (%)**<br>Yes<br>305 (4.61%)<br>No<br>6318 (95.39%)<br>**Estrogen use status**,**n (%)**<br>Yes<br>125 (1.89%)<br>No<br>2543 (38.40%)<br>Other<br>3955 (59.72%)<br>**Antihyperglycemic drug use status**,**n (%)**<br>Yes<br>147 (2.22%)<br>No<br>2543 (38.40%)<br>Other<br>3933 (59.38%)<br>**Statin use status**,**n (%)**<br>Yes<br>432 (6.52%)<br>No<br>2543 (38.40%)<br>Other<br>3648 (55.08%)<br>**Glucocorticosteroid use status**,**n (%)**<br>Yes<br>64 (0.97%)<br>No<br>2543 (38.40%)<br>Other<br>4016 (60.64%)<br>**Energy**,**Median (Q1-Q3)**<br>1912.00 (1453.00-2481.00)<br>**Total cholesterol**,**Median (Q1-Q3)**<br>183.00 (159.00-209.00)<br>**DII**,**Median (Q1-Q3)**<br>1.43 (0.10–2.55)<br>**AHEI**,**Median (Q1-Q3)**<br>37.64 (29.91–46.05)<br>**HEI2020**,**Median (Q1-Q3)**<br>49.71 (41.73–58.83)<br>**DASH**,**Median (Q1-Q3)**<br>26.50 (24.50–28.50)<br>**MED**,**Median(Q1-Q3)**<br>6.00(5.00-6.50)|5646 (95.87%)<br>667 (90.87%)<br>< 0.001<br>125 (2.12%)<br>50 (6.81%)<br>5764 (97.88%)<br>684 (93.19%)<br>< 0.001<br>243 (4.13%)<br>62 (8.45%)<br>5646 (95.87%)<br>672 (91.55%)<br>< 0.001<br>116 (1.97%)<br>9 (1.23%)<br>2390 (40.58%)<br>153 (20.84%)<br>3383 (57.45%)<br>572 (77.93%)<br>< 0.001<br>126 (2.14%)<br>21 (2.86%)<br>2390 (40.58%)<br>153 (20.84%)<br>3373 (57.28%)<br>560 (76.29%)<br>< 0.001<br>378 (6.42%)<br>54 (7.36%)<br>2390 (40.58%)<br>153 (20.84%)<br>3121 (53.00%)<br>527 (71.80%)<br>< 0.001<br>55 (0.93%)<br>9 (1.23%)<br>2390 (40.58%)<br>153 (20.84%)<br>3444 (58.48%)<br>572 (77.93%)<br>1931.00 (1462.00-2499.50)<br>1802.00 (1386.38-2333.75)<br>< 0.001<br>183.00 (159.00-209.00)<br>183.00 (158.00-208.75)<br>0.619<br>1.40 (0.08–2.51)<br>1.71 (0.32–2.84)<br>< 0.001<br>37.64 (29.92–46.17)<br>37.55 (29.90-45.53)<br>0.483<br>49.84 (41.75–58.89)<br>48.63 (41.55–58.32)<br>0.162<br>26.50 (24.50–28.50)<br>26.50 (24.50–29.00)<br>0.843<br>6.00(5.00-6.50)<br>6.00(5.00-6.50)<br>0.939|
+
+
+
+1. Intergroup differences in categorical variables were assessed using the chi-square test 2. Intergroup differences in variables were analyzed using the Mann-Whitney U test 
+
+score was treated as a continuous variable, it was positively associated with the occurrence of gallstones, suggesting that each one-unit increase in the DII score corresponded to an 8.6% higher likelihood of developing gallstones. 
+
+When categorical variables were analyzed by quartile, higher DII quartiles were associated with an increased probability of gallstones. Individuals in DII Q4 had a 43.6% higher probability of developing gallstones than those in Q1. These results suggest that higher DII scores are closely associated with an increased likelihood of gallstone formation. 
+
+Subsequently, we evaluated the possibility of non-linear associations between the DII score and gallstone occurrence. An RCS regression model that accounted for all the confounders was used to assess the linearity of these relationships. As shown in Fig. 2A, the non-linear doseresponse relationship between the DII score and gallstone occurrence was observed. Threshold effect analysis 
+
+revealed an inflection point at 1.842 (Table 3). After this point, a significant association was observed (OR 1.275, 95% CI 1.074, 1.513), suggesting that a one-unit rise in the DII score increased the likelihood of gallstone development by 27.5%. Conversely, before reaching this inflection point, the relationship between DII score and gallstones was not statistically significant. 
+
+## **Association between healthy dietary patterns and gallstones** 
+
+When treated as continuous variables, the AHEI, HEI2020, DASH, and MED showed inverse relationships with gallstone occurrence. Each unit increment in these indices corresponded to a lower likelihood of gallstone development. 
+
+When categorical variables were analyzed by quartile, a similar pattern was observed. After adjusting for all factors (Model 4), individuals in Q4 exhibited a significantly lower probability of developing gallstones than those in 
+
+Page 7 of 13 
+
+Wu _et al. BMC Public Health_ (2025) 25:976 
+
+**Table 2** Odds ratios (OR) and 95% confidence intervals (CI) for the Association between DII, AHEI, HEI2020, DASH, MED, and gallstone occurrence: a multivariable logistic regression analysis 
+
+||**Model 1**|**Model 2**|**Model 3**|**Model 4**|
+|---|---|---|---|---|
+||**OR(95% CI)**|**OR(95% CI)**|**OR(95% CI)**|**OR(95% CI)**|
+|**DII**|||||
+|Continuous|1.106 (1.054, 1.167)|1.067 (1.016, 1.120)|1.099 (1.032, 1.170)|1.086 (1.017, 1.159)|
+|Categories|||||
+|Q1|Reference|Reference|Reference|Reference|
+|Q2|1.050 (0.835, 1.320)|1.013 (0.801, 1.282)|1.064 (0.833, 1.358)|1.041 (0.812, 1.334)|
+|Q3|1.127 (0.899, 1.412)|1.041 (0.825, 1.317)|1.087 (0.843, 1.403)|1.072 (0.827, 1.391)|
+|Q4|1.534 (1.238, 1.901)|1.311 (1.048, 1.640)|1.487 (1.130, 1.96)|1.436 (1.080, 1.911)|
+|P for trend|< 0.001|0.021|0.008|0.021|
+|**AHEI**|||||
+|Continuous|0.998 (0.991, 1.005)|0.983 (0.974, 0.990)|0.987 (0.980, 0.994)|0.988 (0.981, 0.996)|
+|Categories|||||
+|Q1|Reference|Reference|Reference|Reference|
+|Q2|1.013 (0.816, 1.257)|0.8196 (0.6546, 1.026)|0.844 (0.672, 1.061)|0.840 (0.666, 1.059)|
+|Q3|1.043 (0.841, 1.293)|0.730 (0.582, 0.914)|0.761 (0.605, 0.958)|0.767 (0.605, 0.971)|
+|Q4|0.933 (0.749, 1.163)|0.589 (0.466, 0.744)|0.671 (0.528, 0.852)|0.695 (0.540, 0.895)|
+|P for trend|0.583|< 0.001|< 0.001|0.004|
+|**HEI2020**|||||
+|Continuous|0.996 (0.989, 1.002)|0.983 (0.977, 0.990)|0.987 (0.980, 0.994)|0.988 (0.981, 0.995)|
+|Categories|||||
+|Q1|Reference|Reference|Reference|Reference|
+|Q2|1.061 (0.858, 1.310)|0.915 (0.735, 1.140)|0.935 (0.748, 1.169)|0.945 (0.755, 1.185)|
+|Q3|0.877 (0.704, 1.092)|0.676 (0.538, 0.850)|0.704 (0.558, 0.889)|0.729 (0.574, 0.925)|
+|Q4|0.912 (0.733, 1.133)|0.619 (0.491, 0.779)|0.689 (0.545, 0.871)|0.718 (0.563, 0.914)|
+|P for trend|0.206|< 0.001|< 0.001|0.002|
+|**DASH**|||||
+|Continuous|1.001(0.974, 1.026)|0.943 (0.918, 0.970)|0.961 (0.9341, 0.990)|0.970 (0.943, 0.998)|
+|Categories|||||
+|Q1|Reference|Reference|Reference|Reference|
+|Q2|1.203 (0.962, 1.506)|0.988 (0.783, 1.247)|1.052 (0.830, 1.333)|1.084 (0.853, 1.377)|
+|Q3|1.055 (0.837, 1.329)|0.737 (0.578, 0.938)|0.812 (0.634, 1.034)|0.847 (0.6577, 1.090)|
+|Q4|1.078 (0.866, 1.342)|0.669 (0.529, 0.844)|0.770 (0.605, 0.979)|0.835 (0.6495, 1.074)|
+|P for trend|0.797|< 0.001|0.009|0.065|
+|**MED**|||||
+|Continuous|0.993 (0.904, 1.089)|0.825 (0.753, 0.914)|0.896 (0.819, 0.980)|0.904 (0.822, 0.994)|
+|Categories|||||
+|Q1|Reference|Reference|Reference|Reference|
+|Q2|0.951 (0.734, 1.233)|0.769 (0.588, 1.007)|0.798 (0.607, 1.049)|0.803 (0.609, 1.058)|
+|Q3|0.921 (0.692, 1.225)|0.667 (0.495, 0.900)|0.704 (0.520, 0.954)|0.700 (0.514, 0.953)|
+|Q4|0.956 (0.739, 1.238)|0.602 (0.458, 0.791)|0.667 (0.505, 0.882)|0.698 (0.524, 0.930)|
+|P for trend|0.837|< 0.001|0.005|0.020|
+
+
+
+1. outcome variable: gallstones (0 = no gallstones, 1 = gallstones), analyzed using multivariate logistic regression 
+
+2. exposure variable: DII, AHEI, HEI2020, DASH and MED, included in the model as a continuous variable 
+
+3. Model 1: no covariates were adjusted 
+
+4. Model 2: Age, sex, race were adjusted 
+
+5. Model 3: Age, sex, race, BMI, total calorie were adjusted 6. Model 4: Age, sex, race, education, poverty-to-income ratio, body mass index, large weight loss, alcohol use, smoking, physical activity, diabetes, hypertension, HF, CHD, angina pectoris, heart attack, total calorie, total cholesterol, estrogen use status, antihyperglycemic drug use status, statin use status, glucocorticosteroid use status were adjusted 
+
+Page 8 of 13 
+
+Wu _et al. BMC Public Health_ (2025) 25:976 
+
+**==> picture [483 x 229] intentionally omitted <==**
+
+**Fig. 2** Dose-response relationships between dietary quality indicators and gallstone occurrence in a cross-sectional study. Outcome: Gallstones (0 = no, 1 = yes), analyzed using multivariable logistic regression. Exposure Variables: DII ( **A** ), AHEI ( **B** ), HEI2020 ( **C** ), DASH ( **D** ), and MED ( **E** ), analyzed as continuous variables using segmented regression with spline (RCS) 
+
+**Table 3** Threshold Effect Analysis of the Association between DII and gallstones using a two-Piecewise Linear Regression Model: identification of thresholds 
+
+|identifcation of thresholds|||
+|---|---|---|
+|**Gallstones**|**Adjust OR(95% CI)**|**_P_-value**|
+|DII|||
+|Fitting by standard linear model<br>Fitting by two-piecewise linear model|1.086 (1.017, 1.159)|0.014|
+|Infection point<br>< 1.80|1.842<br>1.034 (0.955, 1.121)|0.408|
+|> 1.80|1.275 (1.074, 1.513)|0.006|
+|Log-likelihood ratio|0.049||
+
+
+
+1. outcome variable: gallstones (0 = no gallstones, 1 = gallstones), analyzed using multivariate logistic regression 2. exposure variable: DII, included in the model as a continuous variable 3. Age, sex, race, education, poverty-to-income ratio, body mass index, large weight loss, alcohol use, smoking, physical activity, diabetes, hypertension, HF, CHD, angina pectoris, heart attack, total calorie, total cholesterol, estrogen use status, antihyperglycemic drug use status, statin use status, glucocorticosteroid use status were adjusted 
+
+Q1. Specifically, compared with Q1, the probability of developing gallstones was reduced by 30.5%, 28.2%, and 30.2% in Q4 for the AHEI, HEI-2020, and MED, respectively. These findings highlighted the potential benefits of these dietary choices. 
+
+Conversely, this association was not significant for DASH scores, suggesting that DASH was not as clearly associated with the occurrence of gallstones as other dietary indices in the cross-sectional analysis. 
+
+We also evaluated the possibility of non-linear associations between dietary indices (AHEI, HEI-2020, DASH, and MED) and the occurrence of gallstones using an RCS regression model. As illustrated in Fig. 2B, C, D, and E no 
+
+non-linear characteristics were observed for any of these indices in association with gallstone occurrence, indicating a consistent linear inverse association. 
+
+## **Subgroup and sensitivity analysis** 
+
+The associations between dietary quality indicators and gallstones ere constant across most subgroups, with no significant interactions (Fig.S2). The results of the sensitivity analyses were robust (Table S2). In particular, after adjusting for hyperlipidemia, dietary quality indicators were significantly associated with gallstones in Model 5. 
+
+## **Discussion** 
+
+This cross-sectional study comprised 6623 participants. The results demonstrated a statistically significant negative relationship between AHEI, HEI-2020, MED, and gallstones, suggesting that higher conformity to these dietary habits is associated with a decreased occurrence of gallstones. In addition, the DII had a non-linear dose-response relationship, with a different relationship detected before and after the inflection point (DII = 1.842). This non-linear relationship implies that proinflammatory diets do not uniformly influence gallstone risk across all levels of inflammation. Below this threshold, the inflammatory response may not be strong enough to trigger pathological changes involved in gallstone formation. However, once the DII surpasses 1.842, the cumulative inflammatory load likely becomes sufficient to affect the biliary system, contributing to gallstone formation. The potential mechanisms underlying this effect include increased cholesterol supersaturation 
+
+Page 9 of 13 
+
+Wu _et al. BMC Public Health_ (2025) 25:976 
+
+in bile, impaired gallbladder motility, and inflammation of the gallbladder wall, all of which have been associated with gallstone development. Further subgroup analysis, which examined various segments within the gallstone population, revealed consistent relationships among DII, AHEI, HEI-2020, MED, and gallstone occurrence, with no significant divergence observed across most subgroups. Consequently, our findings suggest that the DII, AHEI, HEI-2020, and MED are linked to the likelihood of gallstones, highlighting the strength and reliability of the findings. 
+
+## **Unhealthy dietary pattern** 
+
+The occurrence of gallstones is strongly linked to dietary choices [8, 48]. In this study, associations were observed between dietary quality indicators and the likelihood of developing gallstones. Specifically, a cross-sectional study involving 3,626 participants indicated that lower DII scores were associated with a reduced risk of gallstones [39]. In a case-control study, Ghorbani et al. demonstrated that among Iranian women, higher DII scores and elevated serum biomarkers of inflammation and oxidative stress were associated with a higher incidence of gallstone disease [49]. However, the findings of these previous studies are controversial. Cheng et al. reported no indication of a non-linear correlation between the DII score and gallstones, but noted that a higher DII score was positively linked to a greater probability of gallstone development [40]. The reason for this discrepancy may be related to the different approaches used in the studies: we utilized two days of dietary data and processed missing data through multiple interpolations. This was designed to enhance data completeness and reveal more nuanced relationships. This finding needs to be validated through further research. 
+
+Gallstone formation is a multifactorial process involving several mechanisms, including oversaturation of gallbladder bile, excessive cholesterol precipitation and nucleation, impaired gallbladder dynamics, inflammation, and intestinal factors (Fig. 3) [14–16]. Mechanistically, a high DII score reflects a proinflammatory diet that increases inflammatory markers such as IL-1α, IL-6, IL-8, CRP, and TNF-α, increasing gallstone risk [15, 16, 49–51]. For example, in animal studies, a diet rich in fat and sugar activated the NF-κB pathway, resulting in elevated IL-6 and TNF-α levels [52]. This inflammatory response not only causes histological changes in the gallbladder wall, such as thickening and impaired contractile function, but is also closely related to gallstone formation [16, 53, 54]. At the same time, high levels of proinflammatory components in the diet stimulate the liver to synthesize more cholesterol, thereby increasing the cholesterol concentration in the bile [55–57]. When cholesterol levels exceed the solubility limits of bile salts and 
+
+phospholipids, cholesterol crystallizes in bile, resulting in gallstone formation [56, 58]. Moreover, oxidative stress plays a crucial role in the formation of gallstones [49, 59]. A high-DII diet can increase oxidative stress, potentially damaging gallbladder cells and impairing gallbladder contractile function, further contributing to gallstones [59]. 
+
+## **Healthy dietary patterns** 
+
+A prospective cohort study of 43,635 participants found a strong correlation between MED and AHEI-2010, with a reduced prevalence of symptomatic gallstones [10]. Conversely, in a cross-sectional study involving 89,544 participants, Nie et al. found that higher MED scores were associated with a higher incidence of gallstones [38]. This discrepancy in the relationship between the MED and gallstone incidence may be attributed to several factors. Regional dietary differences, especially in non-Mediterranean regions, such as China, could have a substantial impact. For example, olive oil, a staple in Mediterranean cuisine, is rarely used in traditional Chinese cooking, whereas other vegetable and animal oils are more common. These differences in fat type may influence gallstone formation in ways that were not captured in the Mediterranean studies [60]. Additionally, cultural and food preparation methods as well as genetic and environmental factors may modify the effects of MED on gallstone risk. In populations where refined carbohydrates and lowfiber diets are prevalent, the protective effects of MED may be less pronounced, contributing to an increased gallstone incidence [8]. Moreover, differences in study designs, such as the long-term observation of dietary patterns in prospective studies versus the snapshot nature of cross-sectional studies, may explain these conflicting findings [61]. To address these discrepancies, future studies should investigate the context-specific effects of MED, explore its long-term impact on diverse populations, and consider its interactions with other lifestyle factors. 
+
+Mechanistically, higher AHEI and HEI-2020 scores suggest diets rich in plant-based foods, whole grains, and healthy fats, all of which are high in fiber and antioxidants. Dietary fiber can diminish gallstone risk, potentially by facilitating bile salt excretion and decreasing cholesterol reabsorption [18, 19]. For example, soluble fiber may promote cholesterol excretion by binding to bile salts and inhibiting their reabsorption [62]. Additionally, unsaturated fatty acids, which are frequently found in plant-based diets, promote bile fluidity and inhibit cholesterol crystallization [63, 64]. Jang et al. reported that polyunsaturated fatty acids combined with ursodeoxycholic acid (UDCA) dissolved cholesterol gallstones in a mouse model, which was attributed to a decrease in mucin production, increased phospholipid and bile acid contents in bile, and reduced cholesterol saturation [65]. 
+
+Page 10 of 13 
+
+Wu _et al. BMC Public Health_ (2025) 25:976 
+
+**==> picture [483 x 484] intentionally omitted <==**
+
+**Fig. 3** Mechanisms of gallstone formation and associations with dietary quality indicators. created in biorender. Wu, W. (2025)  h t t p s : / / B i o R e n d e r . c o m / b 7 3 b 7 7 0 
+
+MED, which is rich in antioxidant and anti-inflammatory components, significantly affects the risk of gallstones. Vitamins E and C, which are abundant in MED, help reduce the oxidation and deposition of low-density lipoproteins [66, 67]. MED may reduce the levels of biomarkers of low-grade inflammation, such as hs-CRP and IL-6 [68–72], which are associated with a heightened risk of gallstones [15, 50]. Furthermore, similar to the AHEI and HE-2020 dietary patterns, MED may lower cholesterol levels in bile because of its high dietary fiber and healthy 
+
+fat content. Additionally, MED may positively influence cholesterol metabolism and the bile acid cycle by modulating gut microbiota [73]. 
+
+## **Study strengths and limitations** 
+
+This study has several significant strengths. First, we accounted for potential confounding variables that could have influenced the results, ensuring a more precise evaluation of the association between dietary quality indicators and gallstones. Furthermore, we identified nonlinear 
+
+Page 11 of 13 
+
+Wu _et al. BMC Public Health_ (2025) 25:976 
+
+relationships between DII scores and gallstones using RCS and threshold effect analysis. These findings suggest that a proinflammatory diet does not have a uniform effect on gallstone occurrence across all levels of inflammation, highlighting the complexity of this relationship. 
+
+However, this study had several important limitations. First, the NHANES dataset does not include data on UDCA use, which prevents us from accounting for its possible implications on the relationship between gallstones and dietary quality. UDCA is known to influence gallstone-related outcomes, and the absence of such data limits the comprehensiveness of our analysis. Second, the study relied on self-reported diagnoses of gallstones, which could introduce recall bias as participants may inaccurately remember or misreport their medical history. Furthermore, the dataset did not distinguish between current and past gallstone statuses. Participants were only asked about their lifetime history of diagnosis, meaning that we could not assess whether they currently had gallstones or whether their condition had resolved. Moreover, the cross-sectional approach prevents the establishment of causal correlations between variables. In addition, the potential influence of confounding factors that may distort the results could not be feasibly eliminated. Finally, the use of 24-hour dietary recall, which is a widely used and valuable tool, has limitations. It captures only short-term dietary intake, which may not fully reflect habitual dietary patterns and is susceptible to dayto-day variability and reporting bias. 
+
+Although these findings provide valuable insights, future research should address the limitations of this study by conducting longitudinal studies to establish causal relationships between dietary patterns and gallstones. These studies should also collect detailed information on the use of UDCA to evaluate its potential role in modulating the relationship between diet and gallstone formation. To reduce recall bias, it is essential for future research to employ more accurate diagnostic methods, such as medical imaging, to clearly distinguish between current and past gallstone status. Additionally, large-scale prospective cohort studies should be undertaken to assess the long-term effects of dietary interventions, focusing on how specific dietary patterns influence gallstone formation through metabolic and inflammatory pathways. Furthermore, to mitigate the limitations of the 24-hour dietary recall method, future studies should consider supplementing it with the Food Frequency Questionnaire (FFQ) to capture long-term dietary habits more accurately. Such research would not only improve the reliability of findings but also provide stronger evidence for dietary interventions as part of preventive strategies. 
+
+## **Conclusion** 
+
+From a clinical perspective, our findings provide new insights for gallstone prevention. A high DII is significantly linked to an increased likelihood of gallstone formation, whereas higher scores on the AHEI, HEI-2020, and MED are linked to a lower likelihood of gallstone development. These results underscore the role of dietary patterns in gallstone formation, suggesting that managing dietary inflammation and promoting adherence to healthier dietary patterns could effectively reduce the occurrence of gallstones. Although the relationship between DASH score and gallstone formation remains unclear, our findings underscore the potential for early intervention by addressing modifiable dietary factors. By integrating dietary pattern management with existing clinical assessment methods, high-risk groups can be targeted and the need for surgical treatments such as cholecystectomy reduced. Moreover, dietary intervention strategies based on our findings could support individualized management of high-risk patients in clinical practice. 
+
+## **Abbreviations** 
+
+AHEI Alternative Healthy Eating Index BMI Body Mass Index CDC Centers for Disease Control and Prevention DASH Dietary Approaches to Stop Hypertension DII Dietary Inflammation Index HEI Healthy Eating Index MED Mediterranean Diet MUFA Monounsaturated Fatty Acids NCHS National Center for Health Statistics NHANES National Health and Nutrition Examination Survey RCS Restricted Cubic Spline UDCA Ursodeoxycholic Acid 
+
+## **Supplementary Information** 
+
+The online version contains supplementary material available at  h t t p s : / / d o i . o r g / 1 0 . 1 1 8 6 / s 1 2 8 8 9 - 0 2 5 - 2 1 7 8 3 - 8. 
+
+Supplementary Material 1 Supplementary Material 2 
+
+## **Acknowledgements** 
+
+We would like to thank Editage (www.editage.cn) for English language editing and BioRender (www.BioRender.com) for figures drawing. 
+
+## **Author contributions** 
+
+WGW designed the study and wrote the manuscript. YCP, JLW and QZL collected and analyzed the data. YCP and JLW interpreted the data. WC critically reviewed, edited and approved the manuscript. All authors reviewed and approved this manuscript. 
+
+## **Funding** 
+
+This study was supported by the Natural Science Foundation of Guangdong Province (2021A1515010100). 
+
+## **Data availability** 
+
+The datasets utilized in this manuscript can be accessed from the NHANES website:  h t t p s : / / w w w n . c d c . g o v / n c h s / n h a n e s / c o n t i n u o u s n h a n e s / d e f a u l t . a s p x ? C y c l e = 2 0 1 7 - 2 0 2 0. 
+
+Page 12 of 13 
+
+Wu _et al. BMC Public Health_ (2025) 25:976 
+
+## **Declarations** 
+
+## **Ethics approval and consent to participate** 
+
+The NCHS Ethics Review Board approved the survey protocol ( h t t p s : / / w w w . c d c . g o v / n c h s / n h a n e s / a b o u t / e r b . h t m l). Additionally, all participants in the survey supplied written informed permission. 
+
+## **Consent for publication** 
+
+Not applicable. 
+
+## **Competing interests** 
+
+The authors declare no competing interests. 
+
+Received: 18 April 2024 / Accepted: 5 February 2025 
+
+**==> picture [133 x 12] intentionally omitted <==**
+
+## **References** 
+
+1. Srikanth ES, Shreyas MS, Desai A, Mehdi S, Gangadharappa S, Suman HV, Krishna KL. Recent advances, novel targets and treatments for cholelithiasis; a narrative review. Eur J Pharmacol. 2021;908:174376. 
+
+2. Lammert F, Gurusamy K, Ko CW, Miquel J-F, Méndez-Sánchez N, Portincasa P, van Erpecum KJ, van Laarhoven CJ, Wang DQH. Gallstones. Nat Rev Dis Primers. 2016;2:16024. 
+
+3. Unalp-Arida A, Ruhl CE. Increasing gallstone disease prevalence and associations with gallbladder and biliary tract mortality in the US. Hepatology. 2023;77(6):1882–95. 
+
+4. Wang X, Yu W, Jiang G, Li H, Li S, Xie L, Bai X, Cui P, Chen Q, Lou Y, et al. Global Epidemiology of Gallstones in the 21st Century: a systematic re view and Meta-analysis. Clin Gastroenterol Hepatol. 2024;22(8):1586–95. 
+
+5. Portincasa P, Di Ciaula A, Bonfrate L, Stella A, Garruti G, Lamont JT. Metabolic dysfunction-associated gallstone disease: expecting more from critical care manifestations. Intern Emerg Med. 2023;18(7):1897–918. 
+
+6. Sun H, Warren J, Yip J, Ji Y, Hao S, Han W, Ding Y. Factors influencing gallstone formation: a review of the literature. Biomolecules. 2022;12(4):550. 
+
+7. Chen L, Yang H, Li H, He C, Yang L, Lv G. Insights into modifiable risk factors of cholelithiasis: a mendelian randomization study. Hepatology. 2022;75(4):785–96. 
+
+8. Di Ciaula A, Garruti G, Frühbeck G, De Angelis M, de Bari O, Wang DQH, Lammert F, Portincasa P. The role of Diet in the pathogenesis of cholesterol gallstones. Curr Med Chem. 2019;26(19):3620–38. 
+
+9. Chang C-M, Chiu THT, Chang C-C, Lin M-N, Lin C-L. Plant-based Diet, cholesterol, and risk of Gallstone Disease: a prospective study. Nutrients. 2019;11(2):335. 
+
+10. Wirth J, Song M, Fung TT, Joshi AD, Tabung FK, Chan AT, Weikert C, Leitzmann M, Willett WC, Giovannucci E, et al. Diet-quality scores and the risk of symptomatic gallstone disease: a prospective cohort study of male US health professionals. Int J Epidemiol. 2018;47(6):1938–46. 
+
+11. Gutiérrez-Díaz I, Molinero N, Cabrera A, Rodríguez JI, Margolles A, Delgado S, González S. Diet: cause or consequence of the Microbial Profile of Cholelithiasis Disease? Nutrients 2018, 10(9):1307. 
+
+12. Barré A, Gusto G, Cadeau C, Carbonnel F, Boutron-Ruault M-C. Diet and Risk of Cholecystectomy: a prospective study based on the French E3N cohort. Am J Gastroenterol. 2017;112(9):1448–56. 
+
+13. Johansson K, Sundström J, Marcus C, Hemmingsson E, Neovius M. Risk of symptomatic gallstones and cholecystectomy after a very-low-calorie diet or low-calorie diet in a commercial weight loss program: 1- year matched cohort study. Int J Obes (Lond). 2014;38(2):279–84. 
+
+14. Di Ciaula A, Wang DQH, Portincasa P. An update on the pathogenesis of cholesterol gallstone disease. Curr Opin Gastroenterol. 2018;34(2):71–80. 
+
+15. Liu Z, Kemp TJ, Gao Y-T, Corbel A, McGee EE, Wang B, Shen M-C, Rashid A, Hsing AW, Hildesheim A, et al. Association of circulating inflammation proteins and gallstone disease. J Gastroenterol Hepatol. 2018;33(11):1920–4. 
+
+16. Maurer KJ, Carey MC, Fox JG. Roles of infection, inflammation, and the immune system in cholesterol gallstone formation. Gastroenterology. 2009;136(2):425–40. 
+
+17. Low-Beer TS. Nutrition and cholesterol gallstones. Proc Nutr Soc. 1985;44(1):127–34. 
+
+18. Tehrani AN, Saadati S, Yari Z, Salehpour A, Sadeghi A, Daftari G, Ghorbani M, Hekmatdoost A. Dietary fiber intake and risk of gallstone: a case-control study. BMC Gastroenterol. 2023;23(1):119. 
+
+19. Gunness P, Gidley MJ. Mechanisms underlying the cholesterol-lowering properties of soluble dietary fibre polysaccharides. Food Funct. 2010;1(2):149–55. 
+
+20. Zhu M, Ji G, Jin G, Yuan Z. Different responsiveness to a high-fat/cholesterol diet in two inbred mice and underlying genetic factors: a whole genome microarray analysis. Nutr Metab (Lond). 2009;6:43. 
+
+21. Malesza IJ, Malesza M, Walkowiak J, Mussin N, Walkowiak D, Aringazina R, Bartkowiak-Wieczorek J, Mądry E. High-Fat, Western-Style Diet, systemic inflammation, and gut microbiota: a narrative review. Cells. 2021;10(11):3164. 
+
+22. Tong Y, Gao H, Qi Q, Liu X, Li J, Gao J, Li P, Wang Y, Du L, Wang C. High fat diet, gut microbiome and gastrointestinal cancer. Theranostics. 2021;11(12):5889–910. 
+
+23. Harrison S, Couture P, Lamarche B. Diet Quality, Saturated Fat and metabolic syndrome. Nutrients. 2020;12(11):3232. 
+
+24. Davis C, Bryan J, Hodgson J, Murphy K. Definition of the Mediterranean Diet; a literature review. Nutrients. 2015;7(11):9139–53. 
+
+25. Andreo-López MC, Contreras-Bolívar V, Muñoz-Torres M, García-Fontana B, García-Fontana C. Influence of the Mediterranean Diet on healthy aging. Int J Mol Sci. 2023;24(5):4491. 
+
+26. Mazzocchi A, Leone L, Agostoni C, Pali-Schöll I. The secrets of the Mediterranean Diet. Does [Only] Olive Oil Matter? Nutrients. 2019;11(12):2941. 
+
+27. Filippou CD, Tsioufis CP, Thomopoulos CG, Mihas CC, Dimitriadis KS, Sotiropoulou LI, Chrysochoou CA, Nihoyannopoulos PI, Tousoulis DM. Dietary approaches to stop hypertension (DASH) Diet and blood pressure reduction in adults with and without hypertension: a systematic review and Metaanalysis of Randomized controlled trials. Adv Nutr. 2020;11(5):1150–60. 
+
+28. Sacks FM, Svetkey LP, Vollmer WM, Appel LJ, Bray GA, Harsha D, Obarzanek E, Conlin PR, Miller ER 3rd, Simons-Morton DG, et al. Effects on blood pressure of reduced dietary sodium and the Dietary approaches to stop hypertension (DASH) diet. DASH-Sodium Collaborative Research Group. N Engl J Med. 2001;344(1):3–10. 
+
+29. Akhlaghi M. Dietary approaches to stop hypertension (DASH): potential mechanisms of action against risk factors of the metabolic syndrome. Nutr Res Rev. 2020;33(1):1–18. 
+
+30. Morze J, Danielewicz A, Hoffmann G, Schwingshackl L. Diet Quality as assessed by the healthy eating index, alternate healthy eating Index, Dietary approaches to stop hypertension score, and Health outcomes: a second update of a systematic review and Meta-analysis of Cohort studies. J Acad Nutr Diet. 2020;120(12):1998–2031. e1915. 
+
+31. Shan Z, Li Y, Baden MY, Bhupathiraju SN, Wang DD, Sun Q, Rexrode KM, Rimm EB, Qi L, Willett WC, et al. Association between Healthy Eating Patterns and risk of Cardiovascular Disease. JAMA Intern Med. 2020;180(8):1090–100. 
+
+32. Shams-White MM, Pannucci TE, Lerman JL, Herrick KA, Zimmer M, Meyers Mathieu K, Stoody EE, Reedy J. Healthy eating Index-2020: review and update process to reflect the Dietary guidelines for Americans,2020–2025. J Acad Nutr Diet. 2023;123(9):1280–8. 
+
+33. Shivappa N, Steck SE, Hurley TG, Hussey JR, Hébert JR. Designing and developing a literature-derived, population-based dietary inflammatory index. Public Health Nutr. 2014;17(8):1689–96. 
+
+34. Wirth MD, Hébert JR, Shivappa N, Hand GA, Hurley TG, Drenowatz C, McMahon D, Shook RP, Blair SN. Anti-inflammatory dietary inflammatory index scores are associated with healthier scores on other dietary indices. Nutr Res. 2016;36(3):214–9. 
+
+35. Sadri Z, Harouni J, Vahid F, Khosravani Z, Najafi F. Association between the Dietary Inflammatory Index with gallstone disease: finding from Dena PERSIAN cohort. BMJ Open Gastroenterol, 9(1):e000944. 
+
+36. Akbaraly TN, Singh-Manoux A, Tabak AG, Jokela M, Virtanen M, Ferrie JE, Marmot MG, Shipley MJ, Kivimaki M. Overall diet history and reversibility of the metabolic syndrome over 5 years: the Whitehall II prospective cohort study. Diabetes Care. 2010;33(11):2339–41. 
+
+37. Sacks FM, Lichtenstein AH, Wu JHY, Appel LJ, Creager MA, Kris-Etherton PM, Miller M, Rimm EB, Rudel LL, Robinson JG, et al. Dietary Fats and Cardiovascular Disease: a Presidential Advisory from the American Heart Association. Circulation. 2017;136(3):e1–23. 
+
+38. Nie C, Yang T, Wang Z, Suolang D, Wang S, Baima K, Wei L, Ling H, Liu L, Zeng Q, et al. Dietary patterns and gallstone risks in Chinese adults: a cross-sectional analysis of the China multi-ethnic cohort study. J Epidemiol. 2023;33(9):471–7. 
+
+39. Sadri Z, Harouni J, Vahid F, Khosravani Z, Najafi F. Association between the Dietary Inflammatory Index with gallstone disease: finding from Dena PERSIAN cohort. BMJ Open Gastroenterol. 2022;9(1):e000944. 
+
+40. Cheng J, Zhuang Q, Wang W, Li J, Zhou L, Xu Y, Zhang H, Zhang Z, Zhou F, Yang D, et al. Association of pro-inflammatory diet with increased risk of 
+
+Page 13 of 13 
+
+Wu _et al. BMC Public Health_ (2025) 25:976 
+
+gallstone disease: a cross-sectional study of NHANES January 2017-March 2020. Front Nutr. 2024;11:1344699. 
+
+41. Cheng Q, Wang Z, Zhong H, Zhou S, Liu C, Sun J, Zhao S, Deng J. Association of non-high-density lipoprotein cholesterol to high-density lipoprotein cholesterol ratio (NHHR) and gallstones among US adults aged ≤ 50 years: a cross-sectional study from NHANES 2017–2020. Lipids Health Dis. 2024;23(1):265. 
+
+42. Wang J, Sun Y-X, Xiang S, Yang C, Li X-J, Zhang M-Q, Li Y-J, Li X-X, Qiu Z-K. The association between blood heavy metals and gallstones: a cross-sectional study. Sci Total Environ. 2023;904:166735. 
+
+43. Shan Z, Wang F, Li Y, Baden MY, Bhupathiraju SN, Wang DD, Sun Q, Rexrode KM, Rimm EB, Qi L, et al. Healthy Eating Patterns and risk of total and causespecific mortality. JAMA Intern Med. 2023;183(2):142–53. 
+
+44. Luo T, Tseng T-S. Diet quality as assessed by the healthy eating index-2020 among different smoking status: an analysis of national health and nutrition examination survey (NHANES) data from 2005 to 2018. BMC Public Health. 2024;24(1):1212. 
+
+45. Trichopoulou A, Costacou T, Bamia C, Trichopoulos D. Adherence to a Mediterranean diet and survival in a Greek population. N Engl J Med. 2003;348(26):2599–608. 
+
+46. Jayanama K, Theou O, Godin J, Cahill L, Shivappa N, Hébert JR, Wirth MD, Park Y-M, Fung TT, Rockwood K. Relationship between diet quality scores and the risk of frailty and mortality in adults across a wide age spectrum. BMC Med. 2021;19(1):64. 
+
+47. Sacks FM, Obarzanek E, Windhauser MM, Svetkey LP, Vollmer WM, McCullough M, Karanja N, Lin PH, Steele P, Proschan MA, et al. Rationale and design of the Dietary approaches to stop hypertension trial (DASH). A multicenter controlled-feeding study of dietary patterns to lower blood pressure. Ann Epidemiol. 1995;5(2):108–18. 
+
+48. Misciagna G, Centonze S, Leoci C, Guerra V, Cisternino AM, Ceo R, Trevisan M. Diet, physical activity, and gallstones–a population-based, case-control study in southern Italy. Am J Clin Nutr. 1999;69(1):120–6. 
+
+49. Ghorbani M, Hekmatdoost A, Darabi Z, Sadeghi A, Yari Z. Dietary inflammatory index and risk of gallstone disease in Iranian women: a case-control study. BMC Gastroenterol. 2023;23(1):311. 
+
+50. Liu T, Siyin ST, Yao N, Duan N, Xu G, Li W, Qu J, Liu S. Relationship between high-sensitivity C reactive protein and the risk of gallstone disease: results from the Kailuan cohort study. BMJ Open. 2020;10(9):e035880. 
+
+51. Maurer KJ, Rao VP, Ge Z, Rogers AB, Oura TJ, Carey MC, Fox JG. T-cell function is critical for murine cholesterol gallstone formation. Gastroenterology. 2007;133(4):1304–15. 
+
+52. Francisqueti-Ferron FV, Silva JPC, Garcia JL, Ferron AJT, Kano HT, Silva CCVA, Costa MR, Nai GA, Moreto F, Corrêa CR. Preventive effect of Gamma-Oryzanol on physiopathological process related to nonalcoholic fatty liver disease in animals submitted to High Sugar/Fat Diet. Livers. 2022;2(3):146–57. 
+
+53. Rege RV. Inflammatory cytokines alter human gallbladder epithelial cell absorption/secretion. J Gastrointest Surg. 2000;4(2):185–92. 
+
+54. van Erpecum KJ, Wang DQH, Moschetta A, Ferri D, Svelto M, Portincasa P, Hendrickx J-J, Schipper M, Calamita G. Gallbladder histopathology during murine gallstone formation: relation to motility and concentrating function. J Lipid Res. 2006;47(1):32–41. 
+
+55. Reddy RRL, Srinivasan K. Dietary fenugreek and onion attenuate cholesterol gallstone formation in lithogenic diet-fed mice. Int J Exp Pathol. 2011;92(5):308–19. 
+
+56. Hayes KC, Livingston A, Trautwein EA. Dietary impact on biliary lipids and gallstones. Annu Rev Nutr. 1992;12:299–326. 
+
+58. Di Ciaula A, Wang DQH, Portincasa P. Cholesterol cholelithiasis: part of a systemic metabolic disease, prone to primary prevention. Expert Rev Gastroenterol Hepatol. 2019;13(2):157–71. 
+
+59. Chen G, Wu S. Role of Baicalin and Liver X Receptor Alpha in the Formation of Cholesterol Gallstones in Mice. Gastroenterol Res Pract 2020, 2020:1343969. 
+
+60. Luo Y, Wang J, Sun L, Gu W, Zong G, Song B, Shen C, Zhou P, Chen Y, Wu Y, et al. Isocaloric-restricted Mediterranean Diet and Chinese diets high or low in plants in adults with Prediabetes. J Clin Endocrinol Metab. 2022;107(8):2216–27. 
+
+61. Wang X, Cheng Z. Cross-Sectional Studies: Strengths, Weaknesses, and Recommendations. Chest 2020, 158(1S):S65-S71. 
+
+62. Massa M, Compari C, Fisicaro E. On the mechanism of the cholesterol lowering ability of soluble dietary fibers: Interaction of some bile salts with pectin, alginate, and Chitosan studied by isothermal titration calorimetry. Front Nutr. 2022;9:968847. 
+
+63. Pasternak A, Bugajska J, Szura M, Walocha JA, Matyja A, Gajda M, Sztefko K, Gil K. Biliary polyunsaturated fatty acids and telocytes in Gallstone Disease. Cell Transpl. 2017;26(1):125–33. 
+
+64. Moschetta A, vanBerge-Henegouwen GP, Portincasa P, Palasciano G, van Erpecum KJ. Cholesterol crystallization in model biles: effects of bile salt and phospholipid species composition. J Lipid Res. 2001;42(8):1273–81. 
+
+65. Jang SI, Fang S, Kim KP, Ko Y, Kim H, Oh J, Hong GY, Lee SY, Kim JM, Noh I, et al. Combination treatment with n-3 polyunsaturated fatty acids and ursodeoxycholic acid dissolves cholesterol gallstones in mice. Sci Rep. 2019;9(1):12740. 
+
+66. Heller FR, Descamps O, Hondekijn JC. LDL oxidation: therapeutic perspectives. Atherosclerosis. 1998;137(Suppl):S25–31. 
+
+67. Gantenbein KV, Kanaka-Gantenbein C. Mediterranean Diet as an antioxidant: the impact on Metabolic Health and overall wellbeing. Nutrients. 2021;13(6):1951. 
+
+68. Chrysohoou C, Panagiotakos DB, Pitsavos C, Das UN, Stefanadis C. Adherence to the Mediterranean diet attenuates inflammation and coagulation process in healthy adults: the ATTICA Study. J Am Coll Cardiol. 2004;44(1):152–8. 
+
+69. Fung TT, McCullough ML, Newby PK, Manson JE, Meigs JB, Rifai N, Willett WC, Hu FB. Diet-quality scores and plasma concentrations of markers of inflammation and endothelial dysfunction. Am J Clin Nutr. 2005;82(1):163–73. 
+
+70. Estruch R, Martínez-González MA, Corella D, Salas-Salvadó J, Ruiz-Gutiérrez V, Covas MI, Fiol M, Gómez-Gracia E, López-Sabater MC, Vinyoles E, et al. Effects of a Mediterranean-style diet on cardiovascular risk factors: a randomized trial. Ann Intern Med. 2006;145(1):1–11. 
+
+71. Medina-Remón A, Casas R, Tressserra-Rimbau A, Ros E, Martínez-González MA, Fitó M, Corella D, Salas-Salvadó J, Lamuela-Raventos RM, Estruch R, et al. Polyphenol intake from a Mediterranean diet decreases inflammatory bio markers related to atherosclerosis: a substudy of the PREDIMED trial. Br J Clin Pharmacol. 2017;83(1):114–28. 
+
+72. Sureda A, Bibiloni MDM, Julibert A, Bouzas C, Argelich E, Llompart I, Pons A, Tur JA. Adherence to the Mediterranean Diet and inflammatory markers. Nutrients. 2018;10(1):62. 
+
+73. Moszak M, Szulińska M, Bogdański P. You are what you eat-the relationship between Diet, Microbiota, and metabolic Disorders-A Review. Nutrients. 2020;12(4):1096. 
+
+## **Publisher’s note** 
+
+Springer Nature remains neutral with regard to jurisdictional claims in published maps and institutional affiliations. 
+
+57. Hong T, Zou J, Jiang X, Yang J, Cao Z, He Y, Feng D. Curcumin Supplementation ameliorates bile cholesterol supersaturation in hamsters by modulating gut microbiota and cholesterol absorption. Nutrients. 2022;14(9):1828. 
+

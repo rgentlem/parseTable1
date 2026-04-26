@@ -1,0 +1,34 @@
+[
+  {
+    "table_id": "hypertension-p5-t0",
+    "title": "Table 1 Baseline characteristics of participants by lifestyle categories among 24,453 US adults in NHANES (2007\u20132018)",
+    "caption": "Table 1 Baseline characteristics of participants by lifestyle categories among 24,453 US adults in NHANES (2007\u20132018)",
+    "table_family": "descriptive_characteristics",
+    "should_run_llm_semantics": true,
+    "family_confidence": 0.98,
+    "evidence": [
+      "title_or_caption_mentions_characteristics",
+      "body_contains_descriptive_summary_patterns",
+      "body_contains_multiple_count_percent_cells",
+      "row_structure_contains_parent_level_blocks",
+      "body_contains_multiple_inline_estimate_intervals",
+      "p_value_column_matches_p_value_like_cells"
+    ],
+    "notes": []
+  },
+  {
+    "table_id": "hypertension-p6-t0",
+    "title": "Table 2 Association between joint PA and Healthy Eating Index-2015 and their combined effect and hypertension after using survey impute for multiple interpolation (n= 24,453)",
+    "caption": "Table 2 Association between joint PA and Healthy Eating Index-2015 and their combined effect and hypertension after using survey impute for multiple interpolation (n= 24,453)",
+    "table_family": "estimate_results",
+    "should_run_llm_semantics": false,
+    "family_confidence": 0.9,
+    "evidence": [
+      "title_caption_or_header_mentions_estimate_metric",
+      "body_contains_descriptive_summary_patterns",
+      "row_structure_contains_parent_level_blocks",
+      "body_contains_multiple_inline_estimate_intervals"
+    ],
+    "notes": []
+  }
+]

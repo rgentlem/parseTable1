@@ -1,0 +1,636 @@
+[
+  {
+    "table_id": "hypertension-p5-t0",
+    "title": "Table 1 Baseline characteristics of participants by lifestyle categories among 24,453 US adults in NHANES (2007\u20132018)",
+    "caption": "Table 1 Baseline characteristics of participants by lifestyle categories among 24,453 US adults in NHANES (2007\u20132018)",
+    "variables": [
+      {
+        "variable_name": "physically active physically inactive physically inactive but physically",
+        "variable_label": "physically active physically inactive physically inactive but physically",
+        "variable_type": "categorical",
+        "row_start": 2,
+        "row_end": 4,
+        "levels": [
+          {
+            "level_name": "",
+            "level_label": "",
+            "row_idx": 3,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Hypertension",
+            "level_label": "Hypertension",
+            "row_idx": 4,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Age mean",
+        "variable_label": "Age (years), mean (95% CI)",
+        "variable_type": "continuous",
+        "row_start": 5,
+        "row_end": 5,
+        "levels": [],
+        "units_hint": "mean (95% CI)",
+        "summary_style_hint": "median_iqr",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Gender",
+        "variable_label": "Gender",
+        "variable_type": "binary",
+        "row_start": 6,
+        "row_end": 8,
+        "levels": [
+          {
+            "level_name": "Male",
+            "level_label": "Male",
+            "row_idx": 7,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Female",
+            "level_label": "Female",
+            "row_idx": 8,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Races ethnicity",
+        "variable_label": "Races/ethnicity",
+        "variable_type": "categorical",
+        "row_start": 9,
+        "row_end": 13,
+        "levels": [
+          {
+            "level_name": "Non-Hispanic white",
+            "level_label": "Non-Hispanic white",
+            "row_idx": 10,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Non-Hispanic black",
+            "level_label": "Non-Hispanic black",
+            "row_idx": 11,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Mexican American",
+            "level_label": "Mexican American",
+            "row_idx": 12,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Other Race",
+            "level_label": "Other Race",
+            "row_idx": 13,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Educations Levels",
+        "variable_label": "Educations Levels",
+        "variable_type": "categorical",
+        "row_start": 14,
+        "row_end": 17,
+        "levels": [
+          {
+            "level_name": "Below high school",
+            "level_label": "Below high school",
+            "row_idx": 15,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "High School",
+            "level_label": "High School",
+            "row_idx": 16,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "College/Above",
+            "level_label": "College/Above",
+            "row_idx": 17,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Smoking status",
+        "variable_label": "Smoking status",
+        "variable_type": "categorical",
+        "row_start": 18,
+        "row_end": 21,
+        "levels": [
+          {
+            "level_name": "Never",
+            "level_label": "Never",
+            "row_idx": 19,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Former",
+            "level_label": "Former",
+            "row_idx": 20,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Now",
+            "level_label": "Now",
+            "row_idx": 21,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Alcohol drinker",
+        "variable_label": "Alcohol drinker",
+        "variable_type": "categorical",
+        "row_start": 22,
+        "row_end": 25,
+        "levels": [
+          {
+            "level_name": "Never",
+            "level_label": "Never",
+            "row_idx": 23,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Former",
+            "level_label": "Former",
+            "row_idx": 24,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Now",
+            "level_label": "Now",
+            "row_idx": 25,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Marital",
+        "variable_label": "Marital",
+        "variable_type": "categorical",
+        "row_start": 26,
+        "row_end": 29,
+        "levels": [
+          {
+            "level_name": "Widowed or divorced or separated",
+            "level_label": "Widowed or divorced or separated",
+            "row_idx": 27,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Never married",
+            "level_label": "Never married",
+            "row_idx": 28,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Married or living with a partner",
+            "level_label": "Married or living with a partner",
+            "row_idx": 29,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Poverty mean",
+        "variable_label": "Poverty, mean",
+        "variable_type": "continuous",
+        "row_start": 30,
+        "row_end": 30,
+        "levels": [],
+        "units_hint": "mean",
+        "summary_style_hint": "median_iqr",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "BMI mean",
+        "variable_label": "BMI (kg/m2), mean (95% CI)",
+        "variable_type": "continuous",
+        "row_start": 33,
+        "row_end": 33,
+        "levels": [],
+        "units_hint": "mean (95% CI)",
+        "summary_style_hint": "median_iqr",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Total cholesterol mean",
+        "variable_label": "Total cholesterol (mg/dl), mean",
+        "variable_type": "continuous",
+        "row_start": 34,
+        "row_end": 34,
+        "levels": [],
+        "units_hint": "mean",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "HDL C mean",
+        "variable_label": "HDL-C (mg/dl), mean (95% CI)",
+        "variable_type": "continuous",
+        "row_start": 36,
+        "row_end": 36,
+        "levels": [],
+        "units_hint": "mean (95% CI)",
+        "summary_style_hint": "median_iqr",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Hei 2015 mean",
+        "variable_label": "Hei-2015, (Score), mean (95% CI)",
+        "variable_type": "continuous",
+        "row_start": 37,
+        "row_end": 37,
+        "levels": [],
+        "units_hint": "mean (95% CI)",
+        "summary_style_hint": "median_iqr",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Hei 2015 levels",
+        "variable_label": "Hei-2015 levels, (Score)",
+        "variable_type": "categorical",
+        "row_start": 38,
+        "row_end": 40,
+        "levels": [
+          {
+            "level_name": "< 53.5",
+            "level_label": "<\u200953.5",
+            "row_idx": 39,
+            "confidence": 0.92
+          },
+          {
+            "level_name": ">= 53.5",
+            "level_label": "\u2265\u200953.5",
+            "row_idx": 40,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": "(Score)",
+        "summary_style_hint": "p_value",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "PA Met minutes week mean 95",
+        "variable_label": "PA, Met-minutes/week, mean (95%",
+        "variable_type": "continuous",
+        "row_start": 41,
+        "row_end": 41,
+        "levels": [],
+        "units_hint": "mean (95%",
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "week",
+        "variable_label": "week)",
+        "variable_type": "categorical",
+        "row_start": 44,
+        "row_end": 46,
+        "levels": [
+          {
+            "level_name": "Inactive (< 600)",
+            "level_label": "Inactive (<\u2009600)",
+            "row_idx": 45,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Increased",
+            "level_label": "Increased",
+            "row_idx": 46,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      }
+    ],
+    "column_definition": {
+      "grouping_label": "lifestyle categories among 24,453 US adults in NHANES (2007-2018)",
+      "grouping_name": "lifestyle categories among 24 453 US adults in NHANES 2007 2018",
+      "group_count": 7,
+      "columns": [
+        {
+          "col_idx": 1,
+          "column_name": "column_1",
+          "column_label": "",
+          "inferred_role": "group",
+          "grouping_variable_hint": "lifestyle categories among 24 453 US adults in NHANES 2007 2018",
+          "group_level_label": "",
+          "group_level_name": "column_1",
+          "group_order": 1,
+          "statistic_subtype": null,
+          "confidence": 0.82
+        },
+        {
+          "col_idx": 2,
+          "column_name": "Lifestyle Total",
+          "column_label": "Lifestyle Total",
+          "inferred_role": "overall",
+          "grouping_variable_hint": "lifestyle categories among 24 453 US adults in NHANES 2007 2018",
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": null,
+          "confidence": 0.84
+        },
+        {
+          "col_idx": 3,
+          "column_name": "categories n weighted Healthy diet",
+          "column_label": "categories, n (weighted Healthy diet",
+          "inferred_role": "group",
+          "grouping_variable_hint": "lifestyle categories among 24 453 US adults in NHANES 2007 2018",
+          "group_level_label": "Healthy diet",
+          "group_level_name": "Healthy diet",
+          "group_order": 2,
+          "statistic_subtype": null,
+          "confidence": 0.9
+        },
+        {
+          "col_idx": 4,
+          "column_name": "and Healthy",
+          "column_label": "%) and Healthy",
+          "inferred_role": "group",
+          "grouping_variable_hint": "lifestyle categories among 24 453 US adults in NHANES 2007 2018",
+          "group_level_label": "and Healthy",
+          "group_level_name": "and Healthy",
+          "group_order": 3,
+          "statistic_subtype": null,
+          "confidence": 0.9
+        },
+        {
+          "col_idx": 5,
+          "column_name": "diet but",
+          "column_label": "diet but",
+          "inferred_role": "group",
+          "grouping_variable_hint": "lifestyle categories among 24 453 US adults in NHANES 2007 2018",
+          "group_level_label": "diet but",
+          "group_level_name": "diet but",
+          "group_order": 4,
+          "statistic_subtype": null,
+          "confidence": 0.82
+        },
+        {
+          "col_idx": 6,
+          "column_name": "Unhealthy",
+          "column_label": "Unhealthy",
+          "inferred_role": "group",
+          "grouping_variable_hint": "lifestyle categories among 24 453 US adults in NHANES 2007 2018",
+          "group_level_label": "Unhealthy",
+          "group_level_name": "Unhealthy",
+          "group_order": 5,
+          "statistic_subtype": null,
+          "confidence": 0.82
+        },
+        {
+          "col_idx": 7,
+          "column_name": "diet",
+          "column_label": "diet",
+          "inferred_role": "group",
+          "grouping_variable_hint": "lifestyle categories among 24 453 US adults in NHANES 2007 2018",
+          "group_level_label": "diet",
+          "group_level_name": "diet",
+          "group_order": 6,
+          "statistic_subtype": null,
+          "confidence": 0.82
+        },
+        {
+          "col_idx": 8,
+          "column_name": "and Unhealthy",
+          "column_label": "and Unhealthy",
+          "inferred_role": "group",
+          "grouping_variable_hint": "lifestyle categories among 24 453 US adults in NHANES 2007 2018",
+          "group_level_label": "and Unhealthy",
+          "group_level_name": "and Unhealthy",
+          "group_order": 7,
+          "statistic_subtype": null,
+          "confidence": 0.82
+        },
+        {
+          "col_idx": 9,
+          "column_name": "diet P value",
+          "column_label": "diet P value",
+          "inferred_role": "p_value",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": "p_value",
+          "confidence": 0.97
+        }
+      ],
+      "confidence": 0.93
+    },
+    "notes": [],
+    "overall_confidence": 0.9141
+  },
+  {
+    "table_id": "hypertension-p6-t0",
+    "title": "Table 2 Association between joint PA and Healthy Eating Index-2015 and their combined effect and hypertension after using survey impute for multiple interpolation (n= 24,453)",
+    "caption": "Table 2 Association between joint PA and Healthy Eating Index-2015 and their combined effect and hypertension after using survey impute for multiple interpolation (n= 24,453)",
+    "variables": [
+      {
+        "variable_name": "Healthy Eating Index 2015",
+        "variable_label": "Healthy Eating Index\u20112015",
+        "variable_type": "categorical",
+        "row_start": 3,
+        "row_end": 4,
+        "levels": [
+          {
+            "level_name": "Unhealthy diet",
+            "level_label": "Unhealthy diet",
+            "row_idx": 4,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Healthy diet",
+        "variable_label": "Healthy diet",
+        "variable_type": "continuous",
+        "row_start": 5,
+        "row_end": 5,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "median_iqr",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Physical activity level",
+        "variable_label": "Physical activity level",
+        "variable_type": "categorical",
+        "row_start": 6,
+        "row_end": 7,
+        "levels": [
+          {
+            "level_name": "Physically inactive",
+            "level_label": "Physically inactive",
+            "row_idx": 7,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Physically active",
+        "variable_label": "Physically active",
+        "variable_type": "continuous",
+        "row_start": 8,
+        "row_end": 8,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "median_iqr",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Healthy diet but physically inactive",
+        "variable_label": "Healthy diet but physically inactive",
+        "variable_type": "continuous",
+        "row_start": 11,
+        "row_end": 11,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "median_iqr",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Unhealthy diet but physically active",
+        "variable_label": "Unhealthy diet but physically active",
+        "variable_type": "continuous",
+        "row_start": 12,
+        "row_end": 12,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "median_iqr",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Healthy diet and physically active",
+        "variable_label": "Healthy diet and physically active",
+        "variable_type": "continuous",
+        "row_start": 13,
+        "row_end": 13,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "median_iqr",
+        "confidence": 0.9
+      }
+    ],
+    "column_definition": {
+      "grouping_label": "impute for multiple interpolation (n = 2",
+      "grouping_name": "impute for multiple interpolation n 2",
+      "group_count": 5,
+      "columns": [
+        {
+          "col_idx": 1,
+          "column_name": "4 453",
+          "column_label": "4,453)",
+          "inferred_role": "overall",
+          "grouping_variable_hint": "impute for multiple interpolation n 2",
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": null,
+          "confidence": 0.84
+        },
+        {
+          "col_idx": 2,
+          "column_name": "column_2",
+          "column_label": "",
+          "inferred_role": "group",
+          "grouping_variable_hint": "impute for multiple interpolation n 2",
+          "group_level_label": "",
+          "group_level_name": "column_2",
+          "group_order": 1,
+          "statistic_subtype": null,
+          "confidence": 0.82
+        },
+        {
+          "col_idx": 3,
+          "column_name": "column_3",
+          "column_label": "",
+          "inferred_role": "group",
+          "grouping_variable_hint": "impute for multiple interpolation n 2",
+          "group_level_label": "",
+          "group_level_name": "column_3",
+          "group_order": 2,
+          "statistic_subtype": null,
+          "confidence": 0.82
+        },
+        {
+          "col_idx": 4,
+          "column_name": "column_4",
+          "column_label": "",
+          "inferred_role": "group",
+          "grouping_variable_hint": "impute for multiple interpolation n 2",
+          "group_level_label": "",
+          "group_level_name": "column_4",
+          "group_order": 3,
+          "statistic_subtype": null,
+          "confidence": 0.82
+        },
+        {
+          "col_idx": 5,
+          "column_name": "column_5",
+          "column_label": "",
+          "inferred_role": "group",
+          "grouping_variable_hint": "impute for multiple interpolation n 2",
+          "group_level_label": "",
+          "group_level_name": "column_5",
+          "group_order": 4,
+          "statistic_subtype": null,
+          "confidence": 0.82
+        },
+        {
+          "col_idx": 6,
+          "column_name": "column_6",
+          "column_label": "",
+          "inferred_role": "group",
+          "grouping_variable_hint": "impute for multiple interpolation n 2",
+          "group_level_label": "",
+          "group_level_name": "column_6",
+          "group_order": 5,
+          "statistic_subtype": null,
+          "confidence": 0.82
+        }
+      ],
+      "confidence": 0.8675
+    },
+    "notes": [],
+    "overall_confidence": 0.9009
+  }
+]

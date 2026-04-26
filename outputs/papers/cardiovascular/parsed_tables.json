@@ -1,0 +1,2319 @@
+[
+  {
+    "table_id": "cardiovascular-p4-t0",
+    "title": "Table 1 Baseline characteristics of participants",
+    "caption": "Table 1 Baseline characteristics of participants",
+    "variables": [
+      {
+        "variable_name": "Age",
+        "variable_label": "Age(years)",
+        "variable_type": "continuous",
+        "row_start": 2,
+        "row_end": 2,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "BMI",
+        "variable_label": "BMI(Kg/m2)",
+        "variable_type": "continuous",
+        "row_start": 4,
+        "row_end": 4,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Education level",
+        "variable_label": "Education level",
+        "variable_type": "categorical",
+        "row_start": 5,
+        "row_end": 16,
+        "levels": [
+          {
+            "label": "Less Than 9th Grade",
+            "row_idx": 6
+          },
+          {
+            "label": "9-11th Grade",
+            "row_idx": 7
+          },
+          {
+            "label": "High School Grad/GED or Equivalent",
+            "row_idx": 8
+          },
+          {
+            "label": "Some College or AA degree",
+            "row_idx": 9
+          },
+          {
+            "label": "College Graduate or above",
+            "row_idx": 10
+          },
+          {
+            "label": "Ethnicity",
+            "row_idx": 11
+          },
+          {
+            "label": "Mexican American",
+            "row_idx": 12
+          },
+          {
+            "label": "Other Hispanic",
+            "row_idx": 13
+          },
+          {
+            "label": "Non-Hispanic White",
+            "row_idx": 14
+          },
+          {
+            "label": "Non-Hispanic Black",
+            "row_idx": 15
+          },
+          {
+            "label": "Other Race - Including Multi-Racial",
+            "row_idx": 16
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "The ratio of household income to poverty line",
+        "variable_label": "The ratio of household income to poverty line",
+        "variable_type": "continuous",
+        "row_start": 17,
+        "row_end": 17,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Hypertension",
+        "variable_label": "Hypertension",
+        "variable_type": "categorical",
+        "row_start": 18,
+        "row_end": 24,
+        "levels": [
+          {
+            "label": "Diabetes",
+            "row_idx": 19
+          },
+          {
+            "label": "No diabetes",
+            "row_idx": 20
+          },
+          {
+            "label": "Diabetes",
+            "row_idx": 21
+          },
+          {
+            "label": "Prediabetes",
+            "row_idx": 22
+          },
+          {
+            "label": "Close relative heart attack",
+            "row_idx": 23
+          },
+          {
+            "label": "Close relative diabetes",
+            "row_idx": 24
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "non HDL",
+        "variable_label": "non_HDL (mmol/L)",
+        "variable_type": "continuous",
+        "row_start": 25,
+        "row_end": 25,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "CRP",
+        "variable_label": "CRP",
+        "variable_type": "continuous",
+        "row_start": 26,
+        "row_end": 26,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "diet score",
+        "variable_label": "diet score",
+        "variable_type": "continuous",
+        "row_start": 27,
+        "row_end": 27,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "physical level",
+        "variable_label": "physical level",
+        "variable_type": "categorical",
+        "row_start": 28,
+        "row_end": 32,
+        "levels": [
+          {
+            "label": "inactive",
+            "row_idx": 29
+          },
+          {
+            "label": "insufcient active",
+            "row_idx": 30
+          },
+          {
+            "label": "active",
+            "row_idx": 31
+          },
+          {
+            "label": "highly active",
+            "row_idx": 32
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Sedentary minutes",
+        "variable_label": "Sedentary minutes",
+        "variable_type": "continuous",
+        "row_start": 33,
+        "row_end": 33,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "sleep level",
+        "variable_label": "sleep level",
+        "variable_type": "categorical",
+        "row_start": 34,
+        "row_end": 41,
+        "levels": [
+          {
+            "label": "Poor",
+            "row_idx": 35
+          },
+          {
+            "label": "intermediate",
+            "row_idx": 36
+          },
+          {
+            "label": "optimal",
+            "row_idx": 37
+          },
+          {
+            "label": "Smoking",
+            "row_idx": 38
+          },
+          {
+            "label": "No smoking",
+            "row_idx": 39
+          },
+          {
+            "label": "Smoking before",
+            "row_idx": 40
+          },
+          {
+            "label": "Smoking",
+            "row_idx": 41
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Alcohol consumption per day",
+        "variable_label": "Alcohol consumption per day",
+        "variable_type": "continuous",
+        "row_start": 42,
+        "row_end": 42,
+        "levels": [],
+        "confidence": 0.9
+      }
+    ],
+    "columns": [
+      {
+        "col_idx": 1,
+        "column_name": "All n 7921",
+        "column_label": "All (n = 7921)",
+        "inferred_role": "overall",
+        "confidence": 0.84
+      },
+      {
+        "col_idx": 2,
+        "column_name": "Live n 6010",
+        "column_label": "Live (n = 6010)",
+        "inferred_role": "group",
+        "confidence": 0.8200000000000001
+      },
+      {
+        "col_idx": 3,
+        "column_name": "Dead n 1911",
+        "column_label": "Dead (n = 1911)",
+        "inferred_role": "group",
+        "confidence": 0.8200000000000001
+      },
+      {
+        "col_idx": 4,
+        "column_name": "Dead cause of cardiovascular n 585",
+        "column_label": "Dead cause of cardiovascular (n = 585)",
+        "inferred_role": "group",
+        "confidence": 0.8200000000000001
+      }
+    ],
+    "values": [
+      {
+        "row_idx": 2,
+        "col_idx": 1,
+        "variable_name": "Age",
+        "level_label": null,
+        "column_name": "All n 7921",
+        "raw_value": "60.79 \u00b1 12.18",
+        "value_type": "mean_sd",
+        "parsed_numeric": 60.79,
+        "parsed_secondary_numeric": 12.18,
+        "confidence": 0.9
+      },
+      {
+        "row_idx": 2,
+        "col_idx": 2,
+        "variable_name": "Age",
+        "level_label": null,
+        "column_name": "Live n 6010",
+        "raw_value": "57.55 \u00b1 10.95",
+        "value_type": "mean_sd",
+        "parsed_numeric": 57.55,
+        "parsed_secondary_numeric": 10.95,
+        "confidence": 0.9
+      },
+      {
+        "row_idx": 2,
+        "col_idx": 3,
+        "variable_name": "Age",
+        "level_label": null,
+        "column_name": "Dead n 1911",
+        "raw_value": "70.97 \u00b1 10.05\u2021",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 2,
+        "col_idx": 4,
+        "variable_name": "Age",
+        "level_label": null,
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "72.75 \u00b1 9.52\u2021",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 1,
+        "variable_name": "BMI",
+        "level_label": null,
+        "column_name": "All n 7921",
+        "raw_value": "28.57 \u00b1 7.13",
+        "value_type": "mean_sd",
+        "parsed_numeric": 28.57,
+        "parsed_secondary_numeric": 7.13,
+        "confidence": 0.9
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 2,
+        "variable_name": "BMI",
+        "level_label": null,
+        "column_name": "Live n 6010",
+        "raw_value": "29.01 \u00b1 6.83",
+        "value_type": "mean_sd",
+        "parsed_numeric": 29.01,
+        "parsed_secondary_numeric": 6.83,
+        "confidence": 0.9
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 3,
+        "variable_name": "BMI",
+        "level_label": null,
+        "column_name": "Dead n 1911",
+        "raw_value": "27.2 \u00b1 7.86\u2021",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 4,
+        "variable_name": "BMI",
+        "level_label": null,
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "27.28 \u00b1 8.26\u2021",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 1,
+        "variable_name": "Education level",
+        "level_label": "Less Than 9th Grade",
+        "column_name": "All n 7921",
+        "raw_value": "1287(16.25%)",
+        "value_type": "count",
+        "parsed_numeric": 1287.0,
+        "parsed_secondary_numeric": 16.25,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 2,
+        "variable_name": "Education level",
+        "level_label": "Less Than 9th Grade",
+        "column_name": "Live n 6010",
+        "raw_value": "929(15.46%)",
+        "value_type": "count",
+        "parsed_numeric": 929.0,
+        "parsed_secondary_numeric": 15.46,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 3,
+        "variable_name": "Education level",
+        "level_label": "Less Than 9th Grade",
+        "column_name": "Dead n 1911",
+        "raw_value": "358(18.73%)",
+        "value_type": "count",
+        "parsed_numeric": 358.0,
+        "parsed_secondary_numeric": 18.73,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 4,
+        "variable_name": "Education level",
+        "level_label": "Less Than 9th Grade",
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "106(18.12%)",
+        "value_type": "count",
+        "parsed_numeric": 106.0,
+        "parsed_secondary_numeric": 18.12,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 1,
+        "variable_name": "Education level",
+        "level_label": "9-11th Grade",
+        "column_name": "All n 7921",
+        "raw_value": "1318(16.64%)",
+        "value_type": "count",
+        "parsed_numeric": 1318.0,
+        "parsed_secondary_numeric": 16.64,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 2,
+        "variable_name": "Education level",
+        "level_label": "9-11th Grade",
+        "column_name": "Live n 6010",
+        "raw_value": "931(15.49%)",
+        "value_type": "count",
+        "parsed_numeric": 931.0,
+        "parsed_secondary_numeric": 15.49,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 3,
+        "variable_name": "Education level",
+        "level_label": "9-11th Grade",
+        "column_name": "Dead n 1911",
+        "raw_value": "387(20.25%)",
+        "value_type": "count",
+        "parsed_numeric": 387.0,
+        "parsed_secondary_numeric": 20.25,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 4,
+        "variable_name": "Education level",
+        "level_label": "9-11th Grade",
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "127(21.71%)",
+        "value_type": "count",
+        "parsed_numeric": 127.0,
+        "parsed_secondary_numeric": 21.71,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 1,
+        "variable_name": "Education level",
+        "level_label": "High School Grad/GED or Equivalent",
+        "column_name": "All n 7921",
+        "raw_value": "1853(23.39%)",
+        "value_type": "count",
+        "parsed_numeric": 1853.0,
+        "parsed_secondary_numeric": 23.39,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 2,
+        "variable_name": "Education level",
+        "level_label": "High School Grad/GED or Equivalent",
+        "column_name": "Live n 6010",
+        "raw_value": "1381(22.98%)",
+        "value_type": "count",
+        "parsed_numeric": 1381.0,
+        "parsed_secondary_numeric": 22.98,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 3,
+        "variable_name": "Education level",
+        "level_label": "High School Grad/GED or Equivalent",
+        "column_name": "Dead n 1911",
+        "raw_value": "472(24.70%)",
+        "value_type": "count",
+        "parsed_numeric": 472.0,
+        "parsed_secondary_numeric": 24.7,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 4,
+        "variable_name": "Education level",
+        "level_label": "High School Grad/GED or Equivalent",
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "153(26.15%)",
+        "value_type": "count",
+        "parsed_numeric": 153.0,
+        "parsed_secondary_numeric": 26.15,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 1,
+        "variable_name": "Education level",
+        "level_label": "Some College or AA degree",
+        "column_name": "All n 7921",
+        "raw_value": "1937(24.45%)",
+        "value_type": "count",
+        "parsed_numeric": 1937.0,
+        "parsed_secondary_numeric": 24.45,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 2,
+        "variable_name": "Education level",
+        "level_label": "Some College or AA degree",
+        "column_name": "Live n 6010",
+        "raw_value": "1513(25.17%)",
+        "value_type": "count",
+        "parsed_numeric": 1513.0,
+        "parsed_secondary_numeric": 25.17,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 3,
+        "variable_name": "Education level",
+        "level_label": "Some College or AA degree",
+        "column_name": "Dead n 1911",
+        "raw_value": "424(22.19%)",
+        "value_type": "count",
+        "parsed_numeric": 424.0,
+        "parsed_secondary_numeric": 22.19,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 4,
+        "variable_name": "Education level",
+        "level_label": "Some College or AA degree",
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "122(20.85%)",
+        "value_type": "count",
+        "parsed_numeric": 122.0,
+        "parsed_secondary_numeric": 20.85,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 1,
+        "variable_name": "Education level",
+        "level_label": "College Graduate or above",
+        "column_name": "All n 7921",
+        "raw_value": "1526(19.27%)",
+        "value_type": "count",
+        "parsed_numeric": 1526.0,
+        "parsed_secondary_numeric": 19.27,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 2,
+        "variable_name": "Education level",
+        "level_label": "College Graduate or above",
+        "column_name": "Live n 6010",
+        "raw_value": "1256(20.90%)",
+        "value_type": "count",
+        "parsed_numeric": 1256.0,
+        "parsed_secondary_numeric": 20.9,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 3,
+        "variable_name": "Education level",
+        "level_label": "College Graduate or above",
+        "column_name": "Dead n 1911",
+        "raw_value": "270(14.13%)",
+        "value_type": "count",
+        "parsed_numeric": 270.0,
+        "parsed_secondary_numeric": 14.13,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 4,
+        "variable_name": "Education level",
+        "level_label": "College Graduate or above",
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "77(13.16%)",
+        "value_type": "count",
+        "parsed_numeric": 77.0,
+        "parsed_secondary_numeric": 13.16,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 3,
+        "variable_name": "Education level",
+        "level_label": "Ethnicity",
+        "column_name": "Dead n 1911",
+        "raw_value": "\u2021",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 4,
+        "variable_name": "Education level",
+        "level_label": "Ethnicity",
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "\u2021",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 1,
+        "variable_name": "Education level",
+        "level_label": "Mexican American",
+        "column_name": "All n 7921",
+        "raw_value": "1256(15.86%)",
+        "value_type": "count",
+        "parsed_numeric": 1256.0,
+        "parsed_secondary_numeric": 15.86,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 2,
+        "variable_name": "Education level",
+        "level_label": "Mexican American",
+        "column_name": "Live n 6010",
+        "raw_value": "1095(18.22%)",
+        "value_type": "count",
+        "parsed_numeric": 1095.0,
+        "parsed_secondary_numeric": 18.22,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 3,
+        "variable_name": "Education level",
+        "level_label": "Mexican American",
+        "column_name": "Dead n 1911",
+        "raw_value": "161(8.42%)",
+        "value_type": "count",
+        "parsed_numeric": 161.0,
+        "parsed_secondary_numeric": 8.42,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 4,
+        "variable_name": "Education level",
+        "level_label": "Mexican American",
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "34(5.81%)",
+        "value_type": "count",
+        "parsed_numeric": 34.0,
+        "parsed_secondary_numeric": 5.81,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 1,
+        "variable_name": "Education level",
+        "level_label": "Other Hispanic",
+        "column_name": "All n 7921",
+        "raw_value": "825(10.42%)",
+        "value_type": "count",
+        "parsed_numeric": 825.0,
+        "parsed_secondary_numeric": 10.42,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 2,
+        "variable_name": "Education level",
+        "level_label": "Other Hispanic",
+        "column_name": "Live n 6010",
+        "raw_value": "689(11.46%)",
+        "value_type": "count",
+        "parsed_numeric": 689.0,
+        "parsed_secondary_numeric": 11.46,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 3,
+        "variable_name": "Education level",
+        "level_label": "Other Hispanic",
+        "column_name": "Dead n 1911",
+        "raw_value": "136(7.12%)",
+        "value_type": "count",
+        "parsed_numeric": 136.0,
+        "parsed_secondary_numeric": 7.12,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 4,
+        "variable_name": "Education level",
+        "level_label": "Other Hispanic",
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "46(7.86%)",
+        "value_type": "count",
+        "parsed_numeric": 46.0,
+        "parsed_secondary_numeric": 7.86,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 1,
+        "variable_name": "Education level",
+        "level_label": "Non-Hispanic White",
+        "column_name": "All n 7921",
+        "raw_value": "3961(50.01%)",
+        "value_type": "count",
+        "parsed_numeric": 3961.0,
+        "parsed_secondary_numeric": 50.01,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 2,
+        "variable_name": "Education level",
+        "level_label": "Non-Hispanic White",
+        "column_name": "Live n 6010",
+        "raw_value": "2786(46.36%)",
+        "value_type": "count",
+        "parsed_numeric": 2786.0,
+        "parsed_secondary_numeric": 46.36,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 3,
+        "variable_name": "Education level",
+        "level_label": "Non-Hispanic White",
+        "column_name": "Dead n 1911",
+        "raw_value": "1175(61.49%)",
+        "value_type": "count",
+        "parsed_numeric": 1175.0,
+        "parsed_secondary_numeric": 61.49,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 4,
+        "variable_name": "Education level",
+        "level_label": "Non-Hispanic White",
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "372(63.59%)",
+        "value_type": "count",
+        "parsed_numeric": 372.0,
+        "parsed_secondary_numeric": 63.59,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 1,
+        "variable_name": "Education level",
+        "level_label": "Non-Hispanic Black",
+        "column_name": "All n 7921",
+        "raw_value": "1537(19.40%)",
+        "value_type": "count",
+        "parsed_numeric": 1537.0,
+        "parsed_secondary_numeric": 19.4,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 2,
+        "variable_name": "Education level",
+        "level_label": "Non-Hispanic Black",
+        "column_name": "Live n 6010",
+        "raw_value": "1165(19.38%)",
+        "value_type": "count",
+        "parsed_numeric": 1165.0,
+        "parsed_secondary_numeric": 19.38,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 3,
+        "variable_name": "Education level",
+        "level_label": "Non-Hispanic Black",
+        "column_name": "Dead n 1911",
+        "raw_value": "372(19.47%)",
+        "value_type": "count",
+        "parsed_numeric": 372.0,
+        "parsed_secondary_numeric": 19.47,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 4,
+        "variable_name": "Education level",
+        "level_label": "Non-Hispanic Black",
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "110(18.80%)",
+        "value_type": "count",
+        "parsed_numeric": 110.0,
+        "parsed_secondary_numeric": 18.8,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 1,
+        "variable_name": "Education level",
+        "level_label": "Other Race - Including Multi-Racial",
+        "column_name": "All n 7921",
+        "raw_value": "342(4.32%)",
+        "value_type": "count",
+        "parsed_numeric": 342.0,
+        "parsed_secondary_numeric": 4.32,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 2,
+        "variable_name": "Education level",
+        "level_label": "Other Race - Including Multi-Racial",
+        "column_name": "Live n 6010",
+        "raw_value": "275(4.58%)",
+        "value_type": "count",
+        "parsed_numeric": 275.0,
+        "parsed_secondary_numeric": 4.58,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 3,
+        "variable_name": "Education level",
+        "level_label": "Other Race - Including Multi-Racial",
+        "column_name": "Dead n 1911",
+        "raw_value": "67(3.51%)",
+        "value_type": "count",
+        "parsed_numeric": 67.0,
+        "parsed_secondary_numeric": 3.51,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 4,
+        "variable_name": "Education level",
+        "level_label": "Other Race - Including Multi-Racial",
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "23(3.93%)",
+        "value_type": "count",
+        "parsed_numeric": 23.0,
+        "parsed_secondary_numeric": 3.93,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 1,
+        "variable_name": "The ratio of household income to poverty line",
+        "level_label": null,
+        "column_name": "All n 7921",
+        "raw_value": "2.33 \u00b1 1.72",
+        "value_type": "mean_sd",
+        "parsed_numeric": 2.33,
+        "parsed_secondary_numeric": 1.72,
+        "confidence": 0.9
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 2,
+        "variable_name": "The ratio of household income to poverty line",
+        "level_label": null,
+        "column_name": "Live n 6010",
+        "raw_value": "2.45 \u00b1 1.78",
+        "value_type": "mean_sd",
+        "parsed_numeric": 2.45,
+        "parsed_secondary_numeric": 1.78,
+        "confidence": 0.9
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 3,
+        "variable_name": "The ratio of household income to poverty line",
+        "level_label": null,
+        "column_name": "Dead n 1911",
+        "raw_value": "1.94 \u00b1 1.47\u2021",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 4,
+        "variable_name": "The ratio of household income to poverty line",
+        "level_label": null,
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "1.93 \u00b1 1.43\u2021",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 3,
+        "variable_name": "Hypertension",
+        "level_label": "Diabetes",
+        "column_name": "Dead n 1911",
+        "raw_value": "\u2021",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 4,
+        "variable_name": "Hypertension",
+        "level_label": "Diabetes",
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "\u2021",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 1,
+        "variable_name": "Hypertension",
+        "level_label": "No diabetes",
+        "column_name": "All n 7921",
+        "raw_value": "5856(73.93%)",
+        "value_type": "count",
+        "parsed_numeric": 5856.0,
+        "parsed_secondary_numeric": 73.93,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 2,
+        "variable_name": "Hypertension",
+        "level_label": "No diabetes",
+        "column_name": "Live n 6010",
+        "raw_value": "4678(77.84%)",
+        "value_type": "count",
+        "parsed_numeric": 4678.0,
+        "parsed_secondary_numeric": 77.84,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 3,
+        "variable_name": "Hypertension",
+        "level_label": "No diabetes",
+        "column_name": "Dead n 1911",
+        "raw_value": "1178(61.64%)",
+        "value_type": "count",
+        "parsed_numeric": 1178.0,
+        "parsed_secondary_numeric": 61.64,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 4,
+        "variable_name": "Hypertension",
+        "level_label": "No diabetes",
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "346(59.15%)",
+        "value_type": "count",
+        "parsed_numeric": 346.0,
+        "parsed_secondary_numeric": 59.15,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 1,
+        "variable_name": "Hypertension",
+        "level_label": "Diabetes",
+        "column_name": "All n 7921",
+        "raw_value": "1557(19.66%)",
+        "value_type": "count",
+        "parsed_numeric": 1557.0,
+        "parsed_secondary_numeric": 19.66,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 2,
+        "variable_name": "Hypertension",
+        "level_label": "Diabetes",
+        "column_name": "Live n 6010",
+        "raw_value": "977(16.26%)",
+        "value_type": "count",
+        "parsed_numeric": 977.0,
+        "parsed_secondary_numeric": 16.26,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 3,
+        "variable_name": "Hypertension",
+        "level_label": "Diabetes",
+        "column_name": "Dead n 1911",
+        "raw_value": "580(30.35%)",
+        "value_type": "count",
+        "parsed_numeric": 580.0,
+        "parsed_secondary_numeric": 30.35,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 4,
+        "variable_name": "Hypertension",
+        "level_label": "Diabetes",
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "190(32.48%)",
+        "value_type": "count",
+        "parsed_numeric": 190.0,
+        "parsed_secondary_numeric": 32.48,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 1,
+        "variable_name": "Hypertension",
+        "level_label": "Prediabetes",
+        "column_name": "All n 7921",
+        "raw_value": "508(6.41%)",
+        "value_type": "count",
+        "parsed_numeric": 508.0,
+        "parsed_secondary_numeric": 6.41,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 2,
+        "variable_name": "Hypertension",
+        "level_label": "Prediabetes",
+        "column_name": "Live n 6010",
+        "raw_value": "355(5.91%)",
+        "value_type": "count",
+        "parsed_numeric": 355.0,
+        "parsed_secondary_numeric": 5.91,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 3,
+        "variable_name": "Hypertension",
+        "level_label": "Prediabetes",
+        "column_name": "Dead n 1911",
+        "raw_value": "153(8.01%)",
+        "value_type": "count",
+        "parsed_numeric": 153.0,
+        "parsed_secondary_numeric": 8.01,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 4,
+        "variable_name": "Hypertension",
+        "level_label": "Prediabetes",
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "49(8.38%)",
+        "value_type": "count",
+        "parsed_numeric": 49.0,
+        "parsed_secondary_numeric": 8.38,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 1,
+        "variable_name": "Hypertension",
+        "level_label": "Close relative heart attack",
+        "column_name": "All n 7921",
+        "raw_value": "1322(16.69%)",
+        "value_type": "count",
+        "parsed_numeric": 1322.0,
+        "parsed_secondary_numeric": 16.69,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 2,
+        "variable_name": "Hypertension",
+        "level_label": "Close relative heart attack",
+        "column_name": "Live n 6010",
+        "raw_value": "946(15.74%)",
+        "value_type": "count",
+        "parsed_numeric": 946.0,
+        "parsed_secondary_numeric": 15.74,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 3,
+        "variable_name": "Hypertension",
+        "level_label": "Close relative heart attack",
+        "column_name": "Dead n 1911",
+        "raw_value": "376(19.68%)\u2021",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 4,
+        "variable_name": "Hypertension",
+        "level_label": "Close relative heart attack",
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "125(21.37%)\u2021",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 1,
+        "variable_name": "Hypertension",
+        "level_label": "Close relative diabetes",
+        "column_name": "All n 7921",
+        "raw_value": "3455(43.62%)",
+        "value_type": "count",
+        "parsed_numeric": 3455.0,
+        "parsed_secondary_numeric": 43.62,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 2,
+        "variable_name": "Hypertension",
+        "level_label": "Close relative diabetes",
+        "column_name": "Live n 6010",
+        "raw_value": "2688(44.73%)",
+        "value_type": "count",
+        "parsed_numeric": 2688.0,
+        "parsed_secondary_numeric": 44.73,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 3,
+        "variable_name": "Hypertension",
+        "level_label": "Close relative diabetes",
+        "column_name": "Dead n 1911",
+        "raw_value": "767(40.14%)\u2021",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 4,
+        "variable_name": "Hypertension",
+        "level_label": "Close relative diabetes",
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "227(38.80%)\u2021",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 1,
+        "variable_name": "non HDL",
+        "level_label": null,
+        "column_name": "All n 7921",
+        "raw_value": "3.57 \u00b1 1.31",
+        "value_type": "mean_sd",
+        "parsed_numeric": 3.57,
+        "parsed_secondary_numeric": 1.31,
+        "confidence": 0.9
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 2,
+        "variable_name": "non HDL",
+        "level_label": null,
+        "column_name": "Live n 6010",
+        "raw_value": "3.69 \u00b1 1.27",
+        "value_type": "mean_sd",
+        "parsed_numeric": 3.69,
+        "parsed_secondary_numeric": 1.27,
+        "confidence": 0.9
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 3,
+        "variable_name": "non HDL",
+        "level_label": null,
+        "column_name": "Dead n 1911",
+        "raw_value": "3.2 \u00b1 1.36\u2021",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 4,
+        "variable_name": "non HDL",
+        "level_label": null,
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "3.17 \u00b1 1.35\u2021",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 1,
+        "variable_name": "CRP",
+        "level_label": null,
+        "column_name": "All n 7921",
+        "raw_value": "0.42 \u00b1 0.86",
+        "value_type": "mean_sd",
+        "parsed_numeric": 0.42,
+        "parsed_secondary_numeric": 0.86,
+        "confidence": 0.9
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 2,
+        "variable_name": "CRP",
+        "level_label": null,
+        "column_name": "Live n 6010",
+        "raw_value": "0.38 \u00b1 0.73",
+        "value_type": "mean_sd",
+        "parsed_numeric": 0.38,
+        "parsed_secondary_numeric": 0.73,
+        "confidence": 0.9
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 3,
+        "variable_name": "CRP",
+        "level_label": null,
+        "column_name": "Dead n 1911",
+        "raw_value": "0.53 \u00b1 1.17",
+        "value_type": "mean_sd",
+        "parsed_numeric": 0.53,
+        "parsed_secondary_numeric": 1.17,
+        "confidence": 0.9
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 4,
+        "variable_name": "CRP",
+        "level_label": null,
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "0.53 \u00b1 1.09",
+        "value_type": "mean_sd",
+        "parsed_numeric": 0.53,
+        "parsed_secondary_numeric": 1.09,
+        "confidence": 0.9
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 1,
+        "variable_name": "diet score",
+        "level_label": null,
+        "column_name": "All n 7921",
+        "raw_value": "47.55 \u00b1 16.59",
+        "value_type": "mean_sd",
+        "parsed_numeric": 47.55,
+        "parsed_secondary_numeric": 16.59,
+        "confidence": 0.9
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 2,
+        "variable_name": "diet score",
+        "level_label": null,
+        "column_name": "Live n 6010",
+        "raw_value": "48.37 \u00b1 16.07",
+        "value_type": "mean_sd",
+        "parsed_numeric": 48.37,
+        "parsed_secondary_numeric": 16.07,
+        "confidence": 0.9
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 3,
+        "variable_name": "diet score",
+        "level_label": null,
+        "column_name": "Dead n 1911",
+        "raw_value": "44.99 \u00b1 17.88\u2021",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 4,
+        "variable_name": "diet score",
+        "level_label": null,
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "44.08 \u00b1 18.51\u2021",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 1,
+        "variable_name": "physical level",
+        "level_label": "inactive",
+        "column_name": "All n 7921",
+        "raw_value": "2825(35.66%)",
+        "value_type": "count",
+        "parsed_numeric": 2825.0,
+        "parsed_secondary_numeric": 35.66,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 2,
+        "variable_name": "physical level",
+        "level_label": "inactive",
+        "column_name": "Live n 6010",
+        "raw_value": "1820(30.28%)",
+        "value_type": "count",
+        "parsed_numeric": 1820.0,
+        "parsed_secondary_numeric": 30.28,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 3,
+        "variable_name": "physical level",
+        "level_label": "inactive",
+        "column_name": "Dead n 1911",
+        "raw_value": "1005(52.59%)",
+        "value_type": "count",
+        "parsed_numeric": 1005.0,
+        "parsed_secondary_numeric": 52.59,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 4,
+        "variable_name": "physical level",
+        "level_label": "inactive",
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "316(54.02%)",
+        "value_type": "count",
+        "parsed_numeric": 316.0,
+        "parsed_secondary_numeric": 54.02,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 1,
+        "variable_name": "physical level",
+        "level_label": "insufcient active",
+        "column_name": "All n 7921",
+        "raw_value": "1129(14.25%)",
+        "value_type": "count",
+        "parsed_numeric": 1129.0,
+        "parsed_secondary_numeric": 14.25,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 2,
+        "variable_name": "physical level",
+        "level_label": "insufcient active",
+        "column_name": "Live n 6010",
+        "raw_value": "863(14.36%)",
+        "value_type": "count",
+        "parsed_numeric": 863.0,
+        "parsed_secondary_numeric": 14.36,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 3,
+        "variable_name": "physical level",
+        "level_label": "insufcient active",
+        "column_name": "Dead n 1911",
+        "raw_value": "266(13.92%)",
+        "value_type": "count",
+        "parsed_numeric": 266.0,
+        "parsed_secondary_numeric": 13.92,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 4,
+        "variable_name": "physical level",
+        "level_label": "insufcient active",
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "80(13.68%)",
+        "value_type": "count",
+        "parsed_numeric": 80.0,
+        "parsed_secondary_numeric": 13.68,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 1,
+        "variable_name": "physical level",
+        "level_label": "active",
+        "column_name": "All n 7921",
+        "raw_value": "949(11.98%)",
+        "value_type": "count",
+        "parsed_numeric": 949.0,
+        "parsed_secondary_numeric": 11.98,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 2,
+        "variable_name": "physical level",
+        "level_label": "active",
+        "column_name": "Live n 6010",
+        "raw_value": "765(12.73%)",
+        "value_type": "count",
+        "parsed_numeric": 765.0,
+        "parsed_secondary_numeric": 12.73,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 3,
+        "variable_name": "physical level",
+        "level_label": "active",
+        "column_name": "Dead n 1911",
+        "raw_value": "184(9.63%)",
+        "value_type": "count",
+        "parsed_numeric": 184.0,
+        "parsed_secondary_numeric": 9.63,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 4,
+        "variable_name": "physical level",
+        "level_label": "active",
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "66(11.28%)",
+        "value_type": "count",
+        "parsed_numeric": 66.0,
+        "parsed_secondary_numeric": 11.28,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 32,
+        "col_idx": 1,
+        "variable_name": "physical level",
+        "level_label": "highly active",
+        "column_name": "All n 7921",
+        "raw_value": "3018(38.10%)",
+        "value_type": "count",
+        "parsed_numeric": 3018.0,
+        "parsed_secondary_numeric": 38.1,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 32,
+        "col_idx": 2,
+        "variable_name": "physical level",
+        "level_label": "highly active",
+        "column_name": "Live n 6010",
+        "raw_value": "2562(42.63%)",
+        "value_type": "count",
+        "parsed_numeric": 2562.0,
+        "parsed_secondary_numeric": 42.63,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 32,
+        "col_idx": 3,
+        "variable_name": "physical level",
+        "level_label": "highly active",
+        "column_name": "Dead n 1911",
+        "raw_value": "456(23.86%)",
+        "value_type": "count",
+        "parsed_numeric": 456.0,
+        "parsed_secondary_numeric": 23.86,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 32,
+        "col_idx": 4,
+        "variable_name": "physical level",
+        "level_label": "highly active",
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "123(21.03%)",
+        "value_type": "count",
+        "parsed_numeric": 123.0,
+        "parsed_secondary_numeric": 21.03,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 1,
+        "variable_name": "Sedentary minutes",
+        "level_label": null,
+        "column_name": "All n 7921",
+        "raw_value": "331.98 \u00b1 411.55",
+        "value_type": "mean_sd",
+        "parsed_numeric": 331.98,
+        "parsed_secondary_numeric": 411.55,
+        "confidence": 0.9
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 2,
+        "variable_name": "Sedentary minutes",
+        "level_label": null,
+        "column_name": "Live n 6010",
+        "raw_value": "317.34 \u00b1 403.55",
+        "value_type": "mean_sd",
+        "parsed_numeric": 317.34,
+        "parsed_secondary_numeric": 403.55,
+        "confidence": 0.9
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 3,
+        "variable_name": "Sedentary minutes",
+        "level_label": null,
+        "column_name": "Dead n 1911",
+        "raw_value": "378.01 \u00b1 432.64\u2021",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 4,
+        "variable_name": "Sedentary minutes",
+        "level_label": null,
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "374.89 \u00b1 194.81\u2021",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 35,
+        "col_idx": 1,
+        "variable_name": "sleep level",
+        "level_label": "Poor",
+        "column_name": "All n 7921",
+        "raw_value": "1586(20.02%)",
+        "value_type": "count",
+        "parsed_numeric": 1586.0,
+        "parsed_secondary_numeric": 20.02,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 35,
+        "col_idx": 2,
+        "variable_name": "sleep level",
+        "level_label": "Poor",
+        "column_name": "Live n 6010",
+        "raw_value": "1123(18.69%)",
+        "value_type": "count",
+        "parsed_numeric": 1123.0,
+        "parsed_secondary_numeric": 18.69,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 35,
+        "col_idx": 3,
+        "variable_name": "sleep level",
+        "level_label": "Poor",
+        "column_name": "Dead n 1911",
+        "raw_value": "463(24.23%)",
+        "value_type": "count",
+        "parsed_numeric": 463.0,
+        "parsed_secondary_numeric": 24.23,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 35,
+        "col_idx": 4,
+        "variable_name": "sleep level",
+        "level_label": "Poor",
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "134(22.91%)",
+        "value_type": "count",
+        "parsed_numeric": 134.0,
+        "parsed_secondary_numeric": 22.91,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 36,
+        "col_idx": 1,
+        "variable_name": "sleep level",
+        "level_label": "intermediate",
+        "column_name": "All n 7921",
+        "raw_value": "396(5.00%)",
+        "value_type": "count",
+        "parsed_numeric": 396.0,
+        "parsed_secondary_numeric": 5.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 36,
+        "col_idx": 2,
+        "variable_name": "sleep level",
+        "level_label": "intermediate",
+        "column_name": "Live n 6010",
+        "raw_value": "265(4.41%)",
+        "value_type": "count",
+        "parsed_numeric": 265.0,
+        "parsed_secondary_numeric": 4.41,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 36,
+        "col_idx": 3,
+        "variable_name": "sleep level",
+        "level_label": "intermediate",
+        "column_name": "Dead n 1911",
+        "raw_value": "131(6.86%)",
+        "value_type": "count",
+        "parsed_numeric": 131.0,
+        "parsed_secondary_numeric": 6.86,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 36,
+        "col_idx": 4,
+        "variable_name": "sleep level",
+        "level_label": "intermediate",
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "48(8.21%)",
+        "value_type": "count",
+        "parsed_numeric": 48.0,
+        "parsed_secondary_numeric": 8.21,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 37,
+        "col_idx": 1,
+        "variable_name": "sleep level",
+        "level_label": "optimal",
+        "column_name": "All n 7921",
+        "raw_value": "5939(74.98%)",
+        "value_type": "count",
+        "parsed_numeric": 5939.0,
+        "parsed_secondary_numeric": 74.98,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 37,
+        "col_idx": 2,
+        "variable_name": "sleep level",
+        "level_label": "optimal",
+        "column_name": "Live n 6010",
+        "raw_value": "4622(76.91%)",
+        "value_type": "count",
+        "parsed_numeric": 4622.0,
+        "parsed_secondary_numeric": 76.91,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 37,
+        "col_idx": 3,
+        "variable_name": "sleep level",
+        "level_label": "optimal",
+        "column_name": "Dead n 1911",
+        "raw_value": "1317(68.92%)",
+        "value_type": "count",
+        "parsed_numeric": 1317.0,
+        "parsed_secondary_numeric": 68.92,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 37,
+        "col_idx": 4,
+        "variable_name": "sleep level",
+        "level_label": "optimal",
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "403(68.89%)",
+        "value_type": "count",
+        "parsed_numeric": 403.0,
+        "parsed_secondary_numeric": 68.89,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 38,
+        "col_idx": 3,
+        "variable_name": "sleep level",
+        "level_label": "Smoking",
+        "column_name": "Dead n 1911",
+        "raw_value": "\u2021",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 38,
+        "col_idx": 4,
+        "variable_name": "sleep level",
+        "level_label": "Smoking",
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "\u2021",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 39,
+        "col_idx": 1,
+        "variable_name": "sleep level",
+        "level_label": "No smoking",
+        "column_name": "All n 7921",
+        "raw_value": "3946(49.82%)",
+        "value_type": "count",
+        "parsed_numeric": 3946.0,
+        "parsed_secondary_numeric": 49.82,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 39,
+        "col_idx": 2,
+        "variable_name": "sleep level",
+        "level_label": "No smoking",
+        "column_name": "Live n 6010",
+        "raw_value": "3175(52.83%)",
+        "value_type": "count",
+        "parsed_numeric": 3175.0,
+        "parsed_secondary_numeric": 52.83,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 39,
+        "col_idx": 3,
+        "variable_name": "sleep level",
+        "level_label": "No smoking",
+        "column_name": "Dead n 1911",
+        "raw_value": "771(40.35%)",
+        "value_type": "count",
+        "parsed_numeric": 771.0,
+        "parsed_secondary_numeric": 40.35,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 39,
+        "col_idx": 4,
+        "variable_name": "sleep level",
+        "level_label": "No smoking",
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "269(45.98%)",
+        "value_type": "count",
+        "parsed_numeric": 269.0,
+        "parsed_secondary_numeric": 45.98,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 40,
+        "col_idx": 1,
+        "variable_name": "sleep level",
+        "level_label": "Smoking before",
+        "column_name": "All n 7921",
+        "raw_value": "2495(31.50%)",
+        "value_type": "count",
+        "parsed_numeric": 2495.0,
+        "parsed_secondary_numeric": 31.5,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 40,
+        "col_idx": 2,
+        "variable_name": "sleep level",
+        "level_label": "Smoking before",
+        "column_name": "Live n 6010",
+        "raw_value": "1718(28.59%)",
+        "value_type": "count",
+        "parsed_numeric": 1718.0,
+        "parsed_secondary_numeric": 28.59,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 40,
+        "col_idx": 3,
+        "variable_name": "sleep level",
+        "level_label": "Smoking before",
+        "column_name": "Dead n 1911",
+        "raw_value": "777(40.66%)",
+        "value_type": "count",
+        "parsed_numeric": 777.0,
+        "parsed_secondary_numeric": 40.66,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 40,
+        "col_idx": 4,
+        "variable_name": "sleep level",
+        "level_label": "Smoking before",
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "230(39.32%)",
+        "value_type": "count",
+        "parsed_numeric": 230.0,
+        "parsed_secondary_numeric": 39.32,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 41,
+        "col_idx": 1,
+        "variable_name": "sleep level",
+        "level_label": "Smoking",
+        "column_name": "All n 7921",
+        "raw_value": "1480(18.68%)",
+        "value_type": "count",
+        "parsed_numeric": 1480.0,
+        "parsed_secondary_numeric": 18.68,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 41,
+        "col_idx": 2,
+        "variable_name": "sleep level",
+        "level_label": "Smoking",
+        "column_name": "Live n 6010",
+        "raw_value": "1117(18.59%)",
+        "value_type": "count",
+        "parsed_numeric": 1117.0,
+        "parsed_secondary_numeric": 18.59,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 41,
+        "col_idx": 3,
+        "variable_name": "sleep level",
+        "level_label": "Smoking",
+        "column_name": "Dead n 1911",
+        "raw_value": "363(19.00%)",
+        "value_type": "count",
+        "parsed_numeric": 363.0,
+        "parsed_secondary_numeric": 19.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 41,
+        "col_idx": 4,
+        "variable_name": "sleep level",
+        "level_label": "Smoking",
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "86(14.70%)",
+        "value_type": "count",
+        "parsed_numeric": 86.0,
+        "parsed_secondary_numeric": 14.7,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 42,
+        "col_idx": 1,
+        "variable_name": "Alcohol consumption per day",
+        "level_label": null,
+        "column_name": "All n 7921",
+        "raw_value": "3.99 \u00b1 14.33",
+        "value_type": "mean_sd",
+        "parsed_numeric": 3.99,
+        "parsed_secondary_numeric": 14.33,
+        "confidence": 0.9
+      },
+      {
+        "row_idx": 42,
+        "col_idx": 2,
+        "variable_name": "Alcohol consumption per day",
+        "level_label": null,
+        "column_name": "Live n 6010",
+        "raw_value": "4.31 \u00b1 12.83",
+        "value_type": "mean_sd",
+        "parsed_numeric": 4.31,
+        "parsed_secondary_numeric": 12.83,
+        "confidence": 0.9
+      },
+      {
+        "row_idx": 42,
+        "col_idx": 3,
+        "variable_name": "Alcohol consumption per day",
+        "level_label": null,
+        "column_name": "Dead n 1911",
+        "raw_value": "2.96 \u00b1 18.24\u2021",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 42,
+        "col_idx": 4,
+        "variable_name": "Alcohol consumption per day",
+        "level_label": null,
+        "column_name": "Dead cause of cardiovascular n 585",
+        "raw_value": "3.36 \u00b1 23.74\u2021",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      }
+    ],
+    "notes": [
+      "count_pct_group_share_mismatch: variable=physical level column=Live n 6010 observed=100.0 expected=75.9",
+      "count_pct_group_share_mismatch: variable=physical level column=Dead n 1911 observed=100.0 expected=24.1",
+      "count_pct_group_share_mismatch: variable=physical level column=Dead cause of cardiovascular n 585 observed=100.0 expected=7.4"
+    ],
+    "overall_confidence": 0.8448
+  },
+  {
+    "table_id": "cardiovascular-p5-t0",
+    "title": "Table 2 AUC score of all models",
+    "caption": "Table 2 AUC score of all models",
+    "variables": [
+      {
+        "variable_name": "Logistic",
+        "variable_label": "Logistic",
+        "variable_type": "continuous",
+        "row_start": 7,
+        "row_end": 7,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Regression",
+        "variable_label": "Regression",
+        "variable_type": "unknown",
+        "row_start": 8,
+        "row_end": 8,
+        "levels": [],
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Ridge Regression",
+        "variable_label": "Ridge Regression",
+        "variable_type": "continuous",
+        "row_start": 9,
+        "row_end": 9,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "SVM",
+        "variable_label": "SVM",
+        "variable_type": "continuous",
+        "row_start": 10,
+        "row_end": 10,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Random Forest",
+        "variable_label": "Random Forest",
+        "variable_type": "continuous",
+        "row_start": 11,
+        "row_end": 11,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "XGBoost",
+        "variable_label": "XGBoost",
+        "variable_type": "continuous",
+        "row_start": 12,
+        "row_end": 12,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Cox proportional",
+        "variable_label": "Cox proportional",
+        "variable_type": "continuous",
+        "row_start": 13,
+        "row_end": 13,
+        "levels": [],
+        "confidence": 0.9
+      }
+    ],
+    "columns": [
+      {
+        "col_idx": 1,
+        "column_name": "The AUC of the optimal",
+        "column_label": "The AUC of the optimal",
+        "inferred_role": "overall",
+        "confidence": 0.84
+      },
+      {
+        "col_idx": 2,
+        "column_name": "column_2",
+        "column_label": "",
+        "inferred_role": "group",
+        "confidence": 0.78
+      },
+      {
+        "col_idx": 3,
+        "column_name": "The AUC of the",
+        "column_label": "The AUC of the",
+        "inferred_role": "group",
+        "confidence": 0.78
+      },
+      {
+        "col_idx": 4,
+        "column_name": "column_4",
+        "column_label": "",
+        "inferred_role": "group",
+        "confidence": 0.78
+      }
+    ],
+    "values": [
+      {
+        "row_idx": 7,
+        "col_idx": 1,
+        "variable_name": "Logistic",
+        "level_label": null,
+        "column_name": "The AUC of the optimal",
+        "raw_value": "0.860",
+        "value_type": "text",
+        "parsed_numeric": 0.86,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 2,
+        "variable_name": "Logistic",
+        "level_label": null,
+        "column_name": "column_2",
+        "raw_value": "0.831",
+        "value_type": "text",
+        "parsed_numeric": 0.831,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 3,
+        "variable_name": "Logistic",
+        "level_label": null,
+        "column_name": "The AUC of the",
+        "raw_value": "0.852",
+        "value_type": "text",
+        "parsed_numeric": 0.852,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 4,
+        "variable_name": "Logistic",
+        "level_label": null,
+        "column_name": "column_4",
+        "raw_value": "0.829",
+        "value_type": "text",
+        "parsed_numeric": 0.829,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 1,
+        "variable_name": "Ridge Regression",
+        "level_label": null,
+        "column_name": "The AUC of the optimal",
+        "raw_value": "0.860",
+        "value_type": "text",
+        "parsed_numeric": 0.86,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 2,
+        "variable_name": "Ridge Regression",
+        "level_label": null,
+        "column_name": "column_2",
+        "raw_value": "0.829",
+        "value_type": "text",
+        "parsed_numeric": 0.829,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 3,
+        "variable_name": "Ridge Regression",
+        "level_label": null,
+        "column_name": "The AUC of the",
+        "raw_value": "0.852",
+        "value_type": "text",
+        "parsed_numeric": 0.852,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 4,
+        "variable_name": "Ridge Regression",
+        "level_label": null,
+        "column_name": "column_4",
+        "raw_value": "0.829",
+        "value_type": "text",
+        "parsed_numeric": 0.829,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 1,
+        "variable_name": "SVM",
+        "level_label": null,
+        "column_name": "The AUC of the optimal",
+        "raw_value": "0.851",
+        "value_type": "text",
+        "parsed_numeric": 0.851,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 2,
+        "variable_name": "SVM",
+        "level_label": null,
+        "column_name": "column_2",
+        "raw_value": "0.782",
+        "value_type": "text",
+        "parsed_numeric": 0.782,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 3,
+        "variable_name": "SVM",
+        "level_label": null,
+        "column_name": "The AUC of the",
+        "raw_value": "0.849",
+        "value_type": "text",
+        "parsed_numeric": 0.849,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 4,
+        "variable_name": "SVM",
+        "level_label": null,
+        "column_name": "column_4",
+        "raw_value": "0.737",
+        "value_type": "text",
+        "parsed_numeric": 0.737,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 1,
+        "variable_name": "Random Forest",
+        "level_label": null,
+        "column_name": "The AUC of the optimal",
+        "raw_value": "0.859",
+        "value_type": "text",
+        "parsed_numeric": 0.859,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 2,
+        "variable_name": "Random Forest",
+        "level_label": null,
+        "column_name": "column_2",
+        "raw_value": "0.851",
+        "value_type": "text",
+        "parsed_numeric": 0.851,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 3,
+        "variable_name": "Random Forest",
+        "level_label": null,
+        "column_name": "The AUC of the",
+        "raw_value": "0.842",
+        "value_type": "text",
+        "parsed_numeric": 0.842,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 4,
+        "variable_name": "Random Forest",
+        "level_label": null,
+        "column_name": "column_4",
+        "raw_value": "0.825",
+        "value_type": "text",
+        "parsed_numeric": 0.825,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 1,
+        "variable_name": "XGBoost",
+        "level_label": null,
+        "column_name": "The AUC of the optimal",
+        "raw_value": "0.881",
+        "value_type": "text",
+        "parsed_numeric": 0.881,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 2,
+        "variable_name": "XGBoost",
+        "level_label": null,
+        "column_name": "column_2",
+        "raw_value": "0.853",
+        "value_type": "text",
+        "parsed_numeric": 0.853,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 3,
+        "variable_name": "XGBoost",
+        "level_label": null,
+        "column_name": "The AUC of the",
+        "raw_value": "0.862",
+        "value_type": "text",
+        "parsed_numeric": 0.862,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 4,
+        "variable_name": "XGBoost",
+        "level_label": null,
+        "column_name": "column_4",
+        "raw_value": "0.836",
+        "value_type": "text",
+        "parsed_numeric": 0.836,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 1,
+        "variable_name": "Cox proportional",
+        "level_label": null,
+        "column_name": "The AUC of the optimal",
+        "raw_value": "0.850",
+        "value_type": "text",
+        "parsed_numeric": 0.85,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 2,
+        "variable_name": "Cox proportional",
+        "level_label": null,
+        "column_name": "column_2",
+        "raw_value": "0.824",
+        "value_type": "text",
+        "parsed_numeric": 0.824,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 3,
+        "variable_name": "Cox proportional",
+        "level_label": null,
+        "column_name": "The AUC of the",
+        "raw_value": "0.844",
+        "value_type": "text",
+        "parsed_numeric": 0.844,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 4,
+        "variable_name": "Cox proportional",
+        "level_label": null,
+        "column_name": "column_4",
+        "raw_value": "0.823",
+        "value_type": "text",
+        "parsed_numeric": 0.823,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      }
+    ],
+    "notes": [],
+    "overall_confidence": 0.7751
+  }
+]

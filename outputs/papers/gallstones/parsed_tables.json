@@ -1,0 +1,4868 @@
+[
+  {
+    "table_id": "gallstones-p5-t0",
+    "title": "Table 1 Baseline characteristics of participants in a cross-sectional study on Dietary Quality indicators and gallstones based on the National Health and Nutrition Examination Survey (NHANES) 2017\u20132020",
+    "caption": "Table 1 Baseline characteristics of participants in a cross-sectional study on Dietary Quality indicators and gallstones based on the National Health and Nutrition Examination Survey (NHANES) 2017\u20132020",
+    "variables": [
+      {
+        "variable_name": "Age Median",
+        "variable_label": "Age, Median (Q1-Q3)",
+        "variable_type": "continuous",
+        "row_start": 2,
+        "row_end": 2,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Age",
+        "variable_label": "Age, n (%)",
+        "variable_type": "categorical",
+        "row_start": 3,
+        "row_end": 6,
+        "levels": [
+          {
+            "label": "<\u200940",
+            "row_idx": 4
+          },
+          {
+            "label": "40\u201360",
+            "row_idx": 5
+          },
+          {
+            "label": "\u2265\u200960",
+            "row_idx": 6
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Gender",
+        "variable_label": "Gender, n (%)",
+        "variable_type": "binary",
+        "row_start": 7,
+        "row_end": 9,
+        "levels": [
+          {
+            "label": "Male",
+            "row_idx": 8
+          },
+          {
+            "label": "Female",
+            "row_idx": 9
+          }
+        ],
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Race",
+        "variable_label": "Race, n (%)",
+        "variable_type": "categorical",
+        "row_start": 10,
+        "row_end": 15,
+        "levels": [
+          {
+            "label": "Mexican American",
+            "row_idx": 11
+          },
+          {
+            "label": "Other Hispanic",
+            "row_idx": 12
+          },
+          {
+            "label": "Non-Hispanic White",
+            "row_idx": 13
+          },
+          {
+            "label": "Non-Hispanic Black",
+            "row_idx": 14
+          },
+          {
+            "label": "Other Race",
+            "row_idx": 15
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Education level",
+        "variable_label": "Education level, n (%)",
+        "variable_type": "categorical",
+        "row_start": 16,
+        "row_end": 21,
+        "levels": [
+          {
+            "label": "Less than 9th grade",
+            "row_idx": 17
+          },
+          {
+            "label": "9-11th grade",
+            "row_idx": 18
+          },
+          {
+            "label": "High school graduate/GED or equivalent 1562 (23.58%)",
+            "row_idx": 19
+          },
+          {
+            "label": "Some college or AA degree",
+            "row_idx": 20
+          },
+          {
+            "label": "College graduate or above",
+            "row_idx": 21
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Income to poverty ratio n",
+        "variable_label": "Income-to-poverty ratio, n",
+        "variable_type": "continuous",
+        "row_start": 22,
+        "row_end": 22,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "BMI Median",
+        "variable_label": "BMI, Median (Q1-Q3)",
+        "variable_type": "continuous",
+        "row_start": 23,
+        "row_end": 23,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "BMI kg m2",
+        "variable_label": "BMI, kg/m2, n (%)",
+        "variable_type": "categorical",
+        "row_start": 24,
+        "row_end": 27,
+        "levels": [
+          {
+            "label": "Normal weight",
+            "row_idx": 25
+          },
+          {
+            "label": "Overweight",
+            "row_idx": 26
+          },
+          {
+            "label": "Obese",
+            "row_idx": 27
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Large weight loss",
+        "variable_label": "Large weight loss, n (%)",
+        "variable_type": "binary",
+        "row_start": 28,
+        "row_end": 30,
+        "levels": [
+          {
+            "label": "Yes",
+            "row_idx": 29
+          },
+          {
+            "label": "No",
+            "row_idx": 30
+          }
+        ],
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Alcohol use",
+        "variable_label": "Alcohol use, n (%)",
+        "variable_type": "binary",
+        "row_start": 31,
+        "row_end": 33,
+        "levels": [
+          {
+            "label": "Yes",
+            "row_idx": 32
+          },
+          {
+            "label": "No",
+            "row_idx": 33
+          }
+        ],
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Smoking",
+        "variable_label": "Smoking, n (%)",
+        "variable_type": "categorical",
+        "row_start": 34,
+        "row_end": 38,
+        "levels": [
+          {
+            "label": "Never smokers",
+            "row_idx": 35
+          },
+          {
+            "label": "Previous smokers",
+            "row_idx": 36
+          },
+          {
+            "label": "Occasional smokers",
+            "row_idx": 37
+          },
+          {
+            "label": "Daily smokers",
+            "row_idx": 38
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Physical activity",
+        "variable_label": "Physical activity, n (%)",
+        "variable_type": "binary",
+        "row_start": 39,
+        "row_end": 41,
+        "levels": [
+          {
+            "label": "Yes",
+            "row_idx": 40
+          },
+          {
+            "label": "No",
+            "row_idx": 41
+          }
+        ],
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Diabetes",
+        "variable_label": "Diabetes, n (%)",
+        "variable_type": "binary",
+        "row_start": 42,
+        "row_end": 44,
+        "levels": [
+          {
+            "label": "Yes",
+            "row_idx": 43
+          },
+          {
+            "label": "No",
+            "row_idx": 44
+          }
+        ],
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Hypertension",
+        "variable_label": "Hypertension, n (%)",
+        "variable_type": "binary",
+        "row_start": 45,
+        "row_end": 47,
+        "levels": [
+          {
+            "label": "Yes",
+            "row_idx": 46
+          },
+          {
+            "label": "No",
+            "row_idx": 47
+          }
+        ],
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Heart failure",
+        "variable_label": "Heart failure, n (%)",
+        "variable_type": "binary",
+        "row_start": 48,
+        "row_end": 50,
+        "levels": [
+          {
+            "label": "Yes",
+            "row_idx": 49
+          },
+          {
+            "label": "No",
+            "row_idx": 50
+          }
+        ],
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Coronary heart disease",
+        "variable_label": "Coronary heart disease, n (%)",
+        "variable_type": "categorical",
+        "row_start": 51,
+        "row_end": 52,
+        "levels": [
+          {
+            "label": "Yes",
+            "row_idx": 52
+          }
+        ],
+        "confidence": 0.92
+      }
+    ],
+    "columns": [
+      {
+        "col_idx": 1,
+        "column_name": "Overall n 6623",
+        "column_label": "Overall (n = 6623)",
+        "inferred_role": "overall",
+        "confidence": 0.84
+      },
+      {
+        "col_idx": 2,
+        "column_name": "Gallstones NO n 5889",
+        "column_label": "Gallstones NO (n = 5889)",
+        "inferred_role": "group",
+        "confidence": 0.9
+      },
+      {
+        "col_idx": 3,
+        "column_name": "YES n 734",
+        "column_label": "YES (n = 734)",
+        "inferred_role": "group",
+        "confidence": 0.82
+      },
+      {
+        "col_idx": 4,
+        "column_name": "P value",
+        "column_label": "P-value",
+        "inferred_role": "p_value",
+        "confidence": 0.97
+      }
+    ],
+    "values": [
+      {
+        "row_idx": 2,
+        "col_idx": 1,
+        "variable_name": "Age Median",
+        "level_label": null,
+        "column_name": "Overall n 6623",
+        "raw_value": "52.00 (36.00\u201364.00)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 2,
+        "col_idx": 2,
+        "variable_name": "Age Median",
+        "level_label": null,
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "51.00 (35.00\u201363.00)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 2,
+        "col_idx": 3,
+        "variable_name": "Age Median",
+        "level_label": null,
+        "column_name": "YES n 734",
+        "raw_value": "61.00 (46.25-71.00)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 2,
+        "col_idx": 4,
+        "variable_name": "Age Median",
+        "level_label": null,
+        "column_name": "P value",
+        "raw_value": "<\u20090.001",
+        "value_type": "text",
+        "parsed_numeric": 0.001,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 1,
+        "variable_name": "Age",
+        "level_label": "<\u200940",
+        "column_name": "Overall n 6623",
+        "raw_value": "1993 (30.09%)",
+        "value_type": "count",
+        "parsed_numeric": 1993.0,
+        "parsed_secondary_numeric": 30.09,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 2,
+        "variable_name": "Age",
+        "level_label": "<\u200940",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "1881 (31.94%)",
+        "value_type": "count",
+        "parsed_numeric": 1881.0,
+        "parsed_secondary_numeric": 31.94,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 3,
+        "variable_name": "Age",
+        "level_label": "<\u200940",
+        "column_name": "YES n 734",
+        "raw_value": "112 (15.26%)",
+        "value_type": "count",
+        "parsed_numeric": 112.0,
+        "parsed_secondary_numeric": 15.26,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 1,
+        "variable_name": "Age",
+        "level_label": "40\u201360",
+        "column_name": "Overall n 6623",
+        "raw_value": "2210 (33.37%)",
+        "value_type": "count",
+        "parsed_numeric": 2210.0,
+        "parsed_secondary_numeric": 33.37,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 2,
+        "variable_name": "Age",
+        "level_label": "40\u201360",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "1975 (33.54%)",
+        "value_type": "count",
+        "parsed_numeric": 1975.0,
+        "parsed_secondary_numeric": 33.54,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 3,
+        "variable_name": "Age",
+        "level_label": "40\u201360",
+        "column_name": "YES n 734",
+        "raw_value": "235 (32.02%)",
+        "value_type": "count",
+        "parsed_numeric": 235.0,
+        "parsed_secondary_numeric": 32.02,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 1,
+        "variable_name": "Age",
+        "level_label": "\u2265\u200960",
+        "column_name": "Overall n 6623",
+        "raw_value": "2420 (36.54%)",
+        "value_type": "count",
+        "parsed_numeric": 2420.0,
+        "parsed_secondary_numeric": 36.54,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 2,
+        "variable_name": "Age",
+        "level_label": "\u2265\u200960",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "2033 (34.52%)",
+        "value_type": "count",
+        "parsed_numeric": 2033.0,
+        "parsed_secondary_numeric": 34.52,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 3,
+        "variable_name": "Age",
+        "level_label": "\u2265\u200960",
+        "column_name": "YES n 734",
+        "raw_value": "387 (52.72%)",
+        "value_type": "count",
+        "parsed_numeric": 387.0,
+        "parsed_secondary_numeric": 52.72,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 1,
+        "variable_name": "Gender",
+        "level_label": "Male",
+        "column_name": "Overall n 6623",
+        "raw_value": "3163 (47.76%)",
+        "value_type": "count",
+        "parsed_numeric": 3163.0,
+        "parsed_secondary_numeric": 47.76,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 2,
+        "variable_name": "Gender",
+        "level_label": "Male",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "2951 (50.11%)",
+        "value_type": "count",
+        "parsed_numeric": 2951.0,
+        "parsed_secondary_numeric": 50.11,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 3,
+        "variable_name": "Gender",
+        "level_label": "Male",
+        "column_name": "YES n 734",
+        "raw_value": "212 (28.88%)",
+        "value_type": "count",
+        "parsed_numeric": 212.0,
+        "parsed_secondary_numeric": 28.88,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 1,
+        "variable_name": "Gender",
+        "level_label": "Female",
+        "column_name": "Overall n 6623",
+        "raw_value": "3460 (52.24%)",
+        "value_type": "count",
+        "parsed_numeric": 3460.0,
+        "parsed_secondary_numeric": 52.24,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 2,
+        "variable_name": "Gender",
+        "level_label": "Female",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "2938 (49.89%)",
+        "value_type": "count",
+        "parsed_numeric": 2938.0,
+        "parsed_secondary_numeric": 49.89,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 3,
+        "variable_name": "Gender",
+        "level_label": "Female",
+        "column_name": "YES n 734",
+        "raw_value": "522 (71.12%)",
+        "value_type": "count",
+        "parsed_numeric": 522.0,
+        "parsed_secondary_numeric": 71.12,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 1,
+        "variable_name": "Race",
+        "level_label": "Mexican American",
+        "column_name": "Overall n 6623",
+        "raw_value": "736 (11.11%)",
+        "value_type": "count",
+        "parsed_numeric": 736.0,
+        "parsed_secondary_numeric": 11.11,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 2,
+        "variable_name": "Race",
+        "level_label": "Mexican American",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "652 (11.07%)",
+        "value_type": "count",
+        "parsed_numeric": 652.0,
+        "parsed_secondary_numeric": 11.07,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 3,
+        "variable_name": "Race",
+        "level_label": "Mexican American",
+        "column_name": "YES n 734",
+        "raw_value": "84 (11.44%)",
+        "value_type": "count",
+        "parsed_numeric": 84.0,
+        "parsed_secondary_numeric": 11.44,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 1,
+        "variable_name": "Race",
+        "level_label": "Other Hispanic",
+        "column_name": "Overall n 6623",
+        "raw_value": "655 (9.89%)",
+        "value_type": "count",
+        "parsed_numeric": 655.0,
+        "parsed_secondary_numeric": 9.89,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 2,
+        "variable_name": "Race",
+        "level_label": "Other Hispanic",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "574 (9.75%)",
+        "value_type": "count",
+        "parsed_numeric": 574.0,
+        "parsed_secondary_numeric": 9.75,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 3,
+        "variable_name": "Race",
+        "level_label": "Other Hispanic",
+        "column_name": "YES n 734",
+        "raw_value": "81 (11.04%)",
+        "value_type": "count",
+        "parsed_numeric": 81.0,
+        "parsed_secondary_numeric": 11.04,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 1,
+        "variable_name": "Race",
+        "level_label": "Non-Hispanic White",
+        "column_name": "Overall n 6623",
+        "raw_value": "2390 (36.09%)",
+        "value_type": "count",
+        "parsed_numeric": 2390.0,
+        "parsed_secondary_numeric": 36.09,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 2,
+        "variable_name": "Race",
+        "level_label": "Non-Hispanic White",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "2064 (35.05%)",
+        "value_type": "count",
+        "parsed_numeric": 2064.0,
+        "parsed_secondary_numeric": 35.05,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 3,
+        "variable_name": "Race",
+        "level_label": "Non-Hispanic White",
+        "column_name": "YES n 734",
+        "raw_value": "326 (44.41%)",
+        "value_type": "count",
+        "parsed_numeric": 326.0,
+        "parsed_secondary_numeric": 44.41,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 1,
+        "variable_name": "Race",
+        "level_label": "Non-Hispanic Black",
+        "column_name": "Overall n 6623",
+        "raw_value": "1859 (28.07%)",
+        "value_type": "count",
+        "parsed_numeric": 1859.0,
+        "parsed_secondary_numeric": 28.07,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 2,
+        "variable_name": "Race",
+        "level_label": "Non-Hispanic Black",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "1701 (28.88%)",
+        "value_type": "count",
+        "parsed_numeric": 1701.0,
+        "parsed_secondary_numeric": 28.88,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 3,
+        "variable_name": "Race",
+        "level_label": "Non-Hispanic Black",
+        "column_name": "YES n 734",
+        "raw_value": "158 (21.53%)",
+        "value_type": "count",
+        "parsed_numeric": 158.0,
+        "parsed_secondary_numeric": 21.53,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 1,
+        "variable_name": "Race",
+        "level_label": "Other Race",
+        "column_name": "Overall n 6623",
+        "raw_value": "983 (14.84%)",
+        "value_type": "count",
+        "parsed_numeric": 983.0,
+        "parsed_secondary_numeric": 14.84,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 2,
+        "variable_name": "Race",
+        "level_label": "Other Race",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "898 (15.25%)",
+        "value_type": "count",
+        "parsed_numeric": 898.0,
+        "parsed_secondary_numeric": 15.25,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 3,
+        "variable_name": "Race",
+        "level_label": "Other Race",
+        "column_name": "YES n 734",
+        "raw_value": "85 (11.58%)",
+        "value_type": "count",
+        "parsed_numeric": 85.0,
+        "parsed_secondary_numeric": 11.58,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 1,
+        "variable_name": "Education level",
+        "level_label": "Less than 9th grade",
+        "column_name": "Overall n 6623",
+        "raw_value": "390 (5.89%)",
+        "value_type": "count",
+        "parsed_numeric": 390.0,
+        "parsed_secondary_numeric": 5.89,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 2,
+        "variable_name": "Education level",
+        "level_label": "Less than 9th grade",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "354 (6.01%)",
+        "value_type": "count",
+        "parsed_numeric": 354.0,
+        "parsed_secondary_numeric": 6.01,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 3,
+        "variable_name": "Education level",
+        "level_label": "Less than 9th grade",
+        "column_name": "YES n 734",
+        "raw_value": "36 (4.90%)",
+        "value_type": "count",
+        "parsed_numeric": 36.0,
+        "parsed_secondary_numeric": 4.9,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 18,
+        "col_idx": 1,
+        "variable_name": "Education level",
+        "level_label": "9-11th grade",
+        "column_name": "Overall n 6623",
+        "raw_value": "689 (10.40%)",
+        "value_type": "count",
+        "parsed_numeric": 689.0,
+        "parsed_secondary_numeric": 10.4,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 18,
+        "col_idx": 2,
+        "variable_name": "Education level",
+        "level_label": "9-11th grade",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "609 (10.34%)",
+        "value_type": "count",
+        "parsed_numeric": 609.0,
+        "parsed_secondary_numeric": 10.34,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 18,
+        "col_idx": 3,
+        "variable_name": "Education level",
+        "level_label": "9-11th grade",
+        "column_name": "YES n 734",
+        "raw_value": "78 (10.63%)",
+        "value_type": "count",
+        "parsed_numeric": 78.0,
+        "parsed_secondary_numeric": 10.63,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 2,
+        "variable_name": "Education level",
+        "level_label": "High school graduate/GED or equivalent 1562 (23.58%)",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "1379 (23.42%)",
+        "value_type": "count",
+        "parsed_numeric": 1379.0,
+        "parsed_secondary_numeric": 23.42,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 3,
+        "variable_name": "Education level",
+        "level_label": "High school graduate/GED or equivalent 1562 (23.58%)",
+        "column_name": "YES n 734",
+        "raw_value": "185 (25.20%)",
+        "value_type": "count",
+        "parsed_numeric": 185.0,
+        "parsed_secondary_numeric": 25.2,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 1,
+        "variable_name": "Education level",
+        "level_label": "Some college or AA degree",
+        "column_name": "Overall n 6623",
+        "raw_value": "2259 (34.11%)",
+        "value_type": "count",
+        "parsed_numeric": 2259.0,
+        "parsed_secondary_numeric": 34.11,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 2,
+        "variable_name": "Education level",
+        "level_label": "Some college or AA degree",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "1981 (33.64%)",
+        "value_type": "count",
+        "parsed_numeric": 1981.0,
+        "parsed_secondary_numeric": 33.64,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 3,
+        "variable_name": "Education level",
+        "level_label": "Some college or AA degree",
+        "column_name": "YES n 734",
+        "raw_value": "278 (37.87%)",
+        "value_type": "count",
+        "parsed_numeric": 278.0,
+        "parsed_secondary_numeric": 37.87,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 1,
+        "variable_name": "Education level",
+        "level_label": "College graduate or above",
+        "column_name": "Overall n 6623",
+        "raw_value": "1723 (26.02%)",
+        "value_type": "count",
+        "parsed_numeric": 1723.0,
+        "parsed_secondary_numeric": 26.02,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 2,
+        "variable_name": "Education level",
+        "level_label": "College graduate or above",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "1566 (26.59%)",
+        "value_type": "count",
+        "parsed_numeric": 1566.0,
+        "parsed_secondary_numeric": 26.59,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 3,
+        "variable_name": "Education level",
+        "level_label": "College graduate or above",
+        "column_name": "YES n 734",
+        "raw_value": "157 (21.39%)",
+        "value_type": "count",
+        "parsed_numeric": 157.0,
+        "parsed_secondary_numeric": 21.39,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 1,
+        "variable_name": "Income to poverty ratio n",
+        "level_label": null,
+        "column_name": "Overall n 6623",
+        "raw_value": "(%) 2.32 (1.35\u20133.98)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 2,
+        "variable_name": "Income to poverty ratio n",
+        "level_label": null,
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "2.32 (1.35\u20133.98)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 3,
+        "variable_name": "Income to poverty ratio n",
+        "level_label": null,
+        "column_name": "YES n 734",
+        "raw_value": "2.32 (1.35\u20133.70)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 4,
+        "variable_name": "Income to poverty ratio n",
+        "level_label": null,
+        "column_name": "P value",
+        "raw_value": "0.207",
+        "value_type": "text",
+        "parsed_numeric": 0.207,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 1,
+        "variable_name": "BMI Median",
+        "level_label": null,
+        "column_name": "Overall n 6623",
+        "raw_value": "29.00 (25.10\u201333.90)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 2,
+        "variable_name": "BMI Median",
+        "level_label": null,
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "28.70 (24.80\u201333.50)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 3,
+        "variable_name": "BMI Median",
+        "level_label": null,
+        "column_name": "YES n 734",
+        "raw_value": "31.90 (27.90\u201337.90)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 4,
+        "variable_name": "BMI Median",
+        "level_label": null,
+        "column_name": "P value",
+        "raw_value": "<\u20090.001",
+        "value_type": "text",
+        "parsed_numeric": 0.001,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 1,
+        "variable_name": "BMI kg m2",
+        "level_label": "Normal weight",
+        "column_name": "Overall n 6623",
+        "raw_value": "1603 (24.20%)",
+        "value_type": "count",
+        "parsed_numeric": 1603.0,
+        "parsed_secondary_numeric": 24.2,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 2,
+        "variable_name": "BMI kg m2",
+        "level_label": "Normal weight",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "1520 (25.81%)",
+        "value_type": "count",
+        "parsed_numeric": 1520.0,
+        "parsed_secondary_numeric": 25.81,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 3,
+        "variable_name": "BMI kg m2",
+        "level_label": "Normal weight",
+        "column_name": "YES n 734",
+        "raw_value": "83 (11.31%)",
+        "value_type": "count",
+        "parsed_numeric": 83.0,
+        "parsed_secondary_numeric": 11.31,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 1,
+        "variable_name": "BMI kg m2",
+        "level_label": "Overweight",
+        "column_name": "Overall n 6623",
+        "raw_value": "2095 (31.63%)",
+        "value_type": "count",
+        "parsed_numeric": 2095.0,
+        "parsed_secondary_numeric": 31.63,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 2,
+        "variable_name": "BMI kg m2",
+        "level_label": "Overweight",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "1888 (32.06%)",
+        "value_type": "count",
+        "parsed_numeric": 1888.0,
+        "parsed_secondary_numeric": 32.06,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 3,
+        "variable_name": "BMI kg m2",
+        "level_label": "Overweight",
+        "column_name": "YES n 734",
+        "raw_value": "207 (28.20%)",
+        "value_type": "count",
+        "parsed_numeric": 207.0,
+        "parsed_secondary_numeric": 28.2,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 1,
+        "variable_name": "BMI kg m2",
+        "level_label": "Obese",
+        "column_name": "Overall n 6623",
+        "raw_value": "2925 (44.16%)",
+        "value_type": "count",
+        "parsed_numeric": 2925.0,
+        "parsed_secondary_numeric": 44.16,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 2,
+        "variable_name": "BMI kg m2",
+        "level_label": "Obese",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "2481 (42.13%)",
+        "value_type": "count",
+        "parsed_numeric": 2481.0,
+        "parsed_secondary_numeric": 42.13,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 3,
+        "variable_name": "BMI kg m2",
+        "level_label": "Obese",
+        "column_name": "YES n 734",
+        "raw_value": "444 (60.49%)",
+        "value_type": "count",
+        "parsed_numeric": 444.0,
+        "parsed_secondary_numeric": 60.49,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 1,
+        "variable_name": "Large weight loss",
+        "level_label": "Yes",
+        "column_name": "Overall n 6623",
+        "raw_value": "1461 (22.06%)",
+        "value_type": "count",
+        "parsed_numeric": 1461.0,
+        "parsed_secondary_numeric": 22.06,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 2,
+        "variable_name": "Large weight loss",
+        "level_label": "Yes",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "1262 (21.43%)",
+        "value_type": "count",
+        "parsed_numeric": 1262.0,
+        "parsed_secondary_numeric": 21.43,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 3,
+        "variable_name": "Large weight loss",
+        "level_label": "Yes",
+        "column_name": "YES n 734",
+        "raw_value": "199 (27.11%)",
+        "value_type": "count",
+        "parsed_numeric": 199.0,
+        "parsed_secondary_numeric": 27.11,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 1,
+        "variable_name": "Large weight loss",
+        "level_label": "No",
+        "column_name": "Overall n 6623",
+        "raw_value": "5162 (77.94%)",
+        "value_type": "count",
+        "parsed_numeric": 5162.0,
+        "parsed_secondary_numeric": 77.94,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 2,
+        "variable_name": "Large weight loss",
+        "level_label": "No",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "4627 (78.57%)",
+        "value_type": "count",
+        "parsed_numeric": 4627.0,
+        "parsed_secondary_numeric": 78.57,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 3,
+        "variable_name": "Large weight loss",
+        "level_label": "No",
+        "column_name": "YES n 734",
+        "raw_value": "535 (72.89%)",
+        "value_type": "count",
+        "parsed_numeric": 535.0,
+        "parsed_secondary_numeric": 72.89,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 32,
+        "col_idx": 1,
+        "variable_name": "Alcohol use",
+        "level_label": "Yes",
+        "column_name": "Overall n 6623",
+        "raw_value": "6046 (91.29%)",
+        "value_type": "count",
+        "parsed_numeric": 6046.0,
+        "parsed_secondary_numeric": 91.29,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 32,
+        "col_idx": 2,
+        "variable_name": "Alcohol use",
+        "level_label": "Yes",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "5375 (91.27%)",
+        "value_type": "count",
+        "parsed_numeric": 5375.0,
+        "parsed_secondary_numeric": 91.27,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 32,
+        "col_idx": 3,
+        "variable_name": "Alcohol use",
+        "level_label": "Yes",
+        "column_name": "YES n 734",
+        "raw_value": "671 (91.42%)",
+        "value_type": "count",
+        "parsed_numeric": 671.0,
+        "parsed_secondary_numeric": 91.42,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 1,
+        "variable_name": "Alcohol use",
+        "level_label": "No",
+        "column_name": "Overall n 6623",
+        "raw_value": "577 (8.71%)",
+        "value_type": "count",
+        "parsed_numeric": 577.0,
+        "parsed_secondary_numeric": 8.71,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 2,
+        "variable_name": "Alcohol use",
+        "level_label": "No",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "514 (8.73%)",
+        "value_type": "count",
+        "parsed_numeric": 514.0,
+        "parsed_secondary_numeric": 8.73,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 3,
+        "variable_name": "Alcohol use",
+        "level_label": "No",
+        "column_name": "YES n 734",
+        "raw_value": "63 (8.58%)",
+        "value_type": "count",
+        "parsed_numeric": 63.0,
+        "parsed_secondary_numeric": 8.58,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 35,
+        "col_idx": 1,
+        "variable_name": "Smoking",
+        "level_label": "Never smokers",
+        "column_name": "Overall n 6623",
+        "raw_value": "3831 (57.84%)",
+        "value_type": "count",
+        "parsed_numeric": 3831.0,
+        "parsed_secondary_numeric": 57.84,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 35,
+        "col_idx": 2,
+        "variable_name": "Smoking",
+        "level_label": "Never smokers",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "3445 (58.50%)",
+        "value_type": "count",
+        "parsed_numeric": 3445.0,
+        "parsed_secondary_numeric": 58.5,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 35,
+        "col_idx": 3,
+        "variable_name": "Smoking",
+        "level_label": "Never smokers",
+        "column_name": "YES n 734",
+        "raw_value": "386 (52.59%)",
+        "value_type": "count",
+        "parsed_numeric": 386.0,
+        "parsed_secondary_numeric": 52.59,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 36,
+        "col_idx": 1,
+        "variable_name": "Smoking",
+        "level_label": "Previous smokers",
+        "column_name": "Overall n 6623",
+        "raw_value": "1611 (24.32%)",
+        "value_type": "count",
+        "parsed_numeric": 1611.0,
+        "parsed_secondary_numeric": 24.32,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 36,
+        "col_idx": 2,
+        "variable_name": "Smoking",
+        "level_label": "Previous smokers",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "1378 (23.40%)",
+        "value_type": "count",
+        "parsed_numeric": 1378.0,
+        "parsed_secondary_numeric": 23.4,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 36,
+        "col_idx": 3,
+        "variable_name": "Smoking",
+        "level_label": "Previous smokers",
+        "column_name": "YES n 734",
+        "raw_value": "233 (31.74%)",
+        "value_type": "count",
+        "parsed_numeric": 233.0,
+        "parsed_secondary_numeric": 31.74,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 37,
+        "col_idx": 1,
+        "variable_name": "Smoking",
+        "level_label": "Occasional smokers",
+        "column_name": "Overall n 6623",
+        "raw_value": "268 (4.05%)",
+        "value_type": "count",
+        "parsed_numeric": 268.0,
+        "parsed_secondary_numeric": 4.05,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 37,
+        "col_idx": 2,
+        "variable_name": "Smoking",
+        "level_label": "Occasional smokers",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "248 (4.21%)",
+        "value_type": "count",
+        "parsed_numeric": 248.0,
+        "parsed_secondary_numeric": 4.21,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 37,
+        "col_idx": 3,
+        "variable_name": "Smoking",
+        "level_label": "Occasional smokers",
+        "column_name": "YES n 734",
+        "raw_value": "20 (2.72%)",
+        "value_type": "count",
+        "parsed_numeric": 20.0,
+        "parsed_secondary_numeric": 2.72,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 38,
+        "col_idx": 1,
+        "variable_name": "Smoking",
+        "level_label": "Daily smokers",
+        "column_name": "Overall n 6623",
+        "raw_value": "913 (13.79%)",
+        "value_type": "count",
+        "parsed_numeric": 913.0,
+        "parsed_secondary_numeric": 13.79,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 38,
+        "col_idx": 2,
+        "variable_name": "Smoking",
+        "level_label": "Daily smokers",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "818 (13.89%)",
+        "value_type": "count",
+        "parsed_numeric": 818.0,
+        "parsed_secondary_numeric": 13.89,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 38,
+        "col_idx": 3,
+        "variable_name": "Smoking",
+        "level_label": "Daily smokers",
+        "column_name": "YES n 734",
+        "raw_value": "95 (12.94%)",
+        "value_type": "count",
+        "parsed_numeric": 95.0,
+        "parsed_secondary_numeric": 12.94,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 40,
+        "col_idx": 1,
+        "variable_name": "Physical activity",
+        "level_label": "Yes",
+        "column_name": "Overall n 6623",
+        "raw_value": "2995 (45.22%)",
+        "value_type": "count",
+        "parsed_numeric": 2995.0,
+        "parsed_secondary_numeric": 45.22,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 40,
+        "col_idx": 2,
+        "variable_name": "Physical activity",
+        "level_label": "Yes",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "2679 (45.49%)",
+        "value_type": "count",
+        "parsed_numeric": 2679.0,
+        "parsed_secondary_numeric": 45.49,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 40,
+        "col_idx": 3,
+        "variable_name": "Physical activity",
+        "level_label": "Yes",
+        "column_name": "YES n 734",
+        "raw_value": "316 (43.05%)",
+        "value_type": "count",
+        "parsed_numeric": 316.0,
+        "parsed_secondary_numeric": 43.05,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 41,
+        "col_idx": 1,
+        "variable_name": "Physical activity",
+        "level_label": "No",
+        "column_name": "Overall n 6623",
+        "raw_value": "3628 (54.78%)",
+        "value_type": "count",
+        "parsed_numeric": 3628.0,
+        "parsed_secondary_numeric": 54.78,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 41,
+        "col_idx": 2,
+        "variable_name": "Physical activity",
+        "level_label": "No",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "3210 (54.51%)",
+        "value_type": "count",
+        "parsed_numeric": 3210.0,
+        "parsed_secondary_numeric": 54.51,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 41,
+        "col_idx": 3,
+        "variable_name": "Physical activity",
+        "level_label": "No",
+        "column_name": "YES n 734",
+        "raw_value": "418 (56.95%)",
+        "value_type": "count",
+        "parsed_numeric": 418.0,
+        "parsed_secondary_numeric": 56.95,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 43,
+        "col_idx": 1,
+        "variable_name": "Diabetes",
+        "level_label": "Yes",
+        "column_name": "Overall n 6623",
+        "raw_value": "1053 (15.90%)",
+        "value_type": "count",
+        "parsed_numeric": 1053.0,
+        "parsed_secondary_numeric": 15.9,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 43,
+        "col_idx": 2,
+        "variable_name": "Diabetes",
+        "level_label": "Yes",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "855 (14.52%)",
+        "value_type": "count",
+        "parsed_numeric": 855.0,
+        "parsed_secondary_numeric": 14.52,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 43,
+        "col_idx": 3,
+        "variable_name": "Diabetes",
+        "level_label": "Yes",
+        "column_name": "YES n 734",
+        "raw_value": "198 (26.98%)",
+        "value_type": "count",
+        "parsed_numeric": 198.0,
+        "parsed_secondary_numeric": 26.98,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 44,
+        "col_idx": 1,
+        "variable_name": "Diabetes",
+        "level_label": "No",
+        "column_name": "Overall n 6623",
+        "raw_value": "5570 (84.10%)",
+        "value_type": "count",
+        "parsed_numeric": 5570.0,
+        "parsed_secondary_numeric": 84.1,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 44,
+        "col_idx": 2,
+        "variable_name": "Diabetes",
+        "level_label": "No",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "5034 (85.48%)",
+        "value_type": "count",
+        "parsed_numeric": 5034.0,
+        "parsed_secondary_numeric": 85.48,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 44,
+        "col_idx": 3,
+        "variable_name": "Diabetes",
+        "level_label": "No",
+        "column_name": "YES n 734",
+        "raw_value": "536 (73.02%)",
+        "value_type": "count",
+        "parsed_numeric": 536.0,
+        "parsed_secondary_numeric": 73.02,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 46,
+        "col_idx": 1,
+        "variable_name": "Hypertension",
+        "level_label": "Yes",
+        "column_name": "Overall n 6623",
+        "raw_value": "2598 (39.23%)",
+        "value_type": "count",
+        "parsed_numeric": 2598.0,
+        "parsed_secondary_numeric": 39.23,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 46,
+        "col_idx": 2,
+        "variable_name": "Hypertension",
+        "level_label": "Yes",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "2189 (37.17%)",
+        "value_type": "count",
+        "parsed_numeric": 2189.0,
+        "parsed_secondary_numeric": 37.17,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 46,
+        "col_idx": 3,
+        "variable_name": "Hypertension",
+        "level_label": "Yes",
+        "column_name": "YES n 734",
+        "raw_value": "409 (55.72%)",
+        "value_type": "count",
+        "parsed_numeric": 409.0,
+        "parsed_secondary_numeric": 55.72,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 47,
+        "col_idx": 1,
+        "variable_name": "Hypertension",
+        "level_label": "No",
+        "column_name": "Overall n 6623",
+        "raw_value": "4025 (60.77%)",
+        "value_type": "count",
+        "parsed_numeric": 4025.0,
+        "parsed_secondary_numeric": 60.77,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 47,
+        "col_idx": 2,
+        "variable_name": "Hypertension",
+        "level_label": "No",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "3700 (62.83%)",
+        "value_type": "count",
+        "parsed_numeric": 3700.0,
+        "parsed_secondary_numeric": 62.83,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 47,
+        "col_idx": 3,
+        "variable_name": "Hypertension",
+        "level_label": "No",
+        "column_name": "YES n 734",
+        "raw_value": "325 (44.28%)",
+        "value_type": "count",
+        "parsed_numeric": 325.0,
+        "parsed_secondary_numeric": 44.28,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 49,
+        "col_idx": 1,
+        "variable_name": "Heart failure",
+        "level_label": "Yes",
+        "column_name": "Overall n 6623",
+        "raw_value": "243 (3.67%)",
+        "value_type": "count",
+        "parsed_numeric": 243.0,
+        "parsed_secondary_numeric": 3.67,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 49,
+        "col_idx": 2,
+        "variable_name": "Heart failure",
+        "level_label": "Yes",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "189 (3.21%)",
+        "value_type": "count",
+        "parsed_numeric": 189.0,
+        "parsed_secondary_numeric": 3.21,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 49,
+        "col_idx": 3,
+        "variable_name": "Heart failure",
+        "level_label": "Yes",
+        "column_name": "YES n 734",
+        "raw_value": "54 (7.36%)",
+        "value_type": "count",
+        "parsed_numeric": 54.0,
+        "parsed_secondary_numeric": 7.36,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 50,
+        "col_idx": 1,
+        "variable_name": "Heart failure",
+        "level_label": "No",
+        "column_name": "Overall n 6623",
+        "raw_value": "6380 (96.33%)",
+        "value_type": "count",
+        "parsed_numeric": 6380.0,
+        "parsed_secondary_numeric": 96.33,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 50,
+        "col_idx": 2,
+        "variable_name": "Heart failure",
+        "level_label": "No",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "5700 (96.79%)",
+        "value_type": "count",
+        "parsed_numeric": 5700.0,
+        "parsed_secondary_numeric": 96.79,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 50,
+        "col_idx": 3,
+        "variable_name": "Heart failure",
+        "level_label": "No",
+        "column_name": "YES n 734",
+        "raw_value": "680 (92.64%)",
+        "value_type": "count",
+        "parsed_numeric": 680.0,
+        "parsed_secondary_numeric": 92.64,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 52,
+        "col_idx": 1,
+        "variable_name": "Coronary heart disease",
+        "level_label": "Yes",
+        "column_name": "Overall n 6623",
+        "raw_value": "310 (4.68%)",
+        "value_type": "count",
+        "parsed_numeric": 310.0,
+        "parsed_secondary_numeric": 4.68,
+        "confidence": 0.8
+      },
+      {
+        "row_idx": 52,
+        "col_idx": 2,
+        "variable_name": "Coronary heart disease",
+        "level_label": "Yes",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "243 (4.13%)",
+        "value_type": "count",
+        "parsed_numeric": 243.0,
+        "parsed_secondary_numeric": 4.13,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 52,
+        "col_idx": 3,
+        "variable_name": "Coronary heart disease",
+        "level_label": "Yes",
+        "column_name": "YES n 734",
+        "raw_value": "67 (9.13%)",
+        "value_type": "count",
+        "parsed_numeric": 67.0,
+        "parsed_secondary_numeric": 9.13,
+        "confidence": 0.97
+      }
+    ],
+    "notes": [
+      "count_pct_group_share_mismatch: variable=Age column=Gallstones NO n 5889 observed=100.0 expected=88.9",
+      "count_pct_group_share_mismatch: variable=Age column=YES n 734 observed=100.0 expected=11.1",
+      "count_pct_group_share_mismatch: variable=Gender column=Gallstones NO n 5889 observed=100.0 expected=88.9",
+      "count_pct_group_share_mismatch: variable=Gender column=YES n 734 observed=100.0 expected=11.1",
+      "count_pct_group_share_mismatch: variable=Race column=Gallstones NO n 5889 observed=100.0 expected=88.9",
+      "count_pct_group_share_mismatch: variable=Race column=YES n 734 observed=100.0 expected=11.1",
+      "count_pct_group_share_mismatch: variable=Education level column=Gallstones NO n 5889 observed=100.0 expected=88.9",
+      "count_pct_group_share_mismatch: variable=Education level column=YES n 734 observed=100.0 expected=11.1",
+      "count_pct_group_share_mismatch: variable=BMI kg m2 column=Gallstones NO n 5889 observed=100.0 expected=88.9",
+      "count_pct_group_share_mismatch: variable=BMI kg m2 column=YES n 734 observed=100.0 expected=11.1",
+      "count_pct_group_share_mismatch: variable=Large weight loss column=Gallstones NO n 5889 observed=100.0 expected=88.9",
+      "count_pct_group_share_mismatch: variable=Large weight loss column=YES n 734 observed=100.0 expected=11.1",
+      "count_pct_group_share_mismatch: variable=Alcohol use column=Gallstones NO n 5889 observed=100.0 expected=88.9",
+      "count_pct_group_share_mismatch: variable=Alcohol use column=YES n 734 observed=100.0 expected=11.1",
+      "count_pct_group_share_mismatch: variable=Smoking column=Gallstones NO n 5889 observed=100.0 expected=88.9",
+      "count_pct_group_share_mismatch: variable=Smoking column=YES n 734 observed=100.0 expected=11.1",
+      "count_pct_group_share_mismatch: variable=Physical activity column=Gallstones NO n 5889 observed=100.0 expected=88.9",
+      "count_pct_group_share_mismatch: variable=Physical activity column=YES n 734 observed=100.0 expected=11.1",
+      "count_pct_group_share_mismatch: variable=Diabetes column=Gallstones NO n 5889 observed=100.0 expected=88.9",
+      "count_pct_group_share_mismatch: variable=Diabetes column=YES n 734 observed=100.0 expected=11.1",
+      "count_pct_group_share_mismatch: variable=Hypertension column=Gallstones NO n 5889 observed=100.0 expected=88.9",
+      "count_pct_group_share_mismatch: variable=Hypertension column=YES n 734 observed=100.0 expected=11.1",
+      "count_pct_group_share_mismatch: variable=Heart failure column=Gallstones NO n 5889 observed=100.0 expected=88.9",
+      "count_pct_group_share_mismatch: variable=Heart failure column=YES n 734 observed=100.0 expected=11.1",
+      "count_pct_overall_sum_mismatch: variable=Coronary heart disease column=Overall n 6623 observed=4.7 expected=100.0",
+      "count_pct_group_share_mismatch: variable=Coronary heart disease column=Gallstones NO n 5889 observed=4.1 expected=88.9"
+    ],
+    "overall_confidence": 0.8636
+  },
+  {
+    "table_id": "gallstones-p6-t0",
+    "title": "Table 1 (continued)",
+    "caption": "Table 1 (continued)",
+    "variables": [
+      {
+        "variable_name": "Angina pectoris",
+        "variable_label": "Angina pectoris, n (%)",
+        "variable_type": "binary",
+        "row_start": 3,
+        "row_end": 5,
+        "levels": [
+          {
+            "label": "Yes",
+            "row_idx": 4
+          },
+          {
+            "label": "No",
+            "row_idx": 5
+          }
+        ],
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Heart attack",
+        "variable_label": "Heart attack, n (%)",
+        "variable_type": "binary",
+        "row_start": 6,
+        "row_end": 8,
+        "levels": [
+          {
+            "label": "Yes",
+            "row_idx": 7
+          },
+          {
+            "label": "No",
+            "row_idx": 8
+          }
+        ],
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Estrogen use status",
+        "variable_label": "Estrogen use status, n (%)",
+        "variable_type": "categorical",
+        "row_start": 9,
+        "row_end": 12,
+        "levels": [
+          {
+            "label": "Yes",
+            "row_idx": 10
+          },
+          {
+            "label": "No",
+            "row_idx": 11
+          },
+          {
+            "label": "Other",
+            "row_idx": 12
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Antihyperglycemic drug use status",
+        "variable_label": "Antihyperglycemic drug use status, n (%)",
+        "variable_type": "categorical",
+        "row_start": 13,
+        "row_end": 16,
+        "levels": [
+          {
+            "label": "Yes",
+            "row_idx": 14
+          },
+          {
+            "label": "No",
+            "row_idx": 15
+          },
+          {
+            "label": "Other",
+            "row_idx": 16
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Statin use status",
+        "variable_label": "Statin use status, n (%)",
+        "variable_type": "categorical",
+        "row_start": 17,
+        "row_end": 20,
+        "levels": [
+          {
+            "label": "Yes",
+            "row_idx": 18
+          },
+          {
+            "label": "No",
+            "row_idx": 19
+          },
+          {
+            "label": "Other",
+            "row_idx": 20
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Glucocorticosteroid use status",
+        "variable_label": "Glucocorticosteroid use status, n (%)",
+        "variable_type": "categorical",
+        "row_start": 21,
+        "row_end": 24,
+        "levels": [
+          {
+            "label": "Yes",
+            "row_idx": 22
+          },
+          {
+            "label": "No",
+            "row_idx": 23
+          },
+          {
+            "label": "Other",
+            "row_idx": 24
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Energy Median",
+        "variable_label": "Energy, Median (Q1-Q3)",
+        "variable_type": "continuous",
+        "row_start": 25,
+        "row_end": 25,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Total cholesterol Median",
+        "variable_label": "Total cholesterol, Median (Q1-Q3)",
+        "variable_type": "continuous",
+        "row_start": 26,
+        "row_end": 26,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "DII Median",
+        "variable_label": "DII, Median (Q1-Q3)",
+        "variable_type": "continuous",
+        "row_start": 27,
+        "row_end": 27,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "AHEI Median",
+        "variable_label": "AHEI, Median (Q1-Q3)",
+        "variable_type": "continuous",
+        "row_start": 28,
+        "row_end": 28,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "HEI2020 Median",
+        "variable_label": "HEI2020, Median (Q1-Q3)",
+        "variable_type": "continuous",
+        "row_start": 29,
+        "row_end": 29,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "DASH Median",
+        "variable_label": "DASH, Median (Q1-Q3)",
+        "variable_type": "continuous",
+        "row_start": 30,
+        "row_end": 30,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "MED Median",
+        "variable_label": "MED, Median (Q1-Q3)",
+        "variable_type": "continuous",
+        "row_start": 31,
+        "row_end": 31,
+        "levels": [],
+        "confidence": 0.9
+      }
+    ],
+    "columns": [
+      {
+        "col_idx": 1,
+        "column_name": "Overall n 6623",
+        "column_label": "Overall (n = 6623)",
+        "inferred_role": "overall",
+        "confidence": 0.84
+      },
+      {
+        "col_idx": 2,
+        "column_name": "Gallstones NO n 5889",
+        "column_label": "Gallstones NO (n = 5889)",
+        "inferred_role": "group",
+        "confidence": 0.9
+      },
+      {
+        "col_idx": 3,
+        "column_name": "YES n 734",
+        "column_label": "YES (n = 734)",
+        "inferred_role": "group",
+        "confidence": 0.82
+      },
+      {
+        "col_idx": 4,
+        "column_name": "P value",
+        "column_label": "P-value",
+        "inferred_role": "p_value",
+        "confidence": 0.97
+      }
+    ],
+    "values": [
+      {
+        "row_idx": 4,
+        "col_idx": 1,
+        "variable_name": "Angina pectoris",
+        "level_label": "Yes",
+        "column_name": "Overall n 6623",
+        "raw_value": "175 (2.64%)",
+        "value_type": "count",
+        "parsed_numeric": 175.0,
+        "parsed_secondary_numeric": 2.64,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 2,
+        "variable_name": "Angina pectoris",
+        "level_label": "Yes",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "125 (2.12%)",
+        "value_type": "count",
+        "parsed_numeric": 125.0,
+        "parsed_secondary_numeric": 2.12,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 3,
+        "variable_name": "Angina pectoris",
+        "level_label": "Yes",
+        "column_name": "YES n 734",
+        "raw_value": "50 (6.81%)",
+        "value_type": "count",
+        "parsed_numeric": 50.0,
+        "parsed_secondary_numeric": 6.81,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 1,
+        "variable_name": "Angina pectoris",
+        "level_label": "No",
+        "column_name": "Overall n 6623",
+        "raw_value": "6448 (97.36%)",
+        "value_type": "count",
+        "parsed_numeric": 6448.0,
+        "parsed_secondary_numeric": 97.36,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 2,
+        "variable_name": "Angina pectoris",
+        "level_label": "No",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "5764 (97.88%)",
+        "value_type": "count",
+        "parsed_numeric": 5764.0,
+        "parsed_secondary_numeric": 97.88,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 3,
+        "variable_name": "Angina pectoris",
+        "level_label": "No",
+        "column_name": "YES n 734",
+        "raw_value": "684 (93.19%)",
+        "value_type": "count",
+        "parsed_numeric": 684.0,
+        "parsed_secondary_numeric": 93.19,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 1,
+        "variable_name": "Heart attack",
+        "level_label": "Yes",
+        "column_name": "Overall n 6623",
+        "raw_value": "305 (4.61%)",
+        "value_type": "count",
+        "parsed_numeric": 305.0,
+        "parsed_secondary_numeric": 4.61,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 2,
+        "variable_name": "Heart attack",
+        "level_label": "Yes",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "243 (4.13%)",
+        "value_type": "count",
+        "parsed_numeric": 243.0,
+        "parsed_secondary_numeric": 4.13,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 3,
+        "variable_name": "Heart attack",
+        "level_label": "Yes",
+        "column_name": "YES n 734",
+        "raw_value": "62 (8.45%)",
+        "value_type": "count",
+        "parsed_numeric": 62.0,
+        "parsed_secondary_numeric": 8.45,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 1,
+        "variable_name": "Heart attack",
+        "level_label": "No",
+        "column_name": "Overall n 6623",
+        "raw_value": "6318 (95.39%)",
+        "value_type": "count",
+        "parsed_numeric": 6318.0,
+        "parsed_secondary_numeric": 95.39,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 2,
+        "variable_name": "Heart attack",
+        "level_label": "No",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "5646 (95.87%)",
+        "value_type": "count",
+        "parsed_numeric": 5646.0,
+        "parsed_secondary_numeric": 95.87,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 3,
+        "variable_name": "Heart attack",
+        "level_label": "No",
+        "column_name": "YES n 734",
+        "raw_value": "672 (91.55%)",
+        "value_type": "count",
+        "parsed_numeric": 672.0,
+        "parsed_secondary_numeric": 91.55,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 1,
+        "variable_name": "Estrogen use status",
+        "level_label": "Yes",
+        "column_name": "Overall n 6623",
+        "raw_value": "125 (1.89%)",
+        "value_type": "count",
+        "parsed_numeric": 125.0,
+        "parsed_secondary_numeric": 1.89,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 2,
+        "variable_name": "Estrogen use status",
+        "level_label": "Yes",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "116 (1.97%)",
+        "value_type": "count",
+        "parsed_numeric": 116.0,
+        "parsed_secondary_numeric": 1.97,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 3,
+        "variable_name": "Estrogen use status",
+        "level_label": "Yes",
+        "column_name": "YES n 734",
+        "raw_value": "9 (1.23%)",
+        "value_type": "count",
+        "parsed_numeric": 9.0,
+        "parsed_secondary_numeric": 1.23,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 1,
+        "variable_name": "Estrogen use status",
+        "level_label": "No",
+        "column_name": "Overall n 6623",
+        "raw_value": "2543 (38.40%)",
+        "value_type": "count",
+        "parsed_numeric": 2543.0,
+        "parsed_secondary_numeric": 38.4,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 2,
+        "variable_name": "Estrogen use status",
+        "level_label": "No",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "2390 (40.58%)",
+        "value_type": "count",
+        "parsed_numeric": 2390.0,
+        "parsed_secondary_numeric": 40.58,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 3,
+        "variable_name": "Estrogen use status",
+        "level_label": "No",
+        "column_name": "YES n 734",
+        "raw_value": "153 (20.84%)",
+        "value_type": "count",
+        "parsed_numeric": 153.0,
+        "parsed_secondary_numeric": 20.84,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 1,
+        "variable_name": "Estrogen use status",
+        "level_label": "Other",
+        "column_name": "Overall n 6623",
+        "raw_value": "3955 (59.72%)",
+        "value_type": "count",
+        "parsed_numeric": 3955.0,
+        "parsed_secondary_numeric": 59.72,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 2,
+        "variable_name": "Estrogen use status",
+        "level_label": "Other",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "3383 (57.45%)",
+        "value_type": "count",
+        "parsed_numeric": 3383.0,
+        "parsed_secondary_numeric": 57.45,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 3,
+        "variable_name": "Estrogen use status",
+        "level_label": "Other",
+        "column_name": "YES n 734",
+        "raw_value": "572 (77.93%)",
+        "value_type": "count",
+        "parsed_numeric": 572.0,
+        "parsed_secondary_numeric": 77.93,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 1,
+        "variable_name": "Antihyperglycemic drug use status",
+        "level_label": "Yes",
+        "column_name": "Overall n 6623",
+        "raw_value": "147 (2.22%)",
+        "value_type": "count",
+        "parsed_numeric": 147.0,
+        "parsed_secondary_numeric": 2.22,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 2,
+        "variable_name": "Antihyperglycemic drug use status",
+        "level_label": "Yes",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "126 (2.14%)",
+        "value_type": "count",
+        "parsed_numeric": 126.0,
+        "parsed_secondary_numeric": 2.14,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 3,
+        "variable_name": "Antihyperglycemic drug use status",
+        "level_label": "Yes",
+        "column_name": "YES n 734",
+        "raw_value": "21 (2.86%)",
+        "value_type": "count",
+        "parsed_numeric": 21.0,
+        "parsed_secondary_numeric": 2.86,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 1,
+        "variable_name": "Antihyperglycemic drug use status",
+        "level_label": "No",
+        "column_name": "Overall n 6623",
+        "raw_value": "2543 (38.40%)",
+        "value_type": "count",
+        "parsed_numeric": 2543.0,
+        "parsed_secondary_numeric": 38.4,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 2,
+        "variable_name": "Antihyperglycemic drug use status",
+        "level_label": "No",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "2390 (40.58%)",
+        "value_type": "count",
+        "parsed_numeric": 2390.0,
+        "parsed_secondary_numeric": 40.58,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 3,
+        "variable_name": "Antihyperglycemic drug use status",
+        "level_label": "No",
+        "column_name": "YES n 734",
+        "raw_value": "153 (20.84%)",
+        "value_type": "count",
+        "parsed_numeric": 153.0,
+        "parsed_secondary_numeric": 20.84,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 1,
+        "variable_name": "Antihyperglycemic drug use status",
+        "level_label": "Other",
+        "column_name": "Overall n 6623",
+        "raw_value": "3933 (59.38%)",
+        "value_type": "count",
+        "parsed_numeric": 3933.0,
+        "parsed_secondary_numeric": 59.38,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 2,
+        "variable_name": "Antihyperglycemic drug use status",
+        "level_label": "Other",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "3373 (57.28%)",
+        "value_type": "count",
+        "parsed_numeric": 3373.0,
+        "parsed_secondary_numeric": 57.28,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 3,
+        "variable_name": "Antihyperglycemic drug use status",
+        "level_label": "Other",
+        "column_name": "YES n 734",
+        "raw_value": "560 (76.29%)",
+        "value_type": "count",
+        "parsed_numeric": 560.0,
+        "parsed_secondary_numeric": 76.29,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 18,
+        "col_idx": 1,
+        "variable_name": "Statin use status",
+        "level_label": "Yes",
+        "column_name": "Overall n 6623",
+        "raw_value": "432 (6.52%)",
+        "value_type": "count",
+        "parsed_numeric": 432.0,
+        "parsed_secondary_numeric": 6.52,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 18,
+        "col_idx": 2,
+        "variable_name": "Statin use status",
+        "level_label": "Yes",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "378 (6.42%)",
+        "value_type": "count",
+        "parsed_numeric": 378.0,
+        "parsed_secondary_numeric": 6.42,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 18,
+        "col_idx": 3,
+        "variable_name": "Statin use status",
+        "level_label": "Yes",
+        "column_name": "YES n 734",
+        "raw_value": "54 (7.36%)",
+        "value_type": "count",
+        "parsed_numeric": 54.0,
+        "parsed_secondary_numeric": 7.36,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 1,
+        "variable_name": "Statin use status",
+        "level_label": "No",
+        "column_name": "Overall n 6623",
+        "raw_value": "2543 (38.40%)",
+        "value_type": "count",
+        "parsed_numeric": 2543.0,
+        "parsed_secondary_numeric": 38.4,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 2,
+        "variable_name": "Statin use status",
+        "level_label": "No",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "2390 (40.58%)",
+        "value_type": "count",
+        "parsed_numeric": 2390.0,
+        "parsed_secondary_numeric": 40.58,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 3,
+        "variable_name": "Statin use status",
+        "level_label": "No",
+        "column_name": "YES n 734",
+        "raw_value": "153 (20.84%)",
+        "value_type": "count",
+        "parsed_numeric": 153.0,
+        "parsed_secondary_numeric": 20.84,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 1,
+        "variable_name": "Statin use status",
+        "level_label": "Other",
+        "column_name": "Overall n 6623",
+        "raw_value": "3648 (55.08%)",
+        "value_type": "count",
+        "parsed_numeric": 3648.0,
+        "parsed_secondary_numeric": 55.08,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 2,
+        "variable_name": "Statin use status",
+        "level_label": "Other",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "3121 (53.00%)",
+        "value_type": "count",
+        "parsed_numeric": 3121.0,
+        "parsed_secondary_numeric": 53.0,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 3,
+        "variable_name": "Statin use status",
+        "level_label": "Other",
+        "column_name": "YES n 734",
+        "raw_value": "527 (71.80%)",
+        "value_type": "count",
+        "parsed_numeric": 527.0,
+        "parsed_secondary_numeric": 71.8,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 1,
+        "variable_name": "Glucocorticosteroid use status",
+        "level_label": "Yes",
+        "column_name": "Overall n 6623",
+        "raw_value": "64 (0.97%)",
+        "value_type": "count",
+        "parsed_numeric": 64.0,
+        "parsed_secondary_numeric": 0.97,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 2,
+        "variable_name": "Glucocorticosteroid use status",
+        "level_label": "Yes",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "55 (0.93%)",
+        "value_type": "count",
+        "parsed_numeric": 55.0,
+        "parsed_secondary_numeric": 0.93,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 3,
+        "variable_name": "Glucocorticosteroid use status",
+        "level_label": "Yes",
+        "column_name": "YES n 734",
+        "raw_value": "9 (1.23%)",
+        "value_type": "count",
+        "parsed_numeric": 9.0,
+        "parsed_secondary_numeric": 1.23,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 1,
+        "variable_name": "Glucocorticosteroid use status",
+        "level_label": "No",
+        "column_name": "Overall n 6623",
+        "raw_value": "2543 (38.40%)",
+        "value_type": "count",
+        "parsed_numeric": 2543.0,
+        "parsed_secondary_numeric": 38.4,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 2,
+        "variable_name": "Glucocorticosteroid use status",
+        "level_label": "No",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "2390 (40.58%)",
+        "value_type": "count",
+        "parsed_numeric": 2390.0,
+        "parsed_secondary_numeric": 40.58,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 3,
+        "variable_name": "Glucocorticosteroid use status",
+        "level_label": "No",
+        "column_name": "YES n 734",
+        "raw_value": "153 (20.84%)",
+        "value_type": "count",
+        "parsed_numeric": 153.0,
+        "parsed_secondary_numeric": 20.84,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 1,
+        "variable_name": "Glucocorticosteroid use status",
+        "level_label": "Other",
+        "column_name": "Overall n 6623",
+        "raw_value": "4016 (60.64%)",
+        "value_type": "count",
+        "parsed_numeric": 4016.0,
+        "parsed_secondary_numeric": 60.64,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 2,
+        "variable_name": "Glucocorticosteroid use status",
+        "level_label": "Other",
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "3444 (58.48%)",
+        "value_type": "count",
+        "parsed_numeric": 3444.0,
+        "parsed_secondary_numeric": 58.48,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 3,
+        "variable_name": "Glucocorticosteroid use status",
+        "level_label": "Other",
+        "column_name": "YES n 734",
+        "raw_value": "572 (77.93%)",
+        "value_type": "count",
+        "parsed_numeric": 572.0,
+        "parsed_secondary_numeric": 77.93,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 1,
+        "variable_name": "Energy Median",
+        "level_label": null,
+        "column_name": "Overall n 6623",
+        "raw_value": "1912.00 (1453.00-2481.00)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 2,
+        "variable_name": "Energy Median",
+        "level_label": null,
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "1931.00 (1462.00-2499.50)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 3,
+        "variable_name": "Energy Median",
+        "level_label": null,
+        "column_name": "YES n 734",
+        "raw_value": "1802.00 (1386.38-2333.75)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 4,
+        "variable_name": "Energy Median",
+        "level_label": null,
+        "column_name": "P value",
+        "raw_value": "<\u20090.001",
+        "value_type": "text",
+        "parsed_numeric": 0.001,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 1,
+        "variable_name": "Total cholesterol Median",
+        "level_label": null,
+        "column_name": "Overall n 6623",
+        "raw_value": "183.00 (159.00-209.00)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 2,
+        "variable_name": "Total cholesterol Median",
+        "level_label": null,
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "183.00 (159.00-209.00)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 3,
+        "variable_name": "Total cholesterol Median",
+        "level_label": null,
+        "column_name": "YES n 734",
+        "raw_value": "183.00 (158.00-208.75)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 26,
+        "col_idx": 4,
+        "variable_name": "Total cholesterol Median",
+        "level_label": null,
+        "column_name": "P value",
+        "raw_value": "0.619",
+        "value_type": "text",
+        "parsed_numeric": 0.619,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 1,
+        "variable_name": "DII Median",
+        "level_label": null,
+        "column_name": "Overall n 6623",
+        "raw_value": "1.43 (0.10\u20132.55)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 2,
+        "variable_name": "DII Median",
+        "level_label": null,
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "1.40 (0.08\u20132.51)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 3,
+        "variable_name": "DII Median",
+        "level_label": null,
+        "column_name": "YES n 734",
+        "raw_value": "1.71 (0.32\u20132.84)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 4,
+        "variable_name": "DII Median",
+        "level_label": null,
+        "column_name": "P value",
+        "raw_value": "<\u20090.001",
+        "value_type": "text",
+        "parsed_numeric": 0.001,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 1,
+        "variable_name": "AHEI Median",
+        "level_label": null,
+        "column_name": "Overall n 6623",
+        "raw_value": "37.64 (29.91\u201346.05)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 2,
+        "variable_name": "AHEI Median",
+        "level_label": null,
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "37.64 (29.92\u201346.17)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 3,
+        "variable_name": "AHEI Median",
+        "level_label": null,
+        "column_name": "YES n 734",
+        "raw_value": "37.55 (29.90-45.53)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 4,
+        "variable_name": "AHEI Median",
+        "level_label": null,
+        "column_name": "P value",
+        "raw_value": "0.483",
+        "value_type": "text",
+        "parsed_numeric": 0.483,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 1,
+        "variable_name": "HEI2020 Median",
+        "level_label": null,
+        "column_name": "Overall n 6623",
+        "raw_value": "49.71 (41.73\u201358.83)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 2,
+        "variable_name": "HEI2020 Median",
+        "level_label": null,
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "49.84 (41.75\u201358.89)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 3,
+        "variable_name": "HEI2020 Median",
+        "level_label": null,
+        "column_name": "YES n 734",
+        "raw_value": "48.63 (41.55\u201358.32)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 4,
+        "variable_name": "HEI2020 Median",
+        "level_label": null,
+        "column_name": "P value",
+        "raw_value": "0.162",
+        "value_type": "text",
+        "parsed_numeric": 0.162,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 1,
+        "variable_name": "DASH Median",
+        "level_label": null,
+        "column_name": "Overall n 6623",
+        "raw_value": "26.50 (24.50\u201328.50)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 2,
+        "variable_name": "DASH Median",
+        "level_label": null,
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "26.50 (24.50\u201328.50)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 3,
+        "variable_name": "DASH Median",
+        "level_label": null,
+        "column_name": "YES n 734",
+        "raw_value": "26.50 (24.50\u201329.00)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 4,
+        "variable_name": "DASH Median",
+        "level_label": null,
+        "column_name": "P value",
+        "raw_value": "0.843",
+        "value_type": "text",
+        "parsed_numeric": 0.843,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 1,
+        "variable_name": "MED Median",
+        "level_label": null,
+        "column_name": "Overall n 6623",
+        "raw_value": "6.00 (5.00-6.50)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 2,
+        "variable_name": "MED Median",
+        "level_label": null,
+        "column_name": "Gallstones NO n 5889",
+        "raw_value": "6.00 (5.00-6.50)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 3,
+        "variable_name": "MED Median",
+        "level_label": null,
+        "column_name": "YES n 734",
+        "raw_value": "6.00 (5.00-6.50)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 4,
+        "variable_name": "MED Median",
+        "level_label": null,
+        "column_name": "P value",
+        "raw_value": "0.939",
+        "value_type": "text",
+        "parsed_numeric": 0.939,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.85
+      }
+    ],
+    "notes": [
+      "count_pct_group_share_mismatch: variable=Angina pectoris column=Gallstones NO n 5889 observed=100.0 expected=88.9",
+      "count_pct_group_share_mismatch: variable=Angina pectoris column=YES n 734 observed=100.0 expected=11.1",
+      "count_pct_group_share_mismatch: variable=Heart attack column=Gallstones NO n 5889 observed=100.0 expected=88.9",
+      "count_pct_group_share_mismatch: variable=Heart attack column=YES n 734 observed=100.0 expected=11.1",
+      "count_pct_group_share_mismatch: variable=Estrogen use status column=Gallstones NO n 5889 observed=100.0 expected=88.9",
+      "count_pct_group_share_mismatch: variable=Estrogen use status column=YES n 734 observed=100.0 expected=11.1",
+      "count_pct_group_share_mismatch: variable=Antihyperglycemic drug use status column=Gallstones NO n 5889 observed=100.0 expected=88.9",
+      "count_pct_group_share_mismatch: variable=Antihyperglycemic drug use status column=YES n 734 observed=100.0 expected=11.1",
+      "count_pct_group_share_mismatch: variable=Statin use status column=Gallstones NO n 5889 observed=100.0 expected=88.9",
+      "count_pct_group_share_mismatch: variable=Statin use status column=YES n 734 observed=100.0 expected=11.1",
+      "count_pct_group_share_mismatch: variable=Glucocorticosteroid use status column=Gallstones NO n 5889 observed=100.0 expected=88.9",
+      "count_pct_group_share_mismatch: variable=Glucocorticosteroid use status column=YES n 734 observed=100.0 expected=11.1"
+    ],
+    "overall_confidence": 0.7839
+  },
+  {
+    "table_id": "gallstones-p7-t0",
+    "title": "Table 2 Odds ratios (OR) and 95% confidence intervals (CI) for the Association between DII, AHEI, HEI2020, DASH, MED, and gallstone occurrence: a multivariable logistic regression analysis",
+    "caption": "Table 2 Odds ratios (OR) and 95% confidence intervals (CI) for the Association between DII, AHEI, HEI2020, DASH, MED, and gallstone occurrence: a multivariable logistic regression analysis",
+    "variables": [
+      {
+        "variable_name": "DII",
+        "variable_label": "DII",
+        "variable_type": "unknown",
+        "row_start": 2,
+        "row_end": 2,
+        "levels": [],
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Continuous",
+        "variable_label": "Continuous",
+        "variable_type": "continuous",
+        "row_start": 3,
+        "row_end": 3,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Categories",
+        "variable_label": "Categories",
+        "variable_type": "categorical",
+        "row_start": 4,
+        "row_end": 5,
+        "levels": [
+          {
+            "label": "Q1",
+            "row_idx": 5
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Q2",
+        "variable_label": "Q2",
+        "variable_type": "continuous",
+        "row_start": 6,
+        "row_end": 6,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Q3",
+        "variable_label": "Q3",
+        "variable_type": "continuous",
+        "row_start": 7,
+        "row_end": 7,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Q4",
+        "variable_label": "Q4",
+        "variable_type": "continuous",
+        "row_start": 8,
+        "row_end": 8,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "P for trend",
+        "variable_label": "P for trend",
+        "variable_type": "continuous",
+        "row_start": 9,
+        "row_end": 9,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "AHEI",
+        "variable_label": "AHEI",
+        "variable_type": "unknown",
+        "row_start": 10,
+        "row_end": 10,
+        "levels": [],
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Continuous",
+        "variable_label": "Continuous",
+        "variable_type": "continuous",
+        "row_start": 11,
+        "row_end": 11,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Categories",
+        "variable_label": "Categories",
+        "variable_type": "categorical",
+        "row_start": 12,
+        "row_end": 13,
+        "levels": [
+          {
+            "label": "Q1",
+            "row_idx": 13
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Q2",
+        "variable_label": "Q2",
+        "variable_type": "continuous",
+        "row_start": 14,
+        "row_end": 14,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Q3",
+        "variable_label": "Q3",
+        "variable_type": "continuous",
+        "row_start": 15,
+        "row_end": 15,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Q4",
+        "variable_label": "Q4",
+        "variable_type": "continuous",
+        "row_start": 16,
+        "row_end": 16,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "P for trend",
+        "variable_label": "P for trend",
+        "variable_type": "continuous",
+        "row_start": 17,
+        "row_end": 17,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "HEI2020",
+        "variable_label": "HEI2020",
+        "variable_type": "unknown",
+        "row_start": 18,
+        "row_end": 18,
+        "levels": [],
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Continuous",
+        "variable_label": "Continuous",
+        "variable_type": "continuous",
+        "row_start": 19,
+        "row_end": 19,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Categories",
+        "variable_label": "Categories",
+        "variable_type": "categorical",
+        "row_start": 20,
+        "row_end": 21,
+        "levels": [
+          {
+            "label": "Q1",
+            "row_idx": 21
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Q2",
+        "variable_label": "Q2",
+        "variable_type": "continuous",
+        "row_start": 22,
+        "row_end": 22,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Q3",
+        "variable_label": "Q3",
+        "variable_type": "continuous",
+        "row_start": 23,
+        "row_end": 23,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Q4",
+        "variable_label": "Q4",
+        "variable_type": "continuous",
+        "row_start": 24,
+        "row_end": 24,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "P for trend",
+        "variable_label": "P for trend",
+        "variable_type": "continuous",
+        "row_start": 25,
+        "row_end": 25,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "DASH",
+        "variable_label": "DASH",
+        "variable_type": "unknown",
+        "row_start": 26,
+        "row_end": 26,
+        "levels": [],
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Continuous",
+        "variable_label": "Continuous",
+        "variable_type": "continuous",
+        "row_start": 27,
+        "row_end": 27,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Categories",
+        "variable_label": "Categories",
+        "variable_type": "categorical",
+        "row_start": 28,
+        "row_end": 29,
+        "levels": [
+          {
+            "label": "Q1",
+            "row_idx": 29
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Q2",
+        "variable_label": "Q2",
+        "variable_type": "continuous",
+        "row_start": 30,
+        "row_end": 30,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Q3",
+        "variable_label": "Q3",
+        "variable_type": "continuous",
+        "row_start": 31,
+        "row_end": 31,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Q4",
+        "variable_label": "Q4",
+        "variable_type": "continuous",
+        "row_start": 32,
+        "row_end": 32,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "P for trend",
+        "variable_label": "P for trend",
+        "variable_type": "continuous",
+        "row_start": 33,
+        "row_end": 33,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "MED",
+        "variable_label": "MED",
+        "variable_type": "unknown",
+        "row_start": 34,
+        "row_end": 34,
+        "levels": [],
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Continuous",
+        "variable_label": "Continuous",
+        "variable_type": "continuous",
+        "row_start": 35,
+        "row_end": 35,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Categories",
+        "variable_label": "Categories",
+        "variable_type": "categorical",
+        "row_start": 36,
+        "row_end": 37,
+        "levels": [
+          {
+            "label": "Q1",
+            "row_idx": 37
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Q2",
+        "variable_label": "Q2",
+        "variable_type": "continuous",
+        "row_start": 38,
+        "row_end": 38,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Q3",
+        "variable_label": "Q3",
+        "variable_type": "continuous",
+        "row_start": 39,
+        "row_end": 39,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Q4",
+        "variable_label": "Q4",
+        "variable_type": "continuous",
+        "row_start": 40,
+        "row_end": 40,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "P for trend",
+        "variable_label": "P for trend",
+        "variable_type": "continuous",
+        "row_start": 41,
+        "row_end": 41,
+        "levels": [],
+        "confidence": 0.9
+      }
+    ],
+    "columns": [
+      {
+        "col_idx": 1,
+        "column_name": "Model 1",
+        "column_label": "Model 1",
+        "inferred_role": "overall",
+        "confidence": 0.84
+      },
+      {
+        "col_idx": 2,
+        "column_name": "Model 2",
+        "column_label": "Model 2",
+        "inferred_role": "group",
+        "confidence": 0.78
+      },
+      {
+        "col_idx": 3,
+        "column_name": "Model 3",
+        "column_label": "Model 3",
+        "inferred_role": "group",
+        "confidence": 0.78
+      },
+      {
+        "col_idx": 4,
+        "column_name": "Model 4",
+        "column_label": "Model 4",
+        "inferred_role": "group",
+        "confidence": 0.78
+      }
+    ],
+    "values": [
+      {
+        "row_idx": 3,
+        "col_idx": 1,
+        "variable_name": "Continuous",
+        "level_label": null,
+        "column_name": "Model 1",
+        "raw_value": "1.106 (1.054, 1.167)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 3,
+        "col_idx": 2,
+        "variable_name": "Continuous",
+        "level_label": null,
+        "column_name": "Model 2",
+        "raw_value": "1.067 (1.016, 1.120)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 3,
+        "col_idx": 3,
+        "variable_name": "Continuous",
+        "level_label": null,
+        "column_name": "Model 3",
+        "raw_value": "1.099 (1.032, 1.170)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 3,
+        "col_idx": 4,
+        "variable_name": "Continuous",
+        "level_label": null,
+        "column_name": "Model 4",
+        "raw_value": "1.086 (1.017, 1.159)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 1,
+        "variable_name": "Categories",
+        "level_label": "Q1",
+        "column_name": "Model 1",
+        "raw_value": "Reference",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 2,
+        "variable_name": "Categories",
+        "level_label": "Q1",
+        "column_name": "Model 2",
+        "raw_value": "Reference",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 3,
+        "variable_name": "Categories",
+        "level_label": "Q1",
+        "column_name": "Model 3",
+        "raw_value": "Reference",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 4,
+        "variable_name": "Categories",
+        "level_label": "Q1",
+        "column_name": "Model 4",
+        "raw_value": "Reference",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 1,
+        "variable_name": "Q2",
+        "level_label": null,
+        "column_name": "Model 1",
+        "raw_value": "1.050 (0.835, 1.320)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 2,
+        "variable_name": "Q2",
+        "level_label": null,
+        "column_name": "Model 2",
+        "raw_value": "1.013 (0.801, 1.282)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 3,
+        "variable_name": "Q2",
+        "level_label": null,
+        "column_name": "Model 3",
+        "raw_value": "1.064 (0.833, 1.358)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 6,
+        "col_idx": 4,
+        "variable_name": "Q2",
+        "level_label": null,
+        "column_name": "Model 4",
+        "raw_value": "1.041 (0.812, 1.334)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 1,
+        "variable_name": "Q3",
+        "level_label": null,
+        "column_name": "Model 1",
+        "raw_value": "1.127 (0.899, 1.412)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 2,
+        "variable_name": "Q3",
+        "level_label": null,
+        "column_name": "Model 2",
+        "raw_value": "1.041 (0.825, 1.317)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 3,
+        "variable_name": "Q3",
+        "level_label": null,
+        "column_name": "Model 3",
+        "raw_value": "1.087 (0.843, 1.403)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 4,
+        "variable_name": "Q3",
+        "level_label": null,
+        "column_name": "Model 4",
+        "raw_value": "1.072 (0.827, 1.391)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 1,
+        "variable_name": "Q4",
+        "level_label": null,
+        "column_name": "Model 1",
+        "raw_value": "1.534 (1.238, 1.901)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 2,
+        "variable_name": "Q4",
+        "level_label": null,
+        "column_name": "Model 2",
+        "raw_value": "1.311 (1.048, 1.640)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 3,
+        "variable_name": "Q4",
+        "level_label": null,
+        "column_name": "Model 3",
+        "raw_value": "1.487 (1.130, 1.96)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 4,
+        "variable_name": "Q4",
+        "level_label": null,
+        "column_name": "Model 4",
+        "raw_value": "1.436 (1.080, 1.911)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 1,
+        "variable_name": "P for trend",
+        "level_label": null,
+        "column_name": "Model 1",
+        "raw_value": "< 0.001",
+        "value_type": "text",
+        "parsed_numeric": 0.001,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 2,
+        "variable_name": "P for trend",
+        "level_label": null,
+        "column_name": "Model 2",
+        "raw_value": "0.021",
+        "value_type": "text",
+        "parsed_numeric": 0.021,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 3,
+        "variable_name": "P for trend",
+        "level_label": null,
+        "column_name": "Model 3",
+        "raw_value": "0.008",
+        "value_type": "text",
+        "parsed_numeric": 0.008,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 9,
+        "col_idx": 4,
+        "variable_name": "P for trend",
+        "level_label": null,
+        "column_name": "Model 4",
+        "raw_value": "0.021",
+        "value_type": "text",
+        "parsed_numeric": 0.021,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 1,
+        "variable_name": "Continuous",
+        "level_label": null,
+        "column_name": "Model 1",
+        "raw_value": "0.998 (0.991, 1.005)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 2,
+        "variable_name": "Continuous",
+        "level_label": null,
+        "column_name": "Model 2",
+        "raw_value": "0.983 (0.974, 0.990)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 3,
+        "variable_name": "Continuous",
+        "level_label": null,
+        "column_name": "Model 3",
+        "raw_value": "0.987 (0.980, 0.994)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 4,
+        "variable_name": "Continuous",
+        "level_label": null,
+        "column_name": "Model 4",
+        "raw_value": "0.988 (0.981, 0.996)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 1,
+        "variable_name": "Categories",
+        "level_label": "Q1",
+        "column_name": "Model 1",
+        "raw_value": "Reference",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 2,
+        "variable_name": "Categories",
+        "level_label": "Q1",
+        "column_name": "Model 2",
+        "raw_value": "Reference",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 3,
+        "variable_name": "Categories",
+        "level_label": "Q1",
+        "column_name": "Model 3",
+        "raw_value": "Reference",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 4,
+        "variable_name": "Categories",
+        "level_label": "Q1",
+        "column_name": "Model 4",
+        "raw_value": "Reference",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 1,
+        "variable_name": "Q2",
+        "level_label": null,
+        "column_name": "Model 1",
+        "raw_value": "1.013 (0.816, 1.257)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 2,
+        "variable_name": "Q2",
+        "level_label": null,
+        "column_name": "Model 2",
+        "raw_value": "0.8196 (0.6546, 1.026)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 3,
+        "variable_name": "Q2",
+        "level_label": null,
+        "column_name": "Model 3",
+        "raw_value": "0.844 (0.672, 1.061)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 14,
+        "col_idx": 4,
+        "variable_name": "Q2",
+        "level_label": null,
+        "column_name": "Model 4",
+        "raw_value": "0.840 (0.666, 1.059)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 1,
+        "variable_name": "Q3",
+        "level_label": null,
+        "column_name": "Model 1",
+        "raw_value": "1.043 (0.841, 1.293)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 2,
+        "variable_name": "Q3",
+        "level_label": null,
+        "column_name": "Model 2",
+        "raw_value": "0.730 (0.582, 0.914)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 3,
+        "variable_name": "Q3",
+        "level_label": null,
+        "column_name": "Model 3",
+        "raw_value": "0.761 (0.605, 0.958)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 4,
+        "variable_name": "Q3",
+        "level_label": null,
+        "column_name": "Model 4",
+        "raw_value": "0.767 (0.605, 0.971)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 1,
+        "variable_name": "Q4",
+        "level_label": null,
+        "column_name": "Model 1",
+        "raw_value": "0.933 (0.749, 1.163)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 2,
+        "variable_name": "Q4",
+        "level_label": null,
+        "column_name": "Model 2",
+        "raw_value": "0.589 (0.466, 0.744)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 3,
+        "variable_name": "Q4",
+        "level_label": null,
+        "column_name": "Model 3",
+        "raw_value": "0.671 (0.528, 0.852)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 4,
+        "variable_name": "Q4",
+        "level_label": null,
+        "column_name": "Model 4",
+        "raw_value": "0.695 (0.540, 0.895)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 1,
+        "variable_name": "P for trend",
+        "level_label": null,
+        "column_name": "Model 1",
+        "raw_value": "0.583",
+        "value_type": "text",
+        "parsed_numeric": 0.583,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 2,
+        "variable_name": "P for trend",
+        "level_label": null,
+        "column_name": "Model 2",
+        "raw_value": "< 0.001",
+        "value_type": "text",
+        "parsed_numeric": 0.001,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 3,
+        "variable_name": "P for trend",
+        "level_label": null,
+        "column_name": "Model 3",
+        "raw_value": "< 0.001",
+        "value_type": "text",
+        "parsed_numeric": 0.001,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 4,
+        "variable_name": "P for trend",
+        "level_label": null,
+        "column_name": "Model 4",
+        "raw_value": "0.004",
+        "value_type": "text",
+        "parsed_numeric": 0.004,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 1,
+        "variable_name": "Continuous",
+        "level_label": null,
+        "column_name": "Model 1",
+        "raw_value": "0.996 (0.989, 1.002)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 2,
+        "variable_name": "Continuous",
+        "level_label": null,
+        "column_name": "Model 2",
+        "raw_value": "0.983 (0.977, 0.990)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 3,
+        "variable_name": "Continuous",
+        "level_label": null,
+        "column_name": "Model 3",
+        "raw_value": "0.987 (0.980, 0.994)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 4,
+        "variable_name": "Continuous",
+        "level_label": null,
+        "column_name": "Model 4",
+        "raw_value": "0.988 (0.981, 0.995)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 1,
+        "variable_name": "Categories",
+        "level_label": "Q1",
+        "column_name": "Model 1",
+        "raw_value": "Reference",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 2,
+        "variable_name": "Categories",
+        "level_label": "Q1",
+        "column_name": "Model 2",
+        "raw_value": "Reference",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 3,
+        "variable_name": "Categories",
+        "level_label": "Q1",
+        "column_name": "Model 3",
+        "raw_value": "Reference",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 4,
+        "variable_name": "Categories",
+        "level_label": "Q1",
+        "column_name": "Model 4",
+        "raw_value": "Reference",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 1,
+        "variable_name": "Q2",
+        "level_label": null,
+        "column_name": "Model 1",
+        "raw_value": "1.061 (0.858, 1.310)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 2,
+        "variable_name": "Q2",
+        "level_label": null,
+        "column_name": "Model 2",
+        "raw_value": "0.915 (0.735, 1.140)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 3,
+        "variable_name": "Q2",
+        "level_label": null,
+        "column_name": "Model 3",
+        "raw_value": "0.935 (0.748, 1.169)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 22,
+        "col_idx": 4,
+        "variable_name": "Q2",
+        "level_label": null,
+        "column_name": "Model 4",
+        "raw_value": "0.945 (0.755, 1.185)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 1,
+        "variable_name": "Q3",
+        "level_label": null,
+        "column_name": "Model 1",
+        "raw_value": "0.877 (0.704, 1.092)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 2,
+        "variable_name": "Q3",
+        "level_label": null,
+        "column_name": "Model 2",
+        "raw_value": "0.676 (0.538, 0.850)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 3,
+        "variable_name": "Q3",
+        "level_label": null,
+        "column_name": "Model 3",
+        "raw_value": "0.704 (0.558, 0.889)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 4,
+        "variable_name": "Q3",
+        "level_label": null,
+        "column_name": "Model 4",
+        "raw_value": "0.729 (0.574, 0.925)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 1,
+        "variable_name": "Q4",
+        "level_label": null,
+        "column_name": "Model 1",
+        "raw_value": "0.912 (0.733, 1.133)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 2,
+        "variable_name": "Q4",
+        "level_label": null,
+        "column_name": "Model 2",
+        "raw_value": "0.619 (0.491, 0.779)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 3,
+        "variable_name": "Q4",
+        "level_label": null,
+        "column_name": "Model 3",
+        "raw_value": "0.689 (0.545, 0.871)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 4,
+        "variable_name": "Q4",
+        "level_label": null,
+        "column_name": "Model 4",
+        "raw_value": "0.718 (0.563, 0.914)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 1,
+        "variable_name": "P for trend",
+        "level_label": null,
+        "column_name": "Model 1",
+        "raw_value": "0.206",
+        "value_type": "text",
+        "parsed_numeric": 0.206,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 2,
+        "variable_name": "P for trend",
+        "level_label": null,
+        "column_name": "Model 2",
+        "raw_value": "< 0.001",
+        "value_type": "text",
+        "parsed_numeric": 0.001,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 3,
+        "variable_name": "P for trend",
+        "level_label": null,
+        "column_name": "Model 3",
+        "raw_value": "< 0.001",
+        "value_type": "text",
+        "parsed_numeric": 0.001,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 4,
+        "variable_name": "P for trend",
+        "level_label": null,
+        "column_name": "Model 4",
+        "raw_value": "0.002",
+        "value_type": "text",
+        "parsed_numeric": 0.002,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 1,
+        "variable_name": "Continuous",
+        "level_label": null,
+        "column_name": "Model 1",
+        "raw_value": "1.001(0.974, 1.026)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 2,
+        "variable_name": "Continuous",
+        "level_label": null,
+        "column_name": "Model 2",
+        "raw_value": "0.943 (0.918, 0.970)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 3,
+        "variable_name": "Continuous",
+        "level_label": null,
+        "column_name": "Model 3",
+        "raw_value": "0.961 (0.9341, 0.990)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 4,
+        "variable_name": "Continuous",
+        "level_label": null,
+        "column_name": "Model 4",
+        "raw_value": "0.970 (0.943, 0.998)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 1,
+        "variable_name": "Categories",
+        "level_label": "Q1",
+        "column_name": "Model 1",
+        "raw_value": "Reference",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 2,
+        "variable_name": "Categories",
+        "level_label": "Q1",
+        "column_name": "Model 2",
+        "raw_value": "Reference",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 3,
+        "variable_name": "Categories",
+        "level_label": "Q1",
+        "column_name": "Model 3",
+        "raw_value": "Reference",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 4,
+        "variable_name": "Categories",
+        "level_label": "Q1",
+        "column_name": "Model 4",
+        "raw_value": "Reference",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 1,
+        "variable_name": "Q2",
+        "level_label": null,
+        "column_name": "Model 1",
+        "raw_value": "1.203 (0.962, 1.506)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 2,
+        "variable_name": "Q2",
+        "level_label": null,
+        "column_name": "Model 2",
+        "raw_value": "0.988 (0.783, 1.247)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 3,
+        "variable_name": "Q2",
+        "level_label": null,
+        "column_name": "Model 3",
+        "raw_value": "1.052 (0.830, 1.333)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 4,
+        "variable_name": "Q2",
+        "level_label": null,
+        "column_name": "Model 4",
+        "raw_value": "1.084 (0.853, 1.377)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 1,
+        "variable_name": "Q3",
+        "level_label": null,
+        "column_name": "Model 1",
+        "raw_value": "1.055 (0.837, 1.329)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 2,
+        "variable_name": "Q3",
+        "level_label": null,
+        "column_name": "Model 2",
+        "raw_value": "0.737 (0.578, 0.938)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 3,
+        "variable_name": "Q3",
+        "level_label": null,
+        "column_name": "Model 3",
+        "raw_value": "0.812 (0.634, 1.034)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 31,
+        "col_idx": 4,
+        "variable_name": "Q3",
+        "level_label": null,
+        "column_name": "Model 4",
+        "raw_value": "0.847 (0.6577, 1.090)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 32,
+        "col_idx": 1,
+        "variable_name": "Q4",
+        "level_label": null,
+        "column_name": "Model 1",
+        "raw_value": "1.078 (0.866, 1.342)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 32,
+        "col_idx": 2,
+        "variable_name": "Q4",
+        "level_label": null,
+        "column_name": "Model 2",
+        "raw_value": "0.669 (0.529, 0.844)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 32,
+        "col_idx": 3,
+        "variable_name": "Q4",
+        "level_label": null,
+        "column_name": "Model 3",
+        "raw_value": "0.770 (0.605, 0.979)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 32,
+        "col_idx": 4,
+        "variable_name": "Q4",
+        "level_label": null,
+        "column_name": "Model 4",
+        "raw_value": "0.835 (0.6495, 1.074)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 1,
+        "variable_name": "P for trend",
+        "level_label": null,
+        "column_name": "Model 1",
+        "raw_value": "0.797",
+        "value_type": "text",
+        "parsed_numeric": 0.797,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 2,
+        "variable_name": "P for trend",
+        "level_label": null,
+        "column_name": "Model 2",
+        "raw_value": "< 0.001",
+        "value_type": "text",
+        "parsed_numeric": 0.001,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 3,
+        "variable_name": "P for trend",
+        "level_label": null,
+        "column_name": "Model 3",
+        "raw_value": "0.009",
+        "value_type": "text",
+        "parsed_numeric": 0.009,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 4,
+        "variable_name": "P for trend",
+        "level_label": null,
+        "column_name": "Model 4",
+        "raw_value": "0.065",
+        "value_type": "text",
+        "parsed_numeric": 0.065,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 35,
+        "col_idx": 1,
+        "variable_name": "Continuous",
+        "level_label": null,
+        "column_name": "Model 1",
+        "raw_value": "0.993 (0.904, 1.089)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 35,
+        "col_idx": 2,
+        "variable_name": "Continuous",
+        "level_label": null,
+        "column_name": "Model 2",
+        "raw_value": "0.825 (0.753, 0.914)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 35,
+        "col_idx": 3,
+        "variable_name": "Continuous",
+        "level_label": null,
+        "column_name": "Model 3",
+        "raw_value": "0.896 (0.819, 0.980)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 35,
+        "col_idx": 4,
+        "variable_name": "Continuous",
+        "level_label": null,
+        "column_name": "Model 4",
+        "raw_value": "0.904 (0.822, 0.994)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 37,
+        "col_idx": 1,
+        "variable_name": "Categories",
+        "level_label": "Q1",
+        "column_name": "Model 1",
+        "raw_value": "Reference",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 37,
+        "col_idx": 2,
+        "variable_name": "Categories",
+        "level_label": "Q1",
+        "column_name": "Model 2",
+        "raw_value": "Reference",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 37,
+        "col_idx": 3,
+        "variable_name": "Categories",
+        "level_label": "Q1",
+        "column_name": "Model 3",
+        "raw_value": "Reference",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 37,
+        "col_idx": 4,
+        "variable_name": "Categories",
+        "level_label": "Q1",
+        "column_name": "Model 4",
+        "raw_value": "Reference",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 38,
+        "col_idx": 1,
+        "variable_name": "Q2",
+        "level_label": null,
+        "column_name": "Model 1",
+        "raw_value": "0.951 (0.734, 1.233)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 38,
+        "col_idx": 2,
+        "variable_name": "Q2",
+        "level_label": null,
+        "column_name": "Model 2",
+        "raw_value": "0.769 (0.588, 1.007)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 38,
+        "col_idx": 3,
+        "variable_name": "Q2",
+        "level_label": null,
+        "column_name": "Model 3",
+        "raw_value": "0.798 (0.607, 1.049)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 38,
+        "col_idx": 4,
+        "variable_name": "Q2",
+        "level_label": null,
+        "column_name": "Model 4",
+        "raw_value": "0.803 (0.609, 1.058)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 39,
+        "col_idx": 1,
+        "variable_name": "Q3",
+        "level_label": null,
+        "column_name": "Model 1",
+        "raw_value": "0.921 (0.692, 1.225)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 39,
+        "col_idx": 2,
+        "variable_name": "Q3",
+        "level_label": null,
+        "column_name": "Model 2",
+        "raw_value": "0.667 (0.495, 0.900)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 39,
+        "col_idx": 3,
+        "variable_name": "Q3",
+        "level_label": null,
+        "column_name": "Model 3",
+        "raw_value": "0.704 (0.520, 0.954)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 39,
+        "col_idx": 4,
+        "variable_name": "Q3",
+        "level_label": null,
+        "column_name": "Model 4",
+        "raw_value": "0.700 (0.514, 0.953)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 40,
+        "col_idx": 1,
+        "variable_name": "Q4",
+        "level_label": null,
+        "column_name": "Model 1",
+        "raw_value": "0.956 (0.739, 1.238)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 40,
+        "col_idx": 2,
+        "variable_name": "Q4",
+        "level_label": null,
+        "column_name": "Model 2",
+        "raw_value": "0.602 (0.458, 0.791)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 40,
+        "col_idx": 3,
+        "variable_name": "Q4",
+        "level_label": null,
+        "column_name": "Model 3",
+        "raw_value": "0.667 (0.505, 0.882)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 40,
+        "col_idx": 4,
+        "variable_name": "Q4",
+        "level_label": null,
+        "column_name": "Model 4",
+        "raw_value": "0.698 (0.524, 0.930)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 41,
+        "col_idx": 1,
+        "variable_name": "P for trend",
+        "level_label": null,
+        "column_name": "Model 1",
+        "raw_value": "0.837",
+        "value_type": "text",
+        "parsed_numeric": 0.837,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 41,
+        "col_idx": 2,
+        "variable_name": "P for trend",
+        "level_label": null,
+        "column_name": "Model 2",
+        "raw_value": "< 0.001",
+        "value_type": "text",
+        "parsed_numeric": 0.001,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 41,
+        "col_idx": 3,
+        "variable_name": "P for trend",
+        "level_label": null,
+        "column_name": "Model 3",
+        "raw_value": "0.005",
+        "value_type": "text",
+        "parsed_numeric": 0.005,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 41,
+        "col_idx": 4,
+        "variable_name": "P for trend",
+        "level_label": null,
+        "column_name": "Model 4",
+        "raw_value": "0.020",
+        "value_type": "text",
+        "parsed_numeric": 0.02,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      }
+    ],
+    "notes": [],
+    "overall_confidence": 0.5536
+  },
+  {
+    "table_id": "gallstones-p8-t0",
+    "title": "Table 3 Threshold Effect Analysis of the Association between DII and gallstones using a two-Piecewise Linear Regression Model: identification of thresholds",
+    "caption": "Table 3 Threshold Effect Analysis of the Association between DII and gallstones using a two-Piecewise Linear Regression Model: identification of thresholds",
+    "variables": [
+      {
+        "variable_name": "DII",
+        "variable_label": "DII",
+        "variable_type": "unknown",
+        "row_start": 2,
+        "row_end": 2,
+        "levels": [],
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Fitting by standard linear model Fitting by two piecewise linear model",
+        "variable_label": "Fitting by standard linear model\nFitting by two-piecewise linear model",
+        "variable_type": "continuous",
+        "row_start": 3,
+        "row_end": 3,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Infection point 1 80",
+        "variable_label": "Infection point\n< 1.80",
+        "variable_type": "unknown",
+        "row_start": 4,
+        "row_end": 4,
+        "levels": [],
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "1 80",
+        "variable_label": "> 1.80",
+        "variable_type": "continuous",
+        "row_start": 5,
+        "row_end": 5,
+        "levels": [],
+        "confidence": 0.9
+      }
+    ],
+    "columns": [
+      {
+        "col_idx": 1,
+        "column_name": "Adjust OR 95 CI",
+        "column_label": "Adjust OR (95% CI)",
+        "inferred_role": "overall",
+        "confidence": 0.84
+      },
+      {
+        "col_idx": 2,
+        "column_name": "P value",
+        "column_label": "P-value",
+        "inferred_role": "p_value",
+        "confidence": 0.97
+      }
+    ],
+    "values": [
+      {
+        "row_idx": 3,
+        "col_idx": 1,
+        "variable_name": "Fitting by standard linear model Fitting by two piecewise linear model",
+        "level_label": null,
+        "column_name": "Adjust OR 95 CI",
+        "raw_value": "1.086 (1.017, 1.159)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 3,
+        "col_idx": 2,
+        "variable_name": "Fitting by standard linear model Fitting by two piecewise linear model",
+        "level_label": null,
+        "column_name": "P value",
+        "raw_value": "0.014",
+        "value_type": "text",
+        "parsed_numeric": 0.014,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 1,
+        "variable_name": "Infection point 1 80",
+        "level_label": null,
+        "column_name": "Adjust OR 95 CI",
+        "raw_value": "1.842\n1.034 (0.955, 1.121)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 2,
+        "variable_name": "Infection point 1 80",
+        "level_label": null,
+        "column_name": "P value",
+        "raw_value": "0.408",
+        "value_type": "text",
+        "parsed_numeric": 0.408,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 1,
+        "variable_name": "1 80",
+        "level_label": null,
+        "column_name": "Adjust OR 95 CI",
+        "raw_value": "1.275 (1.074, 1.513)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 2,
+        "variable_name": "1 80",
+        "level_label": null,
+        "column_name": "P value",
+        "raw_value": "0.006",
+        "value_type": "text",
+        "parsed_numeric": 0.006,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.85
+      }
+    ],
+    "notes": [],
+    "overall_confidence": 0.705
+  }
+]

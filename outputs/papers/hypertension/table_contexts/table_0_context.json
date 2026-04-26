@@ -1,0 +1,88 @@
+{
+  "table_id": "hypertension-p5-t0",
+  "table_index": 0,
+  "table_label": "Table 1",
+  "title": "Table 1 Baseline characteristics of participants by lifestyle categories among 24,453 US adults in NHANES (2007\u20132018)",
+  "caption": "Table 1 Baseline characteristics of participants by lifestyle categories among 24,453 US adults in NHANES (2007\u20132018)",
+  "row_terms": [
+    "physically active physically inactive physically inactive but physically",
+    "Age (years), mean (95% CI)",
+    "Gender",
+    "Races/ethnicity",
+    "Educations Levels",
+    "Smoking status",
+    "Alcohol drinker",
+    "Marital",
+    "Poverty, mean",
+    "BMI (kg/m2), mean (95% CI)",
+    "Total cholesterol (mg/dl), mean",
+    "HDL-C (mg/dl), mean (95% CI)",
+    "Hei-2015, (Score), mean (95% CI)",
+    "Hei-2015 levels, (Score)",
+    "PA, Met-minutes/week, mean (95%",
+    "week)"
+  ],
+  "column_terms": [
+    "categories, n (weighted Healthy diet",
+    "%) and Healthy",
+    "diet but",
+    "Unhealthy",
+    "diet",
+    "and Unhealthy"
+  ],
+  "grouping_terms": [
+    "lifestyle categories among 24,453 US adults in NHANES (2007-2018)",
+    "lifestyle categories among 24 453 US adults in NHANES 2007 2018"
+  ],
+  "methods_like_section_ids": [
+    "section_6",
+    "section_7",
+    "section_12",
+    "section_13"
+  ],
+  "results_like_section_ids": [
+    "section_14"
+  ],
+  "passages": [
+    {
+      "passage_id": "section_13_p0",
+      "section_id": "section_13",
+      "heading": "**Statistical analysis**",
+      "text": "Data in this study were weighted using dietary interview sample weights provided by NHANES to account for the complexity of the NHANES database survey design [35]. All statistical analyses were performed using SAS 9.4 (version 9.4, SAS Institute) and R Studio software (4.2.1), and a two-sided _P_ < 0.05 was considered statistically significant. Continuous variables were described as mean and Confidence interval (95%CI), and categorical variables were expressed as proportions (%). Variance and chisquared tests were used to analyze differences between groups [36]. To assess whether PA and HEI-2015 could modify the risk of hypertension, we calculated interactions on multiplicative and additive scales. Considering the exclusion of 4,979 participants with missing covariates, we used multiple interpolations for further analysis of 24,453 participants. Multiple interpolations were performed using Surveyimpute and MIANALYZE methods. The association between PA and HEI-2015 and hypertension was assessed using multivariable logistic regression analyses, and the regression models were well-fitted (Supplementary Table 1) Results were expressed as odds ratio (OR) and 95% confidence interval (95% CI). Model 1 was adjusted for age, gender, and race. Model 2 was adjusted for model 1 plus education levels, poverty, marital, alcohol drinker (never, former, or now), and smoking status. And model 3 was further adjusted for model 2 plus diabetes, hyperlipidemia, BMI, total cholesterol, and HDL-C. We investigated the nonlinear association between PA and HEI-2015 and hypertension by including restricted cubic spline curves with nodes at the 10th, 50th, and 90th quartiles in the fully adjusted model. In addition, we used the data after excluding the missing values ( _n_ = 4979) and repeated the analysis to assess the robustness of our results.",
+      "match_type": "table_reference",
+      "score": 1.0
+    },
+    {
+      "passage_id": "section_14_p0",
+      "section_id": "section_14",
+      "heading": "**Results**",
+      "text": "A total of 24,453 participants were enrolled in the main analysis, including 8570 hypertension. The weighted HEI-2015 was 54.2, and the PA level was 3762.36 Metminutes/week. The mean age was 47.73 years, of which 49.17% were female. According to the lifestyle categories, age, poverty, gender, race/ethnicity, education levels, smoking status, alcohol drinker, marital, hyperlipidemia, diabetes, BMI, and HDL-C have significant differences between groups ( _P_ < 0.05) (Table 1).",
+      "match_type": "table_reference",
+      "score": 1.0
+    },
+    {
+      "passage_id": "section_18_p0",
+      "section_id": "section_18",
+      "heading": "**Subgroup analyses and sensitivity analyses**",
+      "text": "The main analysis of the lifestyle-hypertension association based on demographic subgroups showed similar ORs within each group after adjusting for covariates (Supplementary Table 3). Results indicated heterogeneity in the joint association between lifestyle and hypertension between Races/ethnicity. There was a statistically significant difference in the joint association between lifestyle and hypertension among non-Hispanic whites (0.56,95% CI 0.46-0.68) and Mexican-Americans (0.66, 95% CI 0.48-0.91) who were healthy diet but physically Zhu and Wang _BMC Public Health (2024) 24:855_ Page 5 of 9 **Table 1** Baseline characteristics of participants by lifestyle categories among 24,453 US adults in NHANES (2007-2018) |**Characteristics**|**Lifestyle categories, n (weighted %)**<br>**Total**<br>**Healthy diet and**<br>**physically active**<br>**Healthy diet but**<br>**physically inactive**<br>**Unhealthy diet and**<br>**physically inactive**<br>**Unhealthy diet**<br>**but physically**<br>**active**<br>**_P_ value**| |---|---| |**Hypertension**<br>**Age (years),**mean (95% CI)<br>**Gender**<br>Male<br>Female<br>**Races/ethnicity**<br>Non-Hispanic white<br>Non-Hispanic black<br>Mexican American<br>Other Race<br>**Educations Levels**<br>Below high school<br>High School<br>College/Above<br>**Smoking status**<br>Never<br>Former<br>Now<br>**Alcohol drinker**<br>Never<br>Former<br>Now<br>**Marital**<br>Widowed or divorced or separated<br>Never married<br>Married or living with a partner<br>**Poverty,**mean (95% CI)<br>**Hyperlipidemia**<br>**Diabetes**<br>**BMI (kg/m2),**mean (95% CI)<br>**Total cholesterol (mg/dl),**mean (95% CI)<br>**HDL-C (mg/dl),**mean (95% CI)<br>**Hei-2015, (Score),**mean (95% CI)<br>**Hei-2015 levels, (Score)**<br>< 53.5<br>>= 53.5<br>**PA, Met-minutes/week,**mean (95% CI)<br>**Physical activity levels, (Met-minutes/**<br>**week)**<br>Inactive (< 600)<br>Increased PA (>= 600)|10,938(38.5)<br>3001(33.1)<br>2731(50.0)<br>2653(47.6)<br>2553(32.7)<br>< 0.001<br>48.2(47.6,48.7)<br>48.2(47.3,49.1)<br>56.1(55.3,56.9)<br>50.6(49.8,51.4)<br>42.6(41.9,43.2)<br>< 0.001<br>< 0.001<br>12,204(50.1)<br>3893(49.6)<br>1845(36.0)<br>2263(44.5)<br>4203(61.4)<br>12,249(49.9)<br>3685(50.4)<br>3087(64.0)<br>2769(55.5)<br>2708(38.6)<br>< 0.001<br>10,513(66.8)<br>3257(69.4)<br>1899(62.6)<br>2198(65.2)<br>3159(67.2)<br>5249(11.1)<br>1383(8.7)<br>1005(10.6)<br>1296(14.4)<br>1565(11.9)<br>3469(8.5)<br>1047(7.5)<br>755(9.0)<br>717(8.5)<br>950(9.2)<br>5222(13.7)<br>1891(14.4)<br>1273(17.7)<br>821(11.9)<br>1237(11.8)<br>< 0.001<br>5643(14.8)<br>1296(9.8)<br>1359(17.9)<br>1520(21.6)<br>1468(14.6)<br>5601(22.9)<br>1330(17.0)<br>1074(21.3)<br>1321(28.3)<br>1876(26.9)<br>13,184(62.2)<br>4946(73.3)<br>2491(60.8)<br>2185(50.0)<br>3562(58.5)<br>< 0.001<br>13,642(56.4)<br>4691(61.3)<br>2983(60.1)<br>2484(51.0)<br>3484(52.4)<br>6172(25.2)<br>2011(27.3)<br>1374(29.1)<br>1263(23.2)<br>1524(22.0)<br>4627(18.4)<br>871(11.4)<br>574(10.8)<br>1281(25.8)<br>1901(25.6)<br>< 0.001<br>3210(10.4)<br>940(10.0)<br>926(16.9)<br>692(12.3)<br>652(9.1)<br>3721(12.3)<br>879(9.8)<br>901(16.6)<br>1033(19.0)<br>908(11.8)<br>15,480(69.9)<br>5210(80.2)<br>2633(66.5)<br>2822(68.7)<br>4815(79.1)<br>< 0.001<br>5513(18.1)<br>1422(15.2)<br>1475(24.6)<br>1365(22.1)<br>1251(15.4)<br>4252(18.5)<br>1279(18.0)<br>502(11.1)<br>779(14.9)<br>1692(25.2)<br>14,678(63.4)<br>4874(66.8)<br>2953(64.3)<br>2886(63.0)<br>3965(59.4)<br>3.0(2.9,3.1)<br>3.4(3.3,3.5)<br>3.0(2.9,3.1)<br>2.7(2.6,2.8)<br>2.9(2.8,2.9)<br>< 0.001<br>17,274(69.2)<br>5164(66.4)<br>3748(74.9)<br>3783(75.3)<br>4579(65.5)<br>< 0.001<br>3754(11.2)<br>887(8.3)<br>1133(17.4)<br>1003(15.4)<br>731(8.4)<br>< 0.001<br>29.1(28.9,29.3)<br>27.8(27.6,28.0)<br>29.8(29.5,30.2)<br>30.7(30.3,31.0)<br>29.3(29.0,29.5)<br>< 0.001<br>194.0<br>(193.0,195.1)<br>194.6<br>(193.0,196.3)<br>195.2<br>(193.0,197.3)<br>194.5<br>(192.6,196.5)<br>192.4<br>(190.6,194.2)<br>0.1<br>53.0(52.6,53.5)<br>56.2(55.5,56.9)<br>54.1(53.4,54.9)<br>50.4(49.7,51.1)<br>50.6(50.0,51.2)<br>< 0.001<br>54.1(53.7,54.6)<br>65.5(65.2,65.9)<br>63.9(63.6,64.3)<br>43.2(42.9,43.5)<br>43.2(42.9,43.5)<br>< 0.001<br>< 0.001<br>11,943(49.9)<br>0(0.0)<br>0(0.0)<br>5032(100.0)<br>6911(100.0)<br>12,510(50.1)<br>7578(100.0)<br>4932(100.0)<br>0(0.0)<br>0(0.0)<br>3638.4<br>(3503.8,3773.0)<br>4734.7<br>(4521.3,4948.2)<br>127.0<br>(117.6, 136.4)<br>118.0<br>(109.3, 126.6)<br>6436.7<br>(6146.8,6726.5)<br>< 0.001<br>< 0.001<br>9964(35.3)<br>0(0.0)<br>4932(100.0)<br>5032(100.0)<br>0(0.0)<br>14,489(64.7)<br>7578(100.0)<br>0(0.0)<br>0(0.0)<br>6911(100.0)| Numbers (n) in the table were unweighted Percentages or mean (95% CI) were estimated using US population weights.Race/ethnicity was determined using preferred terminology from the National Center for Health Statistics as non-Hispanic white, non-Hispanic black, and Mexican American. Mexican-American individuals were oversampled rather than broader groups of individuals from Latin America. Other include Asian, other Hispanic, Alaskan native, and multiracial individuals Abbreviations: _N_ Number, _Met_ Metabolic equivalent, _BMI_ , Body mass index, _HEI_ Healthy Eating Index, _PA_ Physical activity Zhu and Wang _BMC Public Health (2024) 24:855_ Page 6 of 9 **Table 2** Association between joint PA and Healthy Eating Index-2015 and their combined effect and hypertension after using survey impute for multiple interpolation ( _n_ = 24,453) |impute for multiple interpolation (_n_ =2|4,453)|||||| |---|---|---|---|---|---|---| |**Hypertension**|**Model 1**||**Model 2**||**Model 3a**|| ||**OR (95% CI)**|**_P_ value**|**OR (95% CI)**|**_P_ value**|**OR (95% CI)**|**_P_ value**| |**Healthy Eating Index-2015**||||||| |Unhealthy diet|1(ref)||1(ref)||1(ref)|| |Healthy diet|0.72(0.65,0.8)|< 0.01|0.76(0.69,0.84)|< 0.01|0.86(0.77,0.96)|0.01| |**Physical activity level**||||||| |Physically inactive|1(ref)||1(ref)||1(ref)|| |Physically active|0.73(0.66,0.81)|< 0.01|0.76(0.68,0.84)|< 0.01|0.88(0.78,0.99)|0.04| |**Lifestyle categories**||||||| |Unhealthy diet and physically inactive|1(ref)||1(ref)||1(ref)|| |Healthy diet but physically inactive|0.79(0.69,0.91)|< 0.01|0.83(0.72,0.95)|0.04|0.89(0.76,1.03)|0.9| |Unhealthy diet but physically active|0.8(0.69,0.93)|< 0.01|0.81(0.7,0.95)|< 0.01|0.9(0.76,1.06)|0.7| |Healthy diet and physically active|0.56(0.49,0.65)|< 0.01|0.61(0.52,0.7)|< 0.01|0.77(0.65,0.9)|< 0.01| Model 1 was adjusted for age, gender, and race Model 2 was adjusted for age, gender, race, and education levels, poverty, marital, smoking status, alcohol consumption Model 3 was adjusted for the variables in model 2 plus hyperlipidemia, diabetes, BMI, fast total cholesterol, and HDL-C a Model 3 at HEI-2015 adjusted for the variables in model 2 plus hyperlipidemia, diabetes, BMI, fast total cholesterol, HDL-C, and PA. Model 3 at PA level adjusted for the variables in model 2 plus hyperlipidemia, diabetes, BMI, fast total cholesterol, HDL-C, and HEI-2015 Abbreviations: _OR_ Odds ratio, _CI_ Confidence interval, _BMI_ Body mass index, _HDL-C_ High-density lipoprotein cholesterol, _PA_ Physical activity **==> picture [483 x 192] intentionally omitted <==** **Fig. 2** Adjusted spline curves analyze for the association of HEI-2015 ( **A** ) or PA ( **B** ) with Hypertension Among US Adults with Hypertension. Solid lines were odds ratios with 95% CI in shaded areas. Knot locations were the 10th, 50th, and 90th tertiles of PA. All models were adjusted for age, gender, race, education levels, poverty, marital, smoking status, alcohol consumption, diabetes, BMI, fast total cholesterol, and HDL-C. Abbreviations: BMI, body mass index, HDL-C, high-density lipoprotein cholesterol, HEI, Healthy Eating Index; PA, physical activity active compared to unhealthy eaters and physically inactive individuals. To assess potential bias from missing values, we used the data after excluding the missing values ( _n_ = 4979) and repeated the analysis. The analysis was consistent with the results of the main analysis. After adjusting for all of the covariates, compared with the unhealthy diet and physically inactive individuals, the OR for hypertension was 0.75(95% CI, 0.63-0.89) for the healthy diet and physically active participants (Supplementary Table 4).",
+      "match_type": "table_reference",
+      "score": 1.0
+    },
+    {
+      "passage_id": "section_12_p0",
+      "section_id": "section_12",
+      "heading": "**Covariates**",
+      "text": "Covariates included in this study include gender ( male or female), age, race/ethnicity (Non-Hispanic White, NonHispanic Black, Mexican American or Other Race), education levels (below high school, high school or college/ above), poverty, marital (widowed or divorced or separated, never married, married or living with a partner), alcohol drinker (never, former or now), smoking status (current smoker, former smoker or never smoked), diabetes, hyperlipidemia, body mass index (BMI, calculated as weight in kilograms divided by height in meters squared), total cholesterol, high-density lipoprotein cholesterol (HDL-C). Zhu and Wang _BMC Public Health (2024) 24:855_ Page 4 of 9",
+      "match_type": "methods_term_match",
+      "score": 0.3739
+    },
+    {
+      "passage_id": "section_7_p0",
+      "section_id": "section_7",
+      "heading": "**Study population**",
+      "text": "NHANES uses a complex, multi-stage probability sampling design to select the representative, noninstitutionalized population in the US (https:// www. cdc. gov/ nchs/ nhanes/ index. htm). All participants provided written informed consent. The survey protocol was approved by the Research Ethics Review Board of the National Center for Health Statistics and the Centers for Disease Control and Prevention [21]. 34,770 participants were aged 20 years or more. In the current study, we excluded individuals who missed valid 24-h dietary recall ( _n_ = 7,919); history of hypertension ( _n_ = 1); data about PA ( _n_ = 55). participants who had extreme total energy intakes of < 500 or > 5000 kcal/ day for women, and < 500 or > 8000 kcal/day for men ( _n_ = 2,111) [22], and pregnant women ( _n_ = 231). 24,453 participants were included in the main analysis. After removing 4,979 participants with missing covariates, 19,474 participants were included in the sensitivity study (Fig. 1). **==> picture [483 x 278] intentionally omitted <==** **Fig. 1** Flow diagram of inclusion criteria and exclusion criteria. Abbreviations NHANES, National Health and Nutrition Examination Survey Zhu and Wang _BMC Public Health (2024) 24:855_ Page 3 of 9",
+      "match_type": "methods_term_match",
+      "score": 0.2435
+    }
+  ]
+}

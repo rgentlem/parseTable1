@@ -1,0 +1,3859 @@
+[
+  {
+    "table_id": "cardiovascular-p4-t0",
+    "title": "Table 1 Baseline characteristics of participants",
+    "caption": "Table 1 Baseline characteristics of participants",
+    "header_rows": [
+      0,
+      1
+    ],
+    "body_rows": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42
+    ],
+    "row_views": [
+      {
+        "row_idx": 2,
+        "raw_cells": [
+          "Age(years)",
+          "60.79 \u00b1 12.18",
+          "57.55 \u00b1 10.95",
+          "70.97 \u00b1 10.05\u2021",
+          "72.75 \u00b1 9.52\u2021"
+        ],
+        "first_cell_raw": "Age(years)",
+        "first_cell_normalized": "Age years",
+        "first_cell_alpha_only": "Age years",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 3,
+        "raw_cells": [
+          "Male",
+          "3866(48.81%)",
+          "2800(46.59%)",
+          "1066(55.78%)",
+          "322(55.04%)"
+        ],
+        "first_cell_raw": "Male",
+        "first_cell_normalized": "Male",
+        "first_cell_alpha_only": "Male",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 4,
+        "raw_cells": [
+          "BMI(Kg/m2)",
+          "28.57 \u00b1 7.13",
+          "29.01 \u00b1 6.83",
+          "27.2 \u00b1 7.86\u2021",
+          "27.28 \u00b1 8.26\u2021"
+        ],
+        "first_cell_raw": "BMI(Kg/m2)",
+        "first_cell_normalized": "BMI Kg m2",
+        "first_cell_alpha_only": "BMI Kg m",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 5,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 5,
+        "raw_cells": [
+          "Education level",
+          "",
+          "",
+          "\u2020",
+          ""
+        ],
+        "first_cell_raw": "Education level",
+        "first_cell_normalized": "Education level",
+        "first_cell_alpha_only": "Education level",
+        "nonempty_cell_count": 2,
+        "numeric_cell_count": 0,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 6,
+        "raw_cells": [
+          "Less Than 9th Grade",
+          "1287(16.25%)",
+          "929(15.46%)",
+          "358(18.73%)",
+          "106(18.12%)"
+        ],
+        "first_cell_raw": "Less Than 9th Grade",
+        "first_cell_normalized": "Less Than 9th Grade",
+        "first_cell_alpha_only": "Less Than th Grade",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 5,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 7,
+        "raw_cells": [
+          "9-11th Grade",
+          "1318(16.64%)",
+          "931(15.49%)",
+          "387(20.25%)",
+          "127(21.71%)"
+        ],
+        "first_cell_raw": "9-11th Grade",
+        "first_cell_normalized": "9 11th Grade",
+        "first_cell_alpha_only": "th Grade",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 5,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 8,
+        "raw_cells": [
+          "High School Grad/GED or Equivalent",
+          "1853(23.39%)",
+          "1381(22.98%)",
+          "472(24.70%)",
+          "153(26.15%)"
+        ],
+        "first_cell_raw": "High School Grad/GED or Equivalent",
+        "first_cell_normalized": "High School Grad GED or Equivalent",
+        "first_cell_alpha_only": "High School Grad GED or Equivalent",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 9,
+        "raw_cells": [
+          "Some College or AA degree",
+          "1937(24.45%)",
+          "1513(25.17%)",
+          "424(22.19%)",
+          "122(20.85%)"
+        ],
+        "first_cell_raw": "Some College or AA degree",
+        "first_cell_normalized": "Some College or AA degree",
+        "first_cell_alpha_only": "Some College or AA degree",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 10,
+        "raw_cells": [
+          "College Graduate or above",
+          "1526(19.27%)",
+          "1256(20.90%)",
+          "270(14.13%)",
+          "77(13.16%)"
+        ],
+        "first_cell_raw": "College Graduate or above",
+        "first_cell_normalized": "College Graduate or above",
+        "first_cell_alpha_only": "College Graduate or above",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 11,
+        "raw_cells": [
+          "Ethnicity",
+          "",
+          "",
+          "\u2021",
+          "\u2021"
+        ],
+        "first_cell_raw": "Ethnicity",
+        "first_cell_normalized": "Ethnicity",
+        "first_cell_alpha_only": "Ethnicity",
+        "nonempty_cell_count": 3,
+        "numeric_cell_count": 0,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 12,
+        "raw_cells": [
+          "Mexican American",
+          "1256(15.86%)",
+          "1095(18.22%)",
+          "161(8.42%)",
+          "34(5.81%)"
+        ],
+        "first_cell_raw": "Mexican American",
+        "first_cell_normalized": "Mexican American",
+        "first_cell_alpha_only": "Mexican American",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 13,
+        "raw_cells": [
+          "Other Hispanic",
+          "825(10.42%)",
+          "689(11.46%)",
+          "136(7.12%)",
+          "46(7.86%)"
+        ],
+        "first_cell_raw": "Other Hispanic",
+        "first_cell_normalized": "Other Hispanic",
+        "first_cell_alpha_only": "Other Hispanic",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 14,
+        "raw_cells": [
+          "Non-Hispanic White",
+          "3961(50.01%)",
+          "2786(46.36%)",
+          "1175(61.49%)",
+          "372(63.59%)"
+        ],
+        "first_cell_raw": "Non-Hispanic White",
+        "first_cell_normalized": "Non Hispanic White",
+        "first_cell_alpha_only": "Non Hispanic White",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 15,
+        "raw_cells": [
+          "Non-Hispanic Black",
+          "1537(19.40%)",
+          "1165(19.38%)",
+          "372(19.47%)",
+          "110(18.80%)"
+        ],
+        "first_cell_raw": "Non-Hispanic Black",
+        "first_cell_normalized": "Non Hispanic Black",
+        "first_cell_alpha_only": "Non Hispanic Black",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 16,
+        "raw_cells": [
+          "Other Race - Including Multi-Racial",
+          "342(4.32%)",
+          "275(4.58%)",
+          "67(3.51%)",
+          "23(3.93%)"
+        ],
+        "first_cell_raw": "Other Race - Including Multi-Racial",
+        "first_cell_normalized": "Other Race Including Multi Racial",
+        "first_cell_alpha_only": "Other Race Including Multi Racial",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 17,
+        "raw_cells": [
+          "The ratio of household income to poverty line",
+          "2.33 \u00b1 1.72",
+          "2.45 \u00b1 1.78",
+          "1.94 \u00b1 1.47\u2021",
+          "1.93 \u00b1 1.43\u2021"
+        ],
+        "first_cell_raw": "The ratio of household income to poverty line",
+        "first_cell_normalized": "The ratio of household income to poverty line",
+        "first_cell_alpha_only": "The ratio of household income to poverty line",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 18,
+        "raw_cells": [
+          "Hypertension",
+          "4453(56.22%)",
+          "3048(50.72%)",
+          "1405(73.52%)\u2021",
+          "456(77.95%)\u2021"
+        ],
+        "first_cell_raw": "Hypertension",
+        "first_cell_normalized": "Hypertension",
+        "first_cell_alpha_only": "Hypertension",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 19,
+        "raw_cells": [
+          "Diabetes",
+          "",
+          "",
+          "\u2021",
+          "\u2021"
+        ],
+        "first_cell_raw": "Diabetes",
+        "first_cell_normalized": "Diabetes",
+        "first_cell_alpha_only": "Diabetes",
+        "nonempty_cell_count": 3,
+        "numeric_cell_count": 0,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 20,
+        "raw_cells": [
+          "No diabetes",
+          "5856(73.93%)",
+          "4678(77.84%)",
+          "1178(61.64%)",
+          "346(59.15%)"
+        ],
+        "first_cell_raw": "No diabetes",
+        "first_cell_normalized": "No diabetes",
+        "first_cell_alpha_only": "No diabetes",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 21,
+        "raw_cells": [
+          "Diabetes",
+          "1557(19.66%)",
+          "977(16.26%)",
+          "580(30.35%)",
+          "190(32.48%)"
+        ],
+        "first_cell_raw": "Diabetes",
+        "first_cell_normalized": "Diabetes",
+        "first_cell_alpha_only": "Diabetes",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 22,
+        "raw_cells": [
+          "Prediabetes",
+          "508(6.41%)",
+          "355(5.91%)",
+          "153(8.01%)",
+          "49(8.38%)"
+        ],
+        "first_cell_raw": "Prediabetes",
+        "first_cell_normalized": "Prediabetes",
+        "first_cell_alpha_only": "Prediabetes",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 23,
+        "raw_cells": [
+          "Close relative heart attack",
+          "1322(16.69%)",
+          "946(15.74%)",
+          "376(19.68%)\u2021",
+          "125(21.37%)\u2021"
+        ],
+        "first_cell_raw": "Close relative heart attack",
+        "first_cell_normalized": "Close relative heart attack",
+        "first_cell_alpha_only": "Close relative heart attack",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 24,
+        "raw_cells": [
+          "Close relative diabetes",
+          "3455(43.62%)",
+          "2688(44.73%)",
+          "767(40.14%)\u2021",
+          "227(38.80%)\u2021"
+        ],
+        "first_cell_raw": "Close relative diabetes",
+        "first_cell_normalized": "Close relative diabetes",
+        "first_cell_alpha_only": "Close relative diabetes",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 25,
+        "raw_cells": [
+          "non_HDL (mmol/L)",
+          "3.57 \u00b1 1.31",
+          "3.69 \u00b1 1.27",
+          "3.2 \u00b1 1.36\u2021",
+          "3.17 \u00b1 1.35\u2021"
+        ],
+        "first_cell_raw": "non_HDL (mmol/L)",
+        "first_cell_normalized": "non HDL mmol L",
+        "first_cell_alpha_only": "non HDL mmol L",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 26,
+        "raw_cells": [
+          "CRP",
+          "0.42 \u00b1 0.86",
+          "0.38 \u00b1 0.73",
+          "0.53 \u00b1 1.17",
+          "0.53 \u00b1 1.09"
+        ],
+        "first_cell_raw": "CRP",
+        "first_cell_normalized": "CRP",
+        "first_cell_alpha_only": "CRP",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 27,
+        "raw_cells": [
+          "diet score",
+          "47.55 \u00b1 16.59",
+          "48.37 \u00b1 16.07",
+          "44.99 \u00b1 17.88\u2021",
+          "44.08 \u00b1 18.51\u2021"
+        ],
+        "first_cell_raw": "diet score",
+        "first_cell_normalized": "diet score",
+        "first_cell_alpha_only": "diet score",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 28,
+        "raw_cells": [
+          "physical level",
+          "",
+          "",
+          "\u2021",
+          "\u2021"
+        ],
+        "first_cell_raw": "physical level",
+        "first_cell_normalized": "physical level",
+        "first_cell_alpha_only": "physical level",
+        "nonempty_cell_count": 3,
+        "numeric_cell_count": 0,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 29,
+        "raw_cells": [
+          "inactive",
+          "2825(35.66%)",
+          "1820(30.28%)",
+          "1005(52.59%)",
+          "316(54.02%)"
+        ],
+        "first_cell_raw": "inactive",
+        "first_cell_normalized": "inactive",
+        "first_cell_alpha_only": "inactive",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 30,
+        "raw_cells": [
+          "insufcient active",
+          "1129(14.25%)",
+          "863(14.36%)",
+          "266(13.92%)",
+          "80(13.68%)"
+        ],
+        "first_cell_raw": "insufcient active",
+        "first_cell_normalized": "insufcient active",
+        "first_cell_alpha_only": "insufcient active",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 31,
+        "raw_cells": [
+          "active",
+          "949(11.98%)",
+          "765(12.73%)",
+          "184(9.63%)",
+          "66(11.28%)"
+        ],
+        "first_cell_raw": "active",
+        "first_cell_normalized": "active",
+        "first_cell_alpha_only": "active",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 32,
+        "raw_cells": [
+          "highly active",
+          "3018(38.10%)",
+          "2562(42.63%)",
+          "456(23.86%)",
+          "123(21.03%)"
+        ],
+        "first_cell_raw": "highly active",
+        "first_cell_normalized": "highly active",
+        "first_cell_alpha_only": "highly active",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 33,
+        "raw_cells": [
+          "Sedentary minutes",
+          "331.98 \u00b1 411.55",
+          "317.34 \u00b1 403.55",
+          "378.01 \u00b1 432.64\u2021",
+          "374.89 \u00b1 194.81\u2021"
+        ],
+        "first_cell_raw": "Sedentary minutes",
+        "first_cell_normalized": "Sedentary minutes",
+        "first_cell_alpha_only": "Sedentary minutes",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 34,
+        "raw_cells": [
+          "sleep level",
+          "",
+          "",
+          "\u2021",
+          "\u2021"
+        ],
+        "first_cell_raw": "sleep level",
+        "first_cell_normalized": "sleep level",
+        "first_cell_alpha_only": "sleep level",
+        "nonempty_cell_count": 3,
+        "numeric_cell_count": 0,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 35,
+        "raw_cells": [
+          "Poor",
+          "1586(20.02%)",
+          "1123(18.69%)",
+          "463(24.23%)",
+          "134(22.91%)"
+        ],
+        "first_cell_raw": "Poor",
+        "first_cell_normalized": "Poor",
+        "first_cell_alpha_only": "Poor",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 36,
+        "raw_cells": [
+          "intermediate",
+          "396(5.00%)",
+          "265(4.41%)",
+          "131(6.86%)",
+          "48(8.21%)"
+        ],
+        "first_cell_raw": "intermediate",
+        "first_cell_normalized": "intermediate",
+        "first_cell_alpha_only": "intermediate",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 37,
+        "raw_cells": [
+          "optimal",
+          "5939(74.98%)",
+          "4622(76.91%)",
+          "1317(68.92%)",
+          "403(68.89%)"
+        ],
+        "first_cell_raw": "optimal",
+        "first_cell_normalized": "optimal",
+        "first_cell_alpha_only": "optimal",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 38,
+        "raw_cells": [
+          "Smoking",
+          "",
+          "",
+          "\u2021",
+          "\u2021"
+        ],
+        "first_cell_raw": "Smoking",
+        "first_cell_normalized": "Smoking",
+        "first_cell_alpha_only": "Smoking",
+        "nonempty_cell_count": 3,
+        "numeric_cell_count": 0,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 39,
+        "raw_cells": [
+          "No smoking",
+          "3946(49.82%)",
+          "3175(52.83%)",
+          "771(40.35%)",
+          "269(45.98%)"
+        ],
+        "first_cell_raw": "No smoking",
+        "first_cell_normalized": "No smoking",
+        "first_cell_alpha_only": "No smoking",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 40,
+        "raw_cells": [
+          "Smoking before",
+          "2495(31.50%)",
+          "1718(28.59%)",
+          "777(40.66%)",
+          "230(39.32%)"
+        ],
+        "first_cell_raw": "Smoking before",
+        "first_cell_normalized": "Smoking before",
+        "first_cell_alpha_only": "Smoking before",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 41,
+        "raw_cells": [
+          "Smoking",
+          "1480(18.68%)",
+          "1117(18.59%)",
+          "363(19.00%)",
+          "86(14.70%)"
+        ],
+        "first_cell_raw": "Smoking",
+        "first_cell_normalized": "Smoking",
+        "first_cell_alpha_only": "Smoking",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 42,
+        "raw_cells": [
+          "Alcohol consumption per day",
+          "3.99 \u00b1 14.33",
+          "4.31 \u00b1 12.83",
+          "2.96 \u00b1 18.24\u2021",
+          "3.36 \u00b1 23.74\u2021"
+        ],
+        "first_cell_raw": "Alcohol consumption per day",
+        "first_cell_normalized": "Alcohol consumption per day",
+        "first_cell_alpha_only": "Alcohol consumption per day",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      }
+    ],
+    "n_rows": 43,
+    "n_cols": 5,
+    "metadata": {
+      "layout_source": "pymupdf4llm_json",
+      "caption_source": "page_text_fallback",
+      "primary_representation": "json",
+      "extractor_used": "pymupdf4llm",
+      "fallback_used": false,
+      "row_count": 43,
+      "col_count": 5,
+      "explicit_grid_refined_from_words": false,
+      "grid_refinement_source": null,
+      "geometry_coordinate_frame": "page",
+      "table_markdown": "||**All**|**Live**|**Dead**|**Dead cause of cardiovascular**|\n|---|---|---|---|---|\n||**(****_n_ = 7921)**|**(****_n_ = 6010)**|**(****_n_ = 1911)**|**(****_n_ = 585)**|\n|**Age(years)**|60.79 \u00b1 12.18|57.55 \u00b1 10.95|70.97 \u00b1 10.05\u2021|72.75 \u00b1 9.52\u2021|\n|**Male**|3866(48.81%)|2800(46.59%)|1066(55.78%)|322(55.04%)|\n|**BMI(Kg/m2)**|28.57 \u00b1 7.13|29.01 \u00b1 6.83|27.2 \u00b1 7.86\u2021|27.28 \u00b1 8.26\u2021|\n|**Education level**|||\u2020||\n|Less Than 9th Grade|1287(16.25%)|929(15.46%)|358(18.73%)|106(18.12%)|\n|9-11th Grade|1318(16.64%)|931(15.49%)|387(20.25%)|127(21.71%)|\n|High School Grad/GED or Equivalent|1853(23.39%)|1381(22.98%)|472(24.70%)|153(26.15%)|\n|Some College or AA degree|1937(24.45%)|1513(25.17%)|424(22.19%)|122(20.85%)|\n|College Graduate or above|1526(19.27%)|1256(20.90%)|270(14.13%)|77(13.16%)|\n|**Ethnicity**|||\u2021|\u2021|\n|Mexican American|1256(15.86%)|1095(18.22%)|161(8.42%)|34(5.81%)|\n|Other Hispanic|825(10.42%)|689(11.46%)|136(7.12%)|46(7.86%)|\n|Non-Hispanic White|3961(50.01%)|2786(46.36%)|1175(61.49%)|372(63.59%)|\n|Non-Hispanic Black|1537(19.40%)|1165(19.38%)|372(19.47%)|110(18.80%)|\n|Other Race - Including Multi-Racial|342(4.32%)|275(4.58%)|67(3.51%)|23(3.93%)|\n|**The ratio of household income to poverty line**|2.33 \u00b1 1.72|2.45 \u00b1 1.78|1.94 \u00b1 1.47\u2021|1.93 \u00b1 1.43\u2021|\n|**Hypertension**|4453(56.22%)|3048(50.72%)|1405(73.52%)\u2021|456(77.95%)\u2021|\n|**Diabetes**|||\u2021|\u2021|\n|No diabetes|5856(73.93%)|4678(77.84%)|1178(61.64%)|346(59.15%)|\n|Diabetes|1557(19.66%)|977(16.26%)|580(30.35%)|190(32.48%)|\n|Prediabetes|508(6.41%)|355(5.91%)|153(8.01%)|49(8.38%)|\n|**Close relative heart attack**|1322(16.69%)|946(15.74%)|376(19.68%)\u2021|125(21.37%)\u2021|\n|**Close relative diabetes**|3455(43.62%)|2688(44.73%)|767(40.14%)\u2021|227(38.80%)\u2021|\n|**non_HDL (mmol/L)**|3.57 \u00b1 1.31|3.69 \u00b1 1.27|3.2 \u00b1 1.36\u2021|3.17 \u00b1 1.35\u2021|\n|**CRP**|0.42 \u00b1 0.86|0.38 \u00b1 0.73|0.53 \u00b1 1.17|0.53 \u00b1 1.09|\n|**diet score**|47.55 \u00b1 16.59|48.37 \u00b1 16.07|44.99 \u00b1 17.88\u2021|44.08 \u00b1 18.51\u2021|\n|**physical level**|||\u2021|\u2021|\n|inactive|2825(35.66%)|1820(30.28%)|1005(52.59%)|316(54.02%)|\n|insufcient active|1129(14.25%)|863(14.36%)|266(13.92%)|80(13.68%)|\n|active|949(11.98%)|765(12.73%)|184(9.63%)|66(11.28%)|\n|highly active|3018(38.10%)|2562(42.63%)|456(23.86%)|123(21.03%)|\n|**Sedentary minutes**|331.98 \u00b1 411.55|317.34 \u00b1 403.55|378.01 \u00b1 432.64\u2021|374.89 \u00b1 194.81\u2021|\n|**sleep level**|||\u2021|\u2021|\n|Poor|1586(20.02%)|1123(18.69%)|463(24.23%)|134(22.91%)|\n|intermediate|396(5.00%)|265(4.41%)|131(6.86%)|48(8.21%)|\n|optimal|5939(74.98%)|4622(76.91%)|1317(68.92%)|403(68.89%)|\n|**Smoking**|||\u2021|\u2021|\n|No smoking|3946(49.82%)|3175(52.83%)|771(40.35%)|269(45.98%)|\n|Smoking before|2495(31.50%)|1718(28.59%)|777(40.66%)|230(39.32%)|\n|Smoking|1480(18.68%)|1117(18.59%)|363(19.00%)|86(14.70%)|\n|**Alcohol consumptionper day**|3.99 \u00b1 14.33|4.31 \u00b1 12.83|2.96 \u00b1 18.24\u2021|3.36 \u00b1 23.74\u2021|\n\n",
+      "table_cells": [
+        [
+          [
+            56.0,
+            202.0,
+            222.83111572265625,
+            211.03378295898438
+          ],
+          [
+            222.83111572265625,
+            202.0,
+            289.11199951171875,
+            211.03378295898438
+          ],
+          [
+            289.11199951171875,
+            202.0,
+            355.392578125,
+            211.03378295898438
+          ],
+          [
+            355.392578125,
+            202.0,
+            424.3944091796875,
+            211.03378295898438
+          ],
+          [
+            424.3944091796875,
+            202.0,
+            539.0,
+            211.03378295898438
+          ]
+        ],
+        [
+          [
+            56.0,
+            211.03378295898438,
+            222.83111572265625,
+            221.5963897705078
+          ],
+          [
+            222.83111572265625,
+            211.03378295898438,
+            289.11199951171875,
+            221.5963897705078
+          ],
+          [
+            289.11199951171875,
+            211.03378295898438,
+            355.392578125,
+            221.5963897705078
+          ],
+          [
+            355.392578125,
+            211.03378295898438,
+            424.3944091796875,
+            221.5963897705078
+          ],
+          [
+            424.3944091796875,
+            211.03378295898438,
+            539.0,
+            221.5963897705078
+          ]
+        ],
+        [
+          [
+            56.0,
+            221.5963897705078,
+            222.83111572265625,
+            234.384765625
+          ],
+          [
+            222.83111572265625,
+            221.5963897705078,
+            289.11199951171875,
+            234.384765625
+          ],
+          [
+            289.11199951171875,
+            221.5963897705078,
+            355.392578125,
+            234.384765625
+          ],
+          [
+            355.392578125,
+            221.5963897705078,
+            424.3944091796875,
+            234.384765625
+          ],
+          [
+            424.3944091796875,
+            221.5963897705078,
+            539.0,
+            234.384765625
+          ]
+        ],
+        [
+          [
+            56.0,
+            234.384765625,
+            222.83111572265625,
+            245.01486206054688
+          ],
+          [
+            222.83111572265625,
+            234.384765625,
+            289.11199951171875,
+            245.01486206054688
+          ],
+          [
+            289.11199951171875,
+            234.384765625,
+            355.392578125,
+            245.01486206054688
+          ],
+          [
+            355.392578125,
+            234.384765625,
+            424.3944091796875,
+            245.01486206054688
+          ],
+          [
+            424.3944091796875,
+            234.384765625,
+            539.0,
+            245.01486206054688
+          ]
+        ],
+        [
+          [
+            56.0,
+            245.01486206054688,
+            222.83111572265625,
+            257.0281066894531
+          ],
+          [
+            222.83111572265625,
+            245.01486206054688,
+            289.11199951171875,
+            257.0281066894531
+          ],
+          [
+            289.11199951171875,
+            245.01486206054688,
+            355.392578125,
+            257.0281066894531
+          ],
+          [
+            355.392578125,
+            245.01486206054688,
+            424.3944091796875,
+            257.0281066894531
+          ],
+          [
+            424.3944091796875,
+            245.01486206054688,
+            539.0,
+            257.0281066894531
+          ]
+        ],
+        [
+          [
+            56.0,
+            257.0281066894531,
+            222.83111572265625,
+            268.5526428222656
+          ],
+          [
+            222.83111572265625,
+            257.0281066894531,
+            289.11199951171875,
+            268.5526428222656
+          ],
+          [
+            289.11199951171875,
+            257.0281066894531,
+            355.392578125,
+            268.5526428222656
+          ],
+          [
+            355.392578125,
+            257.0281066894531,
+            424.3944091796875,
+            268.5526428222656
+          ],
+          [
+            424.3944091796875,
+            257.0281066894531,
+            539.0,
+            268.5526428222656
+          ]
+        ],
+        [
+          [
+            56.0,
+            268.5526428222656,
+            222.83111572265625,
+            280.6699523925781
+          ],
+          [
+            222.83111572265625,
+            268.5526428222656,
+            289.11199951171875,
+            280.6699523925781
+          ],
+          [
+            289.11199951171875,
+            268.5526428222656,
+            355.392578125,
+            280.6699523925781
+          ],
+          [
+            355.392578125,
+            268.5526428222656,
+            424.3944091796875,
+            280.6699523925781
+          ],
+          [
+            424.3944091796875,
+            268.5526428222656,
+            539.0,
+            280.6699523925781
+          ]
+        ],
+        [
+          [
+            56.0,
+            280.6699523925781,
+            222.83111572265625,
+            292.3392333984375
+          ],
+          [
+            222.83111572265625,
+            280.6699523925781,
+            289.11199951171875,
+            292.3392333984375
+          ],
+          [
+            289.11199951171875,
+            280.6699523925781,
+            355.392578125,
+            292.3392333984375
+          ],
+          [
+            355.392578125,
+            280.6699523925781,
+            424.3944091796875,
+            292.3392333984375
+          ],
+          [
+            424.3944091796875,
+            280.6699523925781,
+            539.0,
+            292.3392333984375
+          ]
+        ],
+        [
+          [
+            56.0,
+            292.3392333984375,
+            222.83111572265625,
+            304.35247802734375
+          ],
+          [
+            222.83111572265625,
+            292.3392333984375,
+            289.11199951171875,
+            304.35247802734375
+          ],
+          [
+            289.11199951171875,
+            292.3392333984375,
+            355.392578125,
+            304.35247802734375
+          ],
+          [
+            355.392578125,
+            292.3392333984375,
+            424.3944091796875,
+            304.35247802734375
+          ],
+          [
+            424.3944091796875,
+            292.3392333984375,
+            539.0,
+            304.35247802734375
+          ]
+        ],
+        [
+          [
+            56.0,
+            304.35247802734375,
+            222.83111572265625,
+            316.021728515625
+          ],
+          [
+            222.83111572265625,
+            304.35247802734375,
+            289.11199951171875,
+            316.021728515625
+          ],
+          [
+            289.11199951171875,
+            304.35247802734375,
+            355.392578125,
+            316.021728515625
+          ],
+          [
+            355.392578125,
+            304.35247802734375,
+            424.3944091796875,
+            316.021728515625
+          ],
+          [
+            424.3944091796875,
+            304.35247802734375,
+            539.0,
+            316.021728515625
+          ]
+        ],
+        [
+          [
+            56.0,
+            316.021728515625,
+            222.83111572265625,
+            327.0438232421875
+          ],
+          [
+            222.83111572265625,
+            316.021728515625,
+            289.11199951171875,
+            327.0438232421875
+          ],
+          [
+            289.11199951171875,
+            316.021728515625,
+            355.392578125,
+            327.0438232421875
+          ],
+          [
+            355.392578125,
+            316.021728515625,
+            424.3944091796875,
+            327.0438232421875
+          ],
+          [
+            424.3944091796875,
+            316.021728515625,
+            539.0,
+            327.0438232421875
+          ]
+        ],
+        [
+          [
+            56.0,
+            327.0438232421875,
+            222.83111572265625,
+            339.4603271484375
+          ],
+          [
+            222.83111572265625,
+            327.0438232421875,
+            289.11199951171875,
+            339.4603271484375
+          ],
+          [
+            289.11199951171875,
+            327.0438232421875,
+            355.392578125,
+            339.4603271484375
+          ],
+          [
+            355.392578125,
+            327.0438232421875,
+            424.3944091796875,
+            339.4603271484375
+          ],
+          [
+            424.3944091796875,
+            327.0438232421875,
+            539.0,
+            339.4603271484375
+          ]
+        ],
+        [
+          [
+            56.0,
+            339.4603271484375,
+            222.83111572265625,
+            350.6856384277344
+          ],
+          [
+            222.83111572265625,
+            339.4603271484375,
+            289.11199951171875,
+            350.6856384277344
+          ],
+          [
+            289.11199951171875,
+            339.4603271484375,
+            355.392578125,
+            350.6856384277344
+          ],
+          [
+            355.392578125,
+            339.4603271484375,
+            424.3944091796875,
+            350.6856384277344
+          ],
+          [
+            424.3944091796875,
+            339.4603271484375,
+            539.0,
+            350.6856384277344
+          ]
+        ],
+        [
+          [
+            56.0,
+            350.6856384277344,
+            222.83111572265625,
+            362.65496826171875
+          ],
+          [
+            222.83111572265625,
+            350.6856384277344,
+            289.11199951171875,
+            362.65496826171875
+          ],
+          [
+            289.11199951171875,
+            350.6856384277344,
+            355.392578125,
+            362.65496826171875
+          ],
+          [
+            355.392578125,
+            350.6856384277344,
+            424.3944091796875,
+            362.65496826171875
+          ],
+          [
+            424.3944091796875,
+            350.6856384277344,
+            539.0,
+            362.65496826171875
+          ]
+        ],
+        [
+          [
+            56.0,
+            362.65496826171875,
+            222.83111572265625,
+            374.3242492675781
+          ],
+          [
+            222.83111572265625,
+            362.65496826171875,
+            289.11199951171875,
+            374.3242492675781
+          ],
+          [
+            289.11199951171875,
+            362.65496826171875,
+            355.392578125,
+            374.3242492675781
+          ],
+          [
+            355.392578125,
+            362.65496826171875,
+            424.3944091796875,
+            374.3242492675781
+          ],
+          [
+            424.3944091796875,
+            362.65496826171875,
+            539.0,
+            374.3242492675781
+          ]
+        ],
+        [
+          [
+            56.0,
+            374.3242492675781,
+            222.83111572265625,
+            385.9935302734375
+          ],
+          [
+            222.83111572265625,
+            374.3242492675781,
+            289.11199951171875,
+            385.9935302734375
+          ],
+          [
+            289.11199951171875,
+            374.3242492675781,
+            355.392578125,
+            385.9935302734375
+          ],
+          [
+            355.392578125,
+            374.3242492675781,
+            424.3944091796875,
+            385.9935302734375
+          ],
+          [
+            424.3944091796875,
+            374.3242492675781,
+            539.0,
+            385.9935302734375
+          ]
+        ],
+        [
+          [
+            56.0,
+            385.9935302734375,
+            222.83111572265625,
+            397.05963134765625
+          ],
+          [
+            222.83111572265625,
+            385.9935302734375,
+            289.11199951171875,
+            397.05963134765625
+          ],
+          [
+            289.11199951171875,
+            385.9935302734375,
+            355.392578125,
+            397.05963134765625
+          ],
+          [
+            355.392578125,
+            385.9935302734375,
+            424.3944091796875,
+            397.05963134765625
+          ],
+          [
+            424.3944091796875,
+            385.9935302734375,
+            539.0,
+            397.05963134765625
+          ]
+        ],
+        [
+          [
+            56.0,
+            397.05963134765625,
+            222.83111572265625,
+            408.7769470214844
+          ],
+          [
+            222.83111572265625,
+            397.05963134765625,
+            289.11199951171875,
+            408.7769470214844
+          ],
+          [
+            289.11199951171875,
+            397.05963134765625,
+            355.392578125,
+            408.7769470214844
+          ],
+          [
+            355.392578125,
+            397.05963134765625,
+            424.3944091796875,
+            408.7769470214844
+          ],
+          [
+            424.3944091796875,
+            397.05963134765625,
+            539.0,
+            408.7769470214844
+          ]
+        ],
+        [
+          [
+            56.0,
+            408.7769470214844,
+            222.83111572265625,
+            420.4461669921875
+          ],
+          [
+            222.83111572265625,
+            408.7769470214844,
+            289.11199951171875,
+            420.4461669921875
+          ],
+          [
+            289.11199951171875,
+            408.7769470214844,
+            355.392578125,
+            420.4461669921875
+          ],
+          [
+            355.392578125,
+            408.7769470214844,
+            424.3944091796875,
+            420.4461669921875
+          ],
+          [
+            424.3944091796875,
+            408.7769470214844,
+            539.0,
+            420.4461669921875
+          ]
+        ],
+        [
+          [
+            56.0,
+            420.4461669921875,
+            222.83111572265625,
+            431.9226989746094
+          ],
+          [
+            222.83111572265625,
+            420.4461669921875,
+            289.11199951171875,
+            431.9226989746094
+          ],
+          [
+            289.11199951171875,
+            420.4461669921875,
+            355.392578125,
+            431.9226989746094
+          ],
+          [
+            355.392578125,
+            420.4461669921875,
+            424.3944091796875,
+            431.9226989746094
+          ],
+          [
+            424.3944091796875,
+            420.4461669921875,
+            539.0,
+            431.9226989746094
+          ]
+        ],
+        [
+          [
+            56.0,
+            431.9226989746094,
+            222.83111572265625,
+            444.03997802734375
+          ],
+          [
+            222.83111572265625,
+            431.9226989746094,
+            289.11199951171875,
+            444.03997802734375
+          ],
+          [
+            289.11199951171875,
+            431.9226989746094,
+            355.392578125,
+            444.03997802734375
+          ],
+          [
+            355.392578125,
+            431.9226989746094,
+            424.3944091796875,
+            444.03997802734375
+          ],
+          [
+            424.3944091796875,
+            431.9226989746094,
+            539.0,
+            444.03997802734375
+          ]
+        ],
+        [
+          [
+            56.0,
+            444.03997802734375,
+            222.83111572265625,
+            455.709228515625
+          ],
+          [
+            222.83111572265625,
+            444.03997802734375,
+            289.11199951171875,
+            455.709228515625
+          ],
+          [
+            289.11199951171875,
+            444.03997802734375,
+            355.392578125,
+            455.709228515625
+          ],
+          [
+            355.392578125,
+            444.03997802734375,
+            424.3944091796875,
+            455.709228515625
+          ],
+          [
+            424.3944091796875,
+            444.03997802734375,
+            539.0,
+            455.709228515625
+          ]
+        ],
+        [
+          [
+            56.0,
+            455.709228515625,
+            222.83111572265625,
+            466.7313232421875
+          ],
+          [
+            222.83111572265625,
+            455.709228515625,
+            289.11199951171875,
+            466.7313232421875
+          ],
+          [
+            289.11199951171875,
+            455.709228515625,
+            355.392578125,
+            466.7313232421875
+          ],
+          [
+            355.392578125,
+            455.709228515625,
+            424.3944091796875,
+            466.7313232421875
+          ],
+          [
+            424.3944091796875,
+            455.709228515625,
+            539.0,
+            466.7313232421875
+          ]
+        ],
+        [
+          [
+            56.0,
+            466.7313232421875,
+            222.83111572265625,
+            478.400634765625
+          ],
+          [
+            222.83111572265625,
+            466.7313232421875,
+            289.11199951171875,
+            478.400634765625
+          ],
+          [
+            289.11199951171875,
+            466.7313232421875,
+            355.392578125,
+            478.400634765625
+          ],
+          [
+            355.392578125,
+            466.7313232421875,
+            424.3944091796875,
+            478.400634765625
+          ],
+          [
+            424.3944091796875,
+            466.7313232421875,
+            539.0,
+            478.400634765625
+          ]
+        ],
+        [
+          [
+            56.0,
+            478.400634765625,
+            222.83111572265625,
+            490.0699462890625
+          ],
+          [
+            222.83111572265625,
+            478.400634765625,
+            289.11199951171875,
+            490.0699462890625
+          ],
+          [
+            289.11199951171875,
+            478.400634765625,
+            355.392578125,
+            490.0699462890625
+          ],
+          [
+            355.392578125,
+            478.400634765625,
+            424.3944091796875,
+            490.0699462890625
+          ],
+          [
+            424.3944091796875,
+            478.400634765625,
+            539.0,
+            490.0699462890625
+          ]
+        ],
+        [
+          [
+            56.0,
+            490.0699462890625,
+            222.83111572265625,
+            502.49444580078125
+          ],
+          [
+            222.83111572265625,
+            490.0699462890625,
+            289.11199951171875,
+            502.49444580078125
+          ],
+          [
+            289.11199951171875,
+            490.0699462890625,
+            355.392578125,
+            502.49444580078125
+          ],
+          [
+            355.392578125,
+            490.0699462890625,
+            424.3944091796875,
+            502.49444580078125
+          ],
+          [
+            424.3944091796875,
+            490.0699462890625,
+            539.0,
+            502.49444580078125
+          ]
+        ],
+        [
+          [
+            56.0,
+            502.49444580078125,
+            222.83111572265625,
+            512.9645385742188
+          ],
+          [
+            222.83111572265625,
+            502.49444580078125,
+            289.11199951171875,
+            512.9645385742188
+          ],
+          [
+            289.11199951171875,
+            502.49444580078125,
+            355.392578125,
+            512.9645385742188
+          ],
+          [
+            355.392578125,
+            502.49444580078125,
+            424.3944091796875,
+            512.9645385742188
+          ],
+          [
+            424.3944091796875,
+            502.49444580078125,
+            539.0,
+            512.9645385742188
+          ]
+        ],
+        [
+          [
+            56.0,
+            512.9645385742188,
+            222.83111572265625,
+            524.6338500976562
+          ],
+          [
+            222.83111572265625,
+            512.9645385742188,
+            289.11199951171875,
+            524.6338500976562
+          ],
+          [
+            289.11199951171875,
+            512.9645385742188,
+            355.392578125,
+            524.6338500976562
+          ],
+          [
+            355.392578125,
+            512.9645385742188,
+            424.3944091796875,
+            524.6338500976562
+          ],
+          [
+            424.3944091796875,
+            512.9645385742188,
+            539.0,
+            524.6338500976562
+          ]
+        ],
+        [
+          [
+            56.0,
+            524.6338500976562,
+            222.83111572265625,
+            537.83837890625
+          ],
+          [
+            222.83111572265625,
+            524.6338500976562,
+            289.11199951171875,
+            537.83837890625
+          ],
+          [
+            289.11199951171875,
+            524.6338500976562,
+            355.392578125,
+            537.83837890625
+          ],
+          [
+            355.392578125,
+            524.6338500976562,
+            424.3944091796875,
+            537.83837890625
+          ],
+          [
+            424.3944091796875,
+            524.6338500976562,
+            539.0,
+            537.83837890625
+          ]
+        ],
+        [
+          [
+            56.0,
+            537.83837890625,
+            222.83111572265625,
+            548.1636962890625
+          ],
+          [
+            222.83111572265625,
+            537.83837890625,
+            289.11199951171875,
+            548.1636962890625
+          ],
+          [
+            289.11199951171875,
+            537.83837890625,
+            355.392578125,
+            548.1636962890625
+          ],
+          [
+            355.392578125,
+            537.83837890625,
+            424.3944091796875,
+            548.1636962890625
+          ],
+          [
+            424.3944091796875,
+            537.83837890625,
+            539.0,
+            548.1636962890625
+          ]
+        ],
+        [
+          [
+            56.0,
+            548.1636962890625,
+            222.83111572265625,
+            561.29296875
+          ],
+          [
+            222.83111572265625,
+            548.1636962890625,
+            289.11199951171875,
+            561.29296875
+          ],
+          [
+            289.11199951171875,
+            548.1636962890625,
+            355.392578125,
+            561.29296875
+          ],
+          [
+            355.392578125,
+            548.1636962890625,
+            424.3944091796875,
+            561.29296875
+          ],
+          [
+            424.3944091796875,
+            548.1636962890625,
+            539.0,
+            561.29296875
+          ]
+        ],
+        [
+          [
+            56.0,
+            561.29296875,
+            222.83111572265625,
+            572.4022216796875
+          ],
+          [
+            222.83111572265625,
+            561.29296875,
+            289.11199951171875,
+            572.4022216796875
+          ],
+          [
+            289.11199951171875,
+            561.29296875,
+            355.392578125,
+            572.4022216796875
+          ],
+          [
+            355.392578125,
+            561.29296875,
+            424.3944091796875,
+            572.4022216796875
+          ],
+          [
+            424.3944091796875,
+            561.29296875,
+            539.0,
+            572.4022216796875
+          ]
+        ],
+        [
+          [
+            56.0,
+            572.4022216796875,
+            222.83111572265625,
+            583.8162841796875
+          ],
+          [
+            222.83111572265625,
+            572.4022216796875,
+            289.11199951171875,
+            583.8162841796875
+          ],
+          [
+            289.11199951171875,
+            572.4022216796875,
+            355.392578125,
+            583.8162841796875
+          ],
+          [
+            355.392578125,
+            572.4022216796875,
+            424.3944091796875,
+            583.8162841796875
+          ],
+          [
+            424.3944091796875,
+            572.4022216796875,
+            539.0,
+            583.8162841796875
+          ]
+        ],
+        [
+          [
+            56.0,
+            583.8162841796875,
+            222.83111572265625,
+            595.4855346679688
+          ],
+          [
+            222.83111572265625,
+            583.8162841796875,
+            289.11199951171875,
+            595.4855346679688
+          ],
+          [
+            289.11199951171875,
+            583.8162841796875,
+            355.392578125,
+            595.4855346679688
+          ],
+          [
+            355.392578125,
+            583.8162841796875,
+            424.3944091796875,
+            595.4855346679688
+          ],
+          [
+            424.3944091796875,
+            583.8162841796875,
+            539.0,
+            595.4855346679688
+          ]
+        ],
+        [
+          [
+            56.0,
+            595.4855346679688,
+            222.83111572265625,
+            607.7620239257812
+          ],
+          [
+            222.83111572265625,
+            595.4855346679688,
+            289.11199951171875,
+            607.7620239257812
+          ],
+          [
+            289.11199951171875,
+            595.4855346679688,
+            355.392578125,
+            607.7620239257812
+          ],
+          [
+            355.392578125,
+            595.4855346679688,
+            424.3944091796875,
+            607.7620239257812
+          ],
+          [
+            424.3944091796875,
+            595.4855346679688,
+            539.0,
+            607.7620239257812
+          ]
+        ],
+        [
+          [
+            56.0,
+            607.7620239257812,
+            222.83111572265625,
+            619.079345703125
+          ],
+          [
+            222.83111572265625,
+            607.7620239257812,
+            289.11199951171875,
+            619.079345703125
+          ],
+          [
+            289.11199951171875,
+            607.7620239257812,
+            355.392578125,
+            619.079345703125
+          ],
+          [
+            355.392578125,
+            607.7620239257812,
+            424.3944091796875,
+            619.079345703125
+          ],
+          [
+            424.3944091796875,
+            607.7620239257812,
+            539.0,
+            619.079345703125
+          ]
+        ],
+        [
+          [
+            56.0,
+            619.079345703125,
+            222.83111572265625,
+            630.7486572265625
+          ],
+          [
+            222.83111572265625,
+            619.079345703125,
+            289.11199951171875,
+            630.7486572265625
+          ],
+          [
+            289.11199951171875,
+            619.079345703125,
+            355.392578125,
+            630.7486572265625
+          ],
+          [
+            355.392578125,
+            619.079345703125,
+            424.3944091796875,
+            630.7486572265625
+          ],
+          [
+            424.3944091796875,
+            619.079345703125,
+            539.0,
+            630.7486572265625
+          ]
+        ],
+        [
+          [
+            56.0,
+            630.7486572265625,
+            222.83111572265625,
+            642.0706787109375
+          ],
+          [
+            222.83111572265625,
+            630.7486572265625,
+            289.11199951171875,
+            642.0706787109375
+          ],
+          [
+            289.11199951171875,
+            630.7486572265625,
+            355.392578125,
+            642.0706787109375
+          ],
+          [
+            355.392578125,
+            630.7486572265625,
+            424.3944091796875,
+            642.0706787109375
+          ],
+          [
+            424.3944091796875,
+            630.7486572265625,
+            539.0,
+            642.0706787109375
+          ]
+        ],
+        [
+          [
+            56.0,
+            642.0706787109375,
+            222.83111572265625,
+            654.4312744140625
+          ],
+          [
+            222.83111572265625,
+            642.0706787109375,
+            289.11199951171875,
+            654.4312744140625
+          ],
+          [
+            289.11199951171875,
+            642.0706787109375,
+            355.392578125,
+            654.4312744140625
+          ],
+          [
+            355.392578125,
+            642.0706787109375,
+            424.3944091796875,
+            654.4312744140625
+          ],
+          [
+            424.3944091796875,
+            642.0706787109375,
+            539.0,
+            654.4312744140625
+          ]
+        ],
+        [
+          [
+            56.0,
+            654.4312744140625,
+            222.83111572265625,
+            666.0565185546875
+          ],
+          [
+            222.83111572265625,
+            654.4312744140625,
+            289.11199951171875,
+            666.0565185546875
+          ],
+          [
+            289.11199951171875,
+            654.4312744140625,
+            355.392578125,
+            666.0565185546875
+          ],
+          [
+            355.392578125,
+            654.4312744140625,
+            424.3944091796875,
+            666.0565185546875
+          ],
+          [
+            424.3944091796875,
+            654.4312744140625,
+            539.0,
+            666.0565185546875
+          ]
+        ],
+        [
+          [
+            56.0,
+            666.0565185546875,
+            222.83111572265625,
+            677.7698974609375
+          ],
+          [
+            222.83111572265625,
+            666.0565185546875,
+            289.11199951171875,
+            677.7698974609375
+          ],
+          [
+            289.11199951171875,
+            666.0565185546875,
+            355.392578125,
+            677.7698974609375
+          ],
+          [
+            355.392578125,
+            666.0565185546875,
+            424.3944091796875,
+            677.7698974609375
+          ],
+          [
+            424.3944091796875,
+            666.0565185546875,
+            539.0,
+            677.7698974609375
+          ]
+        ],
+        [
+          [
+            56.0,
+            677.7698974609375,
+            222.83111572265625,
+            688.7919311523438
+          ],
+          [
+            222.83111572265625,
+            677.7698974609375,
+            289.11199951171875,
+            688.7919311523438
+          ],
+          [
+            289.11199951171875,
+            677.7698974609375,
+            355.392578125,
+            688.7919311523438
+          ],
+          [
+            355.392578125,
+            677.7698974609375,
+            424.3944091796875,
+            688.7919311523438
+          ],
+          [
+            424.3944091796875,
+            677.7698974609375,
+            539.0,
+            688.7919311523438
+          ]
+        ],
+        [
+          [
+            56.0,
+            688.7919311523438,
+            222.83111572265625,
+            700.0
+          ],
+          [
+            222.83111572265625,
+            688.7919311523438,
+            289.11199951171875,
+            700.0
+          ],
+          [
+            289.11199951171875,
+            688.7919311523438,
+            355.392578125,
+            700.0
+          ],
+          [
+            355.392578125,
+            688.7919311523438,
+            424.3944091796875,
+            700.0
+          ],
+          [
+            424.3944091796875,
+            688.7919311523438,
+            539.0,
+            700.0
+          ]
+        ]
+      ],
+      "refined_table_cells": null,
+      "original_table_cells": null,
+      "original_backend_rows": null,
+      "row_bounds": [
+        [
+          202.0,
+          211.03378295898438
+        ],
+        [
+          211.03378295898438,
+          221.5963897705078
+        ],
+        [
+          221.5963897705078,
+          234.384765625
+        ],
+        [
+          234.384765625,
+          245.01486206054688
+        ],
+        [
+          245.01486206054688,
+          257.0281066894531
+        ],
+        [
+          257.0281066894531,
+          268.5526428222656
+        ],
+        [
+          268.5526428222656,
+          280.6699523925781
+        ],
+        [
+          280.6699523925781,
+          292.3392333984375
+        ],
+        [
+          292.3392333984375,
+          304.35247802734375
+        ],
+        [
+          304.35247802734375,
+          316.021728515625
+        ],
+        [
+          316.021728515625,
+          327.0438232421875
+        ],
+        [
+          327.0438232421875,
+          339.4603271484375
+        ],
+        [
+          339.4603271484375,
+          350.6856384277344
+        ],
+        [
+          350.6856384277344,
+          362.65496826171875
+        ],
+        [
+          362.65496826171875,
+          374.3242492675781
+        ],
+        [
+          374.3242492675781,
+          385.9935302734375
+        ],
+        [
+          385.9935302734375,
+          397.05963134765625
+        ],
+        [
+          397.05963134765625,
+          408.7769470214844
+        ],
+        [
+          408.7769470214844,
+          420.4461669921875
+        ],
+        [
+          420.4461669921875,
+          431.9226989746094
+        ],
+        [
+          431.9226989746094,
+          444.03997802734375
+        ],
+        [
+          444.03997802734375,
+          455.709228515625
+        ],
+        [
+          455.709228515625,
+          466.7313232421875
+        ],
+        [
+          466.7313232421875,
+          478.400634765625
+        ],
+        [
+          478.400634765625,
+          490.0699462890625
+        ],
+        [
+          490.0699462890625,
+          502.49444580078125
+        ],
+        [
+          502.49444580078125,
+          512.9645385742188
+        ],
+        [
+          512.9645385742188,
+          524.6338500976562
+        ],
+        [
+          524.6338500976562,
+          537.83837890625
+        ],
+        [
+          537.83837890625,
+          548.1636962890625
+        ],
+        [
+          548.1636962890625,
+          561.29296875
+        ],
+        [
+          561.29296875,
+          572.4022216796875
+        ],
+        [
+          572.4022216796875,
+          583.8162841796875
+        ],
+        [
+          583.8162841796875,
+          595.4855346679688
+        ],
+        [
+          595.4855346679688,
+          607.7620239257812
+        ],
+        [
+          607.7620239257812,
+          619.079345703125
+        ],
+        [
+          619.079345703125,
+          630.7486572265625
+        ],
+        [
+          630.7486572265625,
+          642.0706787109375
+        ],
+        [
+          642.0706787109375,
+          654.4312744140625
+        ],
+        [
+          654.4312744140625,
+          666.0565185546875
+        ],
+        [
+          666.0565185546875,
+          677.7698974609375
+        ],
+        [
+          677.7698974609375,
+          688.7919311523438
+        ],
+        [
+          688.7919311523438,
+          700.0
+        ]
+      ],
+      "horizontal_rules": [
+        202.0,
+        211.03378295898438,
+        221.5963897705078,
+        234.384765625,
+        245.01486206054688,
+        257.0281066894531,
+        268.5526428222656,
+        280.6699523925781,
+        292.3392333984375,
+        304.35247802734375,
+        316.021728515625,
+        327.0438232421875,
+        339.4603271484375,
+        350.6856384277344,
+        362.65496826171875,
+        374.3242492675781,
+        385.9935302734375,
+        397.05963134765625,
+        408.7769470214844,
+        420.4461669921875,
+        431.9226989746094,
+        444.03997802734375,
+        455.709228515625,
+        466.7313232421875,
+        478.400634765625,
+        490.0699462890625,
+        502.49444580078125,
+        512.9645385742188,
+        524.6338500976562,
+        537.83837890625,
+        548.1636962890625,
+        561.29296875,
+        572.4022216796875,
+        583.8162841796875,
+        595.4855346679688,
+        607.7620239257812,
+        619.079345703125,
+        630.7486572265625,
+        642.0706787109375,
+        654.4312744140625,
+        666.0565185546875,
+        677.7698974609375,
+        688.7919311523438,
+        700.0,
+        199.92718505859375,
+        202.0,
+        211.03378295898438,
+        221.59637451171875,
+        234.384765625,
+        245.01486206054688,
+        257.0281066894531,
+        268.5526428222656,
+        280.6699523925781,
+        292.3392333984375,
+        304.35247802734375,
+        316.021728515625,
+        327.0438232421875,
+        339.4603271484375,
+        350.6856384277344,
+        362.65496826171875,
+        374.3242492675781,
+        385.9935302734375,
+        397.05963134765625,
+        408.7769470214844,
+        420.4461669921875,
+        431.9226989746094,
+        444.03997802734375,
+        455.709228515625,
+        466.7313232421875,
+        478.400634765625,
+        490.0699462890625,
+        502.49444580078125,
+        512.9645385742188,
+        524.6338500976562,
+        537.83837890625,
+        548.1636962890625,
+        561.29296875,
+        572.4022216796875,
+        583.8162841796875,
+        595.4855346679688,
+        607.7620239257812,
+        619.079345703125,
+        630.7486572265625,
+        642.0706787109375,
+        654.4312744140625,
+        666.0565185546875,
+        677.7698974609375,
+        688.7919311523438,
+        700.0
+      ],
+      "table_orientation": "upright",
+      "rotation_source": "pymupdf_line_direction",
+      "rotation_direction": "upright",
+      "rotation_confidence": 1.0,
+      "signals": {
+        "caption_match": true,
+        "table_1_match": true,
+        "caption_table_number": 1,
+        "caption_is_continuation": false,
+        "first_column_text_ratio": 1.0,
+        "later_column_numeric_ratio": 0.9057,
+        "rectangular": false
+      },
+      "table_number": 1,
+      "is_continuation": false,
+      "continuation_of_table_number": null,
+      "bbox": [
+        56.0,
+        202.0,
+        539.0,
+        700.0
+      ],
+      "candidate_score": 0.95,
+      "table_numbering_audit": {
+        "observed_table_numbers": [
+          1,
+          2
+        ],
+        "missing_table_numbers": []
+      },
+      "source_page_num": 4,
+      "extraction_backend": "pymupdf4llm",
+      "cleaned_rows": [
+        [
+          "",
+          "All",
+          "Live",
+          "Dead",
+          "Dead cause of cardiovascular"
+        ],
+        [
+          "",
+          "(n = 7921)",
+          "(n = 6010)",
+          "(n = 1911)",
+          "(n = 585)"
+        ],
+        [
+          "Age(years)",
+          "60.79 \u00b1 12.18",
+          "57.55 \u00b1 10.95",
+          "70.97 \u00b1 10.05\u2021",
+          "72.75 \u00b1 9.52\u2021"
+        ],
+        [
+          "Male",
+          "3866(48.81%)",
+          "2800(46.59%)",
+          "1066(55.78%)",
+          "322(55.04%)"
+        ],
+        [
+          "BMI(Kg/m2)",
+          "28.57 \u00b1 7.13",
+          "29.01 \u00b1 6.83",
+          "27.2 \u00b1 7.86\u2021",
+          "27.28 \u00b1 8.26\u2021"
+        ],
+        [
+          "Education level",
+          "",
+          "",
+          "\u2020",
+          ""
+        ],
+        [
+          "Less Than 9th Grade",
+          "1287(16.25%)",
+          "929(15.46%)",
+          "358(18.73%)",
+          "106(18.12%)"
+        ],
+        [
+          "9-11th Grade",
+          "1318(16.64%)",
+          "931(15.49%)",
+          "387(20.25%)",
+          "127(21.71%)"
+        ],
+        [
+          "High School Grad/GED or Equivalent",
+          "1853(23.39%)",
+          "1381(22.98%)",
+          "472(24.70%)",
+          "153(26.15%)"
+        ],
+        [
+          "Some College or AA degree",
+          "1937(24.45%)",
+          "1513(25.17%)",
+          "424(22.19%)",
+          "122(20.85%)"
+        ],
+        [
+          "College Graduate or above",
+          "1526(19.27%)",
+          "1256(20.90%)",
+          "270(14.13%)",
+          "77(13.16%)"
+        ],
+        [
+          "Ethnicity",
+          "",
+          "",
+          "\u2021",
+          "\u2021"
+        ],
+        [
+          "Mexican American",
+          "1256(15.86%)",
+          "1095(18.22%)",
+          "161(8.42%)",
+          "34(5.81%)"
+        ],
+        [
+          "Other Hispanic",
+          "825(10.42%)",
+          "689(11.46%)",
+          "136(7.12%)",
+          "46(7.86%)"
+        ],
+        [
+          "Non-Hispanic White",
+          "3961(50.01%)",
+          "2786(46.36%)",
+          "1175(61.49%)",
+          "372(63.59%)"
+        ],
+        [
+          "Non-Hispanic Black",
+          "1537(19.40%)",
+          "1165(19.38%)",
+          "372(19.47%)",
+          "110(18.80%)"
+        ],
+        [
+          "Other Race - Including Multi-Racial",
+          "342(4.32%)",
+          "275(4.58%)",
+          "67(3.51%)",
+          "23(3.93%)"
+        ],
+        [
+          "The ratio of household income to poverty line",
+          "2.33 \u00b1 1.72",
+          "2.45 \u00b1 1.78",
+          "1.94 \u00b1 1.47\u2021",
+          "1.93 \u00b1 1.43\u2021"
+        ],
+        [
+          "Hypertension",
+          "4453(56.22%)",
+          "3048(50.72%)",
+          "1405(73.52%)\u2021",
+          "456(77.95%)\u2021"
+        ],
+        [
+          "Diabetes",
+          "",
+          "",
+          "\u2021",
+          "\u2021"
+        ],
+        [
+          "No diabetes",
+          "5856(73.93%)",
+          "4678(77.84%)",
+          "1178(61.64%)",
+          "346(59.15%)"
+        ],
+        [
+          "Diabetes",
+          "1557(19.66%)",
+          "977(16.26%)",
+          "580(30.35%)",
+          "190(32.48%)"
+        ],
+        [
+          "Prediabetes",
+          "508(6.41%)",
+          "355(5.91%)",
+          "153(8.01%)",
+          "49(8.38%)"
+        ],
+        [
+          "Close relative heart attack",
+          "1322(16.69%)",
+          "946(15.74%)",
+          "376(19.68%)\u2021",
+          "125(21.37%)\u2021"
+        ],
+        [
+          "Close relative diabetes",
+          "3455(43.62%)",
+          "2688(44.73%)",
+          "767(40.14%)\u2021",
+          "227(38.80%)\u2021"
+        ],
+        [
+          "non_HDL (mmol/L)",
+          "3.57 \u00b1 1.31",
+          "3.69 \u00b1 1.27",
+          "3.2 \u00b1 1.36\u2021",
+          "3.17 \u00b1 1.35\u2021"
+        ],
+        [
+          "CRP",
+          "0.42 \u00b1 0.86",
+          "0.38 \u00b1 0.73",
+          "0.53 \u00b1 1.17",
+          "0.53 \u00b1 1.09"
+        ],
+        [
+          "diet score",
+          "47.55 \u00b1 16.59",
+          "48.37 \u00b1 16.07",
+          "44.99 \u00b1 17.88\u2021",
+          "44.08 \u00b1 18.51\u2021"
+        ],
+        [
+          "physical level",
+          "",
+          "",
+          "\u2021",
+          "\u2021"
+        ],
+        [
+          "inactive",
+          "2825(35.66%)",
+          "1820(30.28%)",
+          "1005(52.59%)",
+          "316(54.02%)"
+        ],
+        [
+          "insufcient active",
+          "1129(14.25%)",
+          "863(14.36%)",
+          "266(13.92%)",
+          "80(13.68%)"
+        ],
+        [
+          "active",
+          "949(11.98%)",
+          "765(12.73%)",
+          "184(9.63%)",
+          "66(11.28%)"
+        ],
+        [
+          "highly active",
+          "3018(38.10%)",
+          "2562(42.63%)",
+          "456(23.86%)",
+          "123(21.03%)"
+        ],
+        [
+          "Sedentary minutes",
+          "331.98 \u00b1 411.55",
+          "317.34 \u00b1 403.55",
+          "378.01 \u00b1 432.64\u2021",
+          "374.89 \u00b1 194.81\u2021"
+        ],
+        [
+          "sleep level",
+          "",
+          "",
+          "\u2021",
+          "\u2021"
+        ],
+        [
+          "Poor",
+          "1586(20.02%)",
+          "1123(18.69%)",
+          "463(24.23%)",
+          "134(22.91%)"
+        ],
+        [
+          "intermediate",
+          "396(5.00%)",
+          "265(4.41%)",
+          "131(6.86%)",
+          "48(8.21%)"
+        ],
+        [
+          "optimal",
+          "5939(74.98%)",
+          "4622(76.91%)",
+          "1317(68.92%)",
+          "403(68.89%)"
+        ],
+        [
+          "Smoking",
+          "",
+          "",
+          "\u2021",
+          "\u2021"
+        ],
+        [
+          "No smoking",
+          "3946(49.82%)",
+          "3175(52.83%)",
+          "771(40.35%)",
+          "269(45.98%)"
+        ],
+        [
+          "Smoking before",
+          "2495(31.50%)",
+          "1718(28.59%)",
+          "777(40.66%)",
+          "230(39.32%)"
+        ],
+        [
+          "Smoking",
+          "1480(18.68%)",
+          "1117(18.59%)",
+          "363(19.00%)",
+          "86(14.70%)"
+        ],
+        [
+          "Alcohol consumption per day",
+          "3.99 \u00b1 14.33",
+          "4.31 \u00b1 12.83",
+          "2.96 \u00b1 18.24\u2021",
+          "3.36 \u00b1 23.74\u2021"
+        ]
+      ],
+      "dropped_leading_cols": 0,
+      "dropped_trailing_cols": 0,
+      "column_repairs": {
+        "leading_label_fragment_repairs": 0,
+        "merged_columns": [],
+        "dropped_empty_columns_after_repair": []
+      },
+      "header_detection": {
+        "source": "horizontal_rules+promotion",
+        "rule_strength": "strong",
+        "rule_based_headers": [
+          0
+        ],
+        "content_based_headers": [
+          0,
+          1
+        ],
+        "promoted_header_rows": [
+          1
+        ],
+        "rule_content_disagreement": true
+      },
+      "indentation_informative": false,
+      "text_cleaning_provenance": {
+        "observed_symbol_counts": {
+          "<": 0,
+          "<=": 0,
+          ">": 0,
+          ">=": 0
+        },
+        "reconstructed_symbol_counts": {
+          "<": 0,
+          "<=": 0,
+          ">": 0,
+          ">=": 0
+        },
+        "total_observed_symbol_count": 0,
+        "total_reconstructed_symbol_count": 0,
+        "extractor_glyph_repair_rule_counts": {
+          "replacement_char_le_threshold": 0
+        },
+        "cells_with_extractor_glyph_repairs": 0
+      }
+    }
+  },
+  {
+    "table_id": "cardiovascular-p5-t0",
+    "title": "Table 2 AUC score of all models",
+    "caption": "Table 2 AUC score of all models",
+    "header_rows": [
+      0
+    ],
+    "body_rows": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14
+    ],
+    "row_views": [
+      {
+        "row_idx": 1,
+        "raw_cells": [
+          "",
+          "parameter combination",
+          "",
+          "optimal parameter",
+          ""
+        ],
+        "first_cell_raw": "",
+        "first_cell_normalized": "",
+        "first_cell_alpha_only": "",
+        "nonempty_cell_count": 2,
+        "numeric_cell_count": 0,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 2,
+        "raw_cells": [
+          "",
+          "in the training cohort",
+          "",
+          "combination",
+          ""
+        ],
+        "first_cell_raw": "",
+        "first_cell_normalized": "",
+        "first_cell_alpha_only": "",
+        "nonempty_cell_count": 2,
+        "numeric_cell_count": 0,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 3,
+        "raw_cells": [
+          "",
+          "",
+          "",
+          "in the testing cohort",
+          ""
+        ],
+        "first_cell_raw": "",
+        "first_cell_normalized": "",
+        "first_cell_alpha_only": "",
+        "nonempty_cell_count": 1,
+        "numeric_cell_count": 0,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 4,
+        "raw_cells": [
+          "",
+          "All-cause",
+          "Cardio-",
+          "All-cause",
+          "Cardio-"
+        ],
+        "first_cell_raw": "",
+        "first_cell_normalized": "",
+        "first_cell_alpha_only": "",
+        "nonempty_cell_count": 4,
+        "numeric_cell_count": 0,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 5,
+        "raw_cells": [
+          "",
+          "mortality",
+          "vascular",
+          "mortality",
+          "vascular"
+        ],
+        "first_cell_raw": "",
+        "first_cell_normalized": "",
+        "first_cell_alpha_only": "",
+        "nonempty_cell_count": 4,
+        "numeric_cell_count": 0,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 6,
+        "raw_cells": [
+          "",
+          "",
+          "mortality",
+          "",
+          "mortality"
+        ],
+        "first_cell_raw": "",
+        "first_cell_normalized": "",
+        "first_cell_alpha_only": "",
+        "nonempty_cell_count": 2,
+        "numeric_cell_count": 0,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 7,
+        "raw_cells": [
+          "Logistic",
+          "0.860",
+          "0.831",
+          "0.852",
+          "0.829"
+        ],
+        "first_cell_raw": "Logistic",
+        "first_cell_normalized": "Logistic",
+        "first_cell_alpha_only": "Logistic",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 8,
+        "raw_cells": [
+          "Regression",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "first_cell_raw": "Regression",
+        "first_cell_normalized": "Regression",
+        "first_cell_alpha_only": "Regression",
+        "nonempty_cell_count": 1,
+        "numeric_cell_count": 0,
+        "has_trailing_values": false,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 9,
+        "raw_cells": [
+          "Ridge Regression",
+          "0.860",
+          "0.829",
+          "0.852",
+          "0.829"
+        ],
+        "first_cell_raw": "Ridge Regression",
+        "first_cell_normalized": "Ridge Regression",
+        "first_cell_alpha_only": "Ridge Regression",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 10,
+        "raw_cells": [
+          "SVM",
+          "0.851",
+          "0.782",
+          "0.849",
+          "0.737"
+        ],
+        "first_cell_raw": "SVM",
+        "first_cell_normalized": "SVM",
+        "first_cell_alpha_only": "SVM",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 11,
+        "raw_cells": [
+          "Random Forest",
+          "0.859",
+          "0.851",
+          "0.842",
+          "0.825"
+        ],
+        "first_cell_raw": "Random Forest",
+        "first_cell_normalized": "Random Forest",
+        "first_cell_alpha_only": "Random Forest",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 12,
+        "raw_cells": [
+          "XGBoost",
+          "0.881",
+          "0.853",
+          "0.862",
+          "0.836"
+        ],
+        "first_cell_raw": "XGBoost",
+        "first_cell_normalized": "XGBoost",
+        "first_cell_alpha_only": "XGBoost",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 13,
+        "raw_cells": [
+          "Cox proportional",
+          "0.850",
+          "0.824",
+          "0.844",
+          "0.823"
+        ],
+        "first_cell_raw": "Cox proportional",
+        "first_cell_normalized": "Cox proportional",
+        "first_cell_alpha_only": "Cox proportional",
+        "nonempty_cell_count": 5,
+        "numeric_cell_count": 4,
+        "has_trailing_values": true,
+        "indent_level": 0,
+        "likely_role": null
+      },
+      {
+        "row_idx": 14,
+        "raw_cells": [
+          "hazards",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "first_cell_raw": "hazards",
+        "first_cell_normalized": "hazards",
+        "first_cell_alpha_only": "hazards",
+        "nonempty_cell_count": 1,
+        "numeric_cell_count": 0,
+        "has_trailing_values": false,
+        "indent_level": 0,
+        "likely_role": null
+      }
+    ],
+    "n_rows": 15,
+    "n_cols": 5,
+    "metadata": {
+      "layout_source": "pymupdf4llm_json",
+      "caption_source": "page_text_fallback",
+      "primary_representation": "json",
+      "extractor_used": "pymupdf4llm",
+      "fallback_used": false,
+      "row_count": 15,
+      "col_count": 5,
+      "explicit_grid_refined_from_words": false,
+      "grid_refinement_source": null,
+      "geometry_coordinate_frame": "page",
+      "table_markdown": "||**The AUC of the optimal**|**The AUC of the optimal**|**The AUC of the**|**The AUC of the**|\n|---|---|---|---|---|\n||**parameter combination**||**optimal parameter**||\n||**in the training cohort**||**combination**||\n||||**in the testing cohort**||\n||All-cause|Cardio-|All-cause|Cardio-|\n||mortality|vascular|mortality|vascular|\n|||mortality||mortality|\n|Logistic|0.860|0.831|0.852|0.829|\n|Regression|||||\n|Ridge Regression|0.860|0.829|0.852|0.829|\n|SVM|0.851|0.782|0.849|0.737|\n|Random Forest|0.859|0.851|0.842|0.825|\n|XGBoost|0.881|0.853|0.862|0.836|\n|Cox proportional|0.850|0.824|0.844|0.823|\n|hazards|||||\n\n",
+      "table_cells": [
+        [
+          [
+            56.0,
+            99.0,
+            116.52198791503906,
+            108.20608520507812
+          ],
+          [
+            116.52198791503906,
+            99.0,
+            206.98635864257812,
+            108.20608520507812
+          ],
+          null,
+          [
+            206.98635864257812,
+            99.0,
+            291.0,
+            108.20608520507812
+          ],
+          null
+        ],
+        [
+          [
+            56.0,
+            108.20608520507812,
+            116.52198791503906,
+            118.20608520507812
+          ],
+          [
+            116.52198791503906,
+            108.20608520507812,
+            206.98635864257812,
+            118.20608520507812
+          ],
+          null,
+          [
+            206.98635864257812,
+            108.20608520507812,
+            291.0,
+            118.20608520507812
+          ],
+          null
+        ],
+        [
+          [
+            56.0,
+            118.20608520507812,
+            116.52198791503906,
+            128.25009155273438
+          ],
+          [
+            116.52198791503906,
+            118.20608520507812,
+            206.98635864257812,
+            128.25009155273438
+          ],
+          null,
+          [
+            206.98635864257812,
+            118.20608520507812,
+            254.94659423828125,
+            128.25009155273438
+          ],
+          [
+            254.94659423828125,
+            118.20608520507812,
+            291.0,
+            128.25009155273438
+          ]
+        ],
+        [
+          [
+            56.0,
+            128.25009155273438,
+            116.52198791503906,
+            138.08880615234375
+          ],
+          [
+            116.52198791503906,
+            128.25009155273438,
+            156.16390991210938,
+            138.08880615234375
+          ],
+          [
+            156.16390991210938,
+            128.25009155273438,
+            206.98635864257812,
+            138.08880615234375
+          ],
+          [
+            206.98635864257812,
+            128.25009155273438,
+            291.0,
+            138.08880615234375
+          ],
+          null
+        ],
+        [
+          [
+            56.0,
+            138.08880615234375,
+            116.52198791503906,
+            149.20242309570312
+          ],
+          [
+            116.52198791503906,
+            138.08880615234375,
+            156.16390991210938,
+            149.20242309570312
+          ],
+          [
+            156.16390991210938,
+            138.08880615234375,
+            206.98635864257812,
+            149.20242309570312
+          ],
+          [
+            206.98635864257812,
+            138.08880615234375,
+            254.94659423828125,
+            149.20242309570312
+          ],
+          [
+            254.94659423828125,
+            138.08880615234375,
+            291.0,
+            149.20242309570312
+          ]
+        ],
+        [
+          [
+            56.0,
+            149.20242309570312,
+            116.52198791503906,
+            160.04241943359375
+          ],
+          [
+            116.52198791503906,
+            149.20242309570312,
+            156.16390991210938,
+            160.04241943359375
+          ],
+          [
+            156.16390991210938,
+            149.20242309570312,
+            206.98635864257812,
+            160.04241943359375
+          ],
+          [
+            206.98635864257812,
+            149.20242309570312,
+            254.94659423828125,
+            160.04241943359375
+          ],
+          [
+            254.94659423828125,
+            149.20242309570312,
+            291.0,
+            160.04241943359375
+          ]
+        ],
+        [
+          [
+            56.0,
+            160.04241943359375,
+            116.52198791503906,
+            171.0210418701172
+          ],
+          [
+            116.52198791503906,
+            160.04241943359375,
+            156.16390991210938,
+            171.0210418701172
+          ],
+          [
+            156.16390991210938,
+            160.04241943359375,
+            206.98635864257812,
+            171.0210418701172
+          ],
+          [
+            206.98635864257812,
+            160.04241943359375,
+            254.94659423828125,
+            171.0210418701172
+          ],
+          [
+            254.94659423828125,
+            160.04241943359375,
+            291.0,
+            171.0210418701172
+          ]
+        ],
+        [
+          [
+            56.0,
+            171.0210418701172,
+            116.52198791503906,
+            181.78765869140625
+          ],
+          [
+            116.52198791503906,
+            171.0210418701172,
+            156.16390991210938,
+            181.78765869140625
+          ],
+          [
+            156.16390991210938,
+            171.0210418701172,
+            206.98635864257812,
+            181.78765869140625
+          ],
+          [
+            206.98635864257812,
+            171.0210418701172,
+            254.94659423828125,
+            181.78765869140625
+          ],
+          [
+            254.94659423828125,
+            171.0210418701172,
+            291.0,
+            181.78765869140625
+          ]
+        ],
+        [
+          [
+            56.0,
+            181.78765869140625,
+            116.52198791503906,
+            192.49832153320312
+          ],
+          [
+            116.52198791503906,
+            181.78765869140625,
+            156.16390991210938,
+            192.49832153320312
+          ],
+          [
+            156.16390991210938,
+            181.78765869140625,
+            206.98635864257812,
+            192.49832153320312
+          ],
+          [
+            206.98635864257812,
+            181.78765869140625,
+            254.94659423828125,
+            192.49832153320312
+          ],
+          [
+            254.94659423828125,
+            181.78765869140625,
+            291.0,
+            192.49832153320312
+          ]
+        ],
+        [
+          [
+            56.0,
+            192.49832153320312,
+            116.52198791503906,
+            204.26763916015625
+          ],
+          [
+            116.52198791503906,
+            192.49832153320312,
+            156.16390991210938,
+            204.26763916015625
+          ],
+          [
+            156.16390991210938,
+            192.49832153320312,
+            206.98635864257812,
+            204.26763916015625
+          ],
+          [
+            206.98635864257812,
+            192.49832153320312,
+            254.94659423828125,
+            204.26763916015625
+          ],
+          [
+            254.94659423828125,
+            192.49832153320312,
+            291.0,
+            204.26763916015625
+          ]
+        ],
+        [
+          [
+            56.0,
+            204.26763916015625,
+            116.52198791503906,
+            215.0489501953125
+          ],
+          [
+            116.52198791503906,
+            204.26763916015625,
+            156.16390991210938,
+            215.0489501953125
+          ],
+          [
+            156.16390991210938,
+            204.26763916015625,
+            206.98635864257812,
+            215.0489501953125
+          ],
+          [
+            206.98635864257812,
+            204.26763916015625,
+            254.94659423828125,
+            215.0489501953125
+          ],
+          [
+            254.94659423828125,
+            204.26763916015625,
+            291.0,
+            215.0489501953125
+          ]
+        ],
+        [
+          [
+            56.0,
+            215.0489501953125,
+            116.52198791503906,
+            226.83425903320312
+          ],
+          [
+            116.52198791503906,
+            215.0489501953125,
+            156.16390991210938,
+            226.83425903320312
+          ],
+          [
+            156.16390991210938,
+            215.0489501953125,
+            206.98635864257812,
+            226.83425903320312
+          ],
+          [
+            206.98635864257812,
+            215.0489501953125,
+            254.94659423828125,
+            226.83425903320312
+          ],
+          [
+            254.94659423828125,
+            215.0489501953125,
+            291.0,
+            226.83425903320312
+          ]
+        ],
+        [
+          [
+            56.0,
+            226.83425903320312,
+            116.52198791503906,
+            238.383544921875
+          ],
+          [
+            116.52198791503906,
+            226.83425903320312,
+            156.16390991210938,
+            238.383544921875
+          ],
+          [
+            156.16390991210938,
+            226.83425903320312,
+            206.98635864257812,
+            238.383544921875
+          ],
+          [
+            206.98635864257812,
+            226.83425903320312,
+            254.94659423828125,
+            238.383544921875
+          ],
+          [
+            254.94659423828125,
+            226.83425903320312,
+            291.0,
+            238.383544921875
+          ]
+        ],
+        [
+          [
+            56.0,
+            238.383544921875,
+            116.52198791503906,
+            249.96615600585938
+          ],
+          [
+            116.52198791503906,
+            238.383544921875,
+            156.16390991210938,
+            249.96615600585938
+          ],
+          [
+            156.16390991210938,
+            238.383544921875,
+            206.98635864257812,
+            249.96615600585938
+          ],
+          [
+            206.98635864257812,
+            238.383544921875,
+            254.94659423828125,
+            249.96615600585938
+          ],
+          [
+            254.94659423828125,
+            238.383544921875,
+            291.0,
+            249.96615600585938
+          ]
+        ],
+        [
+          [
+            56.0,
+            249.96615600585938,
+            116.52198791503906,
+            258.0
+          ],
+          [
+            116.52198791503906,
+            249.96615600585938,
+            156.16390991210938,
+            258.0
+          ],
+          [
+            156.16390991210938,
+            249.96615600585938,
+            206.98635864257812,
+            258.0
+          ],
+          [
+            206.98635864257812,
+            249.96615600585938,
+            254.94659423828125,
+            258.0
+          ],
+          [
+            254.94659423828125,
+            249.96615600585938,
+            291.0,
+            258.0
+          ]
+        ]
+      ],
+      "refined_table_cells": null,
+      "original_table_cells": null,
+      "original_backend_rows": null,
+      "row_bounds": [
+        [
+          99.0,
+          108.20608520507812
+        ],
+        [
+          108.20608520507812,
+          118.20608520507812
+        ],
+        [
+          118.20608520507812,
+          128.25009155273438
+        ],
+        [
+          128.25009155273438,
+          138.08880615234375
+        ],
+        [
+          138.08880615234375,
+          149.20242309570312
+        ],
+        [
+          149.20242309570312,
+          160.04241943359375
+        ],
+        [
+          160.04241943359375,
+          171.0210418701172
+        ],
+        [
+          171.0210418701172,
+          181.78765869140625
+        ],
+        [
+          181.78765869140625,
+          192.49832153320312
+        ],
+        [
+          192.49832153320312,
+          204.26763916015625
+        ],
+        [
+          204.26763916015625,
+          215.0489501953125
+        ],
+        [
+          215.0489501953125,
+          226.83425903320312
+        ],
+        [
+          226.83425903320312,
+          238.383544921875
+        ],
+        [
+          238.383544921875,
+          249.96615600585938
+        ],
+        [
+          249.96615600585938,
+          258.0
+        ]
+      ],
+      "horizontal_rules": [
+        99.0,
+        108.20608520507812,
+        118.20608520507812,
+        128.25009155273438,
+        138.08880615234375,
+        149.20242309570312,
+        160.04241943359375,
+        171.0210418701172,
+        181.78765869140625,
+        192.49832153320312,
+        204.26763916015625,
+        215.0489501953125,
+        226.83425903320312,
+        238.383544921875,
+        249.96615600585938,
+        258.0,
+        96.41949462890625,
+        99.0,
+        108.20608520507812,
+        118.20608520507812,
+        128.25009155273438,
+        138.08880615234375,
+        149.20242309570312,
+        160.04241943359375,
+        171.0210418701172,
+        181.78765869140625,
+        192.49832153320312,
+        204.26763916015625,
+        215.0489501953125,
+        226.83425903320312,
+        238.383544921875,
+        249.96615600585938,
+        258.0,
+        259.84881591796875
+      ],
+      "table_orientation": "upright",
+      "rotation_source": "pymupdf_line_direction",
+      "rotation_direction": "upright",
+      "rotation_confidence": 1.0,
+      "signals": {
+        "caption_match": true,
+        "table_1_match": false,
+        "caption_table_number": 2,
+        "caption_is_continuation": false,
+        "first_column_text_ratio": 1.0,
+        "later_column_numeric_ratio": 0.5854,
+        "rectangular": false
+      },
+      "table_number": 2,
+      "is_continuation": false,
+      "continuation_of_table_number": null,
+      "bbox": [
+        56.0,
+        99.0,
+        291.0,
+        258.0
+      ],
+      "candidate_score": 0.9000000000000001,
+      "table_numbering_audit": {
+        "observed_table_numbers": [
+          1,
+          2
+        ],
+        "missing_table_numbers": []
+      },
+      "source_page_num": 5,
+      "extraction_backend": "pymupdf4llm",
+      "cleaned_rows": [
+        [
+          "",
+          "The AUC of the optimal",
+          "",
+          "The AUC of the",
+          ""
+        ],
+        [
+          "",
+          "parameter combination",
+          "",
+          "optimal parameter",
+          ""
+        ],
+        [
+          "",
+          "in the training cohort",
+          "",
+          "combination",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          "in the testing cohort",
+          ""
+        ],
+        [
+          "",
+          "All-cause",
+          "Cardio-",
+          "All-cause",
+          "Cardio-"
+        ],
+        [
+          "",
+          "mortality",
+          "vascular",
+          "mortality",
+          "vascular"
+        ],
+        [
+          "",
+          "",
+          "mortality",
+          "",
+          "mortality"
+        ],
+        [
+          "Logistic",
+          "0.860",
+          "0.831",
+          "0.852",
+          "0.829"
+        ],
+        [
+          "Regression",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "Ridge Regression",
+          "0.860",
+          "0.829",
+          "0.852",
+          "0.829"
+        ],
+        [
+          "SVM",
+          "0.851",
+          "0.782",
+          "0.849",
+          "0.737"
+        ],
+        [
+          "Random Forest",
+          "0.859",
+          "0.851",
+          "0.842",
+          "0.825"
+        ],
+        [
+          "XGBoost",
+          "0.881",
+          "0.853",
+          "0.862",
+          "0.836"
+        ],
+        [
+          "Cox proportional",
+          "0.850",
+          "0.824",
+          "0.844",
+          "0.823"
+        ],
+        [
+          "hazards",
+          "",
+          "",
+          "",
+          ""
+        ]
+      ],
+      "dropped_leading_cols": 0,
+      "dropped_trailing_cols": 0,
+      "column_repairs": {
+        "leading_label_fragment_repairs": 0,
+        "merged_columns": [],
+        "dropped_empty_columns_after_repair": []
+      },
+      "header_detection": {
+        "source": "horizontal_rules",
+        "rule_strength": "strong",
+        "rule_based_headers": [
+          0
+        ],
+        "content_based_headers": [
+          0,
+          1
+        ],
+        "promoted_header_rows": [],
+        "rule_content_disagreement": true
+      },
+      "indentation_informative": false,
+      "text_cleaning_provenance": {
+        "observed_symbol_counts": {
+          "<": 0,
+          "<=": 0,
+          ">": 0,
+          ">=": 0
+        },
+        "reconstructed_symbol_counts": {
+          "<": 0,
+          "<=": 0,
+          ">": 0,
+          ">=": 0
+        },
+        "total_observed_symbol_count": 0,
+        "total_reconstructed_symbol_count": 0,
+        "extractor_glyph_repair_rule_counts": {
+          "replacement_char_le_threshold": 0
+        },
+        "cells_with_extractor_glyph_repairs": 0
+      }
+    }
+  }
+]

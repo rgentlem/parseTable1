@@ -1,0 +1,2819 @@
+[
+  {
+    "table_id": "hypertension-p5-t0",
+    "title": "Table 1 Baseline characteristics of participants by lifestyle categories among 24,453 US adults in NHANES (2007\u20132018)",
+    "caption": "Table 1 Baseline characteristics of participants by lifestyle categories among 24,453 US adults in NHANES (2007\u20132018)",
+    "variables": [
+      {
+        "variable_name": "physically active physically inactive physically inactive but physically",
+        "variable_label": "physically active physically inactive physically inactive but physically",
+        "variable_type": "categorical",
+        "row_start": 2,
+        "row_end": 4,
+        "levels": [
+          {
+            "label": "",
+            "row_idx": 3
+          },
+          {
+            "label": "Hypertension",
+            "row_idx": 4
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Age mean",
+        "variable_label": "Age (years), mean (95% CI)",
+        "variable_type": "continuous",
+        "row_start": 5,
+        "row_end": 5,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Gender",
+        "variable_label": "Gender",
+        "variable_type": "binary",
+        "row_start": 6,
+        "row_end": 8,
+        "levels": [
+          {
+            "label": "Male",
+            "row_idx": 7
+          },
+          {
+            "label": "Female",
+            "row_idx": 8
+          }
+        ],
+        "confidence": 0.95
+      },
+      {
+        "variable_name": "Races ethnicity",
+        "variable_label": "Races/ethnicity",
+        "variable_type": "categorical",
+        "row_start": 9,
+        "row_end": 13,
+        "levels": [
+          {
+            "label": "Non-Hispanic white",
+            "row_idx": 10
+          },
+          {
+            "label": "Non-Hispanic black",
+            "row_idx": 11
+          },
+          {
+            "label": "Mexican American",
+            "row_idx": 12
+          },
+          {
+            "label": "Other Race",
+            "row_idx": 13
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Educations Levels",
+        "variable_label": "Educations Levels",
+        "variable_type": "categorical",
+        "row_start": 14,
+        "row_end": 17,
+        "levels": [
+          {
+            "label": "Below high school",
+            "row_idx": 15
+          },
+          {
+            "label": "High School",
+            "row_idx": 16
+          },
+          {
+            "label": "College/Above",
+            "row_idx": 17
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Smoking status",
+        "variable_label": "Smoking status",
+        "variable_type": "categorical",
+        "row_start": 18,
+        "row_end": 21,
+        "levels": [
+          {
+            "label": "Never",
+            "row_idx": 19
+          },
+          {
+            "label": "Former",
+            "row_idx": 20
+          },
+          {
+            "label": "Now",
+            "row_idx": 21
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Alcohol drinker",
+        "variable_label": "Alcohol drinker",
+        "variable_type": "categorical",
+        "row_start": 22,
+        "row_end": 25,
+        "levels": [
+          {
+            "label": "Never",
+            "row_idx": 23
+          },
+          {
+            "label": "Former",
+            "row_idx": 24
+          },
+          {
+            "label": "Now",
+            "row_idx": 25
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Marital",
+        "variable_label": "Marital",
+        "variable_type": "categorical",
+        "row_start": 26,
+        "row_end": 29,
+        "levels": [
+          {
+            "label": "Widowed or divorced or separated",
+            "row_idx": 27
+          },
+          {
+            "label": "Never married",
+            "row_idx": 28
+          },
+          {
+            "label": "Married or living with a partner",
+            "row_idx": 29
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Poverty mean",
+        "variable_label": "Poverty, mean",
+        "variable_type": "continuous",
+        "row_start": 30,
+        "row_end": 30,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "BMI mean",
+        "variable_label": "BMI (kg/m2), mean (95% CI)",
+        "variable_type": "continuous",
+        "row_start": 33,
+        "row_end": 33,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Total cholesterol mean",
+        "variable_label": "Total cholesterol (mg/dl), mean",
+        "variable_type": "continuous",
+        "row_start": 34,
+        "row_end": 34,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "HDL C mean",
+        "variable_label": "HDL-C (mg/dl), mean (95% CI)",
+        "variable_type": "continuous",
+        "row_start": 36,
+        "row_end": 36,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Hei 2015 mean",
+        "variable_label": "Hei-2015, (Score), mean (95% CI)",
+        "variable_type": "continuous",
+        "row_start": 37,
+        "row_end": 37,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Hei 2015 levels",
+        "variable_label": "Hei-2015 levels, (Score)",
+        "variable_type": "categorical",
+        "row_start": 38,
+        "row_end": 40,
+        "levels": [
+          {
+            "label": "<\u200953.5",
+            "row_idx": 39
+          },
+          {
+            "label": "\u2265\u200953.5",
+            "row_idx": 40
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "PA Met minutes week mean 95",
+        "variable_label": "PA, Met-minutes/week, mean (95%",
+        "variable_type": "continuous",
+        "row_start": 41,
+        "row_end": 41,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "week",
+        "variable_label": "week)",
+        "variable_type": "categorical",
+        "row_start": 44,
+        "row_end": 46,
+        "levels": [
+          {
+            "label": "Inactive (<\u2009600)",
+            "row_idx": 45
+          },
+          {
+            "label": "Increased",
+            "row_idx": 46
+          }
+        ],
+        "confidence": 0.92
+      }
+    ],
+    "columns": [
+      {
+        "col_idx": 1,
+        "column_name": "column_1",
+        "column_label": "",
+        "inferred_role": "group",
+        "confidence": 0.82
+      },
+      {
+        "col_idx": 2,
+        "column_name": "Lifestyle Total",
+        "column_label": "Lifestyle Total",
+        "inferred_role": "overall",
+        "confidence": 0.84
+      },
+      {
+        "col_idx": 3,
+        "column_name": "categories n weighted Healthy diet",
+        "column_label": "categories, n (weighted Healthy diet",
+        "inferred_role": "group",
+        "confidence": 0.9
+      },
+      {
+        "col_idx": 4,
+        "column_name": "and Healthy",
+        "column_label": "%) and Healthy",
+        "inferred_role": "group",
+        "confidence": 0.9
+      },
+      {
+        "col_idx": 5,
+        "column_name": "diet but",
+        "column_label": "diet but",
+        "inferred_role": "group",
+        "confidence": 0.82
+      },
+      {
+        "col_idx": 6,
+        "column_name": "Unhealthy",
+        "column_label": "Unhealthy",
+        "inferred_role": "group",
+        "confidence": 0.82
+      },
+      {
+        "col_idx": 7,
+        "column_name": "diet",
+        "column_label": "diet",
+        "inferred_role": "group",
+        "confidence": 0.82
+      },
+      {
+        "col_idx": 8,
+        "column_name": "and Unhealthy",
+        "column_label": "and Unhealthy",
+        "inferred_role": "group",
+        "confidence": 0.82
+      },
+      {
+        "col_idx": 9,
+        "column_name": "diet P value",
+        "column_label": "diet P value",
+        "inferred_role": "p_value",
+        "confidence": 0.97
+      }
+    ],
+    "values": [
+      {
+        "row_idx": 3,
+        "col_idx": 8,
+        "variable_name": "physically active physically inactive physically inactive but physically",
+        "level_label": "",
+        "column_name": "and Unhealthy",
+        "raw_value": "active",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 2,
+        "variable_name": "physically active physically inactive physically inactive but physically",
+        "level_label": "Hypertension",
+        "column_name": "Lifestyle Total",
+        "raw_value": "10,938(38.5)",
+        "value_type": "count",
+        "parsed_numeric": 10938.0,
+        "parsed_secondary_numeric": 38.5,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 3,
+        "variable_name": "physically active physically inactive physically inactive but physically",
+        "level_label": "Hypertension",
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "3001(33.1)",
+        "value_type": "count",
+        "parsed_numeric": 3001.0,
+        "parsed_secondary_numeric": 33.1,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 4,
+        "variable_name": "physically active physically inactive physically inactive but physically",
+        "level_label": "Hypertension",
+        "column_name": "and Healthy",
+        "raw_value": "2731(50.0)",
+        "value_type": "count",
+        "parsed_numeric": 2731.0,
+        "parsed_secondary_numeric": 50.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 6,
+        "variable_name": "physically active physically inactive physically inactive but physically",
+        "level_label": "Hypertension",
+        "column_name": "Unhealthy",
+        "raw_value": "2653(47.6)",
+        "value_type": "count",
+        "parsed_numeric": 2653.0,
+        "parsed_secondary_numeric": 47.6,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 8,
+        "variable_name": "physically active physically inactive physically inactive but physically",
+        "level_label": "Hypertension",
+        "column_name": "and Unhealthy",
+        "raw_value": "2553(32.7)",
+        "value_type": "count",
+        "parsed_numeric": 2553.0,
+        "parsed_secondary_numeric": 32.7,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 9,
+        "variable_name": "physically active physically inactive physically inactive but physically",
+        "level_label": "Hypertension",
+        "column_name": "diet P value",
+        "raw_value": "<\u20090.001",
+        "value_type": "text",
+        "parsed_numeric": 0.001,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 2,
+        "variable_name": "Age mean",
+        "level_label": null,
+        "column_name": "Lifestyle Total",
+        "raw_value": "48.2(47.6,48.7)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 3,
+        "variable_name": "Age mean",
+        "level_label": null,
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "48.2(47.3,49.1)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 4,
+        "variable_name": "Age mean",
+        "level_label": null,
+        "column_name": "and Healthy",
+        "raw_value": "56.1(55.3,56.9)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 6,
+        "variable_name": "Age mean",
+        "level_label": null,
+        "column_name": "Unhealthy",
+        "raw_value": "50.6(49.8,51.4)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 8,
+        "variable_name": "Age mean",
+        "level_label": null,
+        "column_name": "and Unhealthy",
+        "raw_value": "42.6(41.9,43.2)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 9,
+        "variable_name": "Age mean",
+        "level_label": null,
+        "column_name": "diet P value",
+        "raw_value": "<\u20090.001",
+        "value_type": "text",
+        "parsed_numeric": 0.001,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 2,
+        "variable_name": "Gender",
+        "level_label": "Male",
+        "column_name": "Lifestyle Total",
+        "raw_value": "12,204(50.1)",
+        "value_type": "count",
+        "parsed_numeric": 12204.0,
+        "parsed_secondary_numeric": 50.1,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 3,
+        "variable_name": "Gender",
+        "level_label": "Male",
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "3893(49.6)",
+        "value_type": "count",
+        "parsed_numeric": 3893.0,
+        "parsed_secondary_numeric": 49.6,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 4,
+        "variable_name": "Gender",
+        "level_label": "Male",
+        "column_name": "and Healthy",
+        "raw_value": "1845(36.0)",
+        "value_type": "count",
+        "parsed_numeric": 1845.0,
+        "parsed_secondary_numeric": 36.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 6,
+        "variable_name": "Gender",
+        "level_label": "Male",
+        "column_name": "Unhealthy",
+        "raw_value": "2263(44.5)",
+        "value_type": "count",
+        "parsed_numeric": 2263.0,
+        "parsed_secondary_numeric": 44.5,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 8,
+        "variable_name": "Gender",
+        "level_label": "Male",
+        "column_name": "and Unhealthy",
+        "raw_value": "4203(61.4)",
+        "value_type": "count",
+        "parsed_numeric": 4203.0,
+        "parsed_secondary_numeric": 61.4,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 2,
+        "variable_name": "Gender",
+        "level_label": "Female",
+        "column_name": "Lifestyle Total",
+        "raw_value": "12,249(49.9)",
+        "value_type": "count",
+        "parsed_numeric": 12249.0,
+        "parsed_secondary_numeric": 49.9,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 3,
+        "variable_name": "Gender",
+        "level_label": "Female",
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "3685(50.4)",
+        "value_type": "count",
+        "parsed_numeric": 3685.0,
+        "parsed_secondary_numeric": 50.4,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 4,
+        "variable_name": "Gender",
+        "level_label": "Female",
+        "column_name": "and Healthy",
+        "raw_value": "3087(64.0)",
+        "value_type": "count",
+        "parsed_numeric": 3087.0,
+        "parsed_secondary_numeric": 64.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 6,
+        "variable_name": "Gender",
+        "level_label": "Female",
+        "column_name": "Unhealthy",
+        "raw_value": "2769(55.5)",
+        "value_type": "count",
+        "parsed_numeric": 2769.0,
+        "parsed_secondary_numeric": 55.5,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 8,
+        "variable_name": "Gender",
+        "level_label": "Female",
+        "column_name": "and Unhealthy",
+        "raw_value": "2708(38.6)",
+        "value_type": "count",
+        "parsed_numeric": 2708.0,
+        "parsed_secondary_numeric": 38.6,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 2,
+        "variable_name": "Races ethnicity",
+        "level_label": "Non-Hispanic white",
+        "column_name": "Lifestyle Total",
+        "raw_value": "10,513(66.8)",
+        "value_type": "count",
+        "parsed_numeric": 10513.0,
+        "parsed_secondary_numeric": 66.8,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 3,
+        "variable_name": "Races ethnicity",
+        "level_label": "Non-Hispanic white",
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "3257(69.4)",
+        "value_type": "count",
+        "parsed_numeric": 3257.0,
+        "parsed_secondary_numeric": 69.4,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 4,
+        "variable_name": "Races ethnicity",
+        "level_label": "Non-Hispanic white",
+        "column_name": "and Healthy",
+        "raw_value": "1899(62.6)",
+        "value_type": "count",
+        "parsed_numeric": 1899.0,
+        "parsed_secondary_numeric": 62.6,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 6,
+        "variable_name": "Races ethnicity",
+        "level_label": "Non-Hispanic white",
+        "column_name": "Unhealthy",
+        "raw_value": "2198(65.2)",
+        "value_type": "count",
+        "parsed_numeric": 2198.0,
+        "parsed_secondary_numeric": 65.2,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 10,
+        "col_idx": 8,
+        "variable_name": "Races ethnicity",
+        "level_label": "Non-Hispanic white",
+        "column_name": "and Unhealthy",
+        "raw_value": "3159(67.2)",
+        "value_type": "count",
+        "parsed_numeric": 3159.0,
+        "parsed_secondary_numeric": 67.2,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 2,
+        "variable_name": "Races ethnicity",
+        "level_label": "Non-Hispanic black",
+        "column_name": "Lifestyle Total",
+        "raw_value": "5249(11.1)",
+        "value_type": "count",
+        "parsed_numeric": 5249.0,
+        "parsed_secondary_numeric": 11.1,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 3,
+        "variable_name": "Races ethnicity",
+        "level_label": "Non-Hispanic black",
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "1383(8.7)",
+        "value_type": "count",
+        "parsed_numeric": 1383.0,
+        "parsed_secondary_numeric": 8.7,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 4,
+        "variable_name": "Races ethnicity",
+        "level_label": "Non-Hispanic black",
+        "column_name": "and Healthy",
+        "raw_value": "1005(10.6)",
+        "value_type": "count",
+        "parsed_numeric": 1005.0,
+        "parsed_secondary_numeric": 10.6,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 6,
+        "variable_name": "Races ethnicity",
+        "level_label": "Non-Hispanic black",
+        "column_name": "Unhealthy",
+        "raw_value": "1296(14.4)",
+        "value_type": "count",
+        "parsed_numeric": 1296.0,
+        "parsed_secondary_numeric": 14.4,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 8,
+        "variable_name": "Races ethnicity",
+        "level_label": "Non-Hispanic black",
+        "column_name": "and Unhealthy",
+        "raw_value": "1565(11.9)",
+        "value_type": "count",
+        "parsed_numeric": 1565.0,
+        "parsed_secondary_numeric": 11.9,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 2,
+        "variable_name": "Races ethnicity",
+        "level_label": "Mexican American",
+        "column_name": "Lifestyle Total",
+        "raw_value": "3469(8.5)",
+        "value_type": "count",
+        "parsed_numeric": 3469.0,
+        "parsed_secondary_numeric": 8.5,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 3,
+        "variable_name": "Races ethnicity",
+        "level_label": "Mexican American",
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "1047(7.5)",
+        "value_type": "count",
+        "parsed_numeric": 1047.0,
+        "parsed_secondary_numeric": 7.5,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 4,
+        "variable_name": "Races ethnicity",
+        "level_label": "Mexican American",
+        "column_name": "and Healthy",
+        "raw_value": "755(9.0)",
+        "value_type": "count",
+        "parsed_numeric": 755.0,
+        "parsed_secondary_numeric": 9.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 6,
+        "variable_name": "Races ethnicity",
+        "level_label": "Mexican American",
+        "column_name": "Unhealthy",
+        "raw_value": "717(8.5)",
+        "value_type": "count",
+        "parsed_numeric": 717.0,
+        "parsed_secondary_numeric": 8.5,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 8,
+        "variable_name": "Races ethnicity",
+        "level_label": "Mexican American",
+        "column_name": "and Unhealthy",
+        "raw_value": "950(9.2)",
+        "value_type": "count",
+        "parsed_numeric": 950.0,
+        "parsed_secondary_numeric": 9.2,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 2,
+        "variable_name": "Races ethnicity",
+        "level_label": "Other Race",
+        "column_name": "Lifestyle Total",
+        "raw_value": "5222(13.7)",
+        "value_type": "count",
+        "parsed_numeric": 5222.0,
+        "parsed_secondary_numeric": 13.7,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 3,
+        "variable_name": "Races ethnicity",
+        "level_label": "Other Race",
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "1891(14.4)",
+        "value_type": "count",
+        "parsed_numeric": 1891.0,
+        "parsed_secondary_numeric": 14.4,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 4,
+        "variable_name": "Races ethnicity",
+        "level_label": "Other Race",
+        "column_name": "and Healthy",
+        "raw_value": "1273(17.7)",
+        "value_type": "count",
+        "parsed_numeric": 1273.0,
+        "parsed_secondary_numeric": 17.7,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 6,
+        "variable_name": "Races ethnicity",
+        "level_label": "Other Race",
+        "column_name": "Unhealthy",
+        "raw_value": "821(11.9)",
+        "value_type": "count",
+        "parsed_numeric": 821.0,
+        "parsed_secondary_numeric": 11.9,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 8,
+        "variable_name": "Races ethnicity",
+        "level_label": "Other Race",
+        "column_name": "and Unhealthy",
+        "raw_value": "1237(11.8)",
+        "value_type": "count",
+        "parsed_numeric": 1237.0,
+        "parsed_secondary_numeric": 11.8,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 2,
+        "variable_name": "Educations Levels",
+        "level_label": "Below high school",
+        "column_name": "Lifestyle Total",
+        "raw_value": "5643(14.8)",
+        "value_type": "count",
+        "parsed_numeric": 5643.0,
+        "parsed_secondary_numeric": 14.8,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 3,
+        "variable_name": "Educations Levels",
+        "level_label": "Below high school",
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "1296(9.8)",
+        "value_type": "count",
+        "parsed_numeric": 1296.0,
+        "parsed_secondary_numeric": 9.8,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 4,
+        "variable_name": "Educations Levels",
+        "level_label": "Below high school",
+        "column_name": "and Healthy",
+        "raw_value": "1359(17.9)",
+        "value_type": "count",
+        "parsed_numeric": 1359.0,
+        "parsed_secondary_numeric": 17.9,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 6,
+        "variable_name": "Educations Levels",
+        "level_label": "Below high school",
+        "column_name": "Unhealthy",
+        "raw_value": "1520(21.6)",
+        "value_type": "count",
+        "parsed_numeric": 1520.0,
+        "parsed_secondary_numeric": 21.6,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 15,
+        "col_idx": 8,
+        "variable_name": "Educations Levels",
+        "level_label": "Below high school",
+        "column_name": "and Unhealthy",
+        "raw_value": "1468(14.6)",
+        "value_type": "count",
+        "parsed_numeric": 1468.0,
+        "parsed_secondary_numeric": 14.6,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 2,
+        "variable_name": "Educations Levels",
+        "level_label": "High School",
+        "column_name": "Lifestyle Total",
+        "raw_value": "5601(22.9)",
+        "value_type": "count",
+        "parsed_numeric": 5601.0,
+        "parsed_secondary_numeric": 22.9,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 3,
+        "variable_name": "Educations Levels",
+        "level_label": "High School",
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "1330(17.0)",
+        "value_type": "count",
+        "parsed_numeric": 1330.0,
+        "parsed_secondary_numeric": 17.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 4,
+        "variable_name": "Educations Levels",
+        "level_label": "High School",
+        "column_name": "and Healthy",
+        "raw_value": "1074(21.3)",
+        "value_type": "count",
+        "parsed_numeric": 1074.0,
+        "parsed_secondary_numeric": 21.3,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 6,
+        "variable_name": "Educations Levels",
+        "level_label": "High School",
+        "column_name": "Unhealthy",
+        "raw_value": "1321(28.3)",
+        "value_type": "count",
+        "parsed_numeric": 1321.0,
+        "parsed_secondary_numeric": 28.3,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 16,
+        "col_idx": 8,
+        "variable_name": "Educations Levels",
+        "level_label": "High School",
+        "column_name": "and Unhealthy",
+        "raw_value": "1876(26.9)",
+        "value_type": "count",
+        "parsed_numeric": 1876.0,
+        "parsed_secondary_numeric": 26.9,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 2,
+        "variable_name": "Educations Levels",
+        "level_label": "College/Above",
+        "column_name": "Lifestyle Total",
+        "raw_value": "13,184(62.2)",
+        "value_type": "count",
+        "parsed_numeric": 13184.0,
+        "parsed_secondary_numeric": 62.2,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 3,
+        "variable_name": "Educations Levels",
+        "level_label": "College/Above",
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "4946(73.3)",
+        "value_type": "count",
+        "parsed_numeric": 4946.0,
+        "parsed_secondary_numeric": 73.3,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 4,
+        "variable_name": "Educations Levels",
+        "level_label": "College/Above",
+        "column_name": "and Healthy",
+        "raw_value": "2491(60.8)",
+        "value_type": "count",
+        "parsed_numeric": 2491.0,
+        "parsed_secondary_numeric": 60.8,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 6,
+        "variable_name": "Educations Levels",
+        "level_label": "College/Above",
+        "column_name": "Unhealthy",
+        "raw_value": "2185(50.0)",
+        "value_type": "count",
+        "parsed_numeric": 2185.0,
+        "parsed_secondary_numeric": 50.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 17,
+        "col_idx": 8,
+        "variable_name": "Educations Levels",
+        "level_label": "College/Above",
+        "column_name": "and Unhealthy",
+        "raw_value": "3562(58.5)",
+        "value_type": "count",
+        "parsed_numeric": 3562.0,
+        "parsed_secondary_numeric": 58.5,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 2,
+        "variable_name": "Smoking status",
+        "level_label": "Never",
+        "column_name": "Lifestyle Total",
+        "raw_value": "13,642(56.4)",
+        "value_type": "count",
+        "parsed_numeric": 13642.0,
+        "parsed_secondary_numeric": 56.4,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 3,
+        "variable_name": "Smoking status",
+        "level_label": "Never",
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "4691(61.3)",
+        "value_type": "count",
+        "parsed_numeric": 4691.0,
+        "parsed_secondary_numeric": 61.3,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 4,
+        "variable_name": "Smoking status",
+        "level_label": "Never",
+        "column_name": "and Healthy",
+        "raw_value": "2983(60.1)",
+        "value_type": "count",
+        "parsed_numeric": 2983.0,
+        "parsed_secondary_numeric": 60.1,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 6,
+        "variable_name": "Smoking status",
+        "level_label": "Never",
+        "column_name": "Unhealthy",
+        "raw_value": "2484(51.0)",
+        "value_type": "count",
+        "parsed_numeric": 2484.0,
+        "parsed_secondary_numeric": 51.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 19,
+        "col_idx": 8,
+        "variable_name": "Smoking status",
+        "level_label": "Never",
+        "column_name": "and Unhealthy",
+        "raw_value": "3484(52.4)",
+        "value_type": "count",
+        "parsed_numeric": 3484.0,
+        "parsed_secondary_numeric": 52.4,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 2,
+        "variable_name": "Smoking status",
+        "level_label": "Former",
+        "column_name": "Lifestyle Total",
+        "raw_value": "6172(25.2)",
+        "value_type": "count",
+        "parsed_numeric": 6172.0,
+        "parsed_secondary_numeric": 25.2,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 3,
+        "variable_name": "Smoking status",
+        "level_label": "Former",
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "2011(27.3)",
+        "value_type": "count",
+        "parsed_numeric": 2011.0,
+        "parsed_secondary_numeric": 27.3,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 4,
+        "variable_name": "Smoking status",
+        "level_label": "Former",
+        "column_name": "and Healthy",
+        "raw_value": "1374(29.1)",
+        "value_type": "count",
+        "parsed_numeric": 1374.0,
+        "parsed_secondary_numeric": 29.1,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 6,
+        "variable_name": "Smoking status",
+        "level_label": "Former",
+        "column_name": "Unhealthy",
+        "raw_value": "1263(23.2)",
+        "value_type": "count",
+        "parsed_numeric": 1263.0,
+        "parsed_secondary_numeric": 23.2,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 20,
+        "col_idx": 8,
+        "variable_name": "Smoking status",
+        "level_label": "Former",
+        "column_name": "and Unhealthy",
+        "raw_value": "1524(22.0)",
+        "value_type": "count",
+        "parsed_numeric": 1524.0,
+        "parsed_secondary_numeric": 22.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 2,
+        "variable_name": "Smoking status",
+        "level_label": "Now",
+        "column_name": "Lifestyle Total",
+        "raw_value": "4627(18.4)",
+        "value_type": "count",
+        "parsed_numeric": 4627.0,
+        "parsed_secondary_numeric": 18.4,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 3,
+        "variable_name": "Smoking status",
+        "level_label": "Now",
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "871(11.4)",
+        "value_type": "count",
+        "parsed_numeric": 871.0,
+        "parsed_secondary_numeric": 11.4,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 4,
+        "variable_name": "Smoking status",
+        "level_label": "Now",
+        "column_name": "and Healthy",
+        "raw_value": "574(10.8)",
+        "value_type": "count",
+        "parsed_numeric": 574.0,
+        "parsed_secondary_numeric": 10.8,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 6,
+        "variable_name": "Smoking status",
+        "level_label": "Now",
+        "column_name": "Unhealthy",
+        "raw_value": "1281(25.8)",
+        "value_type": "count",
+        "parsed_numeric": 1281.0,
+        "parsed_secondary_numeric": 25.8,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 21,
+        "col_idx": 8,
+        "variable_name": "Smoking status",
+        "level_label": "Now",
+        "column_name": "and Unhealthy",
+        "raw_value": "1901(25.6)",
+        "value_type": "count",
+        "parsed_numeric": 1901.0,
+        "parsed_secondary_numeric": 25.6,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 2,
+        "variable_name": "Alcohol drinker",
+        "level_label": "Never",
+        "column_name": "Lifestyle Total",
+        "raw_value": "3210(10.4)",
+        "value_type": "count",
+        "parsed_numeric": 3210.0,
+        "parsed_secondary_numeric": 10.4,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 3,
+        "variable_name": "Alcohol drinker",
+        "level_label": "Never",
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "940(10.0)",
+        "value_type": "count",
+        "parsed_numeric": 940.0,
+        "parsed_secondary_numeric": 10.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 4,
+        "variable_name": "Alcohol drinker",
+        "level_label": "Never",
+        "column_name": "and Healthy",
+        "raw_value": "926(16.9)",
+        "value_type": "count",
+        "parsed_numeric": 926.0,
+        "parsed_secondary_numeric": 16.9,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 6,
+        "variable_name": "Alcohol drinker",
+        "level_label": "Never",
+        "column_name": "Unhealthy",
+        "raw_value": "692(12.3)",
+        "value_type": "count",
+        "parsed_numeric": 692.0,
+        "parsed_secondary_numeric": 12.3,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 23,
+        "col_idx": 8,
+        "variable_name": "Alcohol drinker",
+        "level_label": "Never",
+        "column_name": "and Unhealthy",
+        "raw_value": "652(9.1)",
+        "value_type": "count",
+        "parsed_numeric": 652.0,
+        "parsed_secondary_numeric": 9.1,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 2,
+        "variable_name": "Alcohol drinker",
+        "level_label": "Former",
+        "column_name": "Lifestyle Total",
+        "raw_value": "3721(12.3)",
+        "value_type": "count",
+        "parsed_numeric": 3721.0,
+        "parsed_secondary_numeric": 12.3,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 3,
+        "variable_name": "Alcohol drinker",
+        "level_label": "Former",
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "879(9.8)",
+        "value_type": "count",
+        "parsed_numeric": 879.0,
+        "parsed_secondary_numeric": 9.8,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 4,
+        "variable_name": "Alcohol drinker",
+        "level_label": "Former",
+        "column_name": "and Healthy",
+        "raw_value": "901(16.6)",
+        "value_type": "count",
+        "parsed_numeric": 901.0,
+        "parsed_secondary_numeric": 16.6,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 6,
+        "variable_name": "Alcohol drinker",
+        "level_label": "Former",
+        "column_name": "Unhealthy",
+        "raw_value": "1033(19.0)",
+        "value_type": "count",
+        "parsed_numeric": 1033.0,
+        "parsed_secondary_numeric": 19.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 24,
+        "col_idx": 8,
+        "variable_name": "Alcohol drinker",
+        "level_label": "Former",
+        "column_name": "and Unhealthy",
+        "raw_value": "908(11.8)",
+        "value_type": "count",
+        "parsed_numeric": 908.0,
+        "parsed_secondary_numeric": 11.8,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 2,
+        "variable_name": "Alcohol drinker",
+        "level_label": "Now",
+        "column_name": "Lifestyle Total",
+        "raw_value": "15,480(69.9)",
+        "value_type": "count",
+        "parsed_numeric": 15480.0,
+        "parsed_secondary_numeric": 69.9,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 3,
+        "variable_name": "Alcohol drinker",
+        "level_label": "Now",
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "5210(80.2)",
+        "value_type": "count",
+        "parsed_numeric": 5210.0,
+        "parsed_secondary_numeric": 80.2,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 4,
+        "variable_name": "Alcohol drinker",
+        "level_label": "Now",
+        "column_name": "and Healthy",
+        "raw_value": "2633(66.5)",
+        "value_type": "count",
+        "parsed_numeric": 2633.0,
+        "parsed_secondary_numeric": 66.5,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 6,
+        "variable_name": "Alcohol drinker",
+        "level_label": "Now",
+        "column_name": "Unhealthy",
+        "raw_value": "2822(68.7)",
+        "value_type": "count",
+        "parsed_numeric": 2822.0,
+        "parsed_secondary_numeric": 68.7,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 25,
+        "col_idx": 8,
+        "variable_name": "Alcohol drinker",
+        "level_label": "Now",
+        "column_name": "and Unhealthy",
+        "raw_value": "4815(79.1)",
+        "value_type": "count",
+        "parsed_numeric": 4815.0,
+        "parsed_secondary_numeric": 79.1,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 2,
+        "variable_name": "Marital",
+        "level_label": "Widowed or divorced or separated",
+        "column_name": "Lifestyle Total",
+        "raw_value": "5513(18.1)",
+        "value_type": "count",
+        "parsed_numeric": 5513.0,
+        "parsed_secondary_numeric": 18.1,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 3,
+        "variable_name": "Marital",
+        "level_label": "Widowed or divorced or separated",
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "1422(15.2)",
+        "value_type": "count",
+        "parsed_numeric": 1422.0,
+        "parsed_secondary_numeric": 15.2,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 4,
+        "variable_name": "Marital",
+        "level_label": "Widowed or divorced or separated",
+        "column_name": "and Healthy",
+        "raw_value": "1475(24.6)",
+        "value_type": "count",
+        "parsed_numeric": 1475.0,
+        "parsed_secondary_numeric": 24.6,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 6,
+        "variable_name": "Marital",
+        "level_label": "Widowed or divorced or separated",
+        "column_name": "Unhealthy",
+        "raw_value": "1365(22.1)",
+        "value_type": "count",
+        "parsed_numeric": 1365.0,
+        "parsed_secondary_numeric": 22.1,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 27,
+        "col_idx": 8,
+        "variable_name": "Marital",
+        "level_label": "Widowed or divorced or separated",
+        "column_name": "and Unhealthy",
+        "raw_value": "1251(15.4)",
+        "value_type": "count",
+        "parsed_numeric": 1251.0,
+        "parsed_secondary_numeric": 15.4,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 2,
+        "variable_name": "Marital",
+        "level_label": "Never married",
+        "column_name": "Lifestyle Total",
+        "raw_value": "4252(18.5)",
+        "value_type": "count",
+        "parsed_numeric": 4252.0,
+        "parsed_secondary_numeric": 18.5,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 3,
+        "variable_name": "Marital",
+        "level_label": "Never married",
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "1279(18.0)",
+        "value_type": "count",
+        "parsed_numeric": 1279.0,
+        "parsed_secondary_numeric": 18.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 4,
+        "variable_name": "Marital",
+        "level_label": "Never married",
+        "column_name": "and Healthy",
+        "raw_value": "502(11.1)",
+        "value_type": "count",
+        "parsed_numeric": 502.0,
+        "parsed_secondary_numeric": 11.1,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 6,
+        "variable_name": "Marital",
+        "level_label": "Never married",
+        "column_name": "Unhealthy",
+        "raw_value": "779(14.9)",
+        "value_type": "count",
+        "parsed_numeric": 779.0,
+        "parsed_secondary_numeric": 14.9,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 28,
+        "col_idx": 8,
+        "variable_name": "Marital",
+        "level_label": "Never married",
+        "column_name": "and Unhealthy",
+        "raw_value": "1692(25.2)",
+        "value_type": "count",
+        "parsed_numeric": 1692.0,
+        "parsed_secondary_numeric": 25.2,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 2,
+        "variable_name": "Marital",
+        "level_label": "Married or living with a partner",
+        "column_name": "Lifestyle Total",
+        "raw_value": "14,678(63.4)",
+        "value_type": "count",
+        "parsed_numeric": 14678.0,
+        "parsed_secondary_numeric": 63.4,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 3,
+        "variable_name": "Marital",
+        "level_label": "Married or living with a partner",
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "4874(66.8)",
+        "value_type": "count",
+        "parsed_numeric": 4874.0,
+        "parsed_secondary_numeric": 66.8,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 4,
+        "variable_name": "Marital",
+        "level_label": "Married or living with a partner",
+        "column_name": "and Healthy",
+        "raw_value": "2953(64.3)",
+        "value_type": "count",
+        "parsed_numeric": 2953.0,
+        "parsed_secondary_numeric": 64.3,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 6,
+        "variable_name": "Marital",
+        "level_label": "Married or living with a partner",
+        "column_name": "Unhealthy",
+        "raw_value": "2886(63.0)",
+        "value_type": "count",
+        "parsed_numeric": 2886.0,
+        "parsed_secondary_numeric": 63.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 29,
+        "col_idx": 8,
+        "variable_name": "Marital",
+        "level_label": "Married or living with a partner",
+        "column_name": "and Unhealthy",
+        "raw_value": "3965(59.4)",
+        "value_type": "count",
+        "parsed_numeric": 3965.0,
+        "parsed_secondary_numeric": 59.4,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 1,
+        "variable_name": "Poverty mean",
+        "level_label": null,
+        "column_name": "column_1",
+        "raw_value": "(95% CI)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 2,
+        "variable_name": "Poverty mean",
+        "level_label": null,
+        "column_name": "Lifestyle Total",
+        "raw_value": "3.0(2.9,3.1)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 3,
+        "variable_name": "Poverty mean",
+        "level_label": null,
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "3.4(3.3,3.5)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 4,
+        "variable_name": "Poverty mean",
+        "level_label": null,
+        "column_name": "and Healthy",
+        "raw_value": "3.0(2.9,3.1)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 6,
+        "variable_name": "Poverty mean",
+        "level_label": null,
+        "column_name": "Unhealthy",
+        "raw_value": "2.7(2.6,2.8)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 8,
+        "variable_name": "Poverty mean",
+        "level_label": null,
+        "column_name": "and Unhealthy",
+        "raw_value": "2.9(2.8,2.9)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 30,
+        "col_idx": 9,
+        "variable_name": "Poverty mean",
+        "level_label": null,
+        "column_name": "diet P value",
+        "raw_value": "<\u20090.001",
+        "value_type": "text",
+        "parsed_numeric": 0.001,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 2,
+        "variable_name": "BMI mean",
+        "level_label": null,
+        "column_name": "Lifestyle Total",
+        "raw_value": "29.1(28.9,29.3)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 3,
+        "variable_name": "BMI mean",
+        "level_label": null,
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "27.8(27.6,28.0)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 4,
+        "variable_name": "BMI mean",
+        "level_label": null,
+        "column_name": "and Healthy",
+        "raw_value": "29.8(29.5,30.2)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 6,
+        "variable_name": "BMI mean",
+        "level_label": null,
+        "column_name": "Unhealthy",
+        "raw_value": "30.7(30.3,31.0)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 8,
+        "variable_name": "BMI mean",
+        "level_label": null,
+        "column_name": "and Unhealthy",
+        "raw_value": "29.3(29.0,29.5)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 33,
+        "col_idx": 9,
+        "variable_name": "BMI mean",
+        "level_label": null,
+        "column_name": "diet P value",
+        "raw_value": "<\u20090.001",
+        "value_type": "text",
+        "parsed_numeric": 0.001,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 34,
+        "col_idx": 2,
+        "variable_name": "Total cholesterol mean",
+        "level_label": null,
+        "column_name": "Lifestyle Total",
+        "raw_value": "(95% CI) 194.0",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 34,
+        "col_idx": 3,
+        "variable_name": "Total cholesterol mean",
+        "level_label": null,
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "194.6",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 34,
+        "col_idx": 4,
+        "variable_name": "Total cholesterol mean",
+        "level_label": null,
+        "column_name": "and Healthy",
+        "raw_value": "195.2",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 34,
+        "col_idx": 6,
+        "variable_name": "Total cholesterol mean",
+        "level_label": null,
+        "column_name": "Unhealthy",
+        "raw_value": "194.5",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 34,
+        "col_idx": 8,
+        "variable_name": "Total cholesterol mean",
+        "level_label": null,
+        "column_name": "and Unhealthy",
+        "raw_value": "192.4",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 34,
+        "col_idx": 9,
+        "variable_name": "Total cholesterol mean",
+        "level_label": null,
+        "column_name": "diet P value",
+        "raw_value": "0.1",
+        "value_type": "text",
+        "parsed_numeric": 0.1,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.85
+      },
+      {
+        "row_idx": 36,
+        "col_idx": 2,
+        "variable_name": "HDL C mean",
+        "level_label": null,
+        "column_name": "Lifestyle Total",
+        "raw_value": "53.0(52.6,53.5)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 36,
+        "col_idx": 3,
+        "variable_name": "HDL C mean",
+        "level_label": null,
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "56.2(55.5,56.9)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 36,
+        "col_idx": 4,
+        "variable_name": "HDL C mean",
+        "level_label": null,
+        "column_name": "and Healthy",
+        "raw_value": "54.1(53.4,54.9)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 36,
+        "col_idx": 6,
+        "variable_name": "HDL C mean",
+        "level_label": null,
+        "column_name": "Unhealthy",
+        "raw_value": "50.4(49.7,51.1)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 36,
+        "col_idx": 8,
+        "variable_name": "HDL C mean",
+        "level_label": null,
+        "column_name": "and Unhealthy",
+        "raw_value": "50.6(50.0,51.2)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 36,
+        "col_idx": 9,
+        "variable_name": "HDL C mean",
+        "level_label": null,
+        "column_name": "diet P value",
+        "raw_value": "<\u20090.001",
+        "value_type": "text",
+        "parsed_numeric": 0.001,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 37,
+        "col_idx": 2,
+        "variable_name": "Hei 2015 mean",
+        "level_label": null,
+        "column_name": "Lifestyle Total",
+        "raw_value": "54.1(53.7,54.6)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 37,
+        "col_idx": 3,
+        "variable_name": "Hei 2015 mean",
+        "level_label": null,
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "65.5(65.2,65.9)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 37,
+        "col_idx": 4,
+        "variable_name": "Hei 2015 mean",
+        "level_label": null,
+        "column_name": "and Healthy",
+        "raw_value": "63.9(63.6,64.3)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 37,
+        "col_idx": 6,
+        "variable_name": "Hei 2015 mean",
+        "level_label": null,
+        "column_name": "Unhealthy",
+        "raw_value": "43.2(42.9,43.5)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 37,
+        "col_idx": 8,
+        "variable_name": "Hei 2015 mean",
+        "level_label": null,
+        "column_name": "and Unhealthy",
+        "raw_value": "43.2(42.9,43.5)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 37,
+        "col_idx": 9,
+        "variable_name": "Hei 2015 mean",
+        "level_label": null,
+        "column_name": "diet P value",
+        "raw_value": "<\u20090.001",
+        "value_type": "text",
+        "parsed_numeric": 0.001,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 39,
+        "col_idx": 2,
+        "variable_name": "Hei 2015 levels",
+        "level_label": "<\u200953.5",
+        "column_name": "Lifestyle Total",
+        "raw_value": "11,943(49.9)",
+        "value_type": "count",
+        "parsed_numeric": 11943.0,
+        "parsed_secondary_numeric": 49.9,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 39,
+        "col_idx": 3,
+        "variable_name": "Hei 2015 levels",
+        "level_label": "<\u200953.5",
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "0(0.0)",
+        "value_type": "count",
+        "parsed_numeric": 0.0,
+        "parsed_secondary_numeric": 0.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 39,
+        "col_idx": 4,
+        "variable_name": "Hei 2015 levels",
+        "level_label": "<\u200953.5",
+        "column_name": "and Healthy",
+        "raw_value": "0(0.0)",
+        "value_type": "count",
+        "parsed_numeric": 0.0,
+        "parsed_secondary_numeric": 0.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 39,
+        "col_idx": 6,
+        "variable_name": "Hei 2015 levels",
+        "level_label": "<\u200953.5",
+        "column_name": "Unhealthy",
+        "raw_value": "5032(100.0)",
+        "value_type": "count",
+        "parsed_numeric": 5032.0,
+        "parsed_secondary_numeric": 100.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 39,
+        "col_idx": 8,
+        "variable_name": "Hei 2015 levels",
+        "level_label": "<\u200953.5",
+        "column_name": "and Unhealthy",
+        "raw_value": "6911(100.0)",
+        "value_type": "count",
+        "parsed_numeric": 6911.0,
+        "parsed_secondary_numeric": 100.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 40,
+        "col_idx": 2,
+        "variable_name": "Hei 2015 levels",
+        "level_label": "\u2265\u200953.5",
+        "column_name": "Lifestyle Total",
+        "raw_value": "12,510(50.1)",
+        "value_type": "count",
+        "parsed_numeric": 12510.0,
+        "parsed_secondary_numeric": 50.1,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 40,
+        "col_idx": 3,
+        "variable_name": "Hei 2015 levels",
+        "level_label": "\u2265\u200953.5",
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "7578(100.0)",
+        "value_type": "count",
+        "parsed_numeric": 7578.0,
+        "parsed_secondary_numeric": 100.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 40,
+        "col_idx": 4,
+        "variable_name": "Hei 2015 levels",
+        "level_label": "\u2265\u200953.5",
+        "column_name": "and Healthy",
+        "raw_value": "4932(100.0)",
+        "value_type": "count",
+        "parsed_numeric": 4932.0,
+        "parsed_secondary_numeric": 100.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 40,
+        "col_idx": 6,
+        "variable_name": "Hei 2015 levels",
+        "level_label": "\u2265\u200953.5",
+        "column_name": "Unhealthy",
+        "raw_value": "0(0.0)",
+        "value_type": "count",
+        "parsed_numeric": 0.0,
+        "parsed_secondary_numeric": 0.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 40,
+        "col_idx": 8,
+        "variable_name": "Hei 2015 levels",
+        "level_label": "\u2265\u200953.5",
+        "column_name": "and Unhealthy",
+        "raw_value": "0(0.0)",
+        "value_type": "count",
+        "parsed_numeric": 0.0,
+        "parsed_secondary_numeric": 0.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 41,
+        "col_idx": 2,
+        "variable_name": "PA Met minutes week mean 95",
+        "level_label": null,
+        "column_name": "Lifestyle Total",
+        "raw_value": "CI) 3638.4",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 41,
+        "col_idx": 3,
+        "variable_name": "PA Met minutes week mean 95",
+        "level_label": null,
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "4734.7",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 41,
+        "col_idx": 4,
+        "variable_name": "PA Met minutes week mean 95",
+        "level_label": null,
+        "column_name": "and Healthy",
+        "raw_value": "127.0",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 41,
+        "col_idx": 6,
+        "variable_name": "PA Met minutes week mean 95",
+        "level_label": null,
+        "column_name": "Unhealthy",
+        "raw_value": "118.0",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 41,
+        "col_idx": 8,
+        "variable_name": "PA Met minutes week mean 95",
+        "level_label": null,
+        "column_name": "and Unhealthy",
+        "raw_value": "6436.7",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 41,
+        "col_idx": 9,
+        "variable_name": "PA Met minutes week mean 95",
+        "level_label": null,
+        "column_name": "diet P value",
+        "raw_value": "<\u20090.001",
+        "value_type": "text",
+        "parsed_numeric": 0.001,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.98
+      },
+      {
+        "row_idx": 45,
+        "col_idx": 2,
+        "variable_name": "week",
+        "level_label": "Inactive (<\u2009600)",
+        "column_name": "Lifestyle Total",
+        "raw_value": "9964(35.3)",
+        "value_type": "count",
+        "parsed_numeric": 9964.0,
+        "parsed_secondary_numeric": 35.3,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 45,
+        "col_idx": 3,
+        "variable_name": "week",
+        "level_label": "Inactive (<\u2009600)",
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "0(0.0)",
+        "value_type": "count",
+        "parsed_numeric": 0.0,
+        "parsed_secondary_numeric": 0.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 45,
+        "col_idx": 4,
+        "variable_name": "week",
+        "level_label": "Inactive (<\u2009600)",
+        "column_name": "and Healthy",
+        "raw_value": "4932(100.0)",
+        "value_type": "count",
+        "parsed_numeric": 4932.0,
+        "parsed_secondary_numeric": 100.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 45,
+        "col_idx": 6,
+        "variable_name": "week",
+        "level_label": "Inactive (<\u2009600)",
+        "column_name": "Unhealthy",
+        "raw_value": "5032(100.0)",
+        "value_type": "count",
+        "parsed_numeric": 5032.0,
+        "parsed_secondary_numeric": 100.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 45,
+        "col_idx": 8,
+        "variable_name": "week",
+        "level_label": "Inactive (<\u2009600)",
+        "column_name": "and Unhealthy",
+        "raw_value": "0(0.0)",
+        "value_type": "count",
+        "parsed_numeric": 0.0,
+        "parsed_secondary_numeric": 0.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 46,
+        "col_idx": 1,
+        "variable_name": "week",
+        "level_label": "Increased",
+        "column_name": "column_1",
+        "raw_value": "PA (\u2265\u2009600)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 46,
+        "col_idx": 2,
+        "variable_name": "week",
+        "level_label": "Increased",
+        "column_name": "Lifestyle Total",
+        "raw_value": "14,489(64.7)",
+        "value_type": "count",
+        "parsed_numeric": 14489.0,
+        "parsed_secondary_numeric": 64.7,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 46,
+        "col_idx": 3,
+        "variable_name": "week",
+        "level_label": "Increased",
+        "column_name": "categories n weighted Healthy diet",
+        "raw_value": "7578(100.0)",
+        "value_type": "count",
+        "parsed_numeric": 7578.0,
+        "parsed_secondary_numeric": 100.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 46,
+        "col_idx": 4,
+        "variable_name": "week",
+        "level_label": "Increased",
+        "column_name": "and Healthy",
+        "raw_value": "0(0.0)",
+        "value_type": "count",
+        "parsed_numeric": 0.0,
+        "parsed_secondary_numeric": 0.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 46,
+        "col_idx": 6,
+        "variable_name": "week",
+        "level_label": "Increased",
+        "column_name": "Unhealthy",
+        "raw_value": "0(0.0)",
+        "value_type": "count",
+        "parsed_numeric": 0.0,
+        "parsed_secondary_numeric": 0.0,
+        "confidence": 0.95
+      },
+      {
+        "row_idx": 46,
+        "col_idx": 8,
+        "variable_name": "week",
+        "level_label": "Increased",
+        "column_name": "and Unhealthy",
+        "raw_value": "6911(100.0)",
+        "value_type": "count",
+        "parsed_numeric": 6911.0,
+        "parsed_secondary_numeric": 100.0,
+        "confidence": 0.95
+      }
+    ],
+    "notes": [],
+    "overall_confidence": 0.8305
+  },
+  {
+    "table_id": "hypertension-p6-t0",
+    "title": "Table 2 Association between joint PA and Healthy Eating Index-2015 and their combined effect and hypertension after using survey impute for multiple interpolation (n= 24,453)",
+    "caption": "Table 2 Association between joint PA and Healthy Eating Index-2015 and their combined effect and hypertension after using survey impute for multiple interpolation (n= 24,453)",
+    "variables": [
+      {
+        "variable_name": "Healthy Eating Index 2015",
+        "variable_label": "Healthy Eating Index\u20112015",
+        "variable_type": "categorical",
+        "row_start": 3,
+        "row_end": 4,
+        "levels": [
+          {
+            "label": "Unhealthy diet",
+            "row_idx": 4
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Healthy diet",
+        "variable_label": "Healthy diet",
+        "variable_type": "continuous",
+        "row_start": 5,
+        "row_end": 5,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Physical activity level",
+        "variable_label": "Physical activity level",
+        "variable_type": "categorical",
+        "row_start": 6,
+        "row_end": 7,
+        "levels": [
+          {
+            "label": "Physically inactive",
+            "row_idx": 7
+          }
+        ],
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Physically active",
+        "variable_label": "Physically active",
+        "variable_type": "continuous",
+        "row_start": 8,
+        "row_end": 8,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Healthy diet but physically inactive",
+        "variable_label": "Healthy diet but physically inactive",
+        "variable_type": "continuous",
+        "row_start": 11,
+        "row_end": 11,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Unhealthy diet but physically active",
+        "variable_label": "Unhealthy diet but physically active",
+        "variable_type": "continuous",
+        "row_start": 12,
+        "row_end": 12,
+        "levels": [],
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Healthy diet and physically active",
+        "variable_label": "Healthy diet and physically active",
+        "variable_type": "continuous",
+        "row_start": 13,
+        "row_end": 13,
+        "levels": [],
+        "confidence": 0.9
+      }
+    ],
+    "columns": [
+      {
+        "col_idx": 1,
+        "column_name": "4 453",
+        "column_label": "4,453)",
+        "inferred_role": "overall",
+        "confidence": 0.84
+      },
+      {
+        "col_idx": 2,
+        "column_name": "column_2",
+        "column_label": "",
+        "inferred_role": "group",
+        "confidence": 0.82
+      },
+      {
+        "col_idx": 3,
+        "column_name": "column_3",
+        "column_label": "",
+        "inferred_role": "group",
+        "confidence": 0.82
+      },
+      {
+        "col_idx": 4,
+        "column_name": "column_4",
+        "column_label": "",
+        "inferred_role": "group",
+        "confidence": 0.82
+      },
+      {
+        "col_idx": 5,
+        "column_name": "column_5",
+        "column_label": "",
+        "inferred_role": "group",
+        "confidence": 0.82
+      },
+      {
+        "col_idx": 6,
+        "column_name": "column_6",
+        "column_label": "",
+        "inferred_role": "group",
+        "confidence": 0.82
+      }
+    ],
+    "values": [
+      {
+        "row_idx": 4,
+        "col_idx": 1,
+        "variable_name": "Healthy Eating Index 2015",
+        "level_label": "Unhealthy diet",
+        "column_name": "4 453",
+        "raw_value": "1(ref)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 3,
+        "variable_name": "Healthy Eating Index 2015",
+        "level_label": "Unhealthy diet",
+        "column_name": "column_3",
+        "raw_value": "1(ref)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 4,
+        "col_idx": 5,
+        "variable_name": "Healthy Eating Index 2015",
+        "level_label": "Unhealthy diet",
+        "column_name": "column_5",
+        "raw_value": "1(ref)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 1,
+        "variable_name": "Healthy diet",
+        "level_label": null,
+        "column_name": "4 453",
+        "raw_value": "0.72(0.65,0.8)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 2,
+        "variable_name": "Healthy diet",
+        "level_label": null,
+        "column_name": "column_2",
+        "raw_value": "< 0.01",
+        "value_type": "text",
+        "parsed_numeric": 0.01,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 3,
+        "variable_name": "Healthy diet",
+        "level_label": null,
+        "column_name": "column_3",
+        "raw_value": "0.76(0.69,0.84)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 4,
+        "variable_name": "Healthy diet",
+        "level_label": null,
+        "column_name": "column_4",
+        "raw_value": "< 0.01",
+        "value_type": "text",
+        "parsed_numeric": 0.01,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 5,
+        "variable_name": "Healthy diet",
+        "level_label": null,
+        "column_name": "column_5",
+        "raw_value": "0.86(0.77,0.96)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 5,
+        "col_idx": 6,
+        "variable_name": "Healthy diet",
+        "level_label": null,
+        "column_name": "column_6",
+        "raw_value": "0.01",
+        "value_type": "text",
+        "parsed_numeric": 0.01,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 1,
+        "variable_name": "Physical activity level",
+        "level_label": "Physically inactive",
+        "column_name": "4 453",
+        "raw_value": "1(ref)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 3,
+        "variable_name": "Physical activity level",
+        "level_label": "Physically inactive",
+        "column_name": "column_3",
+        "raw_value": "1(ref)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 7,
+        "col_idx": 5,
+        "variable_name": "Physical activity level",
+        "level_label": "Physically inactive",
+        "column_name": "column_5",
+        "raw_value": "1(ref)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 1,
+        "variable_name": "Physically active",
+        "level_label": null,
+        "column_name": "4 453",
+        "raw_value": "0.73(0.66,0.81)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 2,
+        "variable_name": "Physically active",
+        "level_label": null,
+        "column_name": "column_2",
+        "raw_value": "< 0.01",
+        "value_type": "text",
+        "parsed_numeric": 0.01,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 3,
+        "variable_name": "Physically active",
+        "level_label": null,
+        "column_name": "column_3",
+        "raw_value": "0.76(0.68,0.84)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 4,
+        "variable_name": "Physically active",
+        "level_label": null,
+        "column_name": "column_4",
+        "raw_value": "< 0.01",
+        "value_type": "text",
+        "parsed_numeric": 0.01,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 5,
+        "variable_name": "Physically active",
+        "level_label": null,
+        "column_name": "column_5",
+        "raw_value": "0.88(0.78,0.99)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 8,
+        "col_idx": 6,
+        "variable_name": "Physically active",
+        "level_label": null,
+        "column_name": "column_6",
+        "raw_value": "0.04",
+        "value_type": "text",
+        "parsed_numeric": 0.04,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 1,
+        "variable_name": "Healthy diet but physically inactive",
+        "level_label": null,
+        "column_name": "4 453",
+        "raw_value": "0.79(0.69,0.91)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 2,
+        "variable_name": "Healthy diet but physically inactive",
+        "level_label": null,
+        "column_name": "column_2",
+        "raw_value": "< 0.01",
+        "value_type": "text",
+        "parsed_numeric": 0.01,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 3,
+        "variable_name": "Healthy diet but physically inactive",
+        "level_label": null,
+        "column_name": "column_3",
+        "raw_value": "0.83(0.72,0.95)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 4,
+        "variable_name": "Healthy diet but physically inactive",
+        "level_label": null,
+        "column_name": "column_4",
+        "raw_value": "0.04",
+        "value_type": "text",
+        "parsed_numeric": 0.04,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 5,
+        "variable_name": "Healthy diet but physically inactive",
+        "level_label": null,
+        "column_name": "column_5",
+        "raw_value": "0.89(0.76,1.03)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 11,
+        "col_idx": 6,
+        "variable_name": "Healthy diet but physically inactive",
+        "level_label": null,
+        "column_name": "column_6",
+        "raw_value": "0.9",
+        "value_type": "text",
+        "parsed_numeric": 0.9,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 1,
+        "variable_name": "Unhealthy diet but physically active",
+        "level_label": null,
+        "column_name": "4 453",
+        "raw_value": "0.8(0.69,0.93)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 2,
+        "variable_name": "Unhealthy diet but physically active",
+        "level_label": null,
+        "column_name": "column_2",
+        "raw_value": "< 0.01",
+        "value_type": "text",
+        "parsed_numeric": 0.01,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 3,
+        "variable_name": "Unhealthy diet but physically active",
+        "level_label": null,
+        "column_name": "column_3",
+        "raw_value": "0.81(0.7,0.95)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 4,
+        "variable_name": "Unhealthy diet but physically active",
+        "level_label": null,
+        "column_name": "column_4",
+        "raw_value": "< 0.01",
+        "value_type": "text",
+        "parsed_numeric": 0.01,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 5,
+        "variable_name": "Unhealthy diet but physically active",
+        "level_label": null,
+        "column_name": "column_5",
+        "raw_value": "0.9(0.76,1.06)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 12,
+        "col_idx": 6,
+        "variable_name": "Unhealthy diet but physically active",
+        "level_label": null,
+        "column_name": "column_6",
+        "raw_value": "0.7",
+        "value_type": "text",
+        "parsed_numeric": 0.7,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 1,
+        "variable_name": "Healthy diet and physically active",
+        "level_label": null,
+        "column_name": "4 453",
+        "raw_value": "0.56(0.49,0.65)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 2,
+        "variable_name": "Healthy diet and physically active",
+        "level_label": null,
+        "column_name": "column_2",
+        "raw_value": "< 0.01",
+        "value_type": "text",
+        "parsed_numeric": 0.01,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 3,
+        "variable_name": "Healthy diet and physically active",
+        "level_label": null,
+        "column_name": "column_3",
+        "raw_value": "0.61(0.52,0.7)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 4,
+        "variable_name": "Healthy diet and physically active",
+        "level_label": null,
+        "column_name": "column_4",
+        "raw_value": "< 0.01",
+        "value_type": "text",
+        "parsed_numeric": 0.01,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 5,
+        "variable_name": "Healthy diet and physically active",
+        "level_label": null,
+        "column_name": "column_5",
+        "raw_value": "0.77(0.65,0.9)",
+        "value_type": "unknown",
+        "parsed_numeric": null,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.4
+      },
+      {
+        "row_idx": 13,
+        "col_idx": 6,
+        "variable_name": "Healthy diet and physically active",
+        "level_label": null,
+        "column_name": "column_6",
+        "raw_value": "< 0.01",
+        "value_type": "text",
+        "parsed_numeric": 0.01,
+        "parsed_secondary_numeric": null,
+        "confidence": 0.75
+      }
+    ],
+    "notes": [],
+    "overall_confidence": 0.6312
+  }
+]

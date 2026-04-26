@@ -1,0 +1,396 @@
+BMC Public Health 
+
+Guo _et al. BMC Public Health_ (2025) 25:319 https://doi.org/10.1186/s12889-025-21339-w 
+
+## **Open Access** 
+
+## **RESEARCH** 
+
+**==> picture [29 x 29] intentionally omitted <==**
+
+## The association of lifestyle with cardiovascular and all-cause mortality based on machine learning: a prospective study from the NHANES 
+
+Xinghong Guo[1†] , Mingze Ma[1†] , Lipei Zhao[1†] , Jian Wu[1] , Yan Lin[2] , Fengyi Fei[1] , Clifford Silver Tarimo[1] , Saiyi Wang[1] , Jingyi Zhang[1] , Xinya Cheng[3] and Beizhu Ye[1*] 
+
+## **Abstract** 
+
+**Background** Lifestyle and cardiovascular mortality and all-cause mortality have been exhaustively explored by traditional methods, but the advantages of machine learning (ML) over traditional methods may lead to different or more precise conclusions. The aim of this study was to evaluate the effectiveness of machine learning-based lifestyle factors in predicting cardiovascular and all-cause mortality and compare the results obtained by traditional methods. **Method** A prospective cohort study was conducted using a nationally representative sample of adults aged 40 years or older, drawn from the US National Health and Nutrition Examination Survey from 2007 to 2010. The participants underwent a comprehensive in-person interview and medical laboratory examinations, and subsequently, their records were linked with the National Death Index for further analysis. Extreme gradient enhancement, random forest, support vector machine and other machine learning methods are used to build the prediction model. 
+
+**Result** Within a cohort comprising 7921 participants, spanning an average follow-up duration of 9.75 years, a total of 1911 deaths, including 585 cardiovascular-related deaths, were recorded. The model predicted mortality with an area under the receiver operating characteristic curve (AUC) of 0.862 and 0.836. Stratifying participants into distinct risk groups based on ML scores proved effective. All lifestyle behaviors were associated with a reduced risk of allcause and cardiovascular mortality. As age increases, the effects of dietary scores and sedentary time on mortality risk become more pronounced, while the influence of physical activity tends to diminish. 
+
+**Conclusion** We develop a ML model based on lifestyle behaviors to predict all-cause and cardiovascular mortality. The developed model offers valuable insights for the assessment of individual lifestyle-related risks. It applies to individuals, healthcare professionals, and policymakers to make informed decisions. 
+
+†Xinghong Guo, Mingze Ma and Lipei Zhao contributed equally to this work and should be considered co-first authors. 
+
+*Correspondence: Beizhu Ye yebeizhu@zzu.edu.cn 
+
+Full list of author information is available at the end of the article 
+
+**==> picture [39 x 33] intentionally omitted <==**
+
+© The Author(s) 2025. **Open Access** This article is licensed under a Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License, which permits any non-commercial use, sharing, distribution and reproduction in any medium or format, as long as you give appropriate credit to the original author(s) and the source, provide a link to the Creative Commons licence, and indicate if you modified the licensed material. You do not have permission under this licence to share adapted material derived from this article or parts of it. The images or other third party material in this article are included in the article’s Creative Commons licence, unless indicated otherwise in a credit line to the material. If material is not included in the article’s Creative Commons licence and your intended use is not permitted by statutory regulation or exceeds the permitted use, you will need to obtain permission directly from the copyright holder. To view a copy of this licence, visit  h t t p : / / c r e a t i v e c o m m o n s . o r g / l i c e n s e s / b y - n c - n d / 4 . 0 / . 
+
+Page 2 of 10 
+
+Guo _et al. BMC Public Health_ (2025) 25:319 
+
+**Keywords** Cardiovascular mortality, All-cause mortality, Lifestyle behavior, Risk stratification, Mortality prediction, Machine learning 
+
+## **Introduction** 
+
+Cardiovascular disease (CVD) poses a formidable challenge to global health, contributing significantly to noncommunicable diseases (NCDs) and representing a leading cause of mortality worldwide [1, 2]. According to data from the World Health Organization (WHO), cardiovascular disease contributes to deaths of nearly one million people in the United States, accounting for 30% of the total annual mortality [3]. The escalating prevalence of CVD over the past few decades underscores the urgency of identifying effective preventive measures. Extensive research has elucidated a link between modifiable lifestyles and cardiovascular mortality [4–7]. The inherent modifiability of lifestyle renders it of considerable practical significance as a predictive model factor. Through model prediction, the population can be informed of the current level of risk in their lifestyle and effectively promote their transition to a healthier lifestyle. However, traditional statistical methods exhibit limitations in establishing predictive models, struggling to effectively handle the intricate interaction between numerous variables. 
+
+Machine learning (ML), with its ability to analyze vast and complex datasets, presents a compelling solution to the limitations of traditional methods in unraveling the multifaceted associations between lifestyle choices and mortality outcomes [8]. Unlike conventional statistical models that rely on predefined hypotheses and assumptions, ML algorithms can identify intricate patterns and nonlinear relationships within data, offering a more holistic and data-driven perspective [9, 10]. In recent times, an increasing number of studies have applied ML in the 11, 12 field of cardiovascular disease [ ]. This becomes particularly crucial in the realm of cardiovascular health, where the impact of diverse lifestyle factors may manifest in subtle and interconnected manners. 
+
+The NHANES dataset holds a distinct advantage due to its comprehensive inclusion of health, lifestyle, and biochemical information, providing a rich data source for analysis [13–15].Implementing of high-quality standardized collection and testing procedures effectively mitigates the potential for measurement bias, ensuring the reliability of the data. This robust data quality, coupled with a wealth of information, facilitates in-depth exploration of the intricate relationship between lifestyle and both cardiovascular and all-cause mortality, offering a reliable and comprehensive foundation for unraveling the complexities inherent in this association. 
+
+This study endeavors to establish a predictive model for mortality related to lifestyle factors and aims to delve 
+
+into the intricate role of these lifestyle factors using ML models. 
+
+## **Method** 
+
+The prospective cohort were derived from the National Health and Nutrition Examination Survey (NHANES), a nationwide survey conducted biennially since 1999. All NHANES protocols received approval from the National Center for Health Statistics ethics review board, and written informed consent was obtained from all participants. The modeling survey was deemed exempt from further review. 
+
+## **Study population** 
+
+The sample population was derived from the NHANES cycles of 2007–2008 and 2009–2010. We selected participants aged over 40 who participated in in-person interview, physical examinations and laboratory tests in a mobile examination center. The screening process is shown in Supplementary Fig. 1. All participants were assigned a weight according to the sampling method, and the modeling and validation was carried out using weighted samples. 
+
+## **Study outcomes** 
+
+The follow-up data was obtained from the National Health Data Center, which links the NHANES survey population with the death records of the National Death Index (NDI). Cardiovascular mortality was determined using the International Statistical Classification of Diseases, 10th Revision (ICD-10), and the NCHS classified cardiovascular diseases (054–068, 070). We linked participants with the 2019 mortality data records and excluded individuals whose follow-up years and survival status could not be ascertained. 
+
+## **Model features** 
+
+The model encompassed a set of features including age, gender, race, BMI, education level, income, hypertension, diabetes, family history of diseases, non HDL-cholesterol, C-reactive protein, triglycerides, total cholesterol, diet score, physical activity level, sedentary minutes, sleep quality, alcohol consumption, smoking status and medical conditions such as stroke, cancer and coronary heart disease. Age, gender, race, education level, income, and history of close family diseases can be directly obtained from interview data. BMI was derived from physical examination data, while non-HDL cholesterol and C-reactive protein values were obtained from laboratory 
+
+Page 3 of 10 
+
+Guo _et al. BMC Public Health_ (2025) 25:319 
+
+test data. Sedentary minutes were acquired through the physical activity questionnaire. 
+
+NHANES contains a wealth of nutrition information gathered through health interviews, health examinations, and laboratory testing. Participants underwent a 24-hour dietary recall (First Day) interview as part of their health examination at the mobile examination center. Subsequently, they were instructed to complete a second 24-hour dietary recall (Second Day) interview within a period of 3 to 10 days following the initial recall. To rate the dietary patterns of participants, the following steps were taken: linking to the Food Patterns Equivalents Database (FPED) of the US Department of Agriculture based on the USDA code of the food, estimating the daily nutritional intake of participants based on the 24-hour dietary recall on the first day and the 24-hour dietary recall on the second day, and referencing the US Dietary Guidelines 2020–2025 and the scoring rules of the Healthy Eating Index (HEI) to assess and rate the dietary patterns of participants. 
+
+Physical activity was obtained from NHANES’s physical activity questionnaire. The questionnaire contains the information on the weekly exercise intensity and corresponding time reported by the participants. Participants were classified into four (4) groups based on the 2nd edition of the Physical Activity Guidelines for Americans. The “Inactive” group comprised individuals not involved in any moderate- or vigorous-intensity physical activity beyond basic daily life movements. Those deemed “Insufficiently active” engaged in some moderate- or vigorousintensity physical activity but did not reach the threshold of 150 min of moderate-intensity activity per week, or 75 min of vigorous-intensity activity, or the equivalent combination. The “Active” category encompassed participants achieving the equivalent of 150 to 300 min of moderate-intensity physical activity weekly, meeting the key guideline target range for adults. Lastly, the “Highly active” group included individuals undertaking more than 300 min of moderate-intensity physical activity weekly, surpassing the key guideline target range for adults. 
+
+Due to the J-shaped association between sleep duration and all-cause mortality, participants were divided into three groups based on sleep duration: optimal (6–8 h/ day), intermediate (5-5.9 or 8.1–10 h/day), and poor (< 5 or > 10 h/day) [6, 16]. 
+
+Smoking status was categorized into three groups: nonsmokers, individuals who smoked previously, and those who reported current smoking based on responses to the cigarette use questionnaire. Data on alcohol consumption was derived from alcohol use questionnaire, wherein participants provided information on the frequency and quantity of drinks consumed. The average daily alcohol 
+
+consumption was used to measure the level of alcohol consumption among participants. 
+
+Variables related to mental health exhibiting missing values exceeding 40% were excluded from the analysis. Subsequently, the random forest algorithm was employed to impute missing values in the remaining dataset. In order to mitigate the influence of dimensionality and enhance modeling efficiency, continuous variables were rescaled and standardized. We also use mean and mode fillings to compare the model performance of data filled in different ways. The data distribution before imputation is presented in Supplementary Tables 1 & 2. The code for constructing feature variables from the raw NHANES data can be accessed at: h t t p s : / / g i t h u b . c o m / s t a r 4 4 5 1 9 2 4 4 5 / P r o c e s s - N H A N E S - r a w - d a t a . 
+
+## **Model development and risk stratification** 
+
+A binary classification model was constructed based on follow-up data and participant features to predict mortality. Model development included trials of various ML classifiers, including logistic regression, ridge regression, support vector machines, random forest and Extreme Gradient Boosting (XGBoost) [17]. We also used the traditional Cox proportional hazards models to compare their performance with machine learning models. The initial step involved cross validation on the selected models to determine the approximate range of optimal values for each parameter followed by deployment of the grid search method to select the best model through 10-fold cross validation approach. To assess the performance of each model receiver operating curve (ROC) and the corresponding area under the curve (AUC) values were computed. The model output was calibrated using Platt’s scaling and the impact of this calibration was visualized by comparing the Brier score between the uncalibrated and the calibrated outputs. 
+
+Participants were stratified into three groups based on the tertiles of the ten-year survival probability predicted by the model. The discriminative ability of the model was further validated by employing the log-rank test to compare the survival curves among these groups. 
+
+## **Feature importance based on machine learning models** 
+
+To estimate feature importance ranking, as well as main effect of features and interaction effect between features, SHAP (Shapley Additive explanations) was employed. The SHAP is a useful and classical method to calculate the marginal contribution of features to the model’s output. This method provides insight from both global and local perspectives, particularly beneficial for interpreting “black box model”. 
+
+Page 4 of 10 
+
+Guo _et al. BMC Public Health_ (2025) 25:319 
+
+## **Result** 
+
+## **Baseline characteristics** 
+
+The cohort consisted of 7921 participants, with average age of 60.79 ± 12.18, and 3866(48.81%) males. During an average follow-up period of 9.75 years, there were 1,911 deaths (24.13%), with 585 cases attributed to cardiovascular diseases. The detailed information was shown in 
+
+the Table 1. In terms of lifestyle, there are differences between the all-cause mortality group and the cardiovascular disease mortality group and the alive group. After considering sample weights, the distribution of samples is shown in Supplementary Table 3. 
+
+**Table 1** Baseline characteristics of participants 
+
+||**All**|**Live**|**Dead**|**Dead cause of cardiovascular**|
+|---|---|---|---|---|
+||**(****_n_ = 7921)**|**(****_n_ = 6010)**|**(****_n_ = 1911)**|**(****_n_ = 585)**|
+|**Age(years)**|60.79 ± 12.18|57.55 ± 10.95|70.97 ± 10.05‡|72.75 ± 9.52‡|
+|**Male**|3866(48.81%)|2800(46.59%)|1066(55.78%)|322(55.04%)|
+|**BMI(Kg/m2)**|28.57 ± 7.13|29.01 ± 6.83|27.2 ± 7.86‡|27.28 ± 8.26‡|
+|**Education level**|||†||
+|Less Than 9th Grade|1287(16.25%)|929(15.46%)|358(18.73%)|106(18.12%)|
+|9-11th Grade|1318(16.64%)|931(15.49%)|387(20.25%)|127(21.71%)|
+|High School Grad/GED or Equivalent|1853(23.39%)|1381(22.98%)|472(24.70%)|153(26.15%)|
+|Some College or AA degree|1937(24.45%)|1513(25.17%)|424(22.19%)|122(20.85%)|
+|College Graduate or above|1526(19.27%)|1256(20.90%)|270(14.13%)|77(13.16%)|
+|**Ethnicity**|||‡|‡|
+|Mexican American|1256(15.86%)|1095(18.22%)|161(8.42%)|34(5.81%)|
+|Other Hispanic|825(10.42%)|689(11.46%)|136(7.12%)|46(7.86%)|
+|Non-Hispanic White|3961(50.01%)|2786(46.36%)|1175(61.49%)|372(63.59%)|
+|Non-Hispanic Black|1537(19.40%)|1165(19.38%)|372(19.47%)|110(18.80%)|
+|Other Race - Including Multi-Racial|342(4.32%)|275(4.58%)|67(3.51%)|23(3.93%)|
+|**The ratio of household income to poverty line**|2.33 ± 1.72|2.45 ± 1.78|1.94 ± 1.47‡|1.93 ± 1.43‡|
+|**Hypertension**|4453(56.22%)|3048(50.72%)|1405(73.52%)‡|456(77.95%)‡|
+|**Diabetes**|||‡|‡|
+|No diabetes|5856(73.93%)|4678(77.84%)|1178(61.64%)|346(59.15%)|
+|Diabetes|1557(19.66%)|977(16.26%)|580(30.35%)|190(32.48%)|
+|Prediabetes|508(6.41%)|355(5.91%)|153(8.01%)|49(8.38%)|
+|**Close relative heart attack**|1322(16.69%)|946(15.74%)|376(19.68%)‡|125(21.37%)‡|
+|**Close relative diabetes**|3455(43.62%)|2688(44.73%)|767(40.14%)‡|227(38.80%)‡|
+|**non_HDL (mmol/L)**|3.57 ± 1.31|3.69 ± 1.27|3.2 ± 1.36‡|3.17 ± 1.35‡|
+|**CRP**|0.42 ± 0.86|0.38 ± 0.73|0.53 ± 1.17|0.53 ± 1.09|
+|**diet score**|47.55 ± 16.59|48.37 ± 16.07|44.99 ± 17.88‡|44.08 ± 18.51‡|
+|**physical level**|||‡|‡|
+|inactive|2825(35.66%)|1820(30.28%)|1005(52.59%)|316(54.02%)|
+|insufcient active|1129(14.25%)|863(14.36%)|266(13.92%)|80(13.68%)|
+|active|949(11.98%)|765(12.73%)|184(9.63%)|66(11.28%)|
+|highly active|3018(38.10%)|2562(42.63%)|456(23.86%)|123(21.03%)|
+|**Sedentary minutes**|331.98 ± 411.55|317.34 ± 403.55|378.01 ± 432.64‡|374.89 ± 194.81‡|
+|**sleep level**|||‡|‡|
+|Poor|1586(20.02%)|1123(18.69%)|463(24.23%)|134(22.91%)|
+|intermediate|396(5.00%)|265(4.41%)|131(6.86%)|48(8.21%)|
+|optimal|5939(74.98%)|4622(76.91%)|1317(68.92%)|403(68.89%)|
+|**Smoking**|||‡|‡|
+|No smoking|3946(49.82%)|3175(52.83%)|771(40.35%)|269(45.98%)|
+|Smoking before|2495(31.50%)|1718(28.59%)|777(40.66%)|230(39.32%)|
+|Smoking|1480(18.68%)|1117(18.59%)|363(19.00%)|86(14.70%)|
+|**Alcohol consumptionper day**|3.99 ± 14.33|4.31 ± 12.83|2.96 ± 18.24‡|3.36 ± 23.74‡|
+
+
+
+Continuous variables as mean ± SD, categorical variables as n (%) †: _p_ < 0.01; ‡: _p_ < 0.001 vs. participants alive in follow-up, unpaired Student’s _t_ -test or Mann-Whitney U test for continuous variables, Chi-squared or Fisher’s exact test for categorical variables 
+
+Page 5 of 10 
+
+Guo _et al. BMC Public Health_ (2025) 25:319 
+
+**Table 2** AUC score of all models 
+
+||**The AUC of the optimal**|**The AUC of the optimal**|**The AUC of the**|**The AUC of the**|
+|---|---|---|---|---|
+||**parameter combination**||**optimal parameter**||
+||**in the training cohort**||**combination**||
+||||**in the testing cohort**||
+||All-cause|Cardio-|All-cause|Cardio-|
+||mortality|vascular|mortality|vascular|
+|||mortality||mortality|
+|Logistic|0.860|0.831|0.852|0.829|
+|Regression|||||
+|Ridge Regression|0.860|0.829|0.852|0.829|
+|SVM|0.851|0.782|0.849|0.737|
+|Random Forest|0.859|0.851|0.842|0.825|
+|XGBoost|0.881|0.853|0.862|0.836|
+|Cox proportional|0.850|0.824|0.844|0.823|
+|hazards|||||
+
+
+
+in Supplementary Table 9, the performance of the model and the conclusion is similar to above. 
+
+The AUC curve of the XGBoost model is shown in Fig. 1. Before calibration, the AUC for predicting allcause mortality and cardiovascular disease mortality were 0.862 and 0.835, respectively. After calibration, these values improved to 0.864 and 0.843, respectively. 
+
+## **Machine learning-based risk stratification** 
+
+Depends on the calibrated output, participants were divided into three groups. Each group survival curve was shown in Fig. 2. It can be seen from Supplementary Table 5 that there are significant differences in the survival curves for each group. This demonstrates that the model effectively distinguishes individuals with different risks of mortality. 
+
+## **Performance of models** 
+
+Table 2 presents the AUC scores for all models in predicting all-cause mortality and cardiovascular disease mortality. XGBoost demonstrated notable performance, achieving an AUC score of 0.862 for predicting all-cause mortality and 0.836 for predicting cardiovascular disease mortality, establishing it as the top-performing model. Cox proportional hazards performed well, with no significant difference in performance compared to other models, but overall XGBoost performed the best. The grid search parameters dictionary and the optimal parameter values were displayed in the Supplementary Table 4. Following calibration, there was an improvement in Brier scores, and detailed information was described in the Supplementary Table 5. Model performance in the use of mean value and the number to fill in the data shown 
+
+## **Features importance and features’ role in the model** 
+
+In the prediction of both all-cause mortality and cardiovascular disease mortality, age, gender, and diabetes status have made significant contributions to the predictive outcomes (Fig. 3). In terms of lifestyle, smoking, alcohol consumption, and physical activity emerge as significant features exerting a substantial impact on the prediction of all-cause mortality. On the other hand, the model indicates that, reduced sedentary time, higher dietary scores, and increased physical activity in the model will lower individual risk scores. 
+
+## **Features interaction effect** 
+
+Given the prominent role of age in the model predictions, it is essential to further explore the interaction between age and various lifestyle factors. As shown in Fig. 4, the 
+
+**==> picture [483 x 224] intentionally omitted <==**
+
+**Fig. 1** uncalibrated and calibrated ROC of XGBoost model 
+
+Page 6 of 10 
+
+Guo _et al. BMC Public Health_ (2025) 25:319 
+
+**==> picture [483 x 227] intentionally omitted <==**
+
+**Fig. 2** KM-curves of all groups based on tertiles 
+
+**==> picture [483 x 335] intentionally omitted <==**
+
+**Fig. 3** The importance and role of features in the model. Figure 3 illustrates the importance of features in the model, wherein each scatter represents a sample. The importance increases from bottom to top, with color representing the numerical value of the feature. The x-axis represents the role of different values of each feature in the model, with positive values indicating that the feature increases the probability of the model making death predictions. **Plot A** : SHAP value of features in predicting all-cause mortality. **Plot B** : SHAP value of features in predicting in cardiovascular mortality 
+
+Page 7 of 10 
+
+Guo _et al. BMC Public Health_ (2025) 25:319 
+
+**==> picture [483 x 257] intentionally omitted <==**
+
+**Fig. 4** dependence plot interaction effect with age. The figure illustrates the interaction between features and age. Each scatter point along a line perpendicular to the x-axis represents the SHAP values of features sharing the same x-value but varying age values. In the visualization, color represents the value of age, transitioning from blue to red as age increases. The y-axis corresponds to the SHAP values of features at different age values. **A** , **B** and **C** represent SHAP value of diet score, sedentary time and physical activity level in predicting all-cause mortality. **D** , **E** and **F** represent shap value of diet score, sedentary time and physical activity level in predicting cardiovascular mortality 
+
+impact of diet score and sedentary time on outcome prediction becomes more pronounced with advancing age, while the impact of physical activity level exhibits an opposite trend. 
+
+## **Discussion** 
+
+In this prospective cohort spanning an average of 9.75 years, a model was developed and validated to predict both the all-cause mortality and cardiovascular mortality based on the comprehensive dataset encompassing lifestyle data and basic characteristic variables. In addition, the effect of lifestyles on all-cause mortality and cardiovascular mortality and their interaction effect with age were estimated using SHAP. These estimates indicate that lifestyle affects outcome predictions to varying degrees and exhibits diverse patterns in interaction with age. 
+
+Simultaneously interpreting multiple risk factors for individual outcomes poses a challenge for the general public, as well as for healthcare professionals and policymakers. By employing ML algorithms, we established a predictive model related to lifestyle and further explored the contributions of diverse factors to survival outcomes. The results indicate that our model performs effectively and can unveil the roles of less influential predictive factors within the model. Additionally, the potential impact of complex and subtle interactions among predictive factors is often overlooked. The inherent advantages of 
+
+tree models, coupled with their integration with SHAP, allowed for exploring interactions among various predictive factors. 
+
+According to the report from the Physical Activity Guidelines for Americans 2nd edition, there is a positive correlation between sedentary time and all-cause mortality [18]. A prospective survey study from NHANES reveals that, with the prolongation of sedentary time, the risk of all-cause mortality also increases [19]. Similarly, a longitudinal survey study conducted in China also identified an association between sedentary behavior and allcause mortality [20]. In our model, sedentary behavior contributes to the model’s inclination to predict adverse events, consistent with previous research. Furthermore, we found that sedentary behavior has a stronger impact on cardiovascular mortality, ranking higher in feature importance analysis. The relationships between lifestyle factors such as physical activity [21], diet [22], sleep [23], and both all-cause mortality and cardiovascular mortality have been described in detail in previous literature and is consistent with our findings. Overall, machine learning models and traditional models have drawn similar conclusions regarding the relationship between lifestyle factors and mortality. 
+
+Beyond lifestyle factors, age and gender, two fundamental demographic characteristics, play a significant role in the model. While a minority of studies may 
+
+Page 8 of 10 
+
+Guo _et al. BMC Public Health_ (2025) 25:319 
+
+suggest that the role of age in their models is not statistically significant, the prevailing body of research, including our findings, consistently indicates that age plays a non-negligible role in outcome prediction [24, 25]. Studies in various countries and regions consistently indicate that females tend to have lower mortality rates or death risks compared to males [26–28]. This finding is also reflected in our model, where the male gender feature inclines the model toward predicting a higher likelihood of death. This may be attributed to a higher proportion of females adopting healthier lifestyles compared to males [29]. Additionally, relatively higher estrogen levels in females may contribute to maintaining healthy vascular function [30]. Moreover, females might be more inclined to proactively address health issues and seek early treatment [31]. 
+
+Many studies have already utilized NHANES data to develop mortality prediction models. For example, one study predicting cardiovascular disease mortality based on health and nutritional status reported an AUC ranging from 0.7 to 0.88, depending on the combination of features used [32]. Another study, which developed an all-cause mortality prediction model using demographic characteristics and laboratory indicators, achieved an AUC of 0.812 [33]. In comparison to other mortality prediction models based on NHANES data, our model performs similarly or slightly better. Furthermore, we have developed an interactive website based on our model, allowing users to assess their own risks and receive personalized lifestyle guidance. You can access the website at the following link:  h t t p s : / / l i f e s t y l e - b a s e d - m o r t a l i t y - p r e d i c t i o n - t o o l . s t r e a m l i t . a p p / . 
+
+Leveraging the advantages of tree-based models in exploring interactions in machine learning [34], we conducted additional analysis to scrutinize the interactions between various lifestyle factors and age. We discovered some phenomena worth discussing by exploring interactions in the model through SHAP (Shapley Additive explanations). For example, as age increases, the impact of diet and sedentary behavior on adverse outcome events gradually strengthens, while the effect of physical activity diminishes. Specifically, the gap between recommended and not recommended diet and sedentary behaviors widens across different age groups, while the gap between recommended and not recommended physical activities gradually narrows. Given the limited literature on the interaction between lifestyle and age, more research is needed to confirm this finding. The occurrence of this finding may be attributed to the insufficient granularity in the categorization of physical activity. We classified physical activity as a categorical variable with four levels. However, as participants age, although their physical activity levels decrease, they still fall within the same category as relatively younger individuals, resulting 
+
+in attenuation of its impact. This can be observed in Supplementary Table 8; as age increases, the average exercise time in the same physical activity group gradually decreases. However, this does not imply that the role of physical activity can be disregarded in the elderly population. One reason is that low physical activity levels can 35, exacerbate the adverse effects of sedentary behavior [ 36]. 
+
+There are countless factors associated with mortality outcomes, and it’s not practical to include all relevant variables in a predictive model. While lifestyle may not be the most significant factor in outcome prediction among many related variables, it possesses an excellent feature— modifiability. Policymakers or healthcare professionals can raise public awareness and guide individuals toward healthier lifestyles through various means such as education and outreach. Our model enables users to predict mortality based on their current conditions, serving as a warning and reminder. This functionality assists users in moving towards healthier lifestyle changes. That’s why we chose to establish a predictive model for lifestyle-related mortality rates. 
+
+## **Strength and limitations** 
+
+This research has several advantages and limitations that need to be acknowledged. We utilized sufficient data and implemented measures such as 10-fold cross-validation to ensure and validate the stability of the model. However, it’s important to note that our data is derived from a single cohort, and the effectiveness of the model lacks external validation. This study is a prospective cohort study, and the reliability of causal inference is relatively strong. However, during the follow-up process, a small fraction of participants were lost to follow-up (LTFU) or withdrew from the study for various reasons, leading to the possibility of not capturing the occurrence of outcome events. To the best of our knowledge, this study represents the first attempt to apply ML algorithms to explore the relationship between lifestyle and mortality. Additionally, we leveraged the advantages of tree models to investigate interactions in this context. However, inferences about the role of features based on ML only describe the features’ impact on outcome prediction within the model and may not necessarily reflect their real-world effects. The actual effects require further assessment in conjunction with domain expertise. 
+
+## **Conclusion** 
+
+By employing modifiable lifestyle factors and readily available indicators, we effectively predicted overall mortality and cardiovascular disease mortality using the XGBoost model. This model can serve as a valuable predictive tool to encourage individuals to modify unhealthy lifestyles and prevent adverse events. 
+
+Page 9 of 10 
+
+Guo _et al. BMC Public Health_ (2025) 25:319 
+
+## **Abbreviations** 
+
+AUC Area under the receiver operating characteristic curve CVD Cardiovascular disease WHO World Health Organization ML Machine learning NHANES National Health and Nutrition Examination Survey NDI National Death Index FPED Food Patterns Equivalents Database HEI Healthy Eating Index XGBoost Extreme Gradient Boosting 
+
+## **Supplementary Information** 
+
+The online version contains supplementary material available at  h t t p s : / / d o i . o r g / 1 0 . 1 1 8 6 / s 1 2 8 8 9 - 0 2 5 - 2 1 3 3 9 - w . 
+
+Supplementary Material 1 
+
+## **Acknowledgements** 
+
+We would like to thank NHANES for providing publicly available data, and most importantly, we thank all participants for their participation. 
+
+## **Author contributions** 
+
+Xinghong Guo, Jian Wu and Beizhu Ye conceptualized and designed research ideas. Clifford Silver Tarimo and Mingze Ma led the data collection. Xinghong Guo, Fengyi Fei and Lipei Zhao performed the statistical analyses, drafted the first version of the manuscript. All authors contributed to draft the manuscript, approved of the final version and agree with the order of presentation of the authors. 
+
+## **Funding** 
+
+This study is supported by Collaborative Innovation System Research on Drug Intervention&Non-drug Intervention in Proactive Health Context (20220518 A), Zhengzhou University Education Reform Research and Practice Project (2023ZZUJGXM222), the 2024 Graduate Independent Innovation Project of Zhengzhou University (20240332) and Henan Zhongyuan Medical Science and Technology Innovation and Development Foundation (23YCG1006). 
+
+## **Data availability** 
+
+The scripts generated during the current study are available in the National Health and Nutrition Examination Survey  [ h t t p s : / / w w w . c d c . g o v / n c h s / n h a n e s / i n d e x . h t m ] . 
+
+## **Declarations** 
+
+**Consent for publication** Not applicable. 
+
+## **Competing interests** 
+
+The authors declare no competing interests. 
+
+## **Ethics approval** 
+
+All NHANES protocols received approval from the National Center for Health Statistics ethics review board, and written informed consent was obtained from all participants. The modeling survey was deemed exempt from further review. 
+
+## **Author details** 
+
+1Department of Health Management of Public Health, College of Public Health, Zhengzhou University, 100 Kexue Road, Gaoxin district, Zhengzhou 450001, Henan, China 2Department of Epidemiology and Biostatistics, College of Public Health, Zhengzhou University, No.100 Science Avenue, Zhengzhou, Henan 450001, China 3Faculty of Arts and Social Sciences, Hong Kong Baptist University, 224 Waterloo Road, Kowloon Tong, Hong Kong 
+
+Received: 1 July 2024 / Accepted: 6 January 2025 
+
+**==> picture [133 x 11] intentionally omitted <==**
+
+## **References** 
+
+1. Organization WH, World Health Organization. Call for public comments on the draft WHO Guidelines: Saturated fatty acid and trans-fatty intake for adults and children. 2023-12-25, Accessed 2018-02-06.  h t t p s : / / w w w . w h o . i n t / n e w s - r o o m / a r t i c l e s - d e t a i l / c a l l - f o r - p u b l i c - c o m m e n t s - o n - t h e - d r a f t - w h o - g u i d e l i n e s - - s a t u r a t e d - f a t t y - a c i d - a n d - t r a n s - f a t t y - i n t a k e - f o r - a d u l t s - a n d - c h i l d r e n 
+
+2. Roth GA, Mensah GA, Johnson CO, et al. Global Burden of Cardiovascular diseases and Risk factors, 1990–2019: Update from the GBD 2019 study. J Am Coll Cardiol Dec. 2020;22(25):2982–3021.  h t t p s : / / d o i . o r g / 1 0 . 1 0 1 6 / j . j a c c . 2 0 2 0 . 1 1 . 0 1 0 . 
+
+3. Organization WH, WHO MORTALITY DATABASE Interactive platform visualizing mortality data. World Health Organization. Accessed 2023-12-25,  h t t p s : / / p l a t f o r m . w h o . i n t / m o r t a l i t y / t h e m e s / t h e m e - d e t a i l s / m d b / n o n c o m m u n i c a b l e - d i s e a s e s 
+
+4. Khraishah H, Alahmad B, Ostergard RL Jr., et al. Climate change and cardiovascular disease: implications for global health. Nat Rev Cardiol Dec. 2022;19(12):798–812. https:/ /doi.or g/10.10 38/s 41569-022-00720-x. 
+
+5. Li Y, Pan A, Wang DD, et al. Impact of healthy lifestyle factors on life expectancies in the US Population. Circulation Jul. 2018;24(4):345–55.  h t t p s : / / d o i . o r g / 1 0 . 1 1 6 1 / c i r c u l a t i o n a h a . 1 1 7 . 0 3 2 0 4 7 . 
+
+6. Lu Q, Zhang Y, Geng T, et al. Association of Lifestyle Factors and antihypertensive medication Use with risk of all-cause and cause-specific mortality among adults with hypertension in China. JAMA Netw Open Feb. 2022;1(2):e2146118. https:/ /doi.or g/10.10 01/j amanetworkopen.2021.46118. 
+
+7. Sotos-Prieto M, Bhupathiraju SN, Mattei J, et al. Association of Changes in Diet Quality with Total and cause-specific mortality. N Engl J Med Jul. 2017;13(2):143–53. https:/ /doi.or g/10.10 56/N EJMoa1613502. 
+
+8. Kline A, Wang H, Li Y, et al. Multimodal machine learning in precision health: a scoping review. NPJ Digit Med Nov. 2022;7(1):171.  h t t p s : / / d o i . o r g / 1 0 . 1 0 3 8 / s 4 1 7 4 6 - 0 2 2 - 0 0 7 1 2 - 8 . 
+
+9. Ngiam KY, Khor IW. Big data and machine learning algorithms for health-care delivery. Lancet Oncol May. 2019;20(5):e262–73.  h t t p s : / / d o i . o r g / 1 0 . 1 0 1 6 / s 1 4 7 0 - 2 0 4 5 ( 1 9 ) 3 0 1 4 9 - 4 . 
+
+10. Cui F, Yue Y, Zhang Y, Zhang Z, Zhou HS. Advancing biosensors with machine learning. ACS Sens Nov. 2020;25(11):3346–64.  h t t p s : / / d o i . o r g / 1 0 . 1 0 2 1 / a c s s e n s o r s . 0 c 0 1 4 2 4 . 
+
+11. Al’Aref SJ, Anchouche K, Singh G, et al. Clinical applications of machine learning in cardiovascular disease and its relevance to cardiac imaging. Eur Heart J Jun. 2019;21(24):1975–86. https:/ /doi.or g/10.10 93/e urheartj/ehy404. 
+
+12. Deo RC. Machine learning in Medicine. Circulation Nov. 2015;17(20):1920–30. https:/ /doi.or g/10.11 61/c irculationaha.115.001593. 
+
+13. Zhang YB, Chen C, Pan XF, et al. Associations of healthy lifestyle and socioeconomic status with mortality and incident cardiovascular disease: two prospective cohort studies. Bmj Apr. 2021;14:373:n604.  h t t p s : / / d o i . o r g / 1 0 . 1 1 3 6 / b m j . n 6 0 4 . 
+
+14. Liu J, Micha R, Li Y, Mozaffarian D. Trends in Food sources and Diet Quality among US children and adults, 2003–2018. JAMA Netw Open Apr. 2021;1(4):e215262. https:/ /doi.or g/10.10 01/j amanetworkopen.2021.5262. 
+
+15. Prevention CfDCa. About the National Health and Nutrition Examination Survey. Centers for Disease Control and Prevention. 2023-12-26, Accessed 2023-12-26.  h t t p s : / / w w w . c d c . g o v / n c h s / n h a n e s / a b o u t / ? C D C _ A A r e f _ V a l = h t t p s : / / w w w . c d c . g o v / n c h s / n h a n e s / a b o u t _ n h a n e s . h t m 
+
+16. Wang C, Bangdiwala SI, Rangarajan S, et al. Association of estimated sleep duration and naps with mortality and cardiovascular events: a study of 116 632 people from 21 countries. Eur Heart J May. 2019;21(20):1620–9.  h t t p s : / / d o i . o r g / 1 0 . 1 0 9 3 / e u r h e a r t j / e h y 6 9 5 . 
+
+17. Kresoja KP, Unterhuber M, Wachter R, Thiele H, Lurz P. A cardiologist’s guide to machine learning in cardiovascular disease prognosis prediction. Basic Res Cardiol Mar. 2023;20(1):10. https:/ /doi.or g/10.10 07/s 00395-023-00982-7. 
+
+18. Promotion OoDPaH. Physical Activity Guidelines for Americans 2nd edition. 2018:21–22. 
+
+19. Cao C, Friedenreich CM, Yang L. Association of Daily Sitting Time and leisuretime physical activity with Survival among US Cancer survivors. JAMA Oncol Mar. 2022;1(3):395–403. https:/ /doi.or g/10.10 01/j amaoncol.2021.6590. 
+
+20. Lin Y, Liu Q, Liu F, et al. Adverse associations of sedentary behavior with cancer incidence and all-cause mortality: a prospective cohort study. J Sport Health Sci Sep. 2021;10(5):560–9. https:/ /doi.or g/10.10 16/j .jshs.2021.04.002. 
+
+Page 10 of 10 
+
+Guo _et al. BMC Public Health_ (2025) 25:319 
+
+21. Mok A, Khaw KT, Luben R, Wareham N, Brage S. Physical activity trajectories and mortality: population based cohort study. Bmj Jun. 2019;26:365:l2323. https:/ /doi.or g/10.11 36/b mj.l2323. 
+
+22. Naghshi S, Sadeghi O, Willett WC, Esmaillzadeh A. Dietary intake of total, animal, and plant proteins and risk of all cause, cardiovascular, and cancer mortality: systematic review and dose-response meta-analysis of prospective cohort studies. Bmj Jul. 2020;22:370:m2412.  h t t p s : / / d o i . o r g / 1 0 . 1 1 3 6 / b m j . m 2 4 1 2 . 
+
+23. Svensson T, Saito E, Svensson AK, et al. Association of Sleep Duration with All- and major-cause mortality among adults in Japan, China, Singapore, and Korea. JAMA Netw Open Sep. 2021;1(9):e2122837.  h t t p s : / / d o i . o r g / 1 0 . 1 0 0 1 / j a m a n e t w o r k o p e n . 2 0 2 1 . 2 2 8 3 7 . 
+
+24. Huang J, Liao LM, Weinstein SJ, Sinha R, Graubard BI, Albanes D. Association between Plant and Animal Protein Intake and overall and cause-specific mortality. JAMA Intern Med Sep. 2020;1(9):1173–84.  h t t p s : / / d o i . o r g / 1 0 . 1 0 0 1 / j a m a i n t e r n m e d . 2 0 2 0 . 2 7 9 0 . 
+
+25. Davis JS, Banfield E, Lee HY, Peng HL, Chang S, Wood AC. Lifestyle behavior patterns and mortality among adults in the NHANES 1988–1994 population: a latent profile analysis. Prev Med Mar. 2019;120:131–9.  h t t p s : / / d o i . o r g / 1 0 . 1 0 1 6 / j . y p m e d . 2 0 1 9 . 0 1 . 0 1 2 . 
+
+26. Zhou T, Yuan Y, Xue Q, et al. Adherence to a healthy sleep pattern is associated with lower risks of all-cause, cardiovascular and cancer-specific mortality. J Intern Med. Jan 2022;291(1):64–71. https:/ /doi.or g/10.11 11/j oim.13367. 
+
+27. Yun JE, Won S, Kimm H, Jee SH. Effects of a combined lifestyle score on 10-year mortality in Korean men and women: a prospective cohort study. BMC Public Health Aug. 2012;20:12:673.  h t t p s : / / d o i . o r g / 1 0 . 1 1 8 6 / 1 4 7 1 - 2 4 5 8 - 1 2 - 6 7 3 . 
+
+28. Tamakoshi A, Tamakoshi K, Lin Y, Yagyu K, Kikuchi S. Healthy lifestyle and preventable death: findings from the Japan Collaborative Cohort (JACC) study. Prev Med. May 2009;48(5):486–92.  h t t p s : / / d o i . o r g / 1 0 . 1 0 1 6 / j . y p m e d . 2 0 0 9 . 0 2 . 0 1 7 . 
+
+   - million people. Int J Behav Nutr Phys Act Nov. 2019;4(1):98.  h t t p s : / / d o i . o r g / 1 0 . 1 1 8 6 / s 1 2 9 6 6 - 0 1 9 - 0 8 6 0 - z . 
+
+30. Morselli E, Santos RS, Criollo A, Nelson MD, Palmer BF, Clegg DJ. The effects of oestrogens and their receptors on cardiometabolic health. Nat Rev Endocrinol Jun. 2017;13(6):352–64. https:/ /doi.or g/10.10 38/n rendo.2017.12. 
+
+31. Courtenay WH. Constructions of masculinity and their influence on men’s well-being: a theory of gender and health. Soc Sci Med. May 2000;50(10):1385–401. https:/ /doi.or g/10.10 16/s 0277-9536(99)00390-1. 
+
+32. Martin-Morales A, Yamamoto M, Inoue M, Vu T, Dawadi R, Araki M. Predicting Cardiovascular Disease Mortality: Leveraging Machine Learning for Comprehensive Assessment of Health and Nutrition Variables. Nutrients Sep. 2023;11(18). https:/ /doi.or g/10.33 90/n u15183937. 
+
+33. Yang L, Shen X, Seyiti Z, et al. Development and validation of a nomogram for predicting all-cause mortality in American adult hypertensive populations. Front Pharmacol. 2023;14:1266870.  h t t p s : / / d o i . o r g / 1 0 . 3 3 8 9 / f p h a r . 2 0 2 3 . 1 2 6 6 8 7 0 . 
+
+34. Chen T, Guestrin C. Xgboost: A scalable tree boosting system. 2016:785–794. 
+
+35. Bull FC, Al-Ansari SS, Biddle S, et al. World Health Organization 2020 guidelines on physical activity and sedentary behaviour. Br J Sports Med Dec. 2020;54(24):1451–62. https:/ /doi.or g/10.11 36/b jsports-2020-102955. 
+
+36. Li S, Lear SA, Rangarajan S, et al. Association of sitting Time with Mortality and Cardiovascular events in High-Income, Middle-Income, and low-income countries. JAMA Cardiol Aug. 2022;1(8):796–807.  h t t p s : / / d o i . o r g / 1 0 . 1 0 0 1 / j a m a c a r d i o . 2 0 2 2 . 1 5 8 1 . 
+
+## **Publisher’s note** 
+
+Springer Nature remains neutral with regard to jurisdictional claims in published maps and institutional affiliations. 
+
+29. Zhu N, Yu C, Guo Y, et al. Adherence to a healthy lifestyle and all-cause and cause-specific mortality in Chinese adults: a 10-year prospective study of 0.5 
+

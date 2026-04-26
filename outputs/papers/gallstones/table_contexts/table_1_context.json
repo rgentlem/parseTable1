@@ -1,0 +1,64 @@
+{
+  "table_id": "gallstones-p6-t0",
+  "table_index": 1,
+  "table_label": "Table 1",
+  "title": "Table 1 (continued)",
+  "caption": "Table 1 (continued)",
+  "row_terms": [
+    "Angina pectoris, n (%)",
+    "Heart attack, n (%)",
+    "Estrogen use status, n (%)",
+    "Antihyperglycemic drug use status, n (%)",
+    "Statin use status, n (%)",
+    "Glucocorticosteroid use status, n (%)",
+    "Energy, Median (Q1-Q3)",
+    "Total cholesterol, Median (Q1-Q3)",
+    "DII, Median (Q1-Q3)",
+    "AHEI, Median (Q1-Q3)",
+    "HEI2020, Median (Q1-Q3)",
+    "DASH, Median (Q1-Q3)",
+    "MED, Median (Q1-Q3)"
+  ],
+  "column_terms": [
+    "Gallstones NO (n = 5889)",
+    "YES (n = 734)"
+  ],
+  "grouping_terms": [
+    "Gallstones"
+  ],
+  "methods_like_section_ids": [
+    "section_6",
+    "section_7",
+    "section_10",
+    "section_11"
+  ],
+  "results_like_section_ids": [
+    "section_12"
+  ],
+  "passages": [
+    {
+      "passage_id": "section_13_p0",
+      "section_id": "section_13",
+      "heading": "**Baseline characteristics**",
+      "text": "The study included 6623 individuals who met the inclusion and exclusion criteria. The mean age of participants was 50.85 \u00b1 17.27 years, and 52.24% were female. In total, 734 participants (11.08%) had gallstones. The mean DII score was 1.26 \u00b1 1.69. Table 1 provides a detailed description of the participants. Compared with participants who did not have gallstones, individuals with gallstones demonstrated a greater tendency towards the following characteristics: older age, female, non-Hispanic white, higher educational level, higher BMI, no significant weight loss, smoking, hypertension, history of undiagnosed diabetes mellitus and cardiovascular disease, no use of estrogen, statins, glucose-lowering medications, or glucocorticoids, lower energy intake, and higher DII (each _P_ < 0.05).",
+      "match_type": "table_reference",
+      "score": 1.0
+    },
+    {
+      "passage_id": "section_14_p0",
+      "section_id": "section_14",
+      "heading": "**Association between unhealthy dietary pattern and gallstones**",
+      "text": "Table 2 shows the correlation between the DII score and gallstone occurrence. In the model with comprehensive adjustments for confounders (model 4), when the DII Page 5 of 13 Wu _et al. BMC Public Health_ (2025) 25:976 **Table 1** Baseline characteristics of participants in a cross-sectional study on Dietary Quality indicators and gallstones based on the National Health and Nutrition Examination Survey (NHANES) 2017-2020 |**Variables**<br>**Overall**<br>**(****_n_ = 6623)**|**Gallstones**<br>**_P_-value**<br>**NO(****_n_ = 5889)**<br>**YES(****_n_ = 734)**| |---|---| |**Age**,**Median (Q1-Q3)**<br>52.00 (36.00-64.00)<br>**Age**,**n (%)**<br>< 40<br>1993 (30.09%)<br>40-60<br>2210 (33.37%)<br>>= 60<br>2420 (36.54%)<br>**Gender**,**n (%)**<br>Male<br>3163 (47.76%)<br>Female<br>3460 (52.24%)<br>**Race**,**n (%)**<br>Mexican American<br>736 (11.11%)<br>Other Hispanic<br>655 (9.89%)<br>Non-Hispanic White<br>2390 (36.09%)<br>Non-Hispanic Black<br>1859 (28.07%)<br>Other Race<br>983 (14.84%)<br>**Education level**,**n (%)**<br>Less than 9th grade<br>390 (5.89%)<br>9-11th grade<br>689 (10.40%)<br>High school graduate/GED or equivalent<br>1562 (23.58%)<br>Some college or AA degree<br>2259 (34.11%)<br>College graduate or above<br>1723 (26.02%)<br>**Income-to-poverty ratio**,**n (%)**<br>2.32 (1.35-3.98)<br>**BMI**,**Median (Q1-Q3)**<br>29.00 (25.10-33.90)<br>**BMI**,**kg/m2**,**n (%)**<br>Normal weight<br>1603 (24.20%)<br>Overweight<br>2095 (31.63%)<br>Obese<br>2925 (44.16%)<br>**Large weight loss**,**n (%)**<br>Yes<br>1461 (22.06%)<br>No<br>5162 (77.94%)<br>**Alcohol use**,**n (%)**<br>Yes<br>6046 (91.29%)<br>No<br>577 (8.71%)<br>**Smoking**,**n (%)**<br>Never smokers<br>3831 (57.84%)<br>Previous smokers<br>1611 (24.32%)<br>Occasional smokers<br>268 (4.05%)<br>Daily smokers<br>913 (13.79%)<br>**Physical activity**,**n (%)**<br>Yes<br>2995 (45.22%)<br>No<br>3628 (54.78%)<br>**Diabetes**,**n (%)**<br>Yes<br>1053 (15.90%)<br>No<br>5570 (84.10%)<br>**Hypertension**,**n (%)**<br>Yes<br>2598 (39.23%)<br>No<br>4025 (60.77%)<br>**Heart failure**,**n (%)**<br>Yes<br>243 (3.67%)<br>No<br>6380 (96.33%)<br>**Coronary heart disease**,**n (%)**<br>Yes<br>310(4.68%)|51.00 (35.00-63.00)<br>61.00 (46.25-71.00)<br>< 0.001<br>< 0.001<br>1881 (31.94%)<br>112 (15.26%)<br>1975 (33.54%)<br>235 (32.02%)<br>2033 (34.52%)<br>387 (52.72%)<br>< 0.001<br>2951 (50.11%)<br>212 (28.88%)<br>2938 (49.89%)<br>522 (71.12%)<br>< 0.001<br>652 (11.07%)<br>84 (11.44%)<br>574 (9.75%)<br>81 (11.04%)<br>2064 (35.05%)<br>326 (44.41%)<br>1701 (28.88%)<br>158 (21.53%)<br>898 (15.25%)<br>85 (11.58%)<br>0.014<br>354 (6.01%)<br>36 (4.90%)<br>609 (10.34%)<br>78 (10.63%)<br>1379 (23.42%)<br>185 (25.20%)<br>1981 (33.64%)<br>278 (37.87%)<br>1566 (26.59%)<br>157 (21.39%)<br>2.32 (1.35-3.98)<br>2.32 (1.35-3.70)<br>0.207<br>28.70 (24.80-33.50)<br>31.90 (27.90-37.90)<br>< 0.001<br>< 0.001<br>1520 (25.81%)<br>83 (11.31%)<br>1888 (32.06%)<br>207 (28.20%)<br>2481 (42.13%)<br>444 (60.49%)<br>< 0.001<br>1262 (21.43%)<br>199 (27.11%)<br>4627 (78.57%)<br>535 (72.89%)<br>0.895<br>5375 (91.27%)<br>671 (91.42%)<br>514 (8.73%)<br>63 (8.58%)<br>< 0.001<br>3445 (58.50%)<br>386 (52.59%)<br>1378 (23.40%)<br>233 (31.74%)<br>248 (4.21%)<br>20 (2.72%)<br>818 (13.89%)<br>95 (12.94%)<br>0.210<br>2679 (45.49%)<br>316 (43.05%)<br>3210 (54.51%)<br>418 (56.95%)<br>< 0.001<br>855 (14.52%)<br>198 (26.98%)<br>5034 (85.48%)<br>536 (73.02%)<br>< 0.001<br>2189 (37.17%)<br>409 (55.72%)<br>3700 (62.83%)<br>325 (44.28%)<br>< 0.001<br>189 (3.21%)<br>54 (7.36%)<br>5700 (96.79%)<br>680 (92.64%)<br>< 0.001<br>243(4.13%)<br>67(9.13%)| Page 6 of 13 Wu _et al. BMC Public Health_ (2025) 25:976 **Table 1** (continued) |**Table 1**(continued)|| |---|---| |**Variables**<br>**Overall**<br>**(****_n_ = 6623)**|**Gallstones**<br>**_P_-value**<br>**NO(****_n_ = 5889)**<br>**YES(****_n_ = 734)**| |No<br>6313 (95.32%)<br>**Angina pectoris**,**n (%)**<br>Yes<br>175 (2.64%)<br>No<br>6448 (97.36%)<br>**Heart attack**,**n (%)**<br>Yes<br>305 (4.61%)<br>No<br>6318 (95.39%)<br>**Estrogen use status**,**n (%)**<br>Yes<br>125 (1.89%)<br>No<br>2543 (38.40%)<br>Other<br>3955 (59.72%)<br>**Antihyperglycemic drug use status**,**n (%)**<br>Yes<br>147 (2.22%)<br>No<br>2543 (38.40%)<br>Other<br>3933 (59.38%)<br>**Statin use status**,**n (%)**<br>Yes<br>432 (6.52%)<br>No<br>2543 (38.40%)<br>Other<br>3648 (55.08%)<br>**Glucocorticosteroid use status**,**n (%)**<br>Yes<br>64 (0.97%)<br>No<br>2543 (38.40%)<br>Other<br>4016 (60.64%)<br>**Energy**,**Median (Q1-Q3)**<br>1912.00 (1453.00-2481.00)<br>**Total cholesterol**,**Median (Q1-Q3)**<br>183.00 (159.00-209.00)<br>**DII**,**Median (Q1-Q3)**<br>1.43 (0.10-2.55)<br>**AHEI**,**Median (Q1-Q3)**<br>37.64 (29.91-46.05)<br>**HEI2020**,**Median (Q1-Q3)**<br>49.71 (41.73-58.83)<br>**DASH**,**Median (Q1-Q3)**<br>26.50 (24.50-28.50)<br>**MED**,**Median(Q1-Q3)**<br>6.00(5.00-6.50)|5646 (95.87%)<br>667 (90.87%)<br>< 0.001<br>125 (2.12%)<br>50 (6.81%)<br>5764 (97.88%)<br>684 (93.19%)<br>< 0.001<br>243 (4.13%)<br>62 (8.45%)<br>5646 (95.87%)<br>672 (91.55%)<br>< 0.001<br>116 (1.97%)<br>9 (1.23%)<br>2390 (40.58%)<br>153 (20.84%)<br>3383 (57.45%)<br>572 (77.93%)<br>< 0.001<br>126 (2.14%)<br>21 (2.86%)<br>2390 (40.58%)<br>153 (20.84%)<br>3373 (57.28%)<br>560 (76.29%)<br>< 0.001<br>378 (6.42%)<br>54 (7.36%)<br>2390 (40.58%)<br>153 (20.84%)<br>3121 (53.00%)<br>527 (71.80%)<br>< 0.001<br>55 (0.93%)<br>9 (1.23%)<br>2390 (40.58%)<br>153 (20.84%)<br>3444 (58.48%)<br>572 (77.93%)<br>1931.00 (1462.00-2499.50)<br>1802.00 (1386.38-2333.75)<br>< 0.001<br>183.00 (159.00-209.00)<br>183.00 (158.00-208.75)<br>0.619<br>1.40 (0.08-2.51)<br>1.71 (0.32-2.84)<br>< 0.001<br>37.64 (29.92-46.17)<br>37.55 (29.90-45.53)<br>0.483<br>49.84 (41.75-58.89)<br>48.63 (41.55-58.32)<br>0.162<br>26.50 (24.50-28.50)<br>26.50 (24.50-29.00)<br>0.843<br>6.00(5.00-6.50)<br>6.00(5.00-6.50)<br>0.939| 1. Intergroup differences in categorical variables were assessed using the chi-square test 2. Intergroup differences in variables were analyzed using the Mann-Whitney U test score was treated as a continuous variable, it was positively associated with the occurrence of gallstones, suggesting that each one-unit increase in the DII score corresponded to an 8.6% higher likelihood of developing gallstones. When categorical variables were analyzed by quartile, higher DII quartiles were associated with an increased probability of gallstones. Individuals in DII Q4 had a 43.6% higher probability of developing gallstones than those in Q1. These results suggest that higher DII scores are closely associated with an increased likelihood of gallstone formation. Subsequently, we evaluated the possibility of non-linear associations between the DII score and gallstone occurrence. An RCS regression model that accounted for all the confounders was used to assess the linearity of these relationships. As shown in Fig. 2A, the non-linear doseresponse relationship between the DII score and gallstone occurrence was observed. Threshold effect analysis revealed an inflection point at 1.842 (Table 3). After this point, a significant association was observed (OR 1.275, 95% CI 1.074, 1.513), suggesting that a one-unit rise in the DII score increased the likelihood of gallstone development by 27.5%. Conversely, before reaching this inflection point, the relationship between DII score and gallstones was not statistically significant.",
+      "match_type": "table_reference",
+      "score": 1.0
+    },
+    {
+      "passage_id": "section_11_p0",
+      "section_id": "section_11",
+      "heading": "**Statistical analysis**",
+      "text": "Dietary quality indicators were grouped into quartiles, with the lowest quartile serving as the reference group. Because of their non-normal distribution, continuous variables are described as median and interquartile range according to the Kolmogorov-Smirnov test (TableS1 and Fig. S1), and categorical variables are reported as proportions. Intergroup differences in categorical variables were evaluated using the chi-square test, whereas intergroup differences in continuous variables were assessed using the Mann-Whitney U test. Multivariate logistic regression was used to investigate the odds ratios (ORs) and 95% confidence intervals (CIs) between gallstones and dietary quality indicators. Four models were established: Model 1 (unadjusted), Model 2 (adjusted for age, sex, and race), Model 3 (adjusted for age, sex, race, BMI, and total calorie intake), and Model 4 (completely adjusted for all factors). Additionally, we evaluated the possible nonlinear relationship between gallstones and dietary quality indicators using a restricted cubic spline (RCS) regression model. A segmented linear regression model was employed to the threshold effect of gallstones on dietary quality indicators. Subgroup and interaction analyses were conducted to explore potential differences between the different populations. The robustness of the results was further assessed using a sensitivity analysis adjusted for hyperlipidemia to minimize its impact on gallstones. Multiple imputations were used to impute missing values. Statistical significance was defined as _P_ < 0.05. The analyses were conducted using the R and EmpowerStats software.",
+      "match_type": "methods_term_match",
+      "score": 0.2625
+    }
+  ]
+}

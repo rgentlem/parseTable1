@@ -1,0 +1,513 @@
+[
+  {
+    "table_id": "cardiovascular-p4-t0",
+    "title": "Table 1 Baseline characteristics of participants",
+    "caption": "Table 1 Baseline characteristics of participants",
+    "variables": [
+      {
+        "variable_name": "Age",
+        "variable_label": "Age(years)",
+        "variable_type": "continuous",
+        "row_start": 2,
+        "row_end": 2,
+        "levels": [],
+        "units_hint": "years",
+        "summary_style_hint": "mean_sd",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "BMI",
+        "variable_label": "BMI(Kg/m2)",
+        "variable_type": "continuous",
+        "row_start": 4,
+        "row_end": 4,
+        "levels": [],
+        "units_hint": "Kg/m2",
+        "summary_style_hint": "mean_sd",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Education level",
+        "variable_label": "Education level",
+        "variable_type": "categorical",
+        "row_start": 5,
+        "row_end": 16,
+        "levels": [
+          {
+            "level_name": "Less Than 9th Grade",
+            "level_label": "Less Than 9th Grade",
+            "row_idx": 6,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "9-11th Grade",
+            "level_label": "9-11th Grade",
+            "row_idx": 7,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "High School Grad/GED or Equivalent",
+            "level_label": "High School Grad/GED or Equivalent",
+            "row_idx": 8,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Some College or AA degree",
+            "level_label": "Some College or AA degree",
+            "row_idx": 9,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "College Graduate or above",
+            "level_label": "College Graduate or above",
+            "row_idx": 10,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Ethnicity",
+            "level_label": "Ethnicity",
+            "row_idx": 11,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Mexican American",
+            "level_label": "Mexican American",
+            "row_idx": 12,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Other Hispanic",
+            "level_label": "Other Hispanic",
+            "row_idx": 13,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Non-Hispanic White",
+            "level_label": "Non-Hispanic White",
+            "row_idx": 14,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Non-Hispanic Black",
+            "level_label": "Non-Hispanic Black",
+            "row_idx": 15,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Other Race - Including Multi-Racial",
+            "level_label": "Other Race - Including Multi-Racial",
+            "row_idx": 16,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "The ratio of household income to poverty line",
+        "variable_label": "The ratio of household income to poverty line",
+        "variable_type": "continuous",
+        "row_start": 17,
+        "row_end": 17,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "mean_sd",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Hypertension",
+        "variable_label": "Hypertension",
+        "variable_type": "categorical",
+        "row_start": 18,
+        "row_end": 24,
+        "levels": [
+          {
+            "level_name": "Diabetes",
+            "level_label": "Diabetes",
+            "row_idx": 19,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "No diabetes",
+            "level_label": "No diabetes",
+            "row_idx": 20,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Diabetes",
+            "level_label": "Diabetes",
+            "row_idx": 21,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Prediabetes",
+            "level_label": "Prediabetes",
+            "row_idx": 22,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Close relative heart attack",
+            "level_label": "Close relative heart attack",
+            "row_idx": 23,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Close relative diabetes",
+            "level_label": "Close relative diabetes",
+            "row_idx": 24,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "non HDL",
+        "variable_label": "non_HDL (mmol/L)",
+        "variable_type": "continuous",
+        "row_start": 25,
+        "row_end": 25,
+        "levels": [],
+        "units_hint": "mmol/L",
+        "summary_style_hint": "mean_sd",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "CRP",
+        "variable_label": "CRP",
+        "variable_type": "continuous",
+        "row_start": 26,
+        "row_end": 26,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "mean_sd",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "diet score",
+        "variable_label": "diet score",
+        "variable_type": "continuous",
+        "row_start": 27,
+        "row_end": 27,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "mean_sd",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "physical level",
+        "variable_label": "physical level",
+        "variable_type": "categorical",
+        "row_start": 28,
+        "row_end": 32,
+        "levels": [
+          {
+            "level_name": "inactive",
+            "level_label": "inactive",
+            "row_idx": 29,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "insufcient active",
+            "level_label": "insufcient active",
+            "row_idx": 30,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "active",
+            "level_label": "active",
+            "row_idx": 31,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "highly active",
+            "level_label": "highly active",
+            "row_idx": 32,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Sedentary minutes",
+        "variable_label": "Sedentary minutes",
+        "variable_type": "continuous",
+        "row_start": 33,
+        "row_end": 33,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "mean_sd",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "sleep level",
+        "variable_label": "sleep level",
+        "variable_type": "categorical",
+        "row_start": 34,
+        "row_end": 41,
+        "levels": [
+          {
+            "level_name": "Poor",
+            "level_label": "Poor",
+            "row_idx": 35,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "intermediate",
+            "level_label": "intermediate",
+            "row_idx": 36,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "optimal",
+            "level_label": "optimal",
+            "row_idx": 37,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Smoking",
+            "level_label": "Smoking",
+            "row_idx": 38,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "No smoking",
+            "level_label": "No smoking",
+            "row_idx": 39,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Smoking before",
+            "level_label": "Smoking before",
+            "row_idx": 40,
+            "confidence": 0.92
+          },
+          {
+            "level_name": "Smoking",
+            "level_label": "Smoking",
+            "row_idx": 41,
+            "confidence": 0.92
+          }
+        ],
+        "units_hint": null,
+        "summary_style_hint": "count_pct",
+        "confidence": 0.92
+      },
+      {
+        "variable_name": "Alcohol consumption per day",
+        "variable_label": "Alcohol consumption per day",
+        "variable_type": "continuous",
+        "row_start": 42,
+        "row_end": 42,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "mean_sd",
+        "confidence": 0.9
+      }
+    ],
+    "column_definition": {
+      "grouping_label": null,
+      "grouping_name": null,
+      "group_count": 3,
+      "columns": [
+        {
+          "col_idx": 1,
+          "column_name": "All n 7921",
+          "column_label": "All (n = 7921)",
+          "inferred_role": "overall",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": null,
+          "confidence": 0.84
+        },
+        {
+          "col_idx": 2,
+          "column_name": "Live n 6010",
+          "column_label": "Live (n = 6010)",
+          "inferred_role": "group",
+          "grouping_variable_hint": null,
+          "group_level_label": "(n = 6010)",
+          "group_level_name": "n 6010",
+          "group_order": 1,
+          "statistic_subtype": null,
+          "confidence": 0.8200000000000001
+        },
+        {
+          "col_idx": 3,
+          "column_name": "Dead n 1911",
+          "column_label": "Dead (n = 1911)",
+          "inferred_role": "group",
+          "grouping_variable_hint": null,
+          "group_level_label": "(n = 1911)",
+          "group_level_name": "n 1911",
+          "group_order": 2,
+          "statistic_subtype": null,
+          "confidence": 0.8200000000000001
+        },
+        {
+          "col_idx": 4,
+          "column_name": "Dead cause of cardiovascular n 585",
+          "column_label": "Dead cause of cardiovascular (n = 585)",
+          "inferred_role": "group",
+          "grouping_variable_hint": null,
+          "group_level_label": "(n = 585)",
+          "group_level_name": "n 585",
+          "group_order": 3,
+          "statistic_subtype": null,
+          "confidence": 0.8200000000000001
+        }
+      ],
+      "confidence": 0.825
+    },
+    "notes": [],
+    "overall_confidence": 0.9004
+  },
+  {
+    "table_id": "cardiovascular-p5-t0",
+    "title": "Table 2 AUC score of all models",
+    "caption": "Table 2 AUC score of all models",
+    "variables": [
+      {
+        "variable_name": "Logistic",
+        "variable_label": "Logistic",
+        "variable_type": "continuous",
+        "row_start": 7,
+        "row_end": 7,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Regression",
+        "variable_label": "Regression",
+        "variable_type": "unknown",
+        "row_start": 8,
+        "row_end": 8,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": null,
+        "confidence": 0.55
+      },
+      {
+        "variable_name": "Ridge Regression",
+        "variable_label": "Ridge Regression",
+        "variable_type": "continuous",
+        "row_start": 9,
+        "row_end": 9,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "SVM",
+        "variable_label": "SVM",
+        "variable_type": "continuous",
+        "row_start": 10,
+        "row_end": 10,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Random Forest",
+        "variable_label": "Random Forest",
+        "variable_type": "continuous",
+        "row_start": 11,
+        "row_end": 11,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "XGBoost",
+        "variable_label": "XGBoost",
+        "variable_type": "continuous",
+        "row_start": 12,
+        "row_end": 12,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      },
+      {
+        "variable_name": "Cox proportional",
+        "variable_label": "Cox proportional",
+        "variable_type": "continuous",
+        "row_start": 13,
+        "row_end": 13,
+        "levels": [],
+        "units_hint": null,
+        "summary_style_hint": "p_value",
+        "confidence": 0.9
+      }
+    ],
+    "column_definition": {
+      "grouping_label": null,
+      "grouping_name": null,
+      "group_count": 3,
+      "columns": [
+        {
+          "col_idx": 1,
+          "column_name": "The AUC of the optimal",
+          "column_label": "The AUC of the optimal",
+          "inferred_role": "overall",
+          "grouping_variable_hint": null,
+          "group_level_label": null,
+          "group_level_name": null,
+          "group_order": null,
+          "statistic_subtype": null,
+          "confidence": 0.84
+        },
+        {
+          "col_idx": 2,
+          "column_name": "column_2",
+          "column_label": "",
+          "inferred_role": "group",
+          "grouping_variable_hint": null,
+          "group_level_label": "",
+          "group_level_name": "column_2",
+          "group_order": 1,
+          "statistic_subtype": null,
+          "confidence": 0.78
+        },
+        {
+          "col_idx": 3,
+          "column_name": "The AUC of the",
+          "column_label": "The AUC of the",
+          "inferred_role": "group",
+          "grouping_variable_hint": null,
+          "group_level_label": "The AUC of the",
+          "group_level_name": "The AUC of the",
+          "group_order": 2,
+          "statistic_subtype": null,
+          "confidence": 0.78
+        },
+        {
+          "col_idx": 4,
+          "column_name": "column_4",
+          "column_label": "",
+          "inferred_role": "group",
+          "grouping_variable_hint": null,
+          "group_level_label": "",
+          "group_level_name": "column_4",
+          "group_order": 3,
+          "statistic_subtype": null,
+          "confidence": 0.78
+        }
+      ],
+      "confidence": 0.8075
+    },
+    "notes": [],
+    "overall_confidence": 0.8447
+  }
+]
