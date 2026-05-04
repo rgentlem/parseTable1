@@ -419,6 +419,19 @@ def _write_sample_paper_outputs(
                 "table_family": "descriptive_characteristics",
                 "processing_status": "ok",
                 "failure_reason": None,
+            },
+            {
+                "table_id": "layout-box",
+                "table_number": None,
+                "title": None,
+                "caption": None,
+                "table_category": "non_table_artifact",
+                "category_confidence": 0.98,
+                "category_evidence": ["processing_status_non_table_layout_candidate"],
+                "continuation_of_table_number": None,
+                "table_family": "unknown",
+                "processing_status": "failed",
+                "failure_reason": "non_table_layout_candidate",
             }
         ],
     }
@@ -678,7 +691,45 @@ def test_r_inspection_loads_and_shows_paper_table_inventory(tmp_path) -> None:
     assert result.returncode == 0, result.stderr
     assert "Paper table inventory" in result.stdout
     assert "demographic_description" in result.stdout
+    assert "non_table_artifact" in result.stdout
     assert "table_number" in result.stdout
+    assert "NA" in result.stdout
+
+
+def test_r_inspection_builds_named_paper_table_inventory_list(tmp_path) -> None:
+    """The R helper should return one taxonomy data frame per paper directory."""
+    if not _r_dependencies_available():
+        return
+
+    papers_root = tmp_path / "paper_table_inventory_list" / "papers"
+    paper_a = papers_root / "paper_a"
+    paper_b = papers_root / "paper_b"
+    _write_sample_paper_outputs(paper_a, include_variable_review=False, include_processing_status=True)
+    _write_sample_paper_outputs(paper_b, include_variable_review=False, include_processing_status=True)
+
+    result = subprocess.run(
+        [
+            "Rscript",
+            "-e",
+            (
+                f'source("{R_SCRIPT}"); '
+                f'x <- paper_table_inventory_list("{papers_root}"); '
+                'cat(length(x), "\\n"); '
+                'cat(paste(names(x), collapse = "|"), "\\n"); '
+                'cat(nrow(x[[1]]), "\\n"); '
+                'cat(x[[1]]$table_category[[1]], "\\n")'
+            ),
+        ],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "2" in result.stdout
+    assert "paper_a|paper_b" in result.stdout
+    assert "demographic_description" in result.stdout
 
 
 def test_r_inspection_loads_and_shows_paper_visual_references(tmp_path) -> None:

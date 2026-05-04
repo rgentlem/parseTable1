@@ -28,6 +28,7 @@ Public functions:
 
 - `load_paper_outputs(paper_dir)`
 - `summarize_table_processing(paper_dir)`
+- `paper_table_inventory_list(papers_dir = file.path("outputs", "papers"))`
 - `show_paper_table_inventory(paper_dir)`
 - `show_table_processing(paper_dir, table_number = 1L)`
 - `show_parse_quality(paper_dir, table_number = 1L)`
@@ -70,12 +71,44 @@ summarize_llm_variable_plausibility_monitoring("outputs/papers/cobaltpaper")
 show_table_context("outputs/papers/cobaltpaper", table_number = 1L, match_type = "table_reference")
 ```
 
+### Corpus-Level Usage
+
+For multiple parsed papers, prefer a named list rather than one large combined data frame. This keeps each paper's table numbers and long titles grouped under the paper they came from.
+
+```r
+source("R/inspect_paper_outputs.R")
+
+taxonomy_by_paper <- paper_table_inventory_list("outputs/papers")
+names(taxonomy_by_paper)
+taxonomy_by_paper[["cobaltpaper"]]
+```
+
+Each list element is the same data frame returned by `paper_table_inventory_df(load_paper_outputs(paper_dir))`.
+
+Typical corpus review patterns:
+
+```r
+# Count predicted table categories within each paper.
+lapply(taxonomy_by_paper, function(x) table(x$table_category, useNA = "ifany"))
+
+# Inspect all tables that were left unknown without flattening the whole corpus.
+lapply(taxonomy_by_paper, function(x) x[x$table_category == "unknown", , drop = FALSE])
+
+# Find papers that have at least one Table 1 continuation.
+Filter(
+  function(x) any(!is.na(x$continuation_of_table_number)),
+  taxonomy_by_paper
+)
+```
+
 What these are for:
 
 - `show_table_structure(...)`
   print one saved table's normalized rows, deterministic columns, and row-variable definitions together
 - `show_paper_table_inventory(...)`
   print one row per table taxonomy prediction, including table number, category, confidence, continuation parent, and evidence
+- `paper_table_inventory_list(...)`
+  return a named list with one table-taxonomy data frame per paper directory
 - `summarize_table1_continuations(...)`
   print one row per detected Table 1 continuation group, including merge/skip decision and source table IDs
 - `show_parse_quality(...)`

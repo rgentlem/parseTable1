@@ -245,7 +245,7 @@ paper_table_inventory_df <- function(outputs) {
       table_family = as.character(record$table_family %||% NA_character_),
       processing_status = as.character(record$processing_status %||% NA_character_),
       failure_reason = as.character(record$failure_reason %||% NA_character_),
-      title = as.character(record$title %||% record$caption %||% ""),
+      title = as.character(record$title %||% record$caption %||% NA_character_),
       evidence = paste(as.character(unlist(record$category_evidence %||% list(), use.names = FALSE)), collapse = " | "),
       stringsAsFactors = FALSE
     )
@@ -267,6 +267,16 @@ paper_table_inventory_df <- function(outputs) {
   } else {
     do.call(rbind, rows)
   }
+}
+
+paper_table_inventory_list <- function(papers_dir = file.path("outputs", "papers")) {
+  paper_dirs <- sort(list.dirs(papers_dir, full.names = TRUE, recursive = FALSE))
+  inventories <- lapply(paper_dirs, function(paper_dir) {
+    outputs <- load_paper_outputs(paper_dir)
+    paper_table_inventory_df(outputs)
+  })
+  names(inventories) <- basename(paper_dirs)
+  inventories
 }
 
 show_paper_table_inventory <- function(paper_dir) {

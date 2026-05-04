@@ -206,6 +206,7 @@ For paper-level inspection there is also:
 
 ```r
 source("R/inspect_paper_outputs.R")
+taxonomy_by_paper <- paper_table_inventory_list("outputs/papers")
 summarize_table_processing("outputs/papers/cobaltpaper")
 show_paper_table_inventory("outputs/papers/cobaltpaper")
 show_table_structure("outputs/papers/cobaltpaper", table_number = 1L)
