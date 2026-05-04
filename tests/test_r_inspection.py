@@ -270,6 +270,95 @@ def _write_sample_paper_outputs(
             "members": [],
         }
     ]
+    table_continuation_column_checks = [
+        {
+            "check_id": "table_continuation_column_check_0",
+            "table_number": 1,
+            "base_table_index": 0,
+            "continuation_table_index": 1,
+            "base_table_id": "tbl-1",
+            "continuation_table_id": "tbl-1-cont",
+            "base_page_num": 5,
+            "continuation_page_num": 6,
+            "base_n_cols": 3,
+            "continuation_n_cols": 3,
+            "base_table_family": "descriptive_characteristics",
+            "continuation_table_family": "descriptive_characteristics",
+            "base_table_category": "demographic_description",
+            "continuation_table_category": "demographic_description",
+            "normalized_column_count_match": True,
+            "header_signature_status": "match",
+            "base_column_signature": ["variable", "overall", "dkd"],
+            "continuation_column_signature": ["variable", "overall", "dkd"],
+            "coordinate_status": "compatible",
+            "overall_status": "compatible",
+            "confidence": 0.95,
+            "column_map": [
+                {
+                    "base_col_idx": 0,
+                    "continuation_col_idx": 0,
+                    "base_center": 0.15,
+                    "continuation_center": 0.16,
+                    "center_delta": 0.01,
+                    "base_width": 0.3,
+                    "continuation_width": 0.3,
+                    "width_delta": 0.0,
+                    "status": "matched",
+                },
+                {
+                    "base_col_idx": 1,
+                    "continuation_col_idx": 1,
+                    "base_center": 0.5,
+                    "continuation_center": 0.51,
+                    "center_delta": 0.01,
+                    "base_width": 0.3,
+                    "continuation_width": 0.3,
+                    "width_delta": 0.0,
+                    "status": "matched",
+                },
+                {
+                    "base_col_idx": 2,
+                    "continuation_col_idx": 2,
+                    "base_center": 0.85,
+                    "continuation_center": 0.86,
+                    "center_delta": 0.01,
+                    "base_width": 0.3,
+                    "continuation_width": 0.3,
+                    "width_delta": 0.0,
+                    "status": "matched",
+                },
+            ],
+            "base_coordinate_profile": {
+                "table_id": "tbl-1",
+                "normalized_n_cols": 3,
+                "coordinate_n_cols": 3,
+                "coordinate_source": "extracted_cells",
+                "evidence_quality": "strong",
+                "table_left": 0.0,
+                "table_right": 100.0,
+                "normalized_lefts": [0.0, 0.35, 0.7],
+                "normalized_centers": [0.15, 0.5, 0.85],
+                "normalized_rights": [0.3, 0.65, 1.0],
+                "normalized_widths": [0.3, 0.3, 0.3],
+                "warnings": [],
+            },
+            "continuation_coordinate_profile": {
+                "table_id": "tbl-1-cont",
+                "normalized_n_cols": 3,
+                "coordinate_n_cols": 3,
+                "coordinate_source": "extracted_cells",
+                "evidence_quality": "strong",
+                "table_left": 0.0,
+                "table_right": 100.0,
+                "normalized_lefts": [0.01, 0.36, 0.71],
+                "normalized_centers": [0.16, 0.51, 0.86],
+                "normalized_rights": [0.31, 0.66, 1.01],
+                "normalized_widths": [0.3, 0.3, 0.3],
+                "warnings": [],
+            },
+            "diagnostics": ["coordinate_delta:max_center=0.01:max_width=0.0"],
+        }
+    ]
     merged_table1_tables = [
         {
             **normalized_tables[0],
@@ -514,6 +603,7 @@ def _write_sample_paper_outputs(
     _write_json(paper_dir / "extracted_tables.json", extracted_tables)
     _write_json(paper_dir / "normalized_tables.json", normalized_tables)
     _write_json(paper_dir / "table1_continuation_groups.json", table1_continuation_groups)
+    _write_json(paper_dir / "table_continuation_column_checks.json", table_continuation_column_checks)
     _write_json(paper_dir / "merged_table1_tables.json", merged_table1_tables)
     _write_json(paper_dir / "table_definitions.json", table_definitions)
     _write_json(paper_dir / "parsed_tables.json", parsed_tables)
@@ -862,6 +952,44 @@ def test_r_inspection_summarizes_and_shows_merged_table1_artifacts(tmp_path) -> 
     assert "Merged Table 1" in result.stdout
     assert "tbl-1-cont:2" in result.stdout
     assert "HbA1c" in result.stdout
+
+
+def test_r_inspection_shows_table_continuation_column_checks(tmp_path) -> None:
+    """The R helper should summarize continuation column compatibility diagnostics."""
+    if not _r_dependencies_available():
+        return
+
+    paper_dir = tmp_path / "continuation_columns" / "papers" / "paper"
+    _write_sample_paper_outputs(paper_dir, include_variable_review=False, include_processing_status=True)
+
+    result = subprocess.run(
+        [
+            "Rscript",
+            "-e",
+            (
+                f'source("{R_SCRIPT}"); '
+                f'outputs <- load_paper_outputs("{paper_dir}"); '
+                f'print(length(outputs$table_continuation_column_checks)); '
+                f'show_paper_table_inventory("{paper_dir}"); '
+                f'summarize_table_continuation_column_checks("{paper_dir}"); '
+                f'show_table_continuation_column_check("{paper_dir}")'
+            ),
+        ],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "[1] 1" in result.stdout
+    assert "Continuation column checks" in result.stdout
+    assert "Table continuation column checks" in result.stdout
+    assert "Table continuation column check table_continuation_column_check_0" in result.stdout
+    assert "overall_status" in result.stdout
+    assert "compatible" in result.stdout
+    assert "Column Map" in result.stdout
+    assert "coordinate_delta:max_center=0.01:max_width=0.0" in result.stdout
 
 
 def test_r_inspection_shows_failed_table_processing_and_structure_header(tmp_path) -> None:

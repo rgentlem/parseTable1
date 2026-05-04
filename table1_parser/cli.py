@@ -50,6 +50,10 @@ from table1_parser.schemas import (
     Table1ContinuationGroup,
     TableProfile,
 )
+from table1_parser.table_continuation_columns import (
+    build_table_continuation_column_checks,
+    table_continuation_column_checks_to_payload,
+)
 from table1_parser.table1_continuations import (
     build_table1_continuation_artifacts,
     table1_continuation_groups_to_payload,
@@ -370,6 +374,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     extractor = _build_default_extractor()
     extracted_tables = extractor.extract(pdf_path)
     normalized_tables = normalize_extracted_tables(extracted_tables)
+    table_profiles = build_table_profiles(normalized_tables)
     table1_continuation_groups, merged_table1_tables = build_table1_continuation_artifacts(normalized_tables)
     parse_quality_reports = []
     for table_index, table in enumerate(normalized_tables):
@@ -386,7 +391,6 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
                 source_identifier=pdf_path,
             )
         )
-    table_profiles = build_table_profiles(normalized_tables)
     table_definitions = build_table_definitions(normalized_tables)
     parsed_tables = build_parsed_tables(normalized_tables, table_definitions)
     paper_markdown = extract_paper_markdown(pdf_path)
@@ -466,6 +470,7 @@ def _write_parse_outputs(
     extract_output_path = paper_dir / "extracted_tables.json"
     normalize_output_path = paper_dir / "normalized_tables.json"
     table1_continuation_groups_output_path = paper_dir / "table1_continuation_groups.json"
+    table_continuation_column_checks_output_path = paper_dir / "table_continuation_column_checks.json"
     merged_table1_output_path = paper_dir / "merged_table1_tables.json"
     table_profile_output_path = paper_dir / "table_profiles.json"
     table_definition_output_path = paper_dir / "table_definitions.json"
@@ -482,6 +487,22 @@ def _write_parse_outputs(
 
     paper_dir.mkdir(parents=True, exist_ok=True)
     table_context_output_dir.mkdir(parents=True, exist_ok=True)
+    paper_table_inventory = build_paper_table_inventory(
+        artifacts.paper_stem,
+        artifacts.extracted_tables,
+        artifacts.normalized_tables,
+        artifacts.table_profiles,
+        table_definitions,
+        parsed_tables,
+        artifacts.parse_quality_reports,
+        table_processing_statuses,
+    )
+    table_continuation_column_checks = build_table_continuation_column_checks(
+        artifacts.normalized_tables,
+        artifacts.extracted_tables,
+        artifacts.table_profiles,
+        [record.table_category for record in paper_table_inventory.tables],
+    )
 
     extract_output_path.write_text(
         json.dumps(_extract_payload(artifacts.extracted_tables), indent=2),
@@ -490,6 +511,14 @@ def _write_parse_outputs(
     write_normalized_tables(normalize_output_path, artifacts.normalized_tables)
     table1_continuation_groups_output_path.write_text(
         json.dumps(table1_continuation_groups_to_payload(artifacts.table1_continuation_groups), indent=2) + "\n",
+        encoding="utf-8",
+    )
+    table_continuation_column_checks_output_path.write_text(
+        json.dumps(
+            table_continuation_column_checks_to_payload(table_continuation_column_checks),
+            indent=2,
+        )
+        + "\n",
         encoding="utf-8",
     )
     write_normalized_tables(merged_table1_output_path, artifacts.merged_table1_tables)
@@ -508,16 +537,6 @@ def _write_parse_outputs(
     processing_status_output_path.write_text(
         json.dumps([status.model_dump(mode="json") for status in table_processing_statuses], indent=2) + "\n",
         encoding="utf-8",
-    )
-    paper_table_inventory = build_paper_table_inventory(
-        artifacts.paper_stem,
-        artifacts.extracted_tables,
-        artifacts.normalized_tables,
-        artifacts.table_profiles,
-        table_definitions,
-        parsed_tables,
-        artifacts.parse_quality_reports,
-        table_processing_statuses,
     )
     paper_table_inventory_output_path.write_text(
         json.dumps(paper_table_inventory_to_payload(paper_table_inventory), indent=2) + "\n",

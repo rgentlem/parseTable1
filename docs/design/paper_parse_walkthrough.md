@@ -28,6 +28,7 @@ Today that directory may contain:
 - `extracted_tables.json`
 - `normalized_tables.json`
 - `table1_continuation_groups.json`
+- `table_continuation_column_checks.json`
 - `merged_table1_tables.json`
 - `table_profiles.json`
 - `paper_table_inventory.json`
@@ -393,9 +394,26 @@ This artifact is where the table becomes parser-friendly without yet becoming fu
 
 That separation matters because many downstream mistakes are really normalization mistakes, not semantic mistakes.
 
-## Step 4: Build Table 1 Continuation Inspection Artifacts
+## Step 4: Build Continuation Inspection Artifacts
 
-After normalization, the parser checks whether the paper appears to have an explicit Table 1 continuation.
+When parse outputs are written and the paper-level table inventory is
+available, the parser checks whether explicit `demographic_description` table
+continuations have compatible columns.
+
+This is a diagnostic-only stage. It does not try random integrations. A
+continuation fragment must already have clear continuation evidence for a
+specific table number before the parser compares it to the closest prior
+fragment for that table number. The demographic-description gate comes from the
+same paper-level table taxonomy written to `paper_table_inventory.json`.
+
+The parser writes:
+
+- `table_continuation_column_checks.json`
+  records normalized column-count agreement, header-signature agreement, cell
+  coordinate profiles when available, per-column coordinate deltas, and an
+  overall compatible/possibly-compatible/incompatible/no-parent status
+
+The same parse still checks whether the paper appears to have an explicit Table 1 continuation.
 
 This stage is intentionally narrow. It only considers Table 1, and it only accepts a merge when the continuation evidence is explicit and the normalized column signatures are compatible.
 
@@ -667,28 +685,31 @@ When a parse looks wrong, inspect the outputs in this order.
    If one logical Table 1 spans pages, inspect these to see whether the continuation was detected, whether the column signatures matched, and how merged rows map back to source rows.
    Public R inspection should use the paper's `table_number` as the conceptual selector; extraction-order indices are retained only for low-level provenance/debug mapping.
 
-4. `table_profiles.json`
+4. `table_continuation_column_checks.json`
+   If a demographic-description table has an explicit continuation, inspect this to see whether the normalized column count, header signature, and available cell coordinates are compatible before any future integration work.
+
+5. `table_profiles.json`
    If the table was routed to the wrong family, the problem is in routing.
 
-5. `paper_table_inventory.json`
+6. `paper_table_inventory.json`
    If a table is assigned to the wrong broad category, inspect this artifact's chosen category, confidence, and evidence.
 
-6. `table_definitions.json`
+7. `table_definitions.json`
    If row meanings or column meanings are wrong, the problem is in the semantic heuristics.
 
-7. `parsed_tables.json`
+8. `parsed_tables.json`
    If row and column meanings are right but the final values are wrong, the problem is in value parsing.
 
-8. `table_processing_status.json`
+9. `table_processing_status.json`
    If a table is empty or incomplete, inspect this next to see which rescue paths were attempted and where failure was recorded.
 
-9. `parse_quality_reports.json`
+10. `parse_quality_reports.json`
    If the parse succeeded but the columns, p-values, headers, or row classifications look suspicious, inspect this artifact for deterministic quality warnings.
 
-10. `paper_markdown.md`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and `table_contexts/*.json`
+11. `paper_markdown.md`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and `table_contexts/*.json`
    If semantic context retrieval is weak, inspect these next.
 
-10. `table_variable_plausibility_llm.json`
+12. `table_variable_plausibility_llm.json`
    If deterministic variables were reasonable but the plausibility review looks wrong, the issue is in prompting, provider behavior, or validation for the standalone review command.
 
 ## Why This Pipeline Shape Is Worth Keeping

@@ -73,6 +73,7 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Extraction | `ExtractedTable` | Written now as `extracted_tables.json` by `extract` and `parse` | Preserve raw table grid and cell provenance |
 | Normalization | `NormalizedTable` | Written now as `normalized_tables.json` by `normalize` and `parse` | Clean rows, detect headers, derive row features |
 | Table 1 continuation inspection | `Table1ContinuationGroup`, `NormalizedTable` | Written now as `table1_continuation_groups.json` and `merged_table1_tables.json` by `parse` | Persist artifact-only grouping and merged normalized rows for explicit Table 1 continuations without altering the main parse |
+| Continuation column compatibility | `TableContinuationColumnCheck` | Written now as `table_continuation_column_checks.json` by `parse` | Persist diagnostic column-signature and coordinate compatibility checks for explicit `demographic_description` continuations without altering the main parse |
 | Table routing | `TableProfile` | Written now as `table_profiles.json` by `parse` | Persist provisional deterministic parser-route decisions |
 | Paper table inventory | `PaperTableInventory`, `PaperTableRecord` | Written now as `paper_table_inventory.json` by `parse` | Persist one deterministic taxonomy prediction per table-like object |
 | Table definition | `TableDefinition` | Written now as `table_definitions.json` by `parse` | Persist value-free row-variable, level, and column semantics |
@@ -299,6 +300,7 @@ Current CLI paths:
 
 ```text
 outputs/papers/<paper_stem>/table1_continuation_groups.json
+outputs/papers/<paper_stem>/table_continuation_column_checks.json
 outputs/papers/<paper_stem>/merged_table1_tables.json
 ```
 
@@ -325,6 +327,27 @@ Design intent:
 - avoid changing existing `table_definitions.json`, `parsed_tables.json`, or `table_processing_status.json` behavior as a side effect
 
 The merged normalized table keeps the base table rows and appends continuation body rows after dropping continuation-only header/title rows. Its row indices are local to the merged artifact, while provenance records map each merged row back to the original table ID and original row index.
+
+### Demographic Continuation Column Checks
+
+`table_continuation_column_checks.json` records explicit continuation fragments
+whose parent or continuation has the paper-table taxonomy category
+`demographic_description`, including tables whose logical Table 1-style content
+is not numbered as Table 1.
+
+This artifact:
+
+- requires clear continuation evidence before checking a pair
+- compares the continuation to the closest prior fragment for the same table number
+- records normalized column-count agreement
+- records normalized header-signature agreement when headers are present
+- records coordinate profiles from extracted cell bounding boxes when available
+- reports column-coordinate status as compatible, possibly compatible, incompatible, missing, or partial
+- does not merge tables or change `TableDefinition`, `ParsedTable`, or processing-status behavior
+
+The public helper can fall back to the provisional `TableProfile` family
+`descriptive_characteristics` when no paper-table taxonomy is available, but
+the `parse` CLI artifact uses `paper_table_inventory.json` categories.
 
 ## 4. `table_definitions.json`
 

@@ -33,6 +33,8 @@ Public functions:
 - `show_table_processing(paper_dir, table_number = 1L)`
 - `show_parse_quality(paper_dir, table_number = 1L)`
 - `summarize_table1_continuations(paper_dir)`
+- `summarize_table_continuation_column_checks(paper_dir)`
+- `show_table_continuation_column_check(paper_dir, check_index = 0L)`
 - `show_merged_table1(paper_dir, group_index = 0L, max_rows = 30L)`
 - `show_paper_variable_mentions(paper_dir, role_hint = NULL, source_type = NULL, mention_role = NULL)`
 - `show_paper_variable_candidates(paper_dir, min_priority = NULL)`
@@ -58,6 +60,8 @@ show_paper_table_inventory("outputs/papers/cobaltpaper")
 show_table_processing("outputs/papers/cobaltpaper", table_number = 1L)
 show_parse_quality("outputs/papers/cobaltpaper", table_number = 1L)
 summarize_table1_continuations("outputs/papers/cobaltpaper")
+summarize_table_continuation_column_checks("outputs/papers/cobaltpaper")
+show_table_continuation_column_check("outputs/papers/cobaltpaper", check_index = 0L)
 show_merged_table1("outputs/papers/cobaltpaper", group_index = 0L, max_rows = 20L)
 show_paper_variable_candidates("outputs/papers/cobaltpaper")
 show_paper_variable_mentions("outputs/papers/cobaltpaper", source_type = "text_based", mention_role = "variable")
@@ -106,11 +110,15 @@ What these are for:
 - `show_table_structure(...)`
   print one saved table's normalized rows, deterministic columns, and row-variable definitions together
 - `show_paper_table_inventory(...)`
-  print one row per table taxonomy prediction, including table number, category, confidence, continuation parent, and evidence
+  print one row per table taxonomy prediction, including table number, category, confidence, continuation parent, and evidence; when present, also prints compact continuation column-check statuses for possible demographic-description integrations
 - `paper_table_inventory_list(...)`
   return a named list with one table-taxonomy data frame per paper directory
 - `summarize_table1_continuations(...)`
   print one row per detected Table 1 continuation group, including merge/skip decision and source table IDs
+- `summarize_table_continuation_column_checks(...)`
+  print one row per explicit demographic-description continuation column check, including column-count, header-signature, coordinate, and overall compatibility status
+- `show_table_continuation_column_check(...)`
+  print one continuation column check in detail, including the per-column coordinate map and diagnostics
 - `show_parse_quality(...)`
   print deterministic table, row, and column diagnostics, including column-role warnings such as weak p-value columns
 - `show_merged_table1(...)`
@@ -135,6 +143,7 @@ What these are for:
 - `parse_quality_reports`
 - `paper_table_inventory`
 - `table1_continuation_groups`
+- `table_continuation_column_checks`
 - `merged_table1_tables`
 - `table_variable_plausibility_llm`
 - `paper_visual_inventory`

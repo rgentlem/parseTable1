@@ -29,6 +29,11 @@ from table1_parser.schemas.table_definition import (
     DefinedVariable,
     TableDefinition,
 )
+from table1_parser.schemas.table_continuation_column_check import (
+    ColumnCoordinateMapEntry,
+    ColumnCoordinateProfile,
+    TableContinuationColumnCheck,
+)
 from table1_parser.schemas.table1_continuation import Table1ContinuationGroup, Table1ContinuationMember
 from table1_parser.schemas.table_processing_status import TableProcessingAttempt, TableProcessingStatus
 from table1_parser.schemas.table_profile import TableProfile
@@ -43,6 +48,8 @@ __all__ = [
     "PaperTableRecord",
     "PaperVariableInventory",
     "ColumnDefinition",
+    "ColumnCoordinateMapEntry",
+    "ColumnCoordinateProfile",
     "DefinedColumn",
     "DefinedLevel",
     "DefinedVariable",
@@ -55,6 +62,7 @@ __all__ = [
     "RetrievedPassage",
     "RowView",
     "TableContext",
+    "TableContinuationColumnCheck",
     "TableDefinition",
     "Table1ContinuationGroup",
     "Table1ContinuationMember",

@@ -26,7 +26,12 @@ The parser already writes Table 1 continuation inspection artifacts:
 - `table1_continuation_groups.json`
 - `merged_table1_tables.json`
 
-Those artifacts are useful for review, but they are not consumed by
+The parser also writes a first diagnostic column-compatibility artifact for
+explicit `demographic_description` continuations:
+
+- `table_continuation_column_checks.json`
+
+These artifacts are useful for review, but they are not consumed by
 `TableDefinition` or `ParsedTable`. As a result, the parser may still interpret
 the base fragment and continuation fragment independently.
 
@@ -415,4 +420,3 @@ Minimum regression coverage should include:
 - rejected continuations remain inspectable
 - missing coordinate evidence requires strict fallback header/text evidence
 - multi-page continuations preserve source order and boundary metadata
-

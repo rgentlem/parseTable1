@@ -9,6 +9,7 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
 1. [ ] Make continuations semantically real.
    One logical Table 1 spanning pages should feed `TableDefinition` and `ParsedTable`, rather than leaving page-level and continuation-page parses as separate semantic outputs.
    Design note: `docs/design/table_continuation_resolution.md`.
+   First diagnostic step implemented: `table_continuation_column_checks.json` checks explicit `demographic_description` continuations for column-count, header-signature, and coordinate compatibility without changing parser inputs.
 
 2. [ ] Align parser route with table taxonomy.
    `table_category` should drive routing once it is available. Current `table_family` is better understood as an early provisional parser-route signal; decide whether to rename, replace, or derive it from the paper table inventory.

@@ -27,6 +27,7 @@ paper_output_paths <- function(paper_dir) {
     extracted = file.path(paper_dir, "extracted_tables.json"),
     normalized = file.path(paper_dir, "normalized_tables.json"),
     table1_continuation_groups = file.path(paper_dir, "table1_continuation_groups.json"),
+    table_continuation_column_checks = file.path(paper_dir, "table_continuation_column_checks.json"),
     merged_table1 = file.path(paper_dir, "merged_table1_tables.json"),
     deterministic = file.path(paper_dir, "table_definitions.json"),
     parsed = file.path(paper_dir, "parsed_tables.json"),
@@ -69,6 +70,7 @@ load_paper_outputs <- function(paper_dir) {
     extracted_tables = read_json_file(paths$extracted),
     normalized_tables = read_json_file(paths$normalized),
     table1_continuation_groups = read_optional_json(paths$table1_continuation_groups),
+    table_continuation_column_checks = read_optional_json(paths$table_continuation_column_checks),
     merged_table1_tables = read_optional_json(paths$merged_table1),
     table_definitions = read_json_file(paths$deterministic),
     parsed_tables = read_optional_json(paths$parsed),
@@ -289,6 +291,24 @@ show_paper_table_inventory <- function(paper_dir) {
     return(invisible(inventory_df))
   }
   print(inventory_df, row.names = FALSE, right = FALSE)
+  continuation_df <- table_continuation_column_checks_df(outputs)
+  cat("\nContinuation column checks\n")
+  if (nrow(continuation_df) == 0) {
+    cat("[No explicit demographic_description continuation column checks]\n")
+  } else {
+    display_columns <- c(
+      "table_number",
+      "base_table_id",
+      "continuation_table_id",
+      "base_n_cols",
+      "continuation_n_cols",
+      "header_signature_status",
+      "coordinate_status",
+      "overall_status",
+      "confidence"
+    )
+    print(continuation_df[, display_columns, drop = FALSE], row.names = FALSE, right = FALSE)
+  }
   invisible(inventory_df)
 }
 
@@ -598,6 +618,120 @@ summarize_table1_continuations <- function(paper_dir) {
   }
   print(summary_df, row.names = FALSE, right = FALSE)
   invisible(summary_df)
+}
+
+table_continuation_column_checks_df <- function(outputs) {
+  checks <- outputs$table_continuation_column_checks %||% list()
+  rows <- lapply(checks, function(check) {
+    data.frame(
+      check_id = as.character(check$check_id %||% ""),
+      table_number = as.integer(check$table_number %||% NA_integer_),
+      base_table_index = as.integer(check$base_table_index %||% NA_integer_),
+      continuation_table_index = as.integer(check$continuation_table_index %||% NA_integer_),
+      base_table_id = as.character(check$base_table_id %||% ""),
+      continuation_table_id = as.character(check$continuation_table_id %||% ""),
+      base_table_category = as.character(check$base_table_category %||% ""),
+      continuation_table_category = as.character(check$continuation_table_category %||% ""),
+      base_n_cols = as.integer(check$base_n_cols %||% NA_integer_),
+      continuation_n_cols = as.integer(check$continuation_n_cols %||% NA_integer_),
+      normalized_column_count_match = as.logical(check$normalized_column_count_match %||% NA),
+      header_signature_status = as.character(check$header_signature_status %||% ""),
+      coordinate_status = as.character(check$coordinate_status %||% ""),
+      overall_status = as.character(check$overall_status %||% ""),
+      confidence = as.numeric(check$confidence %||% NA_real_),
+      diagnostics = paste(as.character(unlist(check$diagnostics %||% list())), collapse = " | "),
+      stringsAsFactors = FALSE
+    )
+  })
+  if (length(rows) == 0) {
+    data.frame(
+      check_id = character(),
+      table_number = integer(),
+      base_table_index = integer(),
+      continuation_table_index = integer(),
+      base_table_id = character(),
+      continuation_table_id = character(),
+      base_table_category = character(),
+      continuation_table_category = character(),
+      base_n_cols = integer(),
+      continuation_n_cols = integer(),
+      normalized_column_count_match = logical(),
+      header_signature_status = character(),
+      coordinate_status = character(),
+      overall_status = character(),
+      confidence = numeric(),
+      diagnostics = character(),
+      stringsAsFactors = FALSE
+    )
+  } else {
+    do.call(rbind, rows)
+  }
+}
+
+summarize_table_continuation_column_checks <- function(paper_dir) {
+  outputs <- load_paper_outputs(paper_dir)
+  summary_df <- table_continuation_column_checks_df(outputs)
+
+  cat(sprintf("Table continuation column checks for %s\n\n", outputs$paper_dir))
+  if (nrow(summary_df) == 0) {
+    cat("[No table continuation column checks]\n")
+    return(invisible(summary_df))
+  }
+  print(summary_df, row.names = FALSE, right = FALSE)
+  invisible(summary_df)
+}
+
+show_table_continuation_column_check <- function(paper_dir, check_index = 0L) {
+  outputs <- load_paper_outputs(paper_dir)
+  checks <- outputs$table_continuation_column_checks %||% list()
+  idx <- as.integer(check_index) + 1L
+  if (idx < 1L || length(checks) < idx) {
+    stop(sprintf("No table continuation column check found for check_index=%s.", as.integer(check_index)), call. = FALSE)
+  }
+  check <- checks[[idx]]
+  cat(sprintf("Table continuation column check %s\n", as.character(check$check_id %||% "")))
+  cat(sprintf("table_number: %s\n", as.integer(check$table_number %||% NA_integer_)))
+  cat(sprintf("base: %s\n", as.character(check$base_table_id %||% "")))
+  cat(sprintf("continuation: %s\n", as.character(check$continuation_table_id %||% "")))
+  cat(sprintf("categories: %s -> %s\n", as.character(check$base_table_category %||% ""), as.character(check$continuation_table_category %||% "")))
+  cat(sprintf("columns: %s -> %s\n", as.integer(check$base_n_cols %||% NA_integer_), as.integer(check$continuation_n_cols %||% NA_integer_)))
+  cat(sprintf("header_signature_status: %s\n", as.character(check$header_signature_status %||% "")))
+  cat(sprintf("coordinate_status: %s\n", as.character(check$coordinate_status %||% "")))
+  cat(sprintf("overall_status: %s\n", as.character(check$overall_status %||% "")))
+  cat(sprintf("confidence: %.3f\n\n", as.numeric(check$confidence %||% NA_real_)))
+
+  column_map <- check$column_map %||% list()
+  column_rows <- lapply(column_map, function(entry) {
+    data.frame(
+      base_col_idx = as.integer(entry$base_col_idx %||% NA_integer_),
+      continuation_col_idx = as.integer(entry$continuation_col_idx %||% NA_integer_),
+      base_center = as.numeric(entry$base_center %||% NA_real_),
+      continuation_center = as.numeric(entry$continuation_center %||% NA_real_),
+      center_delta = as.numeric(entry$center_delta %||% NA_real_),
+      base_width = as.numeric(entry$base_width %||% NA_real_),
+      continuation_width = as.numeric(entry$continuation_width %||% NA_real_),
+      width_delta = as.numeric(entry$width_delta %||% NA_real_),
+      status = as.character(entry$status %||% ""),
+      stringsAsFactors = FALSE
+    )
+  })
+  cat("Column Map\n")
+  if (length(column_rows) == 0) {
+    cat("[No rows]\n\n")
+  } else {
+    print(do.call(rbind, column_rows), row.names = FALSE, right = FALSE)
+    cat("\n")
+  }
+
+  diagnostics <- as.character(unlist(check$diagnostics %||% list()))
+  cat("Diagnostics\n")
+  if (length(diagnostics) == 0) {
+    cat("[No rows]\n")
+  } else {
+    cat(paste0("- ", diagnostics, collapse = "\n"))
+    cat("\n")
+  }
+  invisible(check)
 }
 
 show_merged_table1 <- function(paper_dir, group_index = 0L, max_rows = 30L) {
