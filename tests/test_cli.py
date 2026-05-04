@@ -11,6 +11,7 @@ from table1_parser.llm.client import LLMConfigurationError
 from table1_parser.llm.variable_plausibility_schemas import LLMVariablePlausibilityTableReview
 from table1_parser.schemas import (
     ColumnDefinition,
+    ColumnHeaderSchema,
     DefinedColumn,
     ExtractedTable,
     LLMVariablePlausibilityCallRecord,
@@ -135,6 +136,7 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     captured = capsys.readouterr()
     extracted_path = tmp_path / "outputs" / "papers" / "paper" / "extracted_tables.json"
     normalized_path = tmp_path / "outputs" / "papers" / "paper" / "normalized_tables.json"
+    column_header_schema_path = tmp_path / "outputs" / "papers" / "paper" / "column_header_schemas.json"
     table1_continuation_groups_path = tmp_path / "outputs" / "papers" / "paper" / "table1_continuation_groups.json"
     table_continuation_column_checks_path = (
         tmp_path / "outputs" / "papers" / "paper" / "table_continuation_column_checks.json"
@@ -157,6 +159,7 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     assert calls["extract"] == 1
     assert extracted_path.exists()
     assert normalized_path.exists()
+    assert column_header_schema_path.exists()
     assert table1_continuation_groups_path.exists()
     assert table_continuation_column_checks_path.exists()
     assert merged_table1_path.exists()
@@ -174,6 +177,9 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     assert table_context_path.exists()
     assert json.loads(extracted_path.read_text(encoding="utf-8"))[0]["table_id"] == "tbl-1"
     assert json.loads(normalized_path.read_text(encoding="utf-8"))[0]["table_id"] == "tbl-1"
+    column_schema_payload = json.loads(column_header_schema_path.read_text(encoding="utf-8"))
+    assert ColumnHeaderSchema.model_validate(column_schema_payload[0]).table_id == "tbl-1"
+    assert column_schema_payload[0]["leaves"][1]["leaf_label"] == "Overall"
     assert json.loads(table1_continuation_groups_path.read_text(encoding="utf-8")) == []
     assert json.loads(table_continuation_column_checks_path.read_text(encoding="utf-8")) == []
     assert json.loads(merged_table1_path.read_text(encoding="utf-8")) == []
@@ -267,7 +273,7 @@ def test_cli_parse_marks_descriptive_tables_with_empty_definitions_as_failed(tmp
     monkeypatch.setattr(
         cli,
         "build_table_definitions",
-        lambda tables: [
+        lambda tables, column_schemas=None: [
             TableDefinition(
                 table_id="tbl-1",
                 title="Table 1",

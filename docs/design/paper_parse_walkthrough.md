@@ -27,6 +27,7 @@ Today that directory may contain:
 
 - `extracted_tables.json`
 - `normalized_tables.json`
+- `column_header_schemas.json`
 - `table1_continuation_groups.json`
 - `table_continuation_column_checks.json`
 - `merged_table1_tables.json`
@@ -53,6 +54,7 @@ The parser deliberately keeps several versions of the same table because each st
 
 - `ExtractedTable` answers: what did the PDF extractor recover?
 - `NormalizedTable` answers: what cleaned table structure should downstream logic reason over?
+- `ColumnHeaderSchema` answers: how do normalized columns, leaf headers, and higher spanning header groups relate?
 - `TableProfile` answers: what kind of table does this appear to be?
 - `PaperTableInventory` answers: what broad paper-level category was assigned to each table number?
 - `TableDefinition` answers: what do the rows and columns mean, before we parse values?
@@ -68,6 +70,7 @@ The current implemented flow for `parse` is:
 PDF
   -> extracted tables
   -> normalized tables
+  -> column header schemas
   -> Table 1 continuation inspection artifacts
   -> table profiles
   -> table definitions
@@ -394,7 +397,40 @@ This artifact is where the table becomes parser-friendly without yet becoming fu
 
 That separation matters because many downstream mistakes are really normalization mistakes, not semantic mistakes.
 
-## Step 4: Build Continuation Inspection Artifacts
+## Step 4: Build `ColumnHeaderSchema`
+
+After normalization, the parser builds a parser-native column-header schema for
+each normalized table and writes `column_header_schemas.json`.
+
+This artifact keeps column structure explicit before `TableDefinition` assigns
+semantic roles. It records:
+
+- one leaf record per normalized column, including the row-label column
+- the header row closest to the body as the source of leaf labels
+- higher header rows as spanning groups over leaves
+- group-to-leaf relationships as explicit records
+- raw extracted header-cell text and coordinates when available
+- diagnostics for blank leaf labels, skipped title-like header rows, and
+  missing coordinate evidence
+
+If the normalized header rows are absent or only contain title/caption text,
+this stage can infer a header stack from rows above the first strongly numeric
+body row. That fallback is recorded in schema diagnostics and does not rewrite
+`NormalizedTable`.
+
+The schema is deliberately not a tableone object and does not store summary
+values. It supplies the column axis that later semantic and stored-summary
+objects can consume.
+
+Why this exists:
+
+- multi-row headers should be recoverable without flattening them too early
+- `TableDefinition` should classify column semantics from a shared column model
+  rather than rebuilding header structure locally
+- later tableone-style rendering needs a stored summary object before printing,
+  and that object will need a stable column axis
+
+## Step 5: Build Continuation Inspection Artifacts
 
 When parse outputs are written and the paper-level table inventory is
 available, the parser checks whether explicit `demographic_description` table
@@ -409,8 +445,8 @@ same paper-level table taxonomy written to `paper_table_inventory.json`.
 The parser writes:
 
 - `table_continuation_column_checks.json`
-  records normalized column-count agreement, header-signature agreement, cell
-  coordinate profiles when available, per-column coordinate deltas, and an
+  records normalized column-count agreement, column-header signature agreement,
+  cell coordinate profiles when available, per-column coordinate deltas, and an
   overall compatible/possibly-compatible/incompatible/no-parent status
 
 The same parse still checks whether the paper appears to have an explicit Table 1 continuation.
@@ -437,7 +473,11 @@ This stage does not currently feed the merged rows into `TableDefinition` or `Pa
 The default parser still defines and parses the original normalized tables separately.
 That constraint keeps this change useful for inspection without silently changing downstream table semantics.
 
-## Step 5: Provisional Table Routing With `TableProfile`
+When available, the continuation column check uses
+`ColumnHeaderSchema.flattened_signature` for header-signature comparison. It
+still does not merge tables or change downstream parse inputs.
+
+## Step 6: Provisional Table Routing With `TableProfile`
 
 Once a table has been normalized, the parser builds a `TableProfile`.
 
@@ -457,7 +497,7 @@ Why this stage exists:
 - it keeps mixed-table handling explicit
 - it lets the deterministic parser decide whether an LLM step is even relevant
 
-## Step 6: Build `TableDefinition`
+## Step 7: Build `TableDefinition`
 
 `TableDefinition` is the value-free semantic interpretation of the normalized table.
 
@@ -490,6 +530,10 @@ For columns:
 - overall vs group vs p-value vs trend vs SMD style columns
 - grouped-column structure when it can be inferred
 
+Column structure now comes from `ColumnHeaderSchema`. That means
+`TableDefinition` can focus on semantic roles and grouping labels instead of
+owning the mechanics of leaf-header and spanning-group recovery.
+
 One implemented heuristic detail is worth calling out explicitly:
 
 - a row with empty group columns but populated test or statistic columns can still be a variable header
@@ -509,7 +553,7 @@ This makes it easier to:
 - support downstream matching and R-side table objects
 - compare deterministic semantics with future LLM semantics
 
-## Step 7: Build `ParsedTable`
+## Step 8: Build `ParsedTable`
 
 `ParsedTable` is the final deterministic structured table output.
 
@@ -539,7 +583,7 @@ Because row and column semantics can be right even when value parsing is wrong, 
 
 Keeping these apart makes debugging much more honest.
 
-## Step 8: Build Parse Quality Reports
+## Step 9: Build Parse Quality Reports
 
 The parser also writes `parse_quality_reports.json`.
 
@@ -554,7 +598,7 @@ It is meant to answer questions like:
 This step does not change `table_definitions.json` or `parsed_tables.json`.
 It exists so column and row problems are visible even when the table technically parses.
 
-## Step 9: Build Paper-Level Document Context
+## Step 10: Build Paper-Level Document Context
 
 The parser also builds a paper-level context representation from the whole document.
 
@@ -632,7 +676,7 @@ For each table, the parser builds a focused context bundle using:
 
 This produces per-table passages and term lists that can later support standalone review workflows or future semantic interpretation.
 
-## Step 10: Optional Variable-Plausibility LLM Review
+## Step 11: Optional Variable-Plausibility LLM Review
 
 The separate `review-variable-plausibility` command can run a narrow LLM review using:
 
@@ -658,7 +702,7 @@ Why this stage is optional:
 - LLM use should be focused on ambiguity, not raw PDF recovery
 - review calls should be inspectable and skippable
 
-## Step 11: Write Table Processing Status
+## Step 12: Write Table Processing Status
 
 After deterministic parsing, the parser writes `table_processing_status.json`.
 

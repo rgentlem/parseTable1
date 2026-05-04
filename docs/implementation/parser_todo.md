@@ -6,11 +6,13 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
 
 ## Current Priorities
 
-1. [ ] Add a parser-native column header schema artifact.
+1. [x] Add a parser-native column header schema artifact.
    Build `ColumnHeaderSchema` between `NormalizedTable` and `TableDefinition` so leaf columns, higher spanning header groups, group-to-leaf relationships, raw cell evidence, and coordinates are explicit before any tableone-style projection.
    Design note: `docs/design/column_header_schema.md`.
    Implementation plan: `docs/implementation/column_header_schema_implementation_plan.md`.
    This should become the primary column model consumed by `TableDefinition` and any later stored summary/tableone projection; continuation compatibility is an important later consumer, but not the main design driver.
+   Initial implementation is in place: `table1-parser parse` writes `column_header_schemas.json`, `TableDefinition` consumes it, continuation checks use its flattened signature when available, and tests cover Eke-like Table 1/Table 2 structures plus non-problem tables.
+   Follow-up: Eke Tables 1-2 show that multi-line header stacks can produce wrong parent paths when rule-banded header rows are extracted as many short text fragments. The current parser now keeps adjacent header text runs together and only merges wrapped leaf rows after geometry-based header inference, but it still needs a structural parent-span pass that uses row bands, rules, and lower-level column coverage rather than vocabulary or display-only compaction.
 
 2. [ ] Make continuations semantically real.
    One logical Table 1 spanning pages should feed `TableDefinition` and `ParsedTable`, rather than leaving page-level and continuation-page parses as separate semantic outputs.

@@ -7,7 +7,7 @@ from collections import defaultdict
 from statistics import median
 from typing import Any
 
-from table1_parser.schemas import ExtractedTable, NormalizedTable, TableProfile
+from table1_parser.schemas import ColumnHeaderSchema, ExtractedTable, NormalizedTable, TableProfile
 from table1_parser.schemas.table_continuation_column_check import (
     ColumnCoordinateMapEntry,
     ColumnCoordinateProfile,
@@ -27,6 +27,7 @@ def build_table_continuation_column_checks(
     extracted_tables: list[ExtractedTable] | None = None,
     table_profiles: list[TableProfile] | None = None,
     table_categories: list[str | None] | None = None,
+    column_header_schemas: list[ColumnHeaderSchema] | None = None,
 ) -> list[TableContinuationColumnCheck]:
     """Build column-compatibility diagnostics for explicit demographic-table continuations."""
     checks: list[TableContinuationColumnCheck] = []
@@ -64,6 +65,7 @@ def build_table_continuation_column_checks(
                 extracted_tables=extracted_tables,
                 table_profiles=table_profiles,
                 table_categories=table_categories,
+                column_header_schemas=column_header_schemas,
                 base_index=base_index,
                 continuation_index=table_index,
             )
@@ -88,6 +90,7 @@ def _build_column_check(
     extracted_tables: list[ExtractedTable] | None,
     table_profiles: list[TableProfile] | None,
     table_categories: list[str | None] | None,
+    column_header_schemas: list[ColumnHeaderSchema] | None,
     base_index: int | None,
     continuation_index: int,
 ) -> TableContinuationColumnCheck:
@@ -106,7 +109,10 @@ def _build_column_check(
             continuation_table_family=_table_family_at(table_profiles, continuation_index),
             continuation_table_category=_table_category_at(table_categories, continuation_index),
             header_signature_status="missing_base",
-            continuation_column_signature=_column_signature(continuation_table),
+            continuation_column_signature=_column_signature(
+                continuation_table,
+                _column_schema_at(column_header_schemas, continuation_index),
+            ),
             coordinate_status="missing",
             overall_status="no_parent",
             confidence=0.0,
@@ -117,8 +123,11 @@ def _build_column_check(
     base_table = normalized_tables[base_index]
     base_extracted = _extracted_table_at(extracted_tables, base_index)
     base_profile = _build_coordinate_profile(base_table, base_extracted)
-    base_signature = _column_signature(base_table)
-    continuation_signature = _column_signature(continuation_table)
+    base_signature = _column_signature(base_table, _column_schema_at(column_header_schemas, base_index))
+    continuation_signature = _column_signature(
+        continuation_table,
+        _column_schema_at(column_header_schemas, continuation_index),
+    )
     signature_status = _header_signature_status(base_signature, continuation_signature)
     normalized_column_count_match = base_table.n_cols == continuation_table.n_cols
     coordinate_status, column_map, coordinate_diagnostics = _compare_coordinate_profiles(base_profile, continuation_profile)
@@ -263,7 +272,21 @@ def _extracted_table_at(
     return extracted_tables[table_index]
 
 
-def _column_signature(table: NormalizedTable) -> list[str]:
+def _column_schema_at(
+    column_header_schemas: list[ColumnHeaderSchema] | None,
+    table_index: int | None,
+) -> ColumnHeaderSchema | None:
+    if column_header_schemas is None or table_index is None or table_index >= len(column_header_schemas):
+        return None
+    return column_header_schemas[table_index]
+
+
+def _column_signature(
+    table: NormalizedTable,
+    column_schema: ColumnHeaderSchema | None = None,
+) -> list[str]:
+    if column_schema is not None and column_schema.table_id == table.table_id:
+        return [_normalize_header_cell(value) for value in column_schema.flattened_signature]
     rows = table.metadata.get("cleaned_rows")
     if not isinstance(rows, list):
         return []

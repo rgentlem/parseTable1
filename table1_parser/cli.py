@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from table1_parser.column_header_schema import build_column_header_schemas, column_header_schemas_to_payload
 from table1_parser.config import Settings
 from table1_parser.context import (
     annotate_visual_reference_checks,
@@ -37,6 +38,7 @@ from table1_parser.parse import build_parsed_tables, parsed_tables_to_payload
 from table1_parser.processing_status import build_table_processing_statuses
 from table1_parser.schemas import (
     ExtractedTable,
+    ColumnHeaderSchema,
     LLMVariablePlausibilityCallRecord,
     LLMVariablePlausibilityMonitoringReport,
     NormalizedTable,
@@ -69,6 +71,7 @@ class PaperParseArtifacts:
     paper_stem: str
     extracted_tables: list[ExtractedTable]
     normalized_tables: list[NormalizedTable]
+    column_header_schemas: list[ColumnHeaderSchema]
     table1_continuation_groups: list[Table1ContinuationGroup]
     merged_table1_tables: list[NormalizedTable]
     table_profiles: list[TableProfile]
@@ -374,6 +377,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     extractor = _build_default_extractor()
     extracted_tables = extractor.extract(pdf_path)
     normalized_tables = normalize_extracted_tables(extracted_tables)
+    column_header_schemas = build_column_header_schemas(normalized_tables, extracted_tables)
     table_profiles = build_table_profiles(normalized_tables)
     table1_continuation_groups, merged_table1_tables = build_table1_continuation_artifacts(normalized_tables)
     parse_quality_reports = []
@@ -391,7 +395,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
                 source_identifier=pdf_path,
             )
         )
-    table_definitions = build_table_definitions(normalized_tables)
+    table_definitions = build_table_definitions(normalized_tables, column_header_schemas)
     parsed_tables = build_parsed_tables(normalized_tables, table_definitions)
     paper_markdown = extract_paper_markdown(pdf_path)
     paper_sections = parse_markdown_sections(paper_markdown)
@@ -405,6 +409,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         paper_stem=paper_stem,
         extracted_tables=extracted_tables,
         normalized_tables=normalized_tables,
+        column_header_schemas=column_header_schemas,
         table1_continuation_groups=table1_continuation_groups,
         merged_table1_tables=merged_table1_tables,
         table_profiles=table_profiles,
@@ -469,6 +474,7 @@ def _write_parse_outputs(
     paper_dir = _paper_output_dir(pdf_path, outdir)
     extract_output_path = paper_dir / "extracted_tables.json"
     normalize_output_path = paper_dir / "normalized_tables.json"
+    column_header_schema_output_path = paper_dir / "column_header_schemas.json"
     table1_continuation_groups_output_path = paper_dir / "table1_continuation_groups.json"
     table_continuation_column_checks_output_path = paper_dir / "table_continuation_column_checks.json"
     merged_table1_output_path = paper_dir / "merged_table1_tables.json"
@@ -502,6 +508,7 @@ def _write_parse_outputs(
         artifacts.extracted_tables,
         artifacts.table_profiles,
         [record.table_category for record in paper_table_inventory.tables],
+        artifacts.column_header_schemas,
     )
 
     extract_output_path.write_text(
@@ -509,6 +516,10 @@ def _write_parse_outputs(
         encoding="utf-8",
     )
     write_normalized_tables(normalize_output_path, artifacts.normalized_tables)
+    column_header_schema_output_path.write_text(
+        json.dumps(column_header_schemas_to_payload(artifacts.column_header_schemas), indent=2) + "\n",
+        encoding="utf-8",
+    )
     table1_continuation_groups_output_path.write_text(
         json.dumps(table1_continuation_groups_to_payload(artifacts.table1_continuation_groups), indent=2) + "\n",
         encoding="utf-8",

@@ -1,5 +1,12 @@
 """Pydantic schema exports for the Table 1 parser."""
 
+from table1_parser.schemas.column_header_schema import (
+    ColumnHeaderCellEvidence,
+    ColumnHeaderGroup,
+    ColumnHeaderLeaf,
+    ColumnHeaderRelationship,
+    ColumnHeaderSchema,
+)
 from table1_parser.schemas.document_context import PaperSection, RetrievedPassage, TableContext
 from table1_parser.schemas.extracted_table import ExtractedTable, TableCell
 from table1_parser.schemas.llm_variable_plausibility_monitoring import (
@@ -50,6 +57,11 @@ __all__ = [
     "ColumnDefinition",
     "ColumnCoordinateMapEntry",
     "ColumnCoordinateProfile",
+    "ColumnHeaderCellEvidence",
+    "ColumnHeaderGroup",
+    "ColumnHeaderLeaf",
+    "ColumnHeaderRelationship",
+    "ColumnHeaderSchema",
     "DefinedColumn",
     "DefinedLevel",
     "DefinedVariable",

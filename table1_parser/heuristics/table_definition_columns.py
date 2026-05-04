@@ -5,9 +5,10 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from table1_parser.column_header_schema import build_column_header_schema
 from table1_parser.heuristics.header_role_patterns import detect_p_value_header
 from table1_parser.normalize.text_normalizer import normalize_label_text
-from table1_parser.schemas import ColumnDefinition, DefinedColumn, NormalizedTable
+from table1_parser.schemas import ColumnDefinition, ColumnHeaderSchema, DefinedColumn, NormalizedTable
 from table1_parser.text_cleaning import clean_text
 
 
@@ -65,10 +66,18 @@ class ColumnGroupingAnalysis:
     confidence: float | None
 
 
-def _build_grouping_analysis(table: NormalizedTable, descriptors: list[HeaderDescriptor]) -> ColumnGroupingAnalysis:
+def _build_grouping_analysis(
+    table: NormalizedTable,
+    descriptors: list[HeaderDescriptor],
+    label_col_idx: int | None = None,
+) -> ColumnGroupingAnalysis:
     """Partition columns into label, overall, grouped, and statistical blocks."""
-    label_col_idx = 0
-    if descriptors:
+    if label_col_idx is None:
+        label_col_idx = 0
+    descriptor_col_indices = {descriptor.col_idx for descriptor in descriptors}
+    if label_col_idx not in descriptor_col_indices:
+        label_col_idx = 0
+    if descriptors and label_col_idx == 0:
         first_label = descriptors[0].leaf_label.lower()
         if first_label and first_label not in LABEL_COLUMN_TOKENS and descriptors[0].column_label:
             label_col_idx = 0
@@ -184,35 +193,40 @@ def _build_grouping_analysis(table: NormalizedTable, descriptors: list[HeaderDes
     )
 
 
-def build_column_definition(table: NormalizedTable) -> ColumnDefinition:
-    """Build value-free column definitions from a normalized table."""
-    cleaned_rows = table.metadata.get("cleaned_rows", [])
-    grid = cleaned_rows if isinstance(cleaned_rows, list) else []
+def _descriptors_from_column_schema(column_schema: ColumnHeaderSchema) -> list[HeaderDescriptor]:
+    """Convert a parser-native column header schema into local column descriptors."""
+    groups_by_id = {group.group_id: group for group in column_schema.groups}
+    context_by_leaf_id: dict[str, list[tuple[int, str]]] = {leaf.leaf_id: [] for leaf in column_schema.leaves}
+    for relationship in column_schema.relationships:
+        group = groups_by_id.get(relationship.parent_group_id)
+        if group is not None:
+            context_by_leaf_id.setdefault(relationship.child_leaf_id, []).append((group.row_idx, group.label))
     descriptors: list[HeaderDescriptor] = []
-    for col_idx in range(table.n_cols):
-        parts: list[str] = []
-        for row_idx in table.header_rows:
-            if row_idx >= len(grid):
-                continue
-            row = grid[row_idx]
-            if not isinstance(row, list) or col_idx >= len(row):
-                continue
-            cell_text = clean_text(str(row[col_idx]))
-            if cell_text:
-                parts.append(cell_text)
-        column_label = clean_text(" ".join(parts))
-        column_name = normalize_label_text(column_label) or f"column_{col_idx}"
-        leaf_label = parts[-1] if parts else ""
+    for leaf in sorted(column_schema.leaves, key=lambda item: item.col_idx):
+        context_labels = [label for _, label in sorted(context_by_leaf_id.get(leaf.leaf_id, []))]
+        shared_context_label = clean_text(" ".join(context_labels)) if context_labels else None
+        column_label = clean_text(" ".join([*(context_labels or []), leaf.leaf_label]))
         descriptors.append(
             HeaderDescriptor(
-                col_idx=col_idx,
+                col_idx=leaf.col_idx,
                 column_label=column_label,
-                column_name=column_name,
-                leaf_label=leaf_label,
-                shared_context_label=clean_text(" ".join(parts[:-1])) if len(parts) > 1 else None,
+                column_name=normalize_label_text(column_label) or leaf.leaf_name or f"column_{leaf.col_idx}",
+                leaf_label=leaf.leaf_label,
+                shared_context_label=shared_context_label,
             )
         )
-    analysis = _build_grouping_analysis(table, descriptors)
+    return descriptors
+
+
+def build_column_definition(
+    table: NormalizedTable,
+    column_schema: ColumnHeaderSchema | None = None,
+) -> ColumnDefinition:
+    """Build value-free column definitions from a normalized table."""
+    if column_schema is None or column_schema.table_id != table.table_id:
+        column_schema = build_column_header_schema(table)
+    descriptors = _descriptors_from_column_schema(column_schema)
+    analysis = _build_grouping_analysis(table, descriptors, column_schema.label_col_idx)
     columns: list[DefinedColumn] = []
     for descriptor in descriptors:
         if descriptor.col_idx == analysis.label_col_idx:

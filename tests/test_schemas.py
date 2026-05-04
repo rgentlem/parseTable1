@@ -7,6 +7,11 @@ from pydantic import ValidationError
 
 from table1_parser.schemas import (
     ColumnDefinition,
+    ColumnHeaderCellEvidence,
+    ColumnHeaderGroup,
+    ColumnHeaderLeaf,
+    ColumnHeaderRelationship,
+    ColumnHeaderSchema,
     DefinedColumn,
     DefinedLevel,
     DefinedVariable,
@@ -185,6 +190,79 @@ def test_table_definition_creation_and_serialization() -> None:
 
     assert dumped["variables"][0]["levels"][0]["level_label"] == "Male"
     assert dumped["column_definition"]["columns"][0]["inferred_role"] == "overall"
+
+
+def test_column_header_schema_creation_and_serialization() -> None:
+    """ColumnHeaderSchema should serialize flat leaf/group/relationship records."""
+    schema = ColumnHeaderSchema(
+        schema_id="tbl-1:column_header_schema",
+        table_id="tbl-1",
+        n_cols=3,
+        header_rows_considered=[0, 1],
+        body_rows_considered=[2],
+        leaf_header_row_idx=1,
+        leaves=[
+            ColumnHeaderLeaf(
+                leaf_id="leaf-1",
+                table_id="tbl-1",
+                col_idx=1,
+                leaf_header_row_idx=1,
+                leaf_label="Q1",
+                leaf_name="Q1",
+                evidence_ids=["evidence-1"],
+            )
+        ],
+        groups=[
+            ColumnHeaderGroup(
+                group_id="group-1",
+                table_id="tbl-1",
+                row_idx=0,
+                label="Cobalt quartile",
+                name="Cobalt quartile",
+                col_start=1,
+                col_end=1,
+                leaf_col_indices=[1],
+                evidence_ids=["evidence-0"],
+                inference_rule="single_leaf_group",
+            )
+        ],
+        relationships=[
+            ColumnHeaderRelationship(
+                relationship_id="relationship-1",
+                table_id="tbl-1",
+                parent_group_id="group-1",
+                child_leaf_id="leaf-1",
+                leaf_col_idx=1,
+                evidence_ids=["evidence-0", "evidence-1"],
+            )
+        ],
+        evidence=[
+            ColumnHeaderCellEvidence(
+                evidence_id="evidence-0",
+                table_id="tbl-1",
+                row_idx=0,
+                col_idx=1,
+                cleaned_text="Cobalt quartile",
+                source="normalized_cleaned_row",
+            ),
+            ColumnHeaderCellEvidence(
+                evidence_id="evidence-1",
+                table_id="tbl-1",
+                row_idx=1,
+                col_idx=1,
+                cleaned_text="Q1",
+                bbox=(10.0, 0.0, 20.0, 8.0),
+                source="extracted_cell",
+            ),
+        ],
+        flattened_signature=["", "Cobalt quartile Q1", ""],
+    )
+
+    dumped = schema.model_dump(mode="json")
+
+    assert dumped["leaves"][0]["leaf_label"] == "Q1"
+    assert dumped["groups"][0]["inference_rule"] == "single_leaf_group"
+    assert dumped["evidence"][1]["bbox"] == [10.0, 0.0, 20.0, 8.0]
 
 
 def test_table_profile_creation_and_serialization() -> None:

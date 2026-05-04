@@ -122,6 +122,12 @@ Leaf columns are inferred from:
 2. body-row non-empty evidence
 3. the header row closest to the body
 
+If normalization supplies no usable header rows, or only title/caption-like
+header rows, the schema builder may infer a local header stack from rows above
+the first strongly numeric body row. This fallback should remain conservative:
+it records diagnostics and raw cell evidence in `ColumnHeaderSchema` rather
+than rewriting `NormalizedTable`.
+
 The closest-to-body header row supplies the leaf label. If that cell is blank,
 the leaf label stays blank and the schema records a diagnostic. The parser
 should not silently promote an upper spanning group to the leaf label unless no

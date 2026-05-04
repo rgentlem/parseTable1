@@ -72,6 +72,7 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | --- | --- | --- | --- |
 | Extraction | `ExtractedTable` | Written now as `extracted_tables.json` by `extract` and `parse` | Preserve raw table grid and cell provenance |
 | Normalization | `NormalizedTable` | Written now as `normalized_tables.json` by `normalize` and `parse` | Clean rows, detect headers, derive row features |
+| Column header schema | `ColumnHeaderSchema` | Written now as `column_header_schemas.json` by `parse` | Persist parser-native leaf columns, spanning header groups, group-to-leaf relationships, raw cell evidence, and coordinates before semantic column projection |
 | Table 1 continuation inspection | `Table1ContinuationGroup`, `NormalizedTable` | Written now as `table1_continuation_groups.json` and `merged_table1_tables.json` by `parse` | Persist artifact-only grouping and merged normalized rows for explicit Table 1 continuations without altering the main parse |
 | Continuation column compatibility | `TableContinuationColumnCheck` | Written now as `table_continuation_column_checks.json` by `parse` | Persist diagnostic column-signature and coordinate compatibility checks for explicit `demographic_description` continuations without altering the main parse |
 | Table routing | `TableProfile` | Written now as `table_profiles.json` by `parse` | Persist provisional deterministic parser-route decisions |
@@ -288,7 +289,75 @@ Conservative repair rule:
 - when a label-only continuation row wraps below a valued row, normalization may append the continuation text to the preceding row label and suppress the continuation row from `body_rows`
 - repair diagnostics should live in `metadata` rather than replacing the canonical `NormalizedTable` fields
 
-## 3. Table 1 Continuation Inspection Artifacts
+## 3. `column_header_schemas.json`
+
+Current status:
+
+- canonical structural column-schema models exist now
+- written by the `parse` CLI command
+- consumed by deterministic `TableDefinition` column assembly
+
+Current CLI path:
+
+```text
+outputs/papers/<paper_stem>/column_header_schemas.json
+```
+
+Top-level shape:
+
+```json
+[
+  {
+    "...": "one ColumnHeaderSchema object"
+  }
+]
+```
+
+Canonical model:
+
+- `ColumnHeaderSchema`
+- child models: `ColumnHeaderLeaf`, `ColumnHeaderGroup`,
+  `ColumnHeaderRelationship`, `ColumnHeaderCellEvidence`
+
+Design components:
+
+- `leaves`
+  record one parser-facing normalized column each, including the row-label
+  column, leaf header label, body-row indices with non-empty cells, optional
+  original column index, and optional coordinate summary
+- `groups`
+  record higher header labels spanning one or more leaf columns
+- `relationships`
+  record each group-to-leaf attachment explicitly
+- `evidence`
+  records normalized row/column references, raw extracted text when available,
+  parser-facing cleaned text, page number, and cell bounding boxes when
+  available
+- `flattened_signature`
+  is a convenience view over the schema for quick comparison and compatibility
+  checks; it is not the conceptual model
+- `diagnostics`
+  records degraded or missing evidence, skipped title-like header rows, blank
+  leaf labels, and missing coordinate evidence
+
+When normalized header rows are absent or title-like, the schema builder may
+infer a header stack from the rows above the first strongly numeric body row.
+This is still a column-schema computation: it preserves raw header-cell
+evidence and records diagnostics rather than changing the normalized table.
+
+Design intent:
+
+- column-header recovery is a first-class parser artifact, not hidden inside
+  `TableDefinition`
+- leaf labels come from the header row closest to the body
+- higher header rows become spanning groups rather than being flattened too
+  early
+- raw extracted cells and coordinates are preserved whenever they are available
+- missing raw evidence is explicit rather than silently invented
+- the schema can later support stored summary/tableone-style projection by
+  providing a stable column axis before any print method renders a table
+
+## 4. Table 1 Continuation Inspection Artifacts
 
 Current status:
 
@@ -340,7 +409,8 @@ This artifact:
 - requires clear continuation evidence before checking a pair
 - compares the continuation to the closest prior fragment for the same table number
 - records normalized column-count agreement
-- records normalized header-signature agreement when headers are present
+- records column-header signature agreement when headers are present, using
+  `ColumnHeaderSchema.flattened_signature` when the schema is available
 - records coordinate profiles from extracted cell bounding boxes when available
 - reports column-coordinate status as compatible, possibly compatible, incompatible, missing, or partial
 - does not merge tables or change `TableDefinition`, `ParsedTable`, or processing-status behavior
@@ -349,7 +419,7 @@ The public helper can fall back to the provisional `TableProfile` family
 `descriptive_characteristics` when no paper-table taxonomy is available, but
 the `parse` CLI artifact uses `paper_table_inventory.json` categories.
 
-## 4. `table_definitions.json`
+## 5. `table_definitions.json`
 
 Current status:
 
@@ -384,6 +454,11 @@ Top-level design components:
 - `column_definition`
 - `notes`
 - `overall_confidence`
+
+`TableDefinition` column assembly now consumes `ColumnHeaderSchema` when that
+artifact is available. It still owns semantic roles such as `overall`, `group`,
+`p_value`, and `smd`; it no longer needs to recover the header tree directly
+from normalized rows.
 
 `DefinedVariable` design components:
 

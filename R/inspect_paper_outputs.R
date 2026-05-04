@@ -339,6 +339,40 @@ table_definition_by_index <- function(outputs, table_index = 0L) {
   table
 }
 
+show_column_header_tree <- function(paper_dir, table_index = 0L, table_number = NULL) {
+  if (!is.null(table_number)) {
+    table_index <- resolve_table_index(load_paper_outputs(paper_dir), table_number = table_number)
+  }
+  schemas <- read_json_file(file.path(paper_dir, "column_header_schemas.json"))
+  schema <- schemas[[as.integer(table_index) + 1L]]
+  if (is.null(schema)) {
+    stop(sprintf("No column header schema found for table_index=%s.", table_index), call. = FALSE)
+  }
+  groups <- schema$groups %||% list()
+  rels <- schema$relationships %||% list()
+  group_labels <- setNames(
+    vapply(groups, function(g) as.character(g$label %||% ""), character(1)),
+    vapply(groups, function(g) as.character(g$group_id %||% ""), character(1))
+  )
+  rows <- lapply(schema$leaves %||% list(), function(leaf) {
+    parents <- rels[vapply(rels, function(r) identical(r$child_leaf_id, leaf$leaf_id), logical(1))]
+    if (length(parents) > 1L) {
+      parents <- parents[order(vapply(parents, function(r) as.integer(r$row_idx %||% 0L), integer(1)), decreasing = TRUE)]
+    }
+    path <- vapply(parents, function(r) group_labels[[as.character(r$parent_group_id %||% "")]] %||% "", character(1))
+    leaf_label <- as.character(leaf$leaf_label %||% "")
+    data.frame(
+      col_idx = as.integer(leaf$col_idx %||% NA_integer_),
+      leaf_label = leaf_label,
+      header_path = paste(c(leaf_label, path[nzchar(path)]), collapse = " > "),
+      stringsAsFactors = FALSE
+    )
+  })
+  out <- if (length(rows)) do.call(rbind, rows) else data.frame(col_idx = integer(), leaf_label = character(), header_path = character())
+  print(out, row.names = FALSE, right = FALSE)
+  invisible(out)
+}
+
 table_number_for_table <- function(table) {
   metadata <- table$metadata %||% list()
   signals <- metadata$signals %||% list()
