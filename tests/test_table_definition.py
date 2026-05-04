@@ -317,6 +317,52 @@ def test_categorical_levels_with_non_count_values_do_not_silently_get_count_pct_
     assert variables[0].summary_style_hint is None
 
 
+def test_indented_weighted_and_age_standardized_levels_build_categorical_variables() -> None:
+    """Survey-weighted and age-standardized real-valued columns should still support levels."""
+    table = NormalizedTable(
+        table_id="tbl-weighted-levels",
+        header_rows=[0, 1],
+        body_rows=[2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+        row_views=[
+            _build_row(2, "Age (mean: 24 teeth)", [], indent_level=0),
+            _build_row(3, "30 to 34 years", ["435", "16.7", "24.4", "2.7"], indent_level=9),
+            _build_row(4, "35 to 49 years", ["1,352", "54.0", "36.6", "1.6"], indent_level=9),
+            _build_row(5, "Sex", [], indent_level=0),
+            _build_row(6, "Males", ["1,872", "67.5", "56.4", "2.1"], indent_level=9),
+            _build_row(7, "Females", ["1,871", "69.6", "38.4", "2.4"], indent_level=9),
+            _build_row(8, "Education", [], indent_level=0),
+            _build_row(9, "Less than high school", ["1,030", "23.8", "66.9", "2.4"], indent_level=9),
+            _build_row(10, "High school/GED", ["815", "29.6", "53.5", "3.2"], indent_level=9),
+            _build_row(11, "More than high school", ["1,889", "83.3", "39.3", "2.3"], indent_level=9),
+        ],
+        n_rows=12,
+        n_cols=5,
+        metadata={
+            "indentation_informative": True,
+            "cleaned_rows": [
+                ["Characteristics", "n", "Weighted n (millions)", "Age standardized %", "SE"],
+                ["", "", "", "", ""],
+            ],
+        },
+    )
+
+    variables = build_defined_variables(table)
+
+    assert [(variable.variable_label, variable.variable_type) for variable in variables] == [
+        ("Age (mean: 24 teeth)", "categorical"),
+        ("Sex", "categorical"),
+        ("Education", "categorical"),
+    ]
+    assert [level.level_label for level in variables[0].levels] == ["30 to 34 years", "35 to 49 years"]
+    assert [level.level_label for level in variables[1].levels] == ["Males", "Females"]
+    assert [level.level_label for level in variables[2].levels] == [
+        "Less than high school",
+        "High school/GED",
+        "More than high school",
+    ]
+    assert all(variable.summary_style_hint is None for variable in variables)
+
+
 def test_indicator_style_cat_row_builds_binary_defined_variable() -> None:
     """Explicit `.cat = ...` indicator rows should map to binary variables."""
     table = NormalizedTable(

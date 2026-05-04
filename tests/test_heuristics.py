@@ -613,6 +613,73 @@ def test_more_indented_following_rows_strengthen_parent_as_variable_header() -> 
     assert classifications[3].classification == "level_row"
 
 
+def test_indented_numeric_matrix_rows_group_under_categorical_parent() -> None:
+    """Indented numeric-matrix rows should behave as levels under a blank categorical parent."""
+    table = NormalizedTable(
+        table_id="tbl-indented-numeric-matrix",
+        header_rows=[0, 1],
+        body_rows=[2, 3, 4, 5, 6, 7, 8, 9, 10],
+        row_views=[
+            _build_row(2, "Age (mean: 24 teeth)", [], indent_level=0),
+            _build_row(3, "30 to 34 years", ["72.3", "1.8", "32.6", "2.3"], indent_level=9),
+            _build_row(4, "35 to 49 years", ["85.7", "1.1", "51.8", "2.2"], indent_level=9),
+            _build_row(5, "Sex", [], indent_level=0),
+            _build_row(6, "Males", ["92.0", "0.9", "68.4", "1.6"], indent_level=9),
+            _build_row(7, "Females", ["84.4", "1.1", "53.6", "1.9"], indent_level=9),
+            _build_row(8, "Education", [], indent_level=0),
+            _build_row(9, "Less than high school", ["88.7", "1.7", "58.2", "2.0"], indent_level=9),
+            _build_row(10, "High school/GED", ["86.4", "1.5", "55.0", "2.1"], indent_level=9),
+        ],
+        n_rows=11,
+        n_cols=5,
+        metadata={"indentation_informative": True},
+    )
+
+    classifications = {item.row_idx: item.classification for item in classify_rows(table)}
+    blocks = group_variable_blocks(table)
+
+    assert classifications[2] == "variable_header"
+    assert classifications[3] == "level_row"
+    assert classifications[4] == "level_row"
+    assert classifications[5] == "variable_header"
+    assert classifications[6] == "level_row"
+    assert classifications[7] == "level_row"
+    assert classifications[8] == "variable_header"
+    assert classifications[9] == "level_row"
+    assert classifications[10] == "level_row"
+    assert [(block.variable_label, block.variable_kind, block.level_row_indices) for block in blocks] == [
+        ("Age (mean: 24 teeth)", "categorical", [3, 4]),
+        ("Sex", "categorical", [6, 7]),
+        ("Education", "categorical", [9, 10]),
+    ]
+
+
+def test_indented_na_numeric_matrix_row_remains_level_under_parent() -> None:
+    """N/A rows inside an indented numeric-matrix block should stay attached as levels."""
+    table = NormalizedTable(
+        table_id="tbl-indented-na-matrix",
+        header_rows=[0],
+        body_rows=[1, 2, 3],
+        row_views=[
+            _build_row(1, "Race/ethnic group", [], indent_level=0),
+            _build_row(2, "Hispanic", ["95.0", "0.9", "71.6", "1.6"], indent_level=9),
+            _build_row(3, "Non-Hispanic Asian American", ["N/A", "N/A", "N/A", "N/A"], indent_level=9),
+        ],
+        n_rows=4,
+        n_cols=5,
+        metadata={"indentation_informative": True},
+    )
+
+    classifications = {item.row_idx: item.classification for item in classify_rows(table)}
+    blocks = group_variable_blocks(table)
+
+    assert classifications[1] == "variable_header"
+    assert classifications[2] == "level_row"
+    assert classifications[3] == "level_row"
+    assert blocks[0].variable_label == "Race/ethnic group"
+    assert blocks[0].level_row_indices == [2, 3]
+
+
 def test_flush_left_row_does_not_continue_indented_level_block() -> None:
     """Once a block starts with indented levels, a flush-left row should not continue it."""
     table = NormalizedTable(

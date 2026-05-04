@@ -20,6 +20,7 @@ CATEGORICAL_PARENT_CUE_PATTERN = re.compile(
 COUNT_LABEL_PATTERN = re.compile(r"^(?:n|number|no\.?)$", re.IGNORECASE)
 INLINE_CATEGORY_SUMMARY_PATTERN = re.compile(r"\b(?:male|female)\b", re.IGNORECASE)
 INDICATOR_VARIABLE_LABEL_PATTERN = re.compile(r"(?:=|[._]cat\b|\bindicator\b)", re.IGNORECASE)
+NA_LIKE_VALUE_PATTERN = re.compile(r"^(?:N/?A|NR|not reported)$", re.IGNORECASE)
 CONTINUOUS_TEXT_CUE_PATTERN = re.compile(
     r"(?:\bmean\b|\bsd\b|\bmedian\b|\biqr\b|mean\s*[±+-]\s*sd|mean\s*\(\s*sd\s*\))",
     re.IGNORECASE,
@@ -58,6 +59,37 @@ def _has_strong_continuous_cue(row_view: RowView) -> bool:
 def _has_strong_continuous_layout(row_view: RowView) -> bool:
     """Return whether the row strongly resembles a one-line continuous summary."""
     return _has_strong_continuous_cue(row_view) or _summary_like_trailing_count(_trailing_cells(row_view)) >= 2
+
+
+def _looks_like_indented_numeric_matrix_level(
+    row_view: RowView,
+    parent_row_view: RowView | None,
+    statistic_col_indices: set[int] | None,
+) -> bool:
+    """Return whether an indented row looks like a level in a numeric matrix table."""
+    if not _is_more_indented(row_view, parent_row_view):
+        return False
+    label = row_view.first_cell_normalized
+    if not label or _has_strong_continuous_cue(row_view):
+        return False
+    if "," in row_view.first_cell_raw or "(" in row_view.first_cell_raw or ")" in row_view.first_cell_raw:
+        return False
+    word_count = len(label.split())
+    if word_count > 5 or len(label) > 48:
+        return False
+    trailing_cells = [
+        clean_text(row_view.raw_cells[col_idx])
+        for col_idx in range(1, len(row_view.raw_cells))
+        if col_idx not in (statistic_col_indices or set()) and clean_text(row_view.raw_cells[col_idx])
+    ]
+    if len(trailing_cells) < 2:
+        return False
+    value_like_count = sum(
+        (any(char.isdigit() for char in cell) and not any(char.isalpha() for char in cell))
+        or NA_LIKE_VALUE_PATTERN.fullmatch(cell) is not None
+        for cell in trailing_cells
+    )
+    return value_like_count >= max(2, int(len(trailing_cells) * 0.6))
 
 
 def _is_more_indented(row_view: RowView, reference_row: RowView | None) -> bool:
@@ -169,6 +201,18 @@ def classify_row(
         if indentation_informative
         else 0
     )
+    indented_numeric_matrix_child_level_count = 0
+    if indentation_informative:
+        for next_row in following_row_views or []:
+            if not _is_more_indented(next_row, row_view):
+                if indented_numeric_matrix_child_level_count > 0:
+                    break
+                continue
+            if _looks_like_indented_numeric_matrix_level(next_row, row_view, statistic_col_indices):
+                indented_numeric_matrix_child_level_count += 1
+                continue
+            if indented_numeric_matrix_child_level_count > 0:
+                break
     strong_continuous_layout = _has_strong_continuous_layout(row_view)
     sparse_trailing = len(trailing_cells) <= 1
     more_indented_than_previous = indentation_informative and _is_more_indented(row_view, previous_row_view)
@@ -283,6 +327,13 @@ def classify_row(
         )
         and not (sparse_trailing and child_level_count >= 2 and trailing_numeric > 0)
     )
+    looks_like_indented_numeric_matrix_level_continuation = (
+        indentation_informative
+        and previous_classification in {"variable_header", "level_row"}
+        and active_parent_row_view is not None
+        and row_view.has_trailing_values
+        and _looks_like_indented_numeric_matrix_level(row_view, active_parent_row_view, statistic_col_indices)
+    )
 
     if looks_like_binary_variable_row:
         return RowClassification(
@@ -312,6 +363,13 @@ def classify_row(
             row_idx=row_view.row_idx,
             classification="level_row",
             confidence=0.94 if more_indented_than_previous else (0.92 if is_common_level_label(label) else 0.78),
+        )
+
+    if looks_like_indented_numeric_matrix_level_continuation:
+        return RowClassification(
+            row_idx=row_view.row_idx,
+            classification="level_row",
+            confidence=0.86,
         )
 
     if strong_continuous_layout and row_view.has_trailing_values:
@@ -357,11 +415,18 @@ def classify_row(
     ) or (
         sparse_trailing
         and indented_child_level_count >= 2
+    ) or (
+        sparse_trailing
+        and indented_numeric_matrix_child_level_count >= 2
     ):
         return RowClassification(
             row_idx=row_view.row_idx,
             classification="variable_header",
-            confidence=0.9 if categorical_parent_cue and child_level_count >= 2 else (0.88 if indented_child_level_count >= 2 else 0.84),
+            confidence=(
+                0.9
+                if categorical_parent_cue and child_level_count >= 2
+                else (0.88 if indented_child_level_count >= 2 or indented_numeric_matrix_child_level_count >= 2 else 0.84)
+            ),
         )
 
     if (
