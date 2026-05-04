@@ -127,6 +127,13 @@ def build_column_header_schema(
 
     schema_id = f"{table.table_id}:column_header_schema"
     original_col_indices = _original_col_indices(table, extracted_table)
+    grid, leaf_extra_evidence_positions = _repair_leading_leaf_fragments_by_geometry(
+        grid,
+        table.n_cols,
+        leaf_header_row_indices,
+        table.metadata,
+        original_col_indices,
+    )
     source_page_num = table.metadata.get("source_page_num")
     page_num = source_page_num if isinstance(source_page_num, int) and source_page_num >= 1 else None
     extracted_cells = _extracted_cells_by_position(extracted_table)
@@ -186,6 +193,11 @@ def build_column_header_schema(
                 leaf_label = "n"
                 diagnostics.append(f"inferred_count_leaf_header:col={col_idx}")
             leaf_evidence_ids.extend(evidence_for(row_idx, col_idx) for row_idx in leaf_header_row_indices)
+            for row_idx in leaf_header_row_indices:
+                leaf_evidence_ids.extend(
+                    evidence_for(row_idx, source_col_idx)
+                    for source_col_idx in leaf_extra_evidence_positions.get((row_idx, col_idx), [])
+                )
             if not leaf_label:
                 diagnostics.append(f"blank_leaf_header:col={col_idx}")
         body_nonempty_row_indices: list[int] = []
@@ -229,6 +241,9 @@ def build_column_header_schema(
             table.metadata,
         )
         for run in group_runs:
+            if inferred_header_rows_used and run.col_start == run.col_end:
+                diagnostics.append(f"skipped_single_leaf_header_group:row={run.row_idx}:col={run.col_start}")
+                continue
             if run.col_start == 0 and run.col_end > 0:
                 diagnostics.append(f"skipped_label_column_header_span:row={run.row_idx}:col=0")
                 continue
@@ -401,6 +416,9 @@ def _extracted_cells_by_position(extracted_table: ExtractedTable | None) -> dict
 
 
 def _original_col_indices(table: NormalizedTable, extracted_table: ExtractedTable | None) -> list[int | None]:
+    source_col_indices = table.metadata.get("source_col_indices")
+    if isinstance(source_col_indices, list) and len(source_col_indices) == table.n_cols:
+        return [value if isinstance(value, int) and value >= 0 else None for value in source_col_indices]
     raw_n_cols = extracted_table.n_cols if extracted_table is not None else table.n_cols
     dropped_leading_cols = _nonnegative_int(table.metadata.get("dropped_leading_cols"))
     dropped_trailing_cols = _nonnegative_int(table.metadata.get("dropped_trailing_cols"))
@@ -653,6 +671,42 @@ def _repair_wrapped_header_fragments(
     return repaired
 
 
+def _repair_leading_leaf_fragments_by_geometry(
+    grid: list[list[str]],
+    n_cols: int,
+    row_indices: list[int],
+    metadata: dict[str, object],
+    original_col_indices: list[int | None],
+) -> tuple[list[list[str]], dict[tuple[int, int], list[int]]]:
+    repaired = [list(row) for row in grid]
+    moved_evidence: dict[tuple[int, int], list[int]] = {}
+    for row_idx in row_indices:
+        for col_idx in range(1, n_cols):
+            current = _grid_cell(repaired, row_idx, col_idx)
+            previous = _grid_cell(repaired, row_idx, col_idx - 1)
+            parts = current.split(maxsplit=1)
+            if not previous or len(parts) != 2 or len(parts[0]) > 2 or not any(char.isalnum() for char in parts[0]):
+                continue
+            previous_source_col = original_col_indices[col_idx - 1] if col_idx - 1 < len(original_col_indices) else None
+            current_source_col = original_col_indices[col_idx] if col_idx < len(original_col_indices) else None
+            if previous_source_col is None or current_source_col is None:
+                continue
+            previous_bbox = _metadata_cell_bbox(metadata.get("table_cells"), row_idx, previous_source_col)
+            current_bbox = _metadata_cell_bbox(metadata.get("table_cells"), row_idx, current_source_col)
+            if previous_bbox is None or current_bbox is None:
+                continue
+            previous_center = (previous_bbox[0] + previous_bbox[2]) / 2.0
+            current_center = (current_bbox[0] + current_bbox[2]) / 2.0
+            boundary = (previous_center + current_center) / 2.0
+            first_share = min(0.5, max(0.05, len(parts[0]) / max(1, len(current))))
+            first_center = current_bbox[0] + ((current_bbox[2] - current_bbox[0]) * first_share / 2.0)
+            if current_bbox[0] <= boundary and first_center < boundary:
+                repaired[row_idx][col_idx - 1] = clean_text(f"{previous} {parts[0]}")
+                repaired[row_idx][col_idx] = clean_text(parts[1])
+                moved_evidence.setdefault((row_idx, col_idx - 1), []).append(col_idx)
+    return repaired, moved_evidence
+
+
 def _header_runs_for_groups(
     grid: list[list[str]],
     n_cols: int,
@@ -710,15 +764,39 @@ def _header_runs_for_groups(
             for run in row_runs
             if not (run.col_start == 0 and clean_text(run.label).lower() in LABEL_COLUMN_TOKENS)
         ]
-        if len(value_runs) == 2:
+        has_blank_gap = any(
+            next_run.col_start > run.col_end + 1
+            for run, next_run in zip(value_runs, value_runs[1:], strict=False)
+        )
+        has_text_run = any(
+            run.col_end > run.col_start and run.inference_rule == "explicit_cell_span"
+            for run in value_runs
+        )
+        repeated_single_cell_labels = (
+            len(value_runs) > 1
+            and len({run.label for run in value_runs}) == 1
+            and all(run.col_start == run.col_end for run in value_runs)
+        )
+        if len(value_runs) >= 2 and (has_blank_gap or has_text_run) and not repeated_single_cell_labels:
             expanded: list[_HeaderRun] = []
             for run in row_runs:
-                if run not in value_runs or run.col_start != run.col_end:
+                if run not in value_runs:
                     expanded.append(run)
                     continue
+                if has_text_run:
+                    target_start = max(1, run.col_start - 1)
+                else:
+                    target_start = 1 if run == value_runs[0] and run.col_start > 1 else run.col_start
                 next_starts = [next_run.col_start for next_run in value_runs if next_run.col_start > run.col_start]
-                span_end = min(next_starts) - 1 if next_starts else n_cols - 1
-                expanded.append(run._replace(col_end=span_end, inference_rule="single_cell_blank_span", confidence=0.78))
+                span_end = min(next_starts) - (2 if has_text_run else 1) if next_starts else n_cols - 1
+                expanded.append(
+                    run._replace(
+                        col_start=target_start,
+                        col_end=max(run.col_end, span_end, target_start),
+                        inference_rule="single_cell_blank_span" if run.col_start == run.col_end else run.inference_rule,
+                        confidence=min(run.confidence, 0.78) if span_end > run.col_end else run.confidence,
+                    )
+                )
             row_runs = expanded
         for run in row_runs:
             match_idx = next(

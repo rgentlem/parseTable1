@@ -386,6 +386,7 @@ At the end of normalization, each table has:
 - `body_rows`
 - `row_views`
 - `metadata.cleaned_rows`
+- `metadata.source_col_indices`
 - edge-column repair information
 - header-detection diagnostics
 - indentation diagnostics
@@ -396,6 +397,11 @@ At the end of normalization, each table has:
 This artifact is where the table becomes parser-friendly without yet becoming fully semantic.
 
 That separation matters because many downstream mistakes are really normalization mistakes, not semantic mistakes.
+
+`source_col_indices` preserves the original extracted column behind each
+surviving normalized column when that identity is still computable. Later
+column-schema evidence should use this map before trying to reconstruct column
+identity from repair summaries.
 
 ## Step 4: Build `ColumnHeaderSchema`
 
@@ -417,6 +423,12 @@ If the normalized header rows are absent or only contain title/caption text,
 this stage can infer a header stack from rows above the first strongly numeric
 body row. That fallback is recorded in schema diagnostics and does not rewrite
 `NormalizedTable`.
+
+Within the leaf-header band, the schema builder may use cell coordinates to
+repair a short leading fragment that was extracted into the next column even
+though it lies left of the adjacent leaf boundary. The repair is structural and
+keeps the moved-from cell as evidence; it should not depend on recognizing
+paper-specific words.
 
 The schema is deliberately not a tableone object and does not store summary
 values. It supplies the column axis that later semantic and stored-summary

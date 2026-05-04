@@ -219,6 +219,40 @@ def test_build_schema_for_eke_table2_case_definition_groups() -> None:
     assert schema.flattened_signature[4] == "Periodontitis (EFP Case Definitions) Stage I"
 
 
+def test_build_schema_moves_geometric_leading_leaf_fragment_to_previous_column() -> None:
+    """A short leading fragment left of the column boundary belongs to the prior leaf."""
+    rows = [
+        ["Long table title", "", "", ""],
+        ["Characteristic", "n", "Weighted", "n Periodontitis"],
+        ["", "", "(millions)", "(% - SE)"],
+        ["Total", "10", "1.5", "40 - 2"],
+    ]
+    table = _normalized_table("tbl-leaf-geometry", rows, header_rows=[0], body_rows=[1, 2, 3])
+    table.metadata["row_bounds"] = [(0.0, 5.0), (10.0, 15.0), (16.0, 21.0), (30.0, 35.0)]
+    table.metadata["horizontal_rules"] = [8.0, 25.0]
+    table.metadata["source_col_indices"] = [0, 1, 2, 3]
+    table.metadata["table_cells"] = [
+        [None, None, None, None],
+        [[10.0, 10.0, 70.0, 15.0], [80.0, 10.0, 90.0, 15.0], [100.0, 10.0, 110.0, 15.0], [112.0, 10.0, 162.0, 15.0]],
+        [None, None, [100.0, 16.0, 125.0, 21.0], [130.0, 16.0, 170.0, 21.0]],
+        [[10.0, 30.0, 35.0, 35.0], [80.0, 30.0, 90.0, 35.0], [100.0, 30.0, 125.0, 35.0], [130.0, 30.0, 170.0, 35.0]],
+    ]
+
+    schema = build_column_header_schema(table, _extracted_table("tbl-leaf-geometry", rows))
+
+    assert [leaf.leaf_label for leaf in schema.leaves] == [
+        "Characteristic",
+        "n",
+        "Weighted n (millions)",
+        "Periodontitis (% - SE)",
+    ]
+    moved_evidence_ids = set(schema.leaves[2].evidence_ids)
+    assert any(
+        evidence.evidence_id in moved_evidence_ids and evidence.row_idx == 1 and evidence.col_idx == 3
+        for evidence in schema.evidence
+    )
+
+
 def test_build_schema_degrades_without_header_rows() -> None:
     """A table with no reliable headers should keep leaves and diagnostics."""
     rows = [["Age, years", "52.3", "0.03"], ["Male", "34", "0.10"]]

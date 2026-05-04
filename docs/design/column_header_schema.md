@@ -279,9 +279,11 @@ If it is missing or malformed, return a degraded schema with diagnostics rather
 than crashing.
 
 Raw extraction evidence should be joined by table ID and normalized row/column
-mapping when an `ExtractedTable` is available. Normalization metadata such as
-`dropped_leading_cols`, `dropped_trailing_cols`, and `column_repairs` should be
-used to map normalized columns back to original extracted columns when possible.
+mapping when an `ExtractedTable` is available. Prefer
+`NormalizedTable.metadata["source_col_indices"]` for the normalized-to-original
+column map when it is present. Older or degraded normalized tables may require
+falling back to `dropped_leading_cols`, `dropped_trailing_cols`, and
+`column_repairs`.
 
 ### 2. Choose Leaf Columns
 
@@ -314,6 +316,12 @@ available.
 
 Do not flatten upper group text into `leaf_label`. Upper rows belong in
 `ColumnHeaderGroup` records and relationships.
+
+When geometry shows that a short leading text fragment in a leaf-band cell lies
+to the left of the boundary between adjacent leaf columns, the schema builder
+may attach that fragment to the preceding leaf and keep the source cell as
+evidence. This is a coordinate-based repair for extractor cell-boundary drift,
+not a vocabulary-based header interpretation.
 
 ### 5. Attach Higher Header Rows
 

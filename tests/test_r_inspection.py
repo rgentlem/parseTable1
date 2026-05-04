@@ -255,6 +255,61 @@ def _write_sample_paper_outputs(
             ],
         )
     ]
+    column_header_schemas = [
+        {
+            "schema_id": "tbl-1:column_header_schema",
+            "table_id": "tbl-1",
+            "n_cols": 3,
+            "label_col_idx": 0,
+            "header_rows_considered": [0],
+            "body_rows_considered": [1, 2, 3, 4],
+            "leaf_header_row_idx": 0,
+            "leaves": [
+                {
+                    "leaf_id": "tbl-1:column_header_schema:leaf:0",
+                    "table_id": "tbl-1",
+                    "col_idx": 0,
+                    "is_row_label_column": True,
+                    "is_value_column": False,
+                    "leaf_header_row_idx": 0,
+                    "leaf_label": "Characteristic",
+                    "leaf_name": "Characteristic",
+                    "body_nonempty_row_indices": [1, 2, 3, 4],
+                    "evidence_ids": [],
+                },
+                {
+                    "leaf_id": "tbl-1:column_header_schema:leaf:1",
+                    "table_id": "tbl-1",
+                    "col_idx": 1,
+                    "is_row_label_column": False,
+                    "is_value_column": True,
+                    "leaf_header_row_idx": 0,
+                    "leaf_label": "Overall",
+                    "leaf_name": "Overall",
+                    "body_nonempty_row_indices": [1, 3, 4],
+                    "evidence_ids": [],
+                },
+                {
+                    "leaf_id": "tbl-1:column_header_schema:leaf:2",
+                    "table_id": "tbl-1",
+                    "col_idx": 2,
+                    "is_row_label_column": False,
+                    "is_value_column": True,
+                    "leaf_header_row_idx": 0,
+                    "leaf_label": "DKD",
+                    "leaf_name": "DKD",
+                    "body_nonempty_row_indices": [1, 3, 4],
+                    "evidence_ids": [],
+                },
+            ],
+            "groups": [],
+            "relationships": [],
+            "evidence": [],
+            "flattened_signature": ["Characteristic", "Overall", "DKD"],
+            "diagnostics": [],
+            "confidence": 0.9,
+        }
+    ]
     table1_continuation_groups = [
         {
             "group_id": "table1_continuation_0",
@@ -605,6 +660,7 @@ def _write_sample_paper_outputs(
     _write_json(paper_dir / "table1_continuation_groups.json", table1_continuation_groups)
     _write_json(paper_dir / "table_continuation_column_checks.json", table_continuation_column_checks)
     _write_json(paper_dir / "merged_table1_tables.json", merged_table1_tables)
+    _write_json(paper_dir / "column_header_schemas.json", column_header_schemas)
     _write_json(paper_dir / "table_definitions.json", table_definitions)
     _write_json(paper_dir / "parsed_tables.json", parsed_tables)
     _write_json(paper_dir / "table_profiles.json", table_profiles)
@@ -990,6 +1046,38 @@ def test_r_inspection_shows_table_continuation_column_checks(tmp_path) -> None:
     assert "compatible" in result.stdout
     assert "Column Map" in result.stdout
     assert "coordinate_delta:max_center=0.01:max_width=0.0" in result.stdout
+
+
+def test_r_inspection_shows_all_column_header_trees(tmp_path) -> None:
+    """The R helper should print every column header schema for a paper."""
+    if not _r_dependencies_available():
+        return
+
+    paper_dir = tmp_path / "column_headers" / "papers" / "paper"
+    _write_sample_paper_outputs(paper_dir, include_variable_review=False, include_processing_status=True)
+
+    result = subprocess.run(
+        [
+            "Rscript",
+            "-e",
+            (
+                f'source("{R_SCRIPT}"); '
+                f'out <- show_column_header_trees("{paper_dir}"); '
+                "print(nrow(out)); "
+                "print(out$leaf_label)"
+            ),
+        ],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "Table index 0" in result.stdout
+    assert "[1] 3" in result.stdout
+    assert "Characteristic" in result.stdout
+    assert "Overall" in result.stdout
 
 
 def test_r_inspection_shows_failed_table_processing_and_structure_header(tmp_path) -> None:

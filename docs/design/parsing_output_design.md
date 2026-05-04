@@ -254,6 +254,7 @@ Important current `metadata` keys produced by normalization:
 - `cleaned_rows`
 - `dropped_leading_cols`
 - `dropped_trailing_cols`
+- `source_col_indices`
 - `column_repairs`
 - `header_detection`
 - `indentation_informative`
@@ -265,6 +266,9 @@ Design intent:
 - `cleaned_rows` may support later prompting and debugging, but raw cell text still lives in extraction output
 - `row_views` are the compact per-row features that later heuristic and LLM stages consume
 - saved normalized tables can be reloaded as formal downstream input
+- `source_col_indices` records, for each normalized column, the corresponding
+  original extracted column when that identity is still well-defined; entries
+  may be `null` after repairs that merge, synthesize, or expand columns
 - when wide horizontal boundaries sit just slightly above or below the first extracted text line, header detection may still use them as the top table boundary; minor geometry jitter should not suppress obvious header/body bracketing
 - normalization may apply conservative structural repairs when extraction has clearly split one logical value across adjacent columns
 - normalization may also drop a sparse structural stub column when strong row-pattern evidence shows that the next column is the true row-label field and columns to the right are the value region

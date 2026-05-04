@@ -706,6 +706,7 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
         else:
             dropped_trailing_cols = 0
         raw_rows = [row[:-dropped_trailing_cols] for row in rows_after_leading] if dropped_trailing_cols else rows_after_leading
+    source_col_indices: list[int | None] = list(range(dropped_leading_cols, table.n_cols - dropped_trailing_cols))
     cleaned_rows = [[clean_text(cell) for cell in row] for row in raw_rows]
     embedded_label_count_repair: dict[str, object] | None = None
     raw_rows, cleaned_rows, embedded_label_count_repair = _repair_embedded_label_count_cells(
@@ -720,12 +721,15 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
         )
         if sparse_stub_label_column_repair is not None:
             dropped_leading_cols = 1
+            source_col_indices = [None, *source_col_indices[2:]]
     split_row_label_field_repair: dict[str, object] | None = None
     if sparse_stub_label_column_repair is None:
         raw_rows, cleaned_rows, split_row_label_field_repair = _repair_split_row_label_field_columns(
             raw_rows,
             cleaned_rows,
         )
+        if split_row_label_field_repair is not None:
+            source_col_indices = [None, *source_col_indices[2:]]
     merged_split_label_columns: list[dict[str, int]] = []
     if raw_rows and len(raw_rows[0]) >= 3:
         candidate_split_label_rows = [
@@ -760,6 +764,8 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
         raw_rows,
         cleaned_rows,
     )
+    if extra_wide_value_column_repair is not None:
+        source_col_indices = [source_col_indices[0], *[None for _ in range(len(raw_rows[0]) - 1)]]
     vertical_label_continuation_repair: dict[str, object] | None = None
     raw_rows, cleaned_rows, vertical_label_continuation_repair = _repair_vertical_label_continuations(
         raw_rows,
@@ -913,6 +919,7 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
         if dropped_repaired_cols:
             raw_rows = [[row[col_idx] for col_idx in keep_indices] for row in raw_rows]
             cleaned_rows = [[row[col_idx] for col_idx in keep_indices] for row in cleaned_rows]
+            source_col_indices = [source_col_indices[col_idx] for col_idx in keep_indices]
             header_rows, body_rows, header_detection = detect_header_rows_with_metadata(
                 cleaned_rows,
                 row_bounds=header_row_bounds,
@@ -937,6 +944,7 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
         body_rows,
     )
     if trailing_nondata_after_drop is not None:
+        source_col_indices = source_col_indices[:-1]
         trailing_nondata_column_repair = trailing_nondata_after_drop
         header_rows, body_rows, header_detection = detect_header_rows_with_metadata(
             cleaned_rows,
@@ -962,6 +970,8 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
         body_rows,
     )
     if sparse_nonmatrix_column_repairs:
+        dropped_sparse_cols = {repair["dropped_col_idx"] for repair in sparse_nonmatrix_column_repairs}
+        source_col_indices = [source for col_idx, source in enumerate(source_col_indices) if col_idx not in dropped_sparse_cols]
         header_rows, body_rows, header_detection = detect_header_rows_with_metadata(
             cleaned_rows,
             row_bounds=header_row_bounds,
@@ -985,6 +995,7 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
             body_rows,
         )
         if trailing_nondata_after_drop is not None:
+            source_col_indices = source_col_indices[:-1]
             trailing_nondata_column_repair = trailing_nondata_after_drop
             header_rows, body_rows, header_detection = detect_header_rows_with_metadata(
                 cleaned_rows,
@@ -1019,6 +1030,7 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
         "cleaned_rows": cleaned_rows,
         "dropped_leading_cols": dropped_leading_cols,
         "dropped_trailing_cols": dropped_trailing_cols,
+        "source_col_indices": source_col_indices,
         "column_repairs": {
             "merged_columns": merged_columns,
             "split_uncertainty_columns": split_uncertainty_column_repairs,

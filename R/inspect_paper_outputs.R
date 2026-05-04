@@ -373,6 +373,31 @@ show_column_header_tree <- function(paper_dir, table_index = 0L, table_number = 
   invisible(out)
 }
 
+show_column_header_trees <- function(paper_dir, table_number = NULL) {
+  outputs <- load_paper_outputs(paper_dir)
+  schemas <- read_json_file(file.path(paper_dir, "column_header_schemas.json"))
+  table_indices <- seq_along(schemas) - 1L
+  if (!is.null(table_number)) {
+    wanted <- as.integer(table_number)
+    table_indices <- table_indices[vapply(table_indices, function(table_index) {
+      table <- outputs$normalized_tables[[table_index + 1L]]
+      identical(as.integer(table$metadata$table_number %||% NA_integer_), wanted)
+    }, logical(1))]
+  }
+  rows <- lapply(table_indices, function(table_index) {
+    cat(sprintf("\nTable index %s\n", as.integer(table_index)))
+    out <- show_column_header_tree(paper_dir, table_index = table_index)
+    if (nrow(out) == 0) {
+      return(out)
+    }
+    cbind(table_index = as.integer(table_index), out, stringsAsFactors = FALSE)
+  })
+  out <- if (length(rows)) do.call(rbind, rows) else {
+    data.frame(table_index = integer(), col_idx = integer(), leaf_label = character(), header_path = character())
+  }
+  invisible(out)
+}
+
 table_number_for_table <- function(table) {
   metadata <- table$metadata %||% list()
   signals <- metadata$signals %||% list()
