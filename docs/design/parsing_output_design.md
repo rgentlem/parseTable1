@@ -439,11 +439,11 @@ Design components:
 - `paper_variable_inventory.json`
   paper-level variable-search artifact with broad mention-level records and a stricter consolidated candidate-variable list
 - `table_contexts/*.json`
-  per-table retrieval bundles keyed by `table_id` and `table_index`
+  per-table retrieval bundles keyed by `table_id` and internal extraction-order `table_index`; R-facing inspection should resolve these by the paper's `table_number` where available
 
 `TableContext` design components:
 
-- `table_id`, `table_index`, `table_label`
+- `table_id`, internal `table_index`, `table_label`
 - `title`, `caption`
 - `row_terms`
 - `column_terms`

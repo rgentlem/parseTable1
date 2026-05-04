@@ -207,23 +207,22 @@ For paper-level inspection there is also:
 ```r
 source("R/inspect_paper_outputs.R")
 summarize_table_processing("outputs/papers/cobaltpaper")
-show_table_processing("outputs/papers/cobaltpaper", table_index = 0L)
-show_table_structure("outputs/papers/cobaltpaper", table_index = 0L)
 show_table_structure("outputs/papers/cobaltpaper", table_number = 1L)
+show_table_processing("outputs/papers/cobaltpaper", table_number = 1L)
 show_paper_variable_candidates("outputs/papers/cobaltpaper")
 show_paper_variable_mentions("outputs/papers/cobaltpaper", source_type = "text_based", mention_role = "variable")
-show_table_context("outputs/papers/cobaltpaper", table_index = 0L)
+show_table_context("outputs/papers/cobaltpaper", table_number = 1L)
 ```
 
-Use `table_number = 1L` when you want the published Table 1 rather than the first extracted table-like object.
+Use `table_number` for public inspection. Extraction-order indices are retained only as low-level provenance/debug handles.
 
 If `review-variable-plausibility` has been run:
 
 ```r
 source("R/inspect_paper_outputs.R")
 outputs <- load_paper_outputs("outputs/papers/cobaltpaper")
-llm_variable_plausibility_df(outputs, table_index = 0L)
-show_llm_variable_plausibility("outputs/papers/cobaltpaper", table_index = 0L)
+llm_variable_plausibility_df(outputs, table_number = 1L)
+show_llm_variable_plausibility("outputs/papers/cobaltpaper", table_number = 1L)
 list_llm_variable_plausibility_debug_runs("outputs/papers/cobaltpaper")
 summarize_llm_variable_plausibility_monitoring("outputs/papers/cobaltpaper")
 ```

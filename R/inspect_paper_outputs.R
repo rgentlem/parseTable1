@@ -258,14 +258,39 @@ table_definition_by_index <- function(outputs, table_index = 0L) {
   table
 }
 
-table_number_for_normalized_table <- function(table) {
+table_number_for_table <- function(table) {
   metadata <- table$metadata %||% list()
   signals <- metadata$signals %||% list()
   value <- metadata$table_number %||% signals$caption_table_number %||% NULL
   if (is.null(value) || length(value) == 0 || is.na(value)) {
-    return(NA_integer_)
+    text <- paste(
+      as.character(table$title %||% ""),
+      as.character(table$caption %||% ""),
+      sep = " "
+    )
+    match <- regexpr("\\b[Tt]able\\s+([0-9]+)\\b", text, perl = TRUE)
+    if (match < 0L) {
+      return(NA_integer_)
+    }
+    matched <- regmatches(text, match)
+    return(as.integer(sub(".*\\b[Tt]able\\s+([0-9]+)\\b.*", "\\1", matched, perl = TRUE)))
   }
   as.integer(value)
+}
+
+table_number_for_normalized_table <- function(table) {
+  table_number_for_table(table)
+}
+
+table_number_for_outputs <- function(outputs, table_index) {
+  idx <- as.integer(table_index) + 1L
+  table_number_for_table(
+    (outputs$normalized_tables %||% list())[[idx]] %||%
+      (outputs$extracted_tables %||% list())[[idx]] %||%
+      (outputs$table_definitions %||% list())[[idx]] %||%
+      (outputs$parsed_tables %||% list())[[idx]] %||%
+      list()
+  )
 }
 
 table_index_by_number <- function(outputs, table_number) {
@@ -292,11 +317,14 @@ table_index_by_number <- function(outputs, table_number) {
   as.integer(matches[[1]] - 1L)
 }
 
-resolve_table_index <- function(outputs, table_index = 0L, table_number = NULL) {
+resolve_table_index <- function(outputs, table_number = 1L, table_index = NULL) {
+  if (!is.null(table_index)) {
+    return(as.integer(table_index))
+  }
   if (!is.null(table_number)) {
     return(table_index_by_number(outputs, table_number))
   }
-  as.integer(table_index)
+  stop("Provide table_number for public inspection, or table_index for low-level debugging.", call. = FALSE)
 }
 
 list_llm_variable_plausibility_debug_runs <- function(paper_dir) {
@@ -480,7 +508,7 @@ summarize_table1_continuations <- function(paper_dir) {
       decision_reason = as.character(group$decision_reason %||% ""),
       confidence = as.numeric(group$confidence %||% NA_real_),
       column_signature_match = as.logical(group$column_signature_match %||% FALSE),
-      source_table_indices = paste(as.character(unlist(group$source_table_indices %||% list())), collapse = ","),
+      table_number = as.integer(group$table_number %||% NA_integer_),
       source_table_ids = paste(as.character(unlist(group$source_table_ids %||% list())), collapse = " | "),
       diagnostics = paste(as.character(unlist(group$diagnostics %||% list())), collapse = " | "),
       stringsAsFactors = FALSE
@@ -493,7 +521,7 @@ summarize_table1_continuations <- function(paper_dir) {
       decision_reason = character(),
       confidence = numeric(),
       column_signature_match = logical(),
-      source_table_indices = character(),
+      table_number = integer(),
       source_table_ids = character(),
       diagnostics = character(),
       stringsAsFactors = FALSE
@@ -600,7 +628,7 @@ summarize_table_processing <- function(paper_dir) {
     columns <- definition$column_definition$columns %||% definition$columns %||% list()
     attempts <- status_record$attempts %||% list()
     data.frame(
-      table_index = as.integer(table_index),
+      table_number = table_number_for_outputs(outputs, table_index),
       table_id = table_id,
       title = as.character(
         definition$title %||%
@@ -639,7 +667,7 @@ summarize_table_processing <- function(paper_dir) {
 
   summary_df <- if (length(rows) == 0) {
     data.frame(
-      table_index = integer(),
+      table_number = integer(),
       table_id = character(),
       title = character(),
       status = character(),
@@ -673,9 +701,10 @@ summarize_table_processing <- function(paper_dir) {
   invisible(summary_df)
 }
 
-show_table_processing <- function(paper_dir, table_index = 0L, table_number = NULL) {
+show_table_processing <- function(paper_dir, table_number = 1L, table_index = NULL) {
   outputs <- load_paper_outputs(paper_dir)
-  table_index <- resolve_table_index(outputs, table_index = table_index, table_number = table_number)
+  table_index <- resolve_table_index(outputs, table_number = table_number, table_index = table_index)
+  resolved_table_number <- table_number_for_outputs(outputs, table_index)
   normalized <- normalized_table_by_index(outputs, table_index)
   definition <- table_definition_by_index(outputs, table_index)
   parsed <- parsed_table_by_index(outputs, table_index)
@@ -685,7 +714,11 @@ show_table_processing <- function(paper_dir, table_index = 0L, table_number = NU
     table_id = as.character(definition$table_id %||% normalized$table_id %||% parsed$table_id %||% "")
   )
 
-  cat(sprintf("Table processing for table_index=%s\n", as.integer(table_index)))
+  if (is.na(resolved_table_number)) {
+    cat("Table processing for unnumbered table\n")
+  } else {
+    cat(sprintf("Table processing for table_number=%s\n", as.integer(resolved_table_number)))
+  }
   cat(sprintf("table_id: %s\n", definition$table_id %||% normalized$table_id %||% parsed$table_id %||% ""))
   if (!is.null(definition$title) && nzchar(definition$title)) {
     cat(sprintf("title: %s\n", definition$title))
@@ -744,9 +777,10 @@ show_table_processing <- function(paper_dir, table_index = 0L, table_number = NU
   invisible(status_record)
 }
 
-show_parse_quality <- function(paper_dir, table_index = 0L, table_number = NULL) {
+show_parse_quality <- function(paper_dir, table_number = 1L, table_index = NULL) {
   outputs <- load_paper_outputs(paper_dir)
-  table_index <- resolve_table_index(outputs, table_index = table_index, table_number = table_number)
+  table_index <- resolve_table_index(outputs, table_number = table_number, table_index = table_index)
+  resolved_table_number <- table_number_for_outputs(outputs, table_index)
   normalized <- normalized_table_by_index(outputs, table_index)
   report <- parse_quality_report_by_index(
     outputs,
@@ -758,7 +792,11 @@ show_parse_quality <- function(paper_dir, table_index = 0L, table_number = NULL)
   }
 
   summary <- report$summary %||% list()
-  cat(sprintf("Parse quality for table_index=%s\n", as.integer(table_index)))
+  if (is.na(resolved_table_number)) {
+    cat("Parse quality for unnumbered table\n")
+  } else {
+    cat(sprintf("Parse quality for table_number=%s\n", as.integer(resolved_table_number)))
+  }
   cat(sprintf("table_id: %s\n", as.character(report$table_id %||% normalized$table_id %||% "")))
   cat(sprintf("total_body_rows: %s\n", as.integer(summary$total_body_rows %||% 0L)))
   cat(sprintf("unknown_row_count: %s\n", as.integer(summary$unknown_row_count %||% 0L)))
@@ -786,9 +824,10 @@ show_parse_quality <- function(paper_dir, table_index = 0L, table_number = NULL)
   invisible(report)
 }
 
-show_table_structure <- function(paper_dir, table_index = 0L, table_number = NULL, max_rows = NULL) {
+show_table_structure <- function(paper_dir, table_number = 1L, table_index = NULL, max_rows = NULL) {
   outputs <- load_paper_outputs(paper_dir)
-  table_index <- resolve_table_index(outputs, table_index = table_index, table_number = table_number)
+  table_index <- resolve_table_index(outputs, table_number = table_number, table_index = table_index)
+  resolved_table_number <- table_number_for_outputs(outputs, table_index)
   normalized <- normalized_table_by_index(outputs, table_index)
   definition <- table_definition_by_index(outputs, table_index)
   status_record <- table_processing_status_by_index(
@@ -803,7 +842,11 @@ show_table_structure <- function(paper_dir, table_index = 0L, table_number = NUL
     cleaned_rows <- cleaned_rows[seq_len(min(length(cleaned_rows), max_rows))]
   }
 
-  cat(sprintf("table_index: %s\n", as.integer(table_index)))
+  if (is.na(resolved_table_number)) {
+    cat("table_number: NA\n")
+  } else {
+    cat(sprintf("table_number: %s\n", as.integer(resolved_table_number)))
+  }
   cat(sprintf("table_id: %s\n", definition$table_id %||% normalized$table_id %||% ""))
   if (!is.null(definition$title) && nzchar(definition$title)) {
     cat(sprintf("title: %s\n", definition$title))
@@ -912,10 +955,11 @@ llm_variable_plausibility_review_by_index <- function(outputs, table_index = 0L)
   review_matches[[1]]
 }
 
-llm_variable_plausibility_df <- function(outputs, table_index = NULL) {
+llm_variable_plausibility_df <- function(outputs, table_number = NULL, table_index = NULL) {
   reviews <- outputs$table_variable_plausibility_llm %||% list()
-  if (!is.null(table_index)) {
-    reviews <- list(llm_variable_plausibility_review_by_index(outputs, table_index = table_index))
+  if (!is.null(table_number) || !is.null(table_index)) {
+    resolved_table_index <- resolve_table_index(outputs, table_number = table_number, table_index = table_index)
+    reviews <- list(llm_variable_plausibility_review_by_index(outputs, table_index = resolved_table_index))
   }
 
   rows <- list()
@@ -927,10 +971,11 @@ llm_variable_plausibility_df <- function(outputs, table_index = NULL) {
       logical(1)
     ))
     table_index_value <- if (length(matching_indices) == 0) NA_integer_ else as.integer(matching_indices[[1]] - 1L)
+    table_number_value <- if (is.na(table_index_value)) NA_integer_ else table_number_for_outputs(outputs, table_index_value)
     for (variable in review$variables %||% list()) {
       levels <- variable$levels %||% list()
       rows[[length(rows) + 1L]] <- data.frame(
-        table_index = table_index_value,
+        table_number = table_number_value,
         table_id = review_table_id,
         row_start = as.integer(variable$row_start %||% NA_integer_),
         row_end = as.integer(variable$row_end %||% NA_integer_),
@@ -951,7 +996,7 @@ llm_variable_plausibility_df <- function(outputs, table_index = NULL) {
 
   if (length(rows) == 0) {
     return(data.frame(
-      table_index = integer(),
+      table_number = integer(),
       table_id = character(),
       row_start = integer(),
       row_end = integer(),
@@ -1060,8 +1105,9 @@ show_variable_plausibility_review <- function(review, normalized_table, table_de
   ))
 }
 
-show_llm_variable_plausibility <- function(paper_dir, table_index = 0L) {
+show_llm_variable_plausibility <- function(paper_dir, table_number = 1L, table_index = NULL) {
   outputs <- load_paper_outputs(paper_dir)
+  table_index <- resolve_table_index(outputs, table_number = table_number, table_index = table_index)
   review <- llm_variable_plausibility_review_by_index(outputs, table_index = table_index)
   normalized <- normalized_table_by_index(outputs, table_index = table_index)
   definition <- table_definition_by_index(outputs, table_index = table_index)
@@ -1069,12 +1115,20 @@ show_llm_variable_plausibility <- function(paper_dir, table_index = 0L) {
 }
 
 summarize_llm_variable_plausibility_monitoring <- function(paper_dir, run_id = NULL) {
+  outputs <- load_paper_outputs(paper_dir)
   loaded <- read_llm_variable_plausibility_monitoring(paper_dir, run_id = run_id)
   report <- loaded$monitoring
   items <- report$items %||% list()
   rows <- lapply(items, function(x) {
+    matching_indices <- which(vapply(
+      outputs$table_definitions %||% list(),
+      function(y) identical(as.character(y$table_id %||% ""), as.character(x$table_id %||% "")),
+      logical(1)
+    ))
+    table_index_value <- if (length(matching_indices) == 0) NA_integer_ else as.integer(matching_indices[[1]] - 1L)
+    table_number_value <- if (is.na(table_index_value)) NA_integer_ else table_number_for_outputs(outputs, table_index_value)
     data.frame(
-      table_index = as.integer(x$table_index %||% -1L),
+      table_number = table_number_value,
       table_id = as.character(x$table_id %||% ""),
       table_family = as.character(x$table_family %||% ""),
       eligible_for_review = as.logical(x$eligible_for_review %||% FALSE),
@@ -1090,7 +1144,7 @@ summarize_llm_variable_plausibility_monitoring <- function(paper_dir, run_id = N
   })
   summary_df <- if (length(rows) == 0) {
     data.frame(
-      table_index = integer(),
+      table_number = integer(),
       table_id = character(),
       table_family = character(),
       eligible_for_review = logical(),
@@ -1189,16 +1243,21 @@ show_paper_references <- function(paper_dir, reference_kind = NULL, reference_la
   invisible(references)
 }
 
-show_table_context <- function(paper_dir, table_index = 0L, table_number = NULL, match_type = NULL) {
+show_table_context <- function(paper_dir, table_number = 1L, table_index = NULL, match_type = NULL) {
   outputs <- load_paper_outputs(paper_dir)
-  table_index <- resolve_table_index(outputs, table_index = table_index, table_number = table_number)
+  table_index <- resolve_table_index(outputs, table_number = table_number, table_index = table_index)
+  resolved_table_number <- table_number_for_outputs(outputs, table_index)
   context <- table_context_by_index(outputs, table_index)
   passages <- context$passages %||% list()
   if (!is.null(match_type)) {
     passages <- Filter(function(x) identical(x$match_type %||% "", match_type), passages)
   }
 
-  cat(sprintf("Table context for table_index=%s\n", as.integer(table_index)))
+  if (is.na(resolved_table_number)) {
+    cat("Table context for unnumbered table\n")
+  } else {
+    cat(sprintf("Table context for table_number=%s\n", as.integer(resolved_table_number)))
+  }
   if (!is.null(context$table_label)) {
     cat(sprintf("Label: %s\n", context$table_label))
   }

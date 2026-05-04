@@ -604,6 +604,7 @@ When a parse looks wrong, inspect the outputs in this order.
 
 3. `table1_continuation_groups.json` and `merged_table1_tables.json`
    If one logical Table 1 spans pages, inspect these to see whether the continuation was detected, whether the column signatures matched, and how merged rows map back to source rows.
+   Public R inspection should use the paper's `table_number` as the conceptual selector; extraction-order indices are retained only for low-level provenance/debug mapping.
 
 4. `table_profiles.json`
    If the table was routed to the wrong family, the problem is in routing.
