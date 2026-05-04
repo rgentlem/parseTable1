@@ -112,11 +112,11 @@ Each profile should contain at least:
 
 `TableProfile` should explain:
 
-- what parser family a table belongs to
+- what currently implemented parser route can handle the table
 - whether semantic LLM work is worth doing
 - why that decision was made
 
-It should be a direct deterministic artifact, not an implicit branch hidden in CLI code.
+It should be a direct deterministic artifact, not an implicit branch hidden in CLI code. It is provisional route metadata, not a second table taxonomy. As the paper-level table inventory matures, route selection should be derived from or checked against the broader `table_category` decision.
 
 ## 4. Routing Rules
 

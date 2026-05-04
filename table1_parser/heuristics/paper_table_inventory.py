@@ -42,6 +42,11 @@ GENERAL_TITLE_PATTERN = re.compile(
 INLINE_INTERVAL_PATTERN = re.compile(
     r"^-?\d+(?:\.\d+)?\s*[\(\[]\s*-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?\s*[\)\]]$"
 )
+PLAIN_NUMERIC_VALUE_PATTERN = re.compile(r"^(?:[<>]=?\s*)?-?\d+(?:,\d{3})*(?:\.\d+)?%?$")
+THRESHOLD_OR_STAT_HEADER_PATTERN = re.compile(
+    r"(?:[‡<>]=?\s*\d|\b(?:severity|extent|prevalence|weighted|mean|median|SE|standard error|%)\b)",
+    re.IGNORECASE,
+)
 
 
 def build_paper_table_inventory(
@@ -140,29 +145,46 @@ def build_paper_table_inventory(
         pattern_counts: dict[str, int] = {}
         inline_interval_count = 0
         populated_value_count = 0
+        plain_numeric_value_count = 0
+        dense_numeric_body_row_count = 0
         if normalized is not None:
             for row_view in normalized.row_views:
+                populated_trailing_values = 0
+                plain_numeric_trailing_values = 0
                 for value in row_view.raw_cells[1:]:
                     cleaned_value = clean_text(value)
                     if not cleaned_value:
                         continue
                     populated_value_count += 1
+                    populated_trailing_values += 1
+                    if PLAIN_NUMERIC_VALUE_PATTERN.fullmatch(cleaned_value):
+                        plain_numeric_value_count += 1
+                        plain_numeric_trailing_values += 1
                     detected = detect_value_pattern(cleaned_value).pattern
                     pattern_counts[detected] = pattern_counts.get(detected, 0) + 1
                     if INLINE_INTERVAL_PATTERN.fullmatch(cleaned_value):
                         inline_interval_count += 1
+                if populated_trailing_values >= 4 and plain_numeric_trailing_values >= max(
+                    4,
+                    int(populated_trailing_values * 0.75),
+                ):
+                    dense_numeric_body_row_count += 1
         descriptive_value_count = sum(pattern_counts.get(name, 0) for name in ("count_pct", "mean_sd", "median_iqr", "n_only"))
         count_value_count = pattern_counts.get("count_pct", 0) + pattern_counts.get("n_only", 0)
         descriptive_fraction = descriptive_value_count / populated_value_count if populated_value_count else 0.0
         count_fraction = count_value_count / populated_value_count if populated_value_count else 0.0
+        plain_numeric_fraction = plain_numeric_value_count / populated_value_count if populated_value_count else 0.0
 
         variable_count = len(definition.variables) if definition is not None else 0
         columns = definition.column_definition.columns if definition is not None else []
         usable_column_count = sum(column.inferred_role != "unknown" for column in columns)
         effect_header_signal = bool(EFFECT_PHRASE_PATTERN.search(header_text) or EFFECT_ABBREVIATION_PATTERN.search(header_text))
         ci_header_signal = bool(CI_HEADER_PATTERN.search(header_text))
+        threshold_or_stat_header_signal = bool(THRESHOLD_OR_STAT_HEADER_PATTERN.search(header_text))
         model_signal = bool(MODEL_PATTERN.search(" ".join([title_caption_text, header_text])))
         p_value_column_signal = any(column.inferred_role == "p_value" for column in columns)
+        column_repairs = normalized_metadata.get("column_repairs", {}) if isinstance(normalized_metadata.get("column_repairs", {}), dict) else {}
+        extra_wide_value_column_repaired = bool(column_repairs.get("extra_wide_value_column"))
         quality_error_codes = {
             diagnostic.code
             for diagnostic in (quality.table_diagnostics if quality is not None else [])
@@ -257,6 +279,21 @@ def build_paper_table_inventory(
         if count_fraction >= 0.65 and count_value_count >= 6:
             data_score += 0.35
             data_evidence.append("mostly_count_or_frequency_values")
+        if (
+            normalized is not None
+            and normalized.n_cols >= 5
+            and plain_numeric_fraction >= 0.70
+            and plain_numeric_value_count >= 12
+            and dense_numeric_body_row_count >= 3
+        ):
+            data_score += 0.40
+            data_evidence.append("mostly_numeric_matrix_values")
+        if normalized is not None and normalized.n_cols >= 5 and threshold_or_stat_header_signal:
+            data_score += 0.15
+            data_evidence.append("threshold_or_statistic_column_headers")
+        if extra_wide_value_column_repaired:
+            data_score += 0.15
+            data_evidence.append("extra_wide_value_column_repaired")
         if normalized is not None and normalized.n_cols >= 3 and len(normalized.body_rows) >= 3 and variable_count <= 2:
             data_score += 0.25
             data_evidence.append("matrix_like_rows_and_columns")

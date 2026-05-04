@@ -308,7 +308,7 @@ Normalization can merge this two-column row-label field when strong row-pattern 
 
 - the second column repeatedly contains row-label fragments
 - data-like values begin to the right of the first two columns
-- both shifted rows and merged-label rows are present
+- shifted rows or many merged first-plus-second label fragments are present
 
 When this fires, normalization:
 
@@ -318,7 +318,30 @@ When this fires, normalization:
 
 This repair preserves raw extracted text in `ExtractedTable`; it only changes the parser-facing normalized grid.
 
-#### 3.10 Expand Extra-Wide Stacked Value Columns
+#### 3.10 Repair Embedded Label Tails And Vertical Continuations
+
+Some extracted grids keep the visual value columns intact but split row labels awkwardly.
+
+Two recurring cases are:
+
+- a label tail is embedded in the first value cell with a count, for example `<100%` plus `FPL 625`
+- a row label wraps onto the next extracted row while the values stay on the first row, for example `All (NHANES` followed by `2009 to 2012)`
+
+Normalization can repair these only when the row context is strong:
+
+- embedded label-tail repair requires a label-like first cell, a label-tail-plus-count pattern in the first value cell, and additional value-like cells to the right
+- vertical continuation repair requires a label-only row after a valued row plus punctuation, footnote, lowercase/digit-start, or phrase-continuation cues
+
+When these fire, normalization:
+
+- moves the embedded label tail back into the row-label cell while leaving the count in the value column
+- appends vertical continuation text to the preceding valued row's label
+- suppresses consumed continuation rows from `body_rows`
+- records repair evidence in `metadata.column_repairs.embedded_label_count_cells` and `metadata.column_repairs.vertical_label_continuations`
+
+These repairs improve row-label integrity before row signatures and variable grouping are built. They do not assign a table category by themselves.
+
+#### 3.11 Expand Extra-Wide Stacked Value Columns
 
 Some upright, visually wide data tables can be flattened by extraction into a row-label cell plus one broad value-region cell. The visual table is still multi-column; the broad extracted cell may preserve those visual columns as a stable newline-delimited stack.
 
@@ -337,13 +360,13 @@ When this fires, normalization:
 
 This treats the visual table as a normal multi-column table while preserving the original collapsed cell text in `ExtractedTable`.
 
-#### 3.11 Drop Columns Emptied By Repair
+#### 3.12 Drop Columns Emptied By Repair
 
 If a split-value repair empties a helper column across the table, normalization can drop that now-empty column and rerun header detection on the repaired grid.
 
 This keeps the normalized grid closer to the logical table structure that the later parser actually wants.
 
-#### 3.12 Decide Whether Indentation Is Informative
+#### 3.13 Decide Whether Indentation Is Informative
 
 For some papers, first-column indentation clearly helps distinguish parent rows from level rows.
 
@@ -396,15 +419,20 @@ This stage does not currently feed the merged rows into `TableDefinition` or `Pa
 The default parser still defines and parses the original normalized tables separately.
 That constraint keeps this change useful for inspection without silently changing downstream table semantics.
 
-## Step 5: Table Routing With `TableProfile`
+## Step 5: Provisional Table Routing With `TableProfile`
 
 Once a table has been normalized, the parser builds a `TableProfile`.
 
-This is a routing stage. It asks questions like:
+This is an early routing stage. It asks questions like:
 
-- does this table look descriptive or estimate-like?
+- does this table look like one of the parser families currently implemented?
+- should the current Table 1-style semantic parser run?
 
 The current repository is centered on Table 1 style descriptive tables, but mixed-table papers exist. `TableProfile` is the stage that prevents the system from pretending every table belongs to the same family.
+
+`TableProfile` is narrower than the paper table inventory because it is built earlier and currently represents parser-route support, not the complete table taxonomy. A wide numeric data matrix can still have `table_family = "unknown"` if it is neither a descriptive-characteristics table nor an estimate-results table. The broader `paper_table_inventory.json` stage can still categorize that same object as `data_presentation` using shape, numeric density, threshold/statistic headers, and normalization repair evidence.
+
+The intended long-term direction is that the broad table category drives route selection once that category is available. In other words, `table_family` should be treated as a provisional route signal and should remain consistent with `table_category`, not as an unrelated second concept.
 
 Why this stage exists:
 

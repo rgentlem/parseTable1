@@ -73,7 +73,7 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Extraction | `ExtractedTable` | Written now as `extracted_tables.json` by `extract` and `parse` | Preserve raw table grid and cell provenance |
 | Normalization | `NormalizedTable` | Written now as `normalized_tables.json` by `normalize` and `parse` | Clean rows, detect headers, derive row features |
 | Table 1 continuation inspection | `Table1ContinuationGroup`, `NormalizedTable` | Written now as `table1_continuation_groups.json` and `merged_table1_tables.json` by `parse` | Persist artifact-only grouping and merged normalized rows for explicit Table 1 continuations without altering the main parse |
-| Table routing | `TableProfile` | Written now as `table_profiles.json` by `parse` | Persist deterministic family routing decisions |
+| Table routing | `TableProfile` | Written now as `table_profiles.json` by `parse` | Persist provisional deterministic parser-route decisions |
 | Paper table inventory | `PaperTableInventory`, `PaperTableRecord` | Written now as `paper_table_inventory.json` by `parse` | Persist one deterministic taxonomy prediction per table-like object |
 | Table definition | `TableDefinition` | Written now as `table_definitions.json` by `parse` | Persist value-free row-variable, level, and column semantics |
 | Paper context | `PaperSection`, `PaperVisual`, `PaperVisualReference`, `TableContext` | Written now as `paper_markdown.md`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, and `table_contexts/*.json` by `parse` | Persist markdown sections, actual in-paper visual objects, anchored table/figure references, and per-table retrieval bundles, with only conservative glyph repair in the markdown text |
@@ -87,7 +87,8 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 
 Design note for future multitable support:
 
-- after `NormalizedTable`, mixed papers may route through a `TableProfile` stage before final semantics are chosen
+- after `NormalizedTable`, mixed papers may route through a provisional `TableProfile` stage before final semantics are chosen
+- long term, parser route should be derived from or explicitly consistent with the broader `paper_table_inventory.json` table category; it should not become an unrelated second taxonomy
 - descriptive characteristic tables may continue using `TableDefinition` and `ParsedTable`
 - estimate-result tables may later use sibling artifacts such as `EstimateTableDefinition` and `ParsedEstimateTable`
 - this family split should be explicit in schemas and persisted files rather than hidden inside one overloaded parser
@@ -266,6 +267,8 @@ Design intent:
 - normalization may apply conservative structural repairs when extraction has clearly split one logical value across adjacent columns
 - normalization may also drop a sparse structural stub column when strong row-pattern evidence shows that the next column is the true row-label field and columns to the right are the value region
 - normalization may also merge two adjacent row-label field columns when the second column repeatedly contains label fragments and data-like values clearly begin to the right
+- normalization may also move an embedded count out of the first value column when that cell contains the tail of a row label plus a count-like value, recording evidence in `metadata.column_repairs.embedded_label_count_cells`
+- normalization may also merge label-only continuation rows into the preceding valued row when punctuation, footnote, or phrase-continuation cues show that the visual row label wrapped vertically, recording evidence in `metadata.column_repairs.vertical_label_continuations`
 - normalization may also expand a collapsed extracted value-region cell back into many visual value columns when that cell repeatedly contains a stable newline-delimited stack of numeric values; this repairs an extractor artifact where an upright wide data table has been flattened in the raw grid even though the visual table is multi-column
 - those repairs should be driven by row-style expectations and body-value patterns, not by paper-specific header templates
 - normalization may also repair a small set of extractor-facing glyph-to-Unicode failures in parser-facing text, such as a broken replacement character before a numeric threshold becoming `<=`
@@ -279,7 +282,9 @@ Conservative repair rule:
 - when a broad extracted value cell contains a repeated fixed-width stack of mostly numeric tokens across several rows, normalization may split that stack into separate value columns, repeat coarser shared header labels over their leaf columns, and record the evidence in `metadata.column_repairs.extra_wide_value_column`
 - when that repair reveals a strongly header-like first body row, normalization may promote that row into `header_rows`
 - when a first column is sparse, value-free, and mostly section-like while the second column is dense and label-like, normalization may suppress pure stub rows, shift the second column into the row-label position, and merge first-plus-second labels for rows where both pieces form one label
-- when a single logical row-label field is split across the first two columns, normalization may shift second-column level labels left and merge first-plus-second label fragments before row signatures are built
+- when a single logical row-label field is split across the first two columns, normalization may shift second-column level labels left and merge first-plus-second label fragments before row signatures are built; this can be supported by shifted label rows or by many merged first-plus-second label fragments with values clearly starting to the right
+- when only the tail of a label is embedded in the first value cell, normalization may merge that label tail back into column 0 while leaving the count in the value column
+- when a label-only continuation row wraps below a valued row, normalization may append the continuation text to the preceding row label and suppress the continuation row from `body_rows`
 - repair diagnostics should live in `metadata` rather than replacing the canonical `NormalizedTable` fields
 
 ## 3. Table 1 Continuation Inspection Artifacts
@@ -823,6 +828,8 @@ Design intent:
 - keep continuation as `continuation_of_table_number`, with `null` when the table is not a continuation
 - choose only one max-score category and persist only the chosen category, confidence, and evidence
 - prioritize effect or estimate columns for `analysis_outputs`; p-values and model labels alone should not override a demographic-description classification
+- recognize wide numeric matrices with threshold/statistic headers as `data_presentation`, especially when normalization has already expanded an extra-wide value column into visual value columns
+- treat `table_category` as the broader concept that should drive parser-route selection once it is available; current `table_family` output is an earlier provisional route signal, not an independent semantic category
 - keep this artifact deterministic and computable so R can expose it as a data frame or print method later
 
 ## Trace Wrappers vs Canonical Payloads

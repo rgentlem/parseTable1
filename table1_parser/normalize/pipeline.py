@@ -18,6 +18,9 @@ ALNUM_PATTERN = re.compile(r"[A-Za-z0-9]")
 COUNT_PCT_STYLE_PATTERN = re.compile(r"\bn\s*\(\s*%\s*\)")
 PERCENT_FRAGMENT_PATTERN = re.compile(r"^\(\s*\d+(?:\.\d+)?%\s*\)$")
 STACKED_CELL_LINE_PATTERN = re.compile(r"(?:\r\n|\r|\n)+")
+EMBEDDED_LABEL_COUNT_PATTERN = re.compile(r"^(?P<label>.*[A-Za-z][A-Za-z/%() .,\-]*)\s+(?P<count>\d[\d,]*)$")
+FOOTNOTE_MARK_PATTERN = re.compile(r"[†‡§¶*]")
+NA_LIKE_VALUE_PATTERN = re.compile(r"^(?:N/?A|NR|not reported)$", re.IGNORECASE)
 
 
 def _is_noninformative_cell(value: str) -> bool:
@@ -33,7 +36,19 @@ def _is_noninformative_cell(value: str) -> bool:
 def _looks_like_label_cell(value: str) -> bool:
     """Return whether a cell resembles a meaningful row-label cell."""
     cleaned = clean_text(value)
+    if NA_LIKE_VALUE_PATTERN.fullmatch(cleaned):
+        return False
     return bool(cleaned) and bool(ALPHA_PATTERN.search(cleaned)) and len(cleaned) >= 2
+
+
+def _looks_like_label_prefix_cell(value: str) -> bool:
+    """Return whether a first-column fragment can be part of a row label."""
+    cleaned = clean_text(value)
+    if not cleaned or not ALNUM_PATTERN.search(cleaned):
+        return False
+    if NA_LIKE_VALUE_PATTERN.fullmatch(cleaned):
+        return False
+    return detect_value_pattern(cleaned).pattern == "unknown"
 
 
 def _has_data_like_values(values: list[str]) -> bool:
@@ -48,6 +63,139 @@ def _has_data_like_values(values: list[str]) -> bool:
         for value in populated
     )
     return data_like >= max(1, len(populated) // 2)
+
+
+def _has_substantive_row_values(values: list[str]) -> bool:
+    """Return whether a row has enough right-side values to be a data row."""
+    populated = [clean_text(value) for value in values if clean_text(value)]
+    if not populated:
+        return False
+    value_like = sum(
+        detect_value_pattern(value).pattern != "unknown"
+        or (any(char.isdigit() for char in value) and not ALPHA_PATTERN.search(value))
+        or NA_LIKE_VALUE_PATTERN.fullmatch(value) is not None
+        for value in populated
+    )
+    return value_like >= 2
+
+
+def _split_embedded_label_count(value: str) -> tuple[str, str] | None:
+    """Split a label fragment followed by a count-like value."""
+    cleaned = clean_text(value)
+    match = EMBEDDED_LABEL_COUNT_PATTERN.fullmatch(cleaned)
+    if match is None:
+        return None
+    count = match.group("count")
+    count_number = int(count.replace(",", ""))
+    if "," not in count and count_number < 20:
+        return None
+    label = clean_text(match.group("label"))
+    if label.lower().endswith((" to", " and", "-")):
+        return None
+    if not label or detect_value_pattern(label).pattern != "unknown":
+        return None
+    return label, count
+
+
+def _repair_embedded_label_count_cells(
+    raw_rows: list[list[str]],
+    cleaned_rows: list[list[str]],
+) -> tuple[list[list[str]], list[list[str]], dict[str, object] | None]:
+    """Move a label tail out of the first value column when a count follows it."""
+    if not raw_rows or max((len(row) for row in raw_rows), default=0) < 4:
+        return raw_rows, cleaned_rows, None
+
+    repaired_raw_rows = [list(row) for row in raw_rows]
+    repaired_cleaned_rows = [list(row) for row in cleaned_rows]
+    repaired_rows: list[int] = []
+    for row_idx, row in enumerate(cleaned_rows):
+        if len(row) < 3 or not _looks_like_label_prefix_cell(row[0]):
+            continue
+        split = _split_embedded_label_count(row[1])
+        if split is None or not _has_substantive_row_values(row[2:]):
+            continue
+        label_tail, count_value = split
+        raw_split = _split_embedded_label_count(raw_rows[row_idx][1])
+        raw_label_tail = raw_split[0] if raw_split is not None else label_tail
+        raw_count_value = raw_split[1] if raw_split is not None else count_value
+        repaired_raw_rows[row_idx][0] = clean_text(f"{raw_rows[row_idx][0]} {raw_label_tail}")
+        repaired_cleaned_rows[row_idx][0] = clean_text(f"{cleaned_rows[row_idx][0]} {label_tail}")
+        repaired_raw_rows[row_idx][1] = raw_count_value
+        repaired_cleaned_rows[row_idx][1] = count_value
+        repaired_rows.append(row_idx)
+
+    if not repaired_rows:
+        return raw_rows, cleaned_rows, None
+    return repaired_raw_rows, repaired_cleaned_rows, {
+        "source_col_idx": 1,
+        "label_col_idx": 0,
+        "repaired_row_indices": repaired_rows,
+        "repaired_row_count": len(repaired_rows),
+    }
+
+
+def _is_label_continuation(previous_label: str, candidate_label: str) -> bool:
+    """Return whether a label-only row looks like a continuation of the prior label."""
+    previous = clean_text(previous_label)
+    candidate = clean_text(candidate_label)
+    if not previous or not candidate or len(candidate.split()) > 5:
+        return False
+    if previous.count("(") > previous.count(")") and ")" in candidate:
+        return True
+    candidate_has_continuation_start = (
+        candidate[0].islower()
+        or candidate[0].isdigit()
+        or ")" in candidate
+        or FOOTNOTE_MARK_PATTERN.search(candidate) is not None
+    )
+    if previous.lower().endswith((" to", " and", " of", " for", "-")) and candidate_has_continuation_start:
+        return True
+    if candidate[0].islower() or candidate[0].isdigit():
+        return True
+    return bool(FOOTNOTE_MARK_PATTERN.search(candidate))
+
+
+def _repair_vertical_label_continuations(
+    raw_rows: list[list[str]],
+    cleaned_rows: list[list[str]],
+) -> tuple[list[list[str]], list[list[str]], dict[str, object] | None]:
+    """Merge label-only continuation rows into the preceding data row."""
+    if not raw_rows or max((len(row) for row in raw_rows), default=0) < 4:
+        return raw_rows, cleaned_rows, None
+
+    repaired_raw_rows = [list(row) for row in raw_rows]
+    repaired_cleaned_rows = [list(row) for row in cleaned_rows]
+    merged_rows: list[dict[str, int]] = []
+    suppressed_rows: list[int] = []
+    for row_idx in range(1, len(cleaned_rows)):
+        if row_idx in suppressed_rows:
+            continue
+        current_label = clean_text(" ".join(cell for cell in cleaned_rows[row_idx][:2] if clean_text(cell)))
+        if not current_label or _has_substantive_row_values(cleaned_rows[row_idx][1:]):
+            continue
+        target_idx = row_idx - 1
+        while target_idx in suppressed_rows and target_idx > 0:
+            target_idx -= 1
+        previous_label = clean_text(repaired_cleaned_rows[target_idx][0]) if target_idx >= 0 else ""
+        if not _has_substantive_row_values(repaired_cleaned_rows[target_idx][1:]):
+            continue
+        if not _is_label_continuation(previous_label, current_label):
+            continue
+        current_raw_label = clean_text(" ".join(cell for cell in raw_rows[row_idx][:2] if clean_text(cell)))
+        repaired_raw_rows[target_idx][0] = clean_text(f"{repaired_raw_rows[target_idx][0]} {current_raw_label}")
+        repaired_cleaned_rows[target_idx][0] = clean_text(f"{repaired_cleaned_rows[target_idx][0]} {current_label}")
+        repaired_raw_rows[row_idx] = ["" for _ in repaired_raw_rows[row_idx]]
+        repaired_cleaned_rows[row_idx] = ["" for _ in repaired_cleaned_rows[row_idx]]
+        suppressed_rows.append(row_idx)
+        merged_rows.append({"from_row_idx": row_idx, "to_row_idx": target_idx})
+
+    if not suppressed_rows:
+        return raw_rows, cleaned_rows, None
+    return repaired_raw_rows, repaired_cleaned_rows, {
+        "merged_rows": merged_rows,
+        "removed_continuation_row_indices": suppressed_rows,
+        "merged_row_count": len(suppressed_rows),
+    }
 
 
 def _split_stacked_cell_lines(value: str, *, cleaned: bool) -> list[str]:
@@ -289,13 +437,19 @@ def _repair_split_row_label_field_columns(
             else:
                 parent_like_rows += 1
 
+    label_fragment_rows = len(merged_label_rows) + parent_like_rows
+    has_shifted_label_support = len(shifted_label_rows) >= max(4, row_count // 5)
+    has_merged_label_support = (
+        len(merged_label_rows) >= max(4, row_count // 5)
+        and label_fragment_rows >= max(6, row_count // 4)
+    )
     if not (
-        len(shifted_label_rows) >= max(4, row_count // 5)
-        and right_value_rows >= max(6, row_count // 3)
+        (has_shifted_label_support or has_merged_label_support)
+        and right_value_rows >= max(5, row_count // 3)
         and second_col_nonempty >= max(6, row_count // 3)
         and second_col_label_like >= max(4, second_col_nonempty // 2)
         and second_col_value_like <= max(2, second_col_nonempty // 8)
-        and (len(merged_label_rows) + parent_like_rows) >= 2
+        and label_fragment_rows >= 2
     ):
         return raw_rows, cleaned_rows, None
 
@@ -333,6 +487,8 @@ def _repair_split_row_label_field_columns(
             "second_col_nonempty": second_col_nonempty,
             "second_col_label_like": second_col_label_like,
             "shifted_label_row_count": len(shifted_label_rows),
+            "merged_label_row_count": len(merged_label_rows),
+            "parent_like_row_count": parent_like_rows,
             "right_value_row_count": right_value_rows,
         },
     }
@@ -377,6 +533,11 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
             dropped_trailing_cols = 0
         raw_rows = [row[:-dropped_trailing_cols] for row in rows_after_leading] if dropped_trailing_cols else rows_after_leading
     cleaned_rows = [[clean_text(cell) for cell in row] for row in raw_rows]
+    embedded_label_count_repair: dict[str, object] | None = None
+    raw_rows, cleaned_rows, embedded_label_count_repair = _repair_embedded_label_count_cells(
+        raw_rows,
+        cleaned_rows,
+    )
     sparse_stub_label_column_repair: dict[str, object] | None = None
     if dropped_leading_cols == 0:
         raw_rows, cleaned_rows, sparse_stub_label_column_repair = _repair_sparse_stub_label_column(
@@ -425,6 +586,11 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
         raw_rows,
         cleaned_rows,
     )
+    vertical_label_continuation_repair: dict[str, object] | None = None
+    raw_rows, cleaned_rows, vertical_label_continuation_repair = _repair_vertical_label_continuations(
+        raw_rows,
+        cleaned_rows,
+    )
     raw_bounds = table.metadata.get("row_bounds")
     if isinstance(raw_bounds, list) and len(raw_bounds) == table.n_rows:
         row_bounds: list[tuple[float, float]] | None = []
@@ -449,7 +615,13 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
         if sparse_stub_label_column_repair is not None
         else set()
     )
-    body_rows = [row_idx for row_idx in body_rows if row_idx not in suppressed_stub_row_indices]
+    suppressed_continuation_row_indices = (
+        set(vertical_label_continuation_repair.get("removed_continuation_row_indices", []))
+        if vertical_label_continuation_repair is not None
+        else set()
+    )
+    suppressed_row_indices = suppressed_stub_row_indices | suppressed_continuation_row_indices
+    body_rows = [row_idx for row_idx in body_rows if row_idx not in suppressed_row_indices]
     first_column_bboxes: dict[int, tuple[float, float, float, float]] = {}
     x0_values: list[float] = []
     first_column_text_x0_by_row: dict[int, float] = {}
@@ -553,7 +725,7 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
                 row_bounds=header_row_bounds,
                 horizontal_rules=header_horizontal_rules,
             )
-            body_rows = [row_idx for row_idx in body_rows if row_idx not in suppressed_stub_row_indices]
+            body_rows = [row_idx for row_idx in body_rows if row_idx not in suppressed_row_indices]
             row_views = [
                 build_row_signature(
                     row_idx,
@@ -584,8 +756,10 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
         "column_repairs": {
             "merged_columns": merged_columns,
             "merged_split_label_columns": merged_split_label_columns,
+            "embedded_label_count_cells": embedded_label_count_repair,
             "sparse_stub_label_column": sparse_stub_label_column_repair,
             "split_row_label_field_columns": split_row_label_field_repair,
+            "vertical_label_continuations": vertical_label_continuation_repair,
             "extra_wide_value_column": extra_wide_value_column_repair,
             "dropped_empty_columns_after_repair": dropped_repaired_cols,
         },

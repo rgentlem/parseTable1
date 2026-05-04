@@ -174,3 +174,59 @@ def test_table_inventory_does_not_call_regression_title_analysis_without_effect_
 
     assert inventory.tables[0].table_category == "unknown"
     assert "analysis_like_title_without_effect_or_estimate_columns" in inventory.tables[0].category_evidence
+
+
+def test_table_inventory_marks_wide_numeric_matrix_as_data_presentation() -> None:
+    """Wide bare numeric matrices should be recognized without requiring descriptive Table 1 semantics."""
+    table = NormalizedTable(
+        table_id="tbl-3",
+        title="Table 3.",
+        caption=None,
+        header_rows=[0, 1],
+        body_rows=[2, 3, 4, 5],
+        row_views=[
+            _row(2, ["Total", "88.1", "0.8", "60.8", "1.6", "40.9"]),
+            _row(3, ["30 to 34 years", "72.3", "1.8", "32.6", "2.3", "16.4"]),
+            _row(4, ["35 to 49 years", "85.7", "1.1", "51.8", "2.2", "32.4"]),
+            _row(5, ["Males", "92.0", "0.9", "68.4", "1.6", "49.2"]),
+        ],
+        n_rows=6,
+        n_cols=6,
+        metadata={
+            "table_number": 3,
+            "cleaned_rows": [
+                ["", "Severity of AL, %", "Severity of AL, %", "Severity of AL, %", "Severity of AL, %", "Severity of AL, %"],
+                ["Characteristics", "‡3 mm", "SE", "‡4 mm", "SE", "‡5 mm"],
+            ],
+            "column_repairs": {"extra_wide_value_column": {"created_value_columns": 5}},
+        },
+    )
+    definition = TableDefinition(
+        table_id="tbl-3",
+        title="Table 3.",
+        caption=None,
+        variables=[],
+        column_definition=ColumnDefinition(
+            columns=[
+                DefinedColumn(col_idx=1, column_name="al_3mm", column_label="Severity of AL, % ‡3 mm", inferred_role="group"),
+                DefinedColumn(col_idx=2, column_name="se", column_label="Severity of AL, % SE", inferred_role="group"),
+                DefinedColumn(col_idx=3, column_name="al_4mm", column_label="Severity of AL, % ‡4 mm", inferred_role="group"),
+                DefinedColumn(col_idx=4, column_name="se", column_label="Severity of AL, % SE", inferred_role="group"),
+                DefinedColumn(col_idx=5, column_name="al_5mm", column_label="Severity of AL, % ‡5 mm", inferred_role="group"),
+            ]
+        ),
+    )
+    inventory = build_paper_table_inventory(
+        "paper",
+        [],
+        [table],
+        [TableProfile(table_id="tbl-3", table_family="unknown")],
+        [definition],
+        [],
+        [_quality("tbl-3", recognized=0.2)],
+        [TableProcessingStatus(table_id="tbl-3", status="rescued")],
+    )
+
+    assert inventory.tables[0].table_category == "data_presentation"
+    assert "mostly_numeric_matrix_values" in inventory.tables[0].category_evidence
+    assert "threshold_or_statistic_column_headers" in inventory.tables[0].category_evidence

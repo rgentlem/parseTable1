@@ -515,6 +515,137 @@ def test_normalization_expands_grouped_extra_wide_header_stack() -> None:
     assert repair["repeated_header_row_indices"] == [0, 1]
 
 
+def test_normalization_repairs_embedded_label_count_in_first_value_column() -> None:
+    """Label tails that share the first value cell with a count should move back to the label column."""
+    rows = [
+        ["Characteristics", "n", "%", "SE"],
+        ["Income", "", "", ""],
+        ["<100%", "FPL 625", "13.5", "0.8"],
+        ["Never", "married 390", "10.4", "0.7"],
+    ]
+    extracted = ExtractedTable(
+        table_id="tbl-embedded-label-count",
+        source_pdf="paper.pdf",
+        page_num=1,
+        n_rows=len(rows),
+        n_cols=len(rows[0]),
+        cells=[
+            TableCell(row_idx=row_idx, col_idx=col_idx, text=value)
+            for row_idx, row in enumerate(rows)
+            for col_idx, value in enumerate(row)
+        ],
+        extraction_backend="pymupdf4llm",
+    )
+
+    normalized = normalize_extracted_table(extracted)
+
+    repair = normalized.metadata["column_repairs"]["embedded_label_count_cells"]
+    assert normalized.metadata["cleaned_rows"][2] == ["<100% FPL", "625", "13.5", "0.8"]
+    assert normalized.metadata["cleaned_rows"][3] == ["Never married", "390", "10.4", "0.7"]
+    assert repair["repaired_row_indices"] == [2, 3]
+
+
+def test_normalization_repairs_two_column_row_label_field_without_shifted_blanks() -> None:
+    """A dense two-column row-label field should merge even when labels are not shifted right."""
+    rows = [
+        ["Characteristics", "", "n", "Weighted n", "Severe, %", "SE"],
+        ["NHANES", "2009 to 2012", "7,066", "141.0", "8.9", "0.6"],
+        ["Age (mean:", "24 teeth)", "", "", "", ""],
+        ["30 to", "34 years", "846", "16.6", "4.0", "0.9"],
+        ["Race/ethnic", "group", "", "", "", ""],
+        ["Non-Hispanic", "Asian American§", "478", "7.6", "12.3", "1.1"],
+        ["Less", "than high school", "1,784", "23.1", "11.8", "1.0"],
+        ["Marital", "status", "", "", "", ""],
+        ["Living", "with partner", "495", "9.2", "8.1", "0.8"],
+    ]
+    extracted = ExtractedTable(
+        table_id="tbl-two-col-labels",
+        source_pdf="paper.pdf",
+        page_num=1,
+        n_rows=len(rows),
+        n_cols=len(rows[0]),
+        cells=[
+            TableCell(row_idx=row_idx, col_idx=col_idx, text=value)
+            for row_idx, row in enumerate(rows)
+            for col_idx, value in enumerate(row)
+        ],
+        extraction_backend="pymupdf4llm",
+    )
+
+    normalized = normalize_extracted_table(extracted)
+
+    repair = normalized.metadata["column_repairs"]["split_row_label_field_columns"]
+    assert normalized.n_cols == 5
+    assert normalized.metadata["cleaned_rows"][2][0] == "Age (mean: 24 teeth)"
+    assert normalized.metadata["cleaned_rows"][3] == ["30 to 34 years", "846", "16.6", "4.0", "0.9"]
+    assert normalized.metadata["cleaned_rows"][5] == ["Non-Hispanic Asian American§", "478", "7.6", "12.3", "1.1"]
+    assert normalized.metadata["cleaned_rows"][8] == ["Living with partner", "495", "9.2", "8.1", "0.8"]
+    assert repair["merged_label_row_indices"] == [1, 2, 3, 4, 5, 6, 7, 8]
+    assert repair["evidence"]["merged_label_row_count"] == 5
+
+
+def test_normalization_merges_vertical_label_continuation_rows() -> None:
+    """Label-only continuation rows should merge into the preceding valued row and leave the body."""
+    rows = [
+        ["Characteristics", "n", "Weighted n", "Periodontitis"],
+        ["All (NHANES", "3,743", "137.1", "46.1"],
+        ["2009 to 2012)", "", "", ""],
+        ["NHANES 2001 to", "3,733", "136.8", "46.3"],
+        ["2004 protocol†", "", "", ""],
+        ["Non-Hispanic Asian", "N/A", "N/A", "N/A"],
+        ["American¶", "", "", ""],
+    ]
+    extracted = ExtractedTable(
+        table_id="tbl-vertical-continuations",
+        source_pdf="paper.pdf",
+        page_num=1,
+        n_rows=len(rows),
+        n_cols=len(rows[0]),
+        cells=[
+            TableCell(row_idx=row_idx, col_idx=col_idx, text=value)
+            for row_idx, row in enumerate(rows)
+            for col_idx, value in enumerate(row)
+        ],
+        extraction_backend="pymupdf4llm",
+    )
+
+    normalized = normalize_extracted_table(extracted)
+
+    repair = normalized.metadata["column_repairs"]["vertical_label_continuations"]
+    assert normalized.metadata["cleaned_rows"][1][0] == "All (NHANES 2009 to 2012)"
+    assert normalized.metadata["cleaned_rows"][3][0] == "NHANES 2001 to 2004 protocol†"
+    assert normalized.metadata["cleaned_rows"][5][0] == "Non-Hispanic Asian American¶"
+    assert {2, 4, 6}.isdisjoint(normalized.body_rows)
+    assert repair["removed_continuation_row_indices"] == [2, 4, 6]
+
+
+def test_normalization_does_not_merge_na_value_cells_into_label_continuations() -> None:
+    """N/A-like value cells should not be mistaken for second-column label fragments."""
+    rows = [
+        ["Characteristics", "n", "Weighted n", "Periodontitis"],
+        ["Non-Hispanic Asian", "N/A", "N/A", "N/A"],
+        ["American¶", "", "", ""],
+    ]
+    extracted = ExtractedTable(
+        table_id="tbl-na-continuation",
+        source_pdf="paper.pdf",
+        page_num=1,
+        n_rows=len(rows),
+        n_cols=len(rows[0]),
+        cells=[
+            TableCell(row_idx=row_idx, col_idx=col_idx, text=value)
+            for row_idx, row in enumerate(rows)
+            for col_idx, value in enumerate(row)
+        ],
+        extraction_backend="pymupdf4llm",
+    )
+
+    normalized = normalize_extracted_table(extracted)
+
+    assert normalized.metadata["cleaned_rows"][1][0] == "Non-Hispanic Asian American¶"
+    assert normalized.metadata["cleaned_rows"][1][1:] == ["N/A", "N/A", "N/A"]
+
+
 def test_normalization_preserves_table_orientation_metadata() -> None:
     """Normalization should preserve extraction metadata about table orientation."""
     extracted = ExtractedTable(
