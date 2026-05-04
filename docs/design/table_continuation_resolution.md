@@ -102,7 +102,7 @@ class ResolvedTable(BaseModel):
     source_table_ids: list[str]
     row_provenance: list[ResolvedRowProvenance]
     integration_boundaries: list[IntegrationBoundary]
-    column_alignment: list[ColumnAlignmentDecision]
+    column_schema_decisions: list[ColumnSchemaCompatibilityDecision]
     confidence: float
     notes: list[str]
 ```
@@ -164,94 +164,54 @@ If multiple candidates exist, prefer the one with:
 Ambiguous parent selection should reject integration rather than pick a weak
 candidate.
 
-### 4. Check Column Coordinate Compatibility
+### 4. Check Column Schema Compatibility
 
 Column compatibility is the first structural gate after continuation identity.
 The resolver should not integrate row labels until the continuation grid can be
-aligned to the parent grid.
-
-The preferred check uses column coordinates from extracted cells or table
-metadata. The resolver should build a `ColumnCoordinateProfile` for each
-fragment when coordinates are available:
+matched to the parent column schema.
 
 ```python
-class ColumnCoordinateProfile(BaseModel):
-    table_id: str
-    coordinate_space: Literal["page", "table", "unknown"]
-    n_cols: int
-    column_lefts: list[float | None]
-    column_centers: list[float | None]
-    column_rights: list[float | None]
-    column_widths: list[float | None]
-    table_left: float | None
-    table_right: float | None
-    evidence_quality: Literal["strong", "partial", "missing"]
-```
-
-Coordinates should be compared after normalizing to the detected table width
-or page width. The comparison should consider:
-
-- row-label column left and right anchors
-- value-column centers
-- value-column spacing and order
-- table left and right edges
-- whether leading or trailing columns appear missing
-- whether a continuation header, if present, lands on the same anchors
-
-The column-alignment result should be explicit:
-
-```python
-class ColumnAlignmentDecision(BaseModel):
+class ColumnSchemaCompatibilityDecision(BaseModel):
     base_table_id: str
     continuation_table_id: str
     status: Literal[
-        "exact",
-        "alignable",
-        "parent_header_projected",
+        "match",
         "rejected",
-        "coordinate_evidence_missing",
+        "schema_missing",
     ]
-    column_map: list[ColumnMapEntry]
-    coordinate_score: float | None
-    header_text_score: float | None
+    base_column_signature: list[str]
+    continuation_column_signature: list[str]
+    normalized_column_count_match: bool
     decision_reason: str
     warnings: list[str]
 ```
 
-Accepted statuses:
+Compatibility must use `ColumnHeaderSchema.flattened_signature`. The resolver
+must not reconstruct a separate header signature from normalized rows when the
+schema is missing or weak. Missing schema evidence is a parser failure for this
+purpose and should reject integration with a structured diagnostic.
 
-- `exact`: same column count and compatible anchors
-- `alignable`: different detected grid details, but every continuation column
-  can be safely mapped to one parent column
-- `parent_header_projected`: continuation omits or weakly repeats headers, but
-  body cell coordinates fit the parent column model
-
-Rejected statuses:
-
-- `rejected`: shifted, missing, duplicated, or incompatible columns
-- `coordinate_evidence_missing`: coordinates are unavailable and text evidence
-  is not strong enough for a conservative merge
-
-When coordinates are unavailable, the resolver may still accept only under
-strict fallback evidence:
+Accepted evidence:
 
 - explicit continuation identity
 - same normalized column count
-- matching or compatible header text when headers are present
-- no evidence of shifted label/value columns
-- no extra leading value column
+- matching schema-derived column signatures
 
-The decision must record that coordinate evidence was missing or partial.
+Rejected evidence:
 
-### 5. Carry Forward Headers Only After Alignment
+- missing parent or continuation column schema
+- different normalized column count
+- different schema-derived column signatures
+
+### 5. Carry Forward Headers Only After Schema Match
 
 Many continuation fragments omit repeated headers or print abbreviated headers.
-Header carry-forward is allowed only after column alignment is accepted.
+Header carry-forward is allowed only after schema compatibility is accepted.
 
 The continuation body should be projected onto the parent column model when:
 
 - the continuation is an accepted continuation of the parent
-- its body-cell coordinates fit the parent columns
+- its schema-derived columns match the parent columns
 - repeated continuation header rows can be dropped safely
 - omitted headers can be inherited without changing value-column order
 
@@ -375,8 +335,7 @@ Reject integration when:
 
 - continuation identity is weak or absent
 - parent table is missing or ambiguous
-- column coordinates are incompatible
-- fallback text/header evidence is insufficient
+- column schemas are missing or incompatible
 - continuation appears rotated or transformed differently from the parent in a
   way that cannot be normalized
 - continuation rows look like a new table rather than a continuation body

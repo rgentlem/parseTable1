@@ -379,7 +379,10 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     normalized_tables = normalize_extracted_tables(extracted_tables)
     column_header_schemas = build_column_header_schemas(normalized_tables, extracted_tables)
     table_profiles = build_table_profiles(normalized_tables)
-    table1_continuation_groups, merged_table1_tables = build_table1_continuation_artifacts(normalized_tables)
+    table1_continuation_groups, merged_table1_tables = build_table1_continuation_artifacts(
+        normalized_tables,
+        column_header_schemas,
+    )
     parse_quality_reports = []
     for table_index, table in enumerate(normalized_tables):
         row_classifications = classify_rows(table)

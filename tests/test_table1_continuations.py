@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from table1_parser.schemas import NormalizedTable, RowView
+from table1_parser.schemas import ColumnHeaderSchema, NormalizedTable, RowView
 from table1_parser.table1_continuations import build_table1_continuation_artifacts
 
 
@@ -53,6 +53,15 @@ def _normalized_table(
     )
 
 
+def _schema(table: NormalizedTable, signature: list[str]) -> ColumnHeaderSchema:
+    return ColumnHeaderSchema(
+        schema_id=f"{table.table_id}-column-schema",
+        table_id=table.table_id,
+        n_cols=table.n_cols,
+        flattened_signature=signature,
+    )
+
+
 def test_table1_continuation_artifacts_merge_matching_table1_fragments() -> None:
     """Explicit Table 1 continuations with matching columns should write a merged artifact."""
     base = _normalized_table(
@@ -81,12 +90,17 @@ def test_table1_continuation_artifacts_merge_matching_table1_fragments() -> None
         source_page_num=6,
     )
 
-    groups, merged_tables = build_table1_continuation_artifacts([base, continuation])
+    schemas = [
+        _schema(base, ["Variable", "Overall", "Cases", "P-value"]),
+        _schema(continuation, ["Variable", "Overall", "Cases", "P-value"]),
+    ]
+
+    groups, merged_tables = build_table1_continuation_artifacts([base, continuation], schemas)
 
     assert len(groups) == 1
     assert groups[0].merge_decision == "merge"
     assert groups[0].source_table_ids == ["paper-p5-t0", "paper-p6-t0"]
-    assert groups[0].column_signature == ["variable", "overall", "cases", "p_value"]
+    assert groups[0].column_signature == ["variable", "overall", "cases", "p-value"]
     assert len(merged_tables) == 1
     merged = merged_tables[0]
     assert merged.table_id == "paper-p5-t0-merged-table1"
@@ -114,7 +128,12 @@ def test_table1_continuation_artifacts_skip_incompatible_columns() -> None:
         is_continuation=True,
     )
 
-    groups, merged_tables = build_table1_continuation_artifacts([base, continuation])
+    schemas = [
+        _schema(base, ["Variable", "Overall", "Cases"]),
+        _schema(continuation, ["Variable", "Overall", "Controls"]),
+    ]
+
+    groups, merged_tables = build_table1_continuation_artifacts([base, continuation], schemas)
 
     assert len(groups) == 1
     assert groups[0].merge_decision == "skip"
@@ -141,4 +160,71 @@ def test_table1_continuation_artifacts_ignore_non_table1_continuations() -> None
     groups, merged_tables = build_table1_continuation_artifacts([base, continuation])
 
     assert groups == []
+    assert merged_tables == []
+
+
+def test_table1_continuation_artifacts_detect_uncaptioned_next_page_fragment() -> None:
+    """An uncaptioned demographic table after Table 1 should be pulled out as a continuation candidate."""
+    base = _normalized_table(
+        "paper-p2-t0",
+        rows=[["Variable", "Q1", "Q2"], ["Age", "52", "58"]],
+        table_number=1,
+        is_continuation=False,
+        source_page_num=2,
+    )
+    continuation = NormalizedTable(
+        table_id="paper-p3-t0",
+        title=None,
+        caption=None,
+        header_rows=[0],
+        body_rows=[1],
+        row_views=[_row_view(1, ["BMI", "29", "31"])],
+        n_rows=2,
+        n_cols=3,
+        metadata={
+            "cleaned_rows": [["Variable", "Q1", "Q2"], ["BMI", "29", "31"]],
+            "table_number": None,
+            "is_continuation": False,
+            "continuation_of_table_number": None,
+            "source_page_num": 3,
+        },
+    )
+
+    schemas = [
+        _schema(base, ["Variable", "Q1", "Q2"]),
+        _schema(continuation, ["Variable", "Q1", "Q2"]),
+    ]
+
+    groups, merged_tables = build_table1_continuation_artifacts([base, continuation], schemas)
+
+    assert len(groups) == 1
+    assert groups[0].merge_decision == "merge"
+    assert groups[0].decision_reason == "uncaptioned_table1_continuation_candidate_and_matching_columns"
+    assert groups[0].source_table_ids == ["paper-p2-t0", "paper-p3-t0"]
+    assert len(merged_tables) == 1
+
+
+def test_table1_continuation_artifacts_fail_without_column_schema() -> None:
+    """Continuation grouping should not reconstruct signatures when schemas are missing."""
+    base = _normalized_table(
+        "paper-p2-t0",
+        rows=[["Variable", "Q1", "Q2"], ["Age", "52", "58"]],
+        table_number=1,
+        is_continuation=False,
+        source_page_num=2,
+    )
+    continuation = _normalized_table(
+        "paper-p3-t0",
+        rows=[["Variable", "Q1", "Q2"], ["BMI", "29", "31"]],
+        table_number=1,
+        is_continuation=True,
+        source_page_num=3,
+    )
+
+    groups, merged_tables = build_table1_continuation_artifacts([base, continuation])
+
+    assert len(groups) == 1
+    assert groups[0].merge_decision == "skip"
+    assert groups[0].column_signature == []
+    assert any("column_header_schema_missing_or_empty" in item for item in groups[0].diagnostics)
     assert merged_tables == []

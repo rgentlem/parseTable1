@@ -278,18 +278,14 @@ This phase should compare:
 - row-label column
 - leaf labels when present
 - group paths for value columns
-- coordinate evidence from schema evidence records
-
-Keep the current coordinate-profile output shape unless there is a deliberate
-schema change. The aim is to make compatibility decisions use the shared column
-model, not to redesign continuation artifacts at the same time.
+- schema evidence records
 
 Tests:
 
 - existing continuation column tests still pass
-- one continuation with omitted repeated headers is accepted only when leaf
-  coordinate and parent schema evidence are compatible
-- one shifted continuation remains incompatible
+- one continuation with omitted repeated headers is accepted only when the
+  schema-derived column signatures are compatible
+- one continuation with incompatible schema-derived signatures remains incompatible
 
 ## Phase 6: R Inspection And Stored Summary Prep
 

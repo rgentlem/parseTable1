@@ -345,73 +345,9 @@ def _write_sample_paper_outputs(
             "header_signature_status": "match",
             "base_column_signature": ["variable", "overall", "dkd"],
             "continuation_column_signature": ["variable", "overall", "dkd"],
-            "coordinate_status": "compatible",
             "overall_status": "compatible",
             "confidence": 0.95,
-            "column_map": [
-                {
-                    "base_col_idx": 0,
-                    "continuation_col_idx": 0,
-                    "base_center": 0.15,
-                    "continuation_center": 0.16,
-                    "center_delta": 0.01,
-                    "base_width": 0.3,
-                    "continuation_width": 0.3,
-                    "width_delta": 0.0,
-                    "status": "matched",
-                },
-                {
-                    "base_col_idx": 1,
-                    "continuation_col_idx": 1,
-                    "base_center": 0.5,
-                    "continuation_center": 0.51,
-                    "center_delta": 0.01,
-                    "base_width": 0.3,
-                    "continuation_width": 0.3,
-                    "width_delta": 0.0,
-                    "status": "matched",
-                },
-                {
-                    "base_col_idx": 2,
-                    "continuation_col_idx": 2,
-                    "base_center": 0.85,
-                    "continuation_center": 0.86,
-                    "center_delta": 0.01,
-                    "base_width": 0.3,
-                    "continuation_width": 0.3,
-                    "width_delta": 0.0,
-                    "status": "matched",
-                },
-            ],
-            "base_coordinate_profile": {
-                "table_id": "tbl-1",
-                "normalized_n_cols": 3,
-                "coordinate_n_cols": 3,
-                "coordinate_source": "extracted_cells",
-                "evidence_quality": "strong",
-                "table_left": 0.0,
-                "table_right": 100.0,
-                "normalized_lefts": [0.0, 0.35, 0.7],
-                "normalized_centers": [0.15, 0.5, 0.85],
-                "normalized_rights": [0.3, 0.65, 1.0],
-                "normalized_widths": [0.3, 0.3, 0.3],
-                "warnings": [],
-            },
-            "continuation_coordinate_profile": {
-                "table_id": "tbl-1-cont",
-                "normalized_n_cols": 3,
-                "coordinate_n_cols": 3,
-                "coordinate_source": "extracted_cells",
-                "evidence_quality": "strong",
-                "table_left": 0.0,
-                "table_right": 100.0,
-                "normalized_lefts": [0.01, 0.36, 0.71],
-                "normalized_centers": [0.16, 0.51, 0.86],
-                "normalized_rights": [0.31, 0.66, 1.01],
-                "normalized_widths": [0.3, 0.3, 0.3],
-                "warnings": [],
-            },
-            "diagnostics": ["coordinate_delta:max_center=0.01:max_width=0.0"],
+            "diagnostics": [],
         }
     ]
     merged_table1_tables = [
@@ -1044,8 +980,8 @@ def test_r_inspection_shows_table_continuation_column_checks(tmp_path) -> None:
     assert "Table continuation column check table_continuation_column_check_0" in result.stdout
     assert "overall_status" in result.stdout
     assert "compatible" in result.stdout
-    assert "Column Map" in result.stdout
-    assert "coordinate_delta:max_center=0.01:max_width=0.0" in result.stdout
+    assert "Base Column Signature" in result.stdout
+    assert "Continuation Column Signature" in result.stdout
 
 
 def test_r_inspection_shows_all_column_header_trees(tmp_path) -> None:

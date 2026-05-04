@@ -3,21 +3,13 @@
 from __future__ import annotations
 
 import re
-from collections import defaultdict
-from statistics import median
-from typing import Any
 
 from table1_parser.schemas import ColumnHeaderSchema, ExtractedTable, NormalizedTable, TableProfile
-from table1_parser.schemas.table_continuation_column_check import (
-    ColumnCoordinateMapEntry,
-    ColumnCoordinateProfile,
-    TableContinuationColumnCheck,
-)
+from table1_parser.schemas.table_continuation_column_check import TableContinuationColumnCheck
 
 
 TABLE_NUMBER_PATTERN = re.compile(r"\btable\s*(\d+)\b", re.IGNORECASE)
 CONTINUATION_PATTERN = re.compile(r"\bcont(?:inued)?\.?\b|\(\s*continued\s*\)", re.IGNORECASE)
-SAMPLE_SIZE_PATTERN = re.compile(r"\(?\s*n\s*=\s*[0-9,]+\s*\)?", re.IGNORECASE)
 MARKUP_PATTERN = re.compile(r"[*_`]+")
 SPACE_PATTERN = re.compile(r"\s+")
 
@@ -29,12 +21,20 @@ def build_table_continuation_column_checks(
     table_categories: list[str | None] | None = None,
     column_header_schemas: list[ColumnHeaderSchema] | None = None,
 ) -> list[TableContinuationColumnCheck]:
-    """Build column-compatibility diagnostics for explicit demographic-table continuations."""
+    """Build column-compatibility diagnostics for demographic-table continuations."""
     checks: list[TableContinuationColumnCheck] = []
     latest_fragment_by_number: dict[int, int] = {}
 
     for table_index, table in enumerate(normalized_tables):
         continuation_number = _clear_continuation_table_number(table)
+        if continuation_number is None:
+            continuation_number = _inferred_uncaptioned_continuation_number(
+                normalized_tables,
+                table_profiles,
+                table_categories,
+                latest_fragment_by_number,
+                table_index,
+            )
         if continuation_number is None:
             table_number = _table_number(table)
             if table_number is not None:
@@ -62,7 +62,6 @@ def build_table_continuation_column_checks(
                 check_id=f"table_continuation_column_check_{len(checks)}",
                 table_number=continuation_number,
                 normalized_tables=normalized_tables,
-                extracted_tables=extracted_tables,
                 table_profiles=table_profiles,
                 table_categories=table_categories,
                 column_header_schemas=column_header_schemas,
@@ -87,7 +86,6 @@ def _build_column_check(
     check_id: str,
     table_number: int,
     normalized_tables: list[NormalizedTable],
-    extracted_tables: list[ExtractedTable] | None,
     table_profiles: list[TableProfile] | None,
     table_categories: list[str | None] | None,
     column_header_schemas: list[ColumnHeaderSchema] | None,
@@ -95,8 +93,6 @@ def _build_column_check(
     continuation_index: int,
 ) -> TableContinuationColumnCheck:
     continuation_table = normalized_tables[continuation_index]
-    continuation_extracted = _extracted_table_at(extracted_tables, continuation_index)
-    continuation_profile = _build_coordinate_profile(continuation_table, continuation_extracted)
 
     if base_index is None:
         return TableContinuationColumnCheck(
@@ -113,16 +109,12 @@ def _build_column_check(
                 continuation_table,
                 _column_schema_at(column_header_schemas, continuation_index),
             ),
-            coordinate_status="missing",
             overall_status="no_parent",
             confidence=0.0,
-            continuation_coordinate_profile=continuation_profile,
             diagnostics=["explicit_continuation_has_no_prior_fragment_for_table_number"],
         )
 
     base_table = normalized_tables[base_index]
-    base_extracted = _extracted_table_at(extracted_tables, base_index)
-    base_profile = _build_coordinate_profile(base_table, base_extracted)
     base_signature = _column_signature(base_table, _column_schema_at(column_header_schemas, base_index))
     continuation_signature = _column_signature(
         continuation_table,
@@ -130,8 +122,7 @@ def _build_column_check(
     )
     signature_status = _header_signature_status(base_signature, continuation_signature)
     normalized_column_count_match = base_table.n_cols == continuation_table.n_cols
-    coordinate_status, column_map, coordinate_diagnostics = _compare_coordinate_profiles(base_profile, continuation_profile)
-    diagnostics = [*coordinate_diagnostics]
+    diagnostics: list[str] = []
 
     if not normalized_column_count_match:
         diagnostics.append(
@@ -141,21 +132,18 @@ def _build_column_check(
         diagnostics.append(
             f"header_signature_mismatch:base={base_signature}:continuation={continuation_signature}"
         )
+    if signature_status in {"missing_base", "missing_both"}:
+        diagnostics.append(f"column_header_schema_missing_or_empty:table_index={base_index}")
+    if signature_status in {"missing_continuation", "missing_both"}:
+        diagnostics.append(f"column_header_schema_missing_or_empty:table_index={continuation_index}")
 
     overall_status = "incompatible"
     confidence = 0.2
-    if normalized_column_count_match and coordinate_status == "compatible":
+    if signature_status != "match":
+        pass
+    elif normalized_column_count_match:
         overall_status = "compatible"
-        confidence = 0.95 if signature_status in {"match", "missing_continuation"} else 0.82
-    elif normalized_column_count_match and coordinate_status == "possibly_compatible":
-        overall_status = "possibly_compatible"
-        confidence = 0.75 if signature_status in {"match", "missing_continuation"} else 0.6
-    elif normalized_column_count_match and coordinate_status in {"missing", "partial"} and signature_status == "match":
-        overall_status = "possibly_compatible"
-        confidence = 0.65
-    elif normalized_column_count_match and coordinate_status == "missing" and signature_status == "missing_continuation":
-        overall_status = "possibly_compatible"
-        confidence = 0.45
+        confidence = 0.95
 
     return TableContinuationColumnCheck(
         check_id=check_id,
@@ -176,12 +164,8 @@ def _build_column_check(
         header_signature_status=signature_status,
         base_column_signature=base_signature,
         continuation_column_signature=continuation_signature,
-        coordinate_status=coordinate_status,
         overall_status=overall_status,
         confidence=confidence,
-        column_map=column_map,
-        base_coordinate_profile=base_profile,
-        continuation_coordinate_profile=continuation_profile,
         diagnostics=diagnostics,
     )
 
@@ -249,6 +233,32 @@ def _has_continuation_text(table: NormalizedTable) -> bool:
     return False
 
 
+def _inferred_uncaptioned_continuation_number(
+    normalized_tables: list[NormalizedTable],
+    table_profiles: list[TableProfile] | None,
+    table_categories: list[str | None] | None,
+    latest_fragment_by_number: dict[int, int],
+    table_index: int,
+) -> int | None:
+    table = normalized_tables[table_index]
+    if _table_number(table) is not None or _has_continuation_text(table) or table.title or table.caption:
+        return None
+    rows = table.metadata.get("cleaned_rows")
+    if not isinstance(rows, list) or not table.body_rows or table.n_cols < 2:
+        return None
+    prior_items = sorted(latest_fragment_by_number.items(), key=lambda item: item[1], reverse=True)
+    for table_number, prior_index in prior_items:
+        if prior_index >= table_index:
+            continue
+        prior_page = _source_page_num(normalized_tables[prior_index])
+        page = _source_page_num(table)
+        if prior_page is not None and page is not None and page != prior_page + 1:
+            continue
+        if _continuation_pair_is_demographic(table_profiles, table_categories, prior_index, table_index):
+            return table_number
+    return None
+
+
 def _table_number(table: NormalizedTable) -> int | None:
     metadata_number = table.metadata.get("table_number")
     if isinstance(metadata_number, int):
@@ -261,15 +271,6 @@ def _table_number(table: NormalizedTable) -> int | None:
 def _source_page_num(table: NormalizedTable) -> int | None:
     value = table.metadata.get("source_page_num")
     return value if isinstance(value, int) and value >= 1 else None
-
-
-def _extracted_table_at(
-    extracted_tables: list[ExtractedTable] | None,
-    table_index: int,
-) -> ExtractedTable | None:
-    if extracted_tables is None or table_index >= len(extracted_tables):
-        return None
-    return extracted_tables[table_index]
 
 
 def _column_schema_at(
@@ -287,37 +288,14 @@ def _column_signature(
 ) -> list[str]:
     if column_schema is not None and column_schema.table_id == table.table_id:
         return [_normalize_header_cell(value) for value in column_schema.flattened_signature]
-    rows = table.metadata.get("cleaned_rows")
-    if not isinstance(rows, list):
-        return []
-    header_rows = table.header_rows or list(range(min(2, len(rows))))
-    usable_header_rows: list[list[str]] = []
-    for row_idx in header_rows:
-        if row_idx >= len(rows) or not isinstance(rows[row_idx], list):
-            continue
-        cleaned_row = [str(cell) for cell in rows[row_idx]]
-        nonempty = [cell for cell in cleaned_row if cell.strip()]
-        if len(nonempty) == 1 and CONTINUATION_PATTERN.search(nonempty[0]):
-            continue
-        usable_header_rows.append(cleaned_row)
-    if not usable_header_rows:
-        return []
-    width = max(len(row) for row in usable_header_rows)
-    signature: list[str] = []
-    for col_idx in range(width):
-        pieces = [row[col_idx] for row in usable_header_rows if col_idx < len(row) and row[col_idx].strip()]
-        signature.append(_normalize_header_cell(" ".join(pieces)))
-    return signature
+    return []
 
 
 def _normalize_header_cell(text: str) -> str:
     normalized = MARKUP_PATTERN.sub("", text)
     normalized = normalized.replace("\u00a0", " ").replace("\u2009", " ").replace("\u202f", " ")
-    normalized = SAMPLE_SIZE_PATTERN.sub("", normalized)
     normalized = SPACE_PATTERN.sub(" ", normalized).strip().lower()
     normalized = normalized.strip(" .,:;")
-    normalized = re.sub(r"\bp\s*[-–—]?\s*value\b", "p_value", normalized)
-    normalized = re.sub(r"\bvariables?\b|\bcharacteristics?\b", "variable", normalized)
     return SPACE_PATTERN.sub(" ", normalized).strip()
 
 
@@ -329,252 +307,3 @@ def _header_signature_status(base_signature: list[str], continuation_signature: 
     if not continuation_signature:
         return "missing_continuation"
     return "match" if base_signature == continuation_signature else "mismatch"
-
-
-def _build_coordinate_profile(
-    normalized_table: NormalizedTable,
-    extracted_table: ExtractedTable | None,
-) -> ColumnCoordinateProfile:
-    warnings: list[str] = []
-    column_bboxes, source = _column_bboxes_from_extracted(extracted_table)
-    if not column_bboxes:
-        column_bboxes, source = _column_bboxes_from_metadata(normalized_table)
-
-    if not column_bboxes:
-        return ColumnCoordinateProfile(
-            table_id=normalized_table.table_id,
-            normalized_n_cols=normalized_table.n_cols,
-            coordinate_n_cols=0,
-            coordinate_source="none",
-            evidence_quality="missing",
-            warnings=["no_cell_bounding_boxes_available"],
-        )
-
-    selected_columns = _selected_original_columns(normalized_table, max(column_bboxes) + 1)
-    if len(selected_columns) != normalized_table.n_cols:
-        warnings.append(
-            f"coordinate_column_count_differs_from_normalized_grid:coordinates={len(selected_columns)}:"
-            f"normalized={normalized_table.n_cols}"
-        )
-    repairs = normalized_table.metadata.get("column_repairs")
-    if isinstance(repairs, dict) and repairs.get("extra_wide_value_column"):
-        warnings.append("coordinate_profile_unreliable_after_extra_wide_value_column_repair")
-    if isinstance(repairs, dict) and repairs.get("split_row_label_field_columns"):
-        warnings.append("coordinate_profile_approximate_after_split_row_label_field_repair")
-
-    column_metrics: list[tuple[float, float, float, float] | None] = []
-    for original_col_idx in selected_columns:
-        bboxes = column_bboxes.get(original_col_idx, [])
-        if not bboxes:
-            column_metrics.append(None)
-            continue
-        left = median([bbox[0] for bbox in bboxes])
-        right = median([bbox[2] for bbox in bboxes])
-        center = (left + right) / 2.0
-        width = max(0.0, right - left)
-        column_metrics.append((left, center, right, width))
-
-    present_metrics = [metric for metric in column_metrics if metric is not None]
-    if not present_metrics:
-        return ColumnCoordinateProfile(
-            table_id=normalized_table.table_id,
-            normalized_n_cols=normalized_table.n_cols,
-            coordinate_n_cols=0,
-            coordinate_source=source,
-            evidence_quality="missing",
-            warnings=[*warnings, "no_selected_columns_have_bounding_boxes"],
-        )
-
-    table_bbox = _bbox_from_value(normalized_table.metadata.get("bbox"))
-    table_left = table_bbox[0] if table_bbox is not None else min(metric[0] for metric in present_metrics)
-    table_right = table_bbox[2] if table_bbox is not None else max(metric[2] for metric in present_metrics)
-    table_width = table_right - table_left
-    if table_width <= 0:
-        table_left = min(metric[0] for metric in present_metrics)
-        table_right = max(metric[2] for metric in present_metrics)
-        table_width = max(1.0, table_right - table_left)
-
-    normalized_lefts: list[float | None] = []
-    normalized_centers: list[float | None] = []
-    normalized_rights: list[float | None] = []
-    normalized_widths: list[float | None] = []
-    for metric in column_metrics:
-        if metric is None:
-            normalized_lefts.append(None)
-            normalized_centers.append(None)
-            normalized_rights.append(None)
-            normalized_widths.append(None)
-            continue
-        left, center, right, width = metric
-        normalized_lefts.append(round((left - table_left) / table_width, 5))
-        normalized_centers.append(round((center - table_left) / table_width, 5))
-        normalized_rights.append(round((right - table_left) / table_width, 5))
-        normalized_widths.append(round(width / table_width, 5))
-
-    coordinate_n_cols = sum(center is not None for center in normalized_centers)
-    evidence_quality = "strong" if coordinate_n_cols == normalized_table.n_cols and not warnings else "partial"
-    return ColumnCoordinateProfile(
-        table_id=normalized_table.table_id,
-        normalized_n_cols=normalized_table.n_cols,
-        coordinate_n_cols=coordinate_n_cols,
-        coordinate_source=source,
-        evidence_quality=evidence_quality,
-        table_left=round(table_left, 4),
-        table_right=round(table_right, 4),
-        normalized_lefts=normalized_lefts,
-        normalized_centers=normalized_centers,
-        normalized_rights=normalized_rights,
-        normalized_widths=normalized_widths,
-        warnings=warnings,
-    )
-
-
-def _column_bboxes_from_extracted(
-    extracted_table: ExtractedTable | None,
-) -> tuple[dict[int, list[tuple[float, float, float, float]]], str]:
-    if extracted_table is None:
-        return {}, "none"
-    column_bboxes: dict[int, list[tuple[float, float, float, float]]] = defaultdict(list)
-    for cell in extracted_table.cells:
-        if cell.bbox is not None:
-            column_bboxes[cell.col_idx].append(cell.bbox)
-    return dict(column_bboxes), "extracted_cells"
-
-
-def _column_bboxes_from_metadata(
-    normalized_table: NormalizedTable,
-) -> tuple[dict[int, list[tuple[float, float, float, float]]], str]:
-    table_cells = normalized_table.metadata.get("table_cells")
-    if not isinstance(table_cells, list):
-        return {}, "none"
-    column_bboxes: dict[int, list[tuple[float, float, float, float]]] = defaultdict(list)
-    for row in table_cells:
-        if not isinstance(row, list):
-            continue
-        for col_idx, cell in enumerate(row):
-            bbox = _bbox_from_value(cell)
-            if bbox is not None:
-                column_bboxes[col_idx].append(bbox)
-    return dict(column_bboxes), "metadata_table_cells"
-
-
-def _selected_original_columns(normalized_table: NormalizedTable, raw_n_cols: int) -> list[int]:
-    dropped_leading_cols = _nonnegative_int(normalized_table.metadata.get("dropped_leading_cols"))
-    dropped_trailing_cols = _nonnegative_int(normalized_table.metadata.get("dropped_trailing_cols"))
-    right_bound = max(dropped_leading_cols, raw_n_cols - dropped_trailing_cols)
-    selected_columns = list(range(dropped_leading_cols, right_bound))
-    repairs = normalized_table.metadata.get("column_repairs")
-    if isinstance(repairs, dict):
-        dropped_after_repair = repairs.get("dropped_empty_columns_after_repair")
-        if isinstance(dropped_after_repair, list):
-            selected_columns = [
-                original_col_idx
-                for normalized_position, original_col_idx in enumerate(selected_columns)
-                if normalized_position not in {idx for idx in dropped_after_repair if isinstance(idx, int)}
-            ]
-    return selected_columns
-
-
-def _nonnegative_int(value: object) -> int:
-    return value if isinstance(value, int) and value >= 0 else 0
-
-
-def _bbox_from_value(value: Any) -> tuple[float, float, float, float] | None:
-    if isinstance(value, dict) and all(key in value for key in ("x0", "top", "x1", "bottom")):
-        try:
-            return (float(value["x0"]), float(value["top"]), float(value["x1"]), float(value["bottom"]))
-        except (TypeError, ValueError):
-            return None
-    if isinstance(value, (list, tuple)) and len(value) == 4:
-        try:
-            return tuple(float(part) for part in value)
-        except (TypeError, ValueError):
-            return None
-    return None
-
-
-def _compare_coordinate_profiles(
-    base_profile: ColumnCoordinateProfile,
-    continuation_profile: ColumnCoordinateProfile,
-) -> tuple[str, list[ColumnCoordinateMapEntry], list[str]]:
-    diagnostics: list[str] = []
-    if base_profile.evidence_quality == "missing" or continuation_profile.evidence_quality == "missing":
-        diagnostics.append(
-            "coordinate_evidence_missing:"
-            f"base={base_profile.evidence_quality}:continuation={continuation_profile.evidence_quality}"
-        )
-        return "missing", [], diagnostics
-
-    if base_profile.normalized_n_cols != continuation_profile.normalized_n_cols:
-        diagnostics.append(
-            "coordinate_comparison_skipped_for_normalized_column_count_mismatch:"
-            f"base={base_profile.normalized_n_cols}:continuation={continuation_profile.normalized_n_cols}"
-        )
-        return "incompatible", [], diagnostics
-
-    column_map: list[ColumnCoordinateMapEntry] = []
-    center_deltas: list[float] = []
-    width_deltas: list[float] = []
-    for col_idx in range(base_profile.normalized_n_cols):
-        base_center = _value_at(base_profile.normalized_centers, col_idx)
-        continuation_center = _value_at(continuation_profile.normalized_centers, col_idx)
-        base_width = _value_at(base_profile.normalized_widths, col_idx)
-        continuation_width = _value_at(continuation_profile.normalized_widths, col_idx)
-        if base_center is None or continuation_center is None:
-            column_map.append(
-                ColumnCoordinateMapEntry(
-                    base_col_idx=col_idx,
-                    continuation_col_idx=col_idx,
-                    base_center=base_center,
-                    continuation_center=continuation_center,
-                    base_width=base_width,
-                    continuation_width=continuation_width,
-                    status="missing_evidence",
-                )
-            )
-            continue
-        center_delta = round(abs(base_center - continuation_center), 5)
-        width_delta = (
-            round(abs(base_width - continuation_width), 5)
-            if base_width is not None and continuation_width is not None
-            else None
-        )
-        center_deltas.append(center_delta)
-        if width_delta is not None:
-            width_deltas.append(width_delta)
-        if center_delta <= 0.04 and (width_delta is None or width_delta <= 0.08):
-            status = "matched"
-        elif center_delta <= 0.08 and (width_delta is None or width_delta <= 0.15):
-            status = "possibly_matched"
-        else:
-            status = "mismatched"
-        column_map.append(
-            ColumnCoordinateMapEntry(
-                base_col_idx=col_idx,
-                continuation_col_idx=col_idx,
-                base_center=base_center,
-                continuation_center=continuation_center,
-                center_delta=center_delta,
-                base_width=base_width,
-                continuation_width=continuation_width,
-                width_delta=width_delta,
-                status=status,
-            )
-        )
-
-    if not center_deltas:
-        diagnostics.append("coordinate_evidence_partial:no_comparable_column_centers")
-        return "partial", column_map, diagnostics
-
-    max_center_delta = max(center_deltas)
-    max_width_delta = max(width_deltas) if width_deltas else 0.0
-    diagnostics.append(f"coordinate_delta:max_center={max_center_delta}:max_width={max_width_delta}")
-    if all(entry.status == "matched" for entry in column_map):
-        return "compatible", column_map, diagnostics
-    if all(entry.status in {"matched", "possibly_matched"} for entry in column_map):
-        return "possibly_compatible", column_map, diagnostics
-    return "incompatible", column_map, diagnostics
-
-
-def _value_at(values: list[float | None], index: int) -> float | None:
-    return values[index] if index < len(values) else None

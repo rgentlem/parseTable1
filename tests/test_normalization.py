@@ -561,6 +561,38 @@ def test_normalization_chunks_multi_line_extra_wide_leaf_headers() -> None:
     assert repair["padded_or_truncated_row_indices"] == []
 
 
+def test_normalization_trims_sparse_caption_tail_before_value_matrix_header() -> None:
+    """A sparse leading note should not become the header when a denser header band follows."""
+    rows = [
+        ["poverty; GHGe,", "greenhouse gas emissions.", "", "", ""],
+        ["Characteristic", "Group A", "Group A", "Group B", "Group B"],
+        ["", "Q1", "Q2", "Q1", "Q2"],
+        ["", "N = 10", "N = 11", "N = 20", "N = 21"],
+        ["Age", "1", "2", "3", "4"],
+        ["Male", "5", "6", "7", "8"],
+    ]
+    extracted = ExtractedTable(
+        table_id="tbl-leading-note-before-header",
+        source_pdf="paper.pdf",
+        page_num=1,
+        n_rows=len(rows),
+        n_cols=len(rows[0]),
+        cells=[
+            TableCell(row_idx=row_idx, col_idx=col_idx, text=value)
+            for row_idx, row in enumerate(rows)
+            for col_idx, value in enumerate(row)
+        ],
+        extraction_backend="pymupdf4llm",
+    )
+
+    normalized = normalize_extracted_table(extracted)
+
+    assert normalized.header_rows == [1, 2, 3]
+    assert 0 not in normalized.body_rows
+    assert normalized.metadata["header_detection"]["source"] == "value_matrix_boundary"
+    assert normalized.metadata["header_detection"]["value_matrix_first_value_row_idx"] == 4
+
+
 def test_normalization_repairs_embedded_label_count_in_first_value_column() -> None:
     """Label tails that share the first value cell with a count should move back to the label column."""
     rows = [

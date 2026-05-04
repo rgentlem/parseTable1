@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from table1_parser.schemas import ExtractedTable, NormalizedTable, RowView, TableCell, TableProfile
+from table1_parser.schemas import ColumnHeaderSchema, NormalizedTable, RowView, TableProfile
 from table1_parser.table_continuation_columns import build_table_continuation_column_checks
 
 
@@ -53,44 +53,17 @@ def _normalized_table(
     )
 
 
-def _extracted_table(
-    table_id: str,
-    *,
-    rows: list[list[str]],
-    page_num: int,
-    col_boxes: list[tuple[float, float]],
-) -> ExtractedTable:
-    cells: list[TableCell] = []
-    for row_idx, row in enumerate(rows):
-        top = float(row_idx * 10)
-        bottom = top + 8.0
-        for col_idx, value in enumerate(row):
-            left, right = col_boxes[col_idx]
-            cells.append(
-                TableCell(
-                    row_idx=row_idx,
-                    col_idx=col_idx,
-                    text=value,
-                    page_num=page_num,
-                    bbox=(left, top, right, bottom),
-                )
-            )
-    return ExtractedTable(
-        table_id=table_id,
-        source_pdf="paper.pdf",
-        page_num=page_num,
-        title=f"Table {page_num}",
-        caption=f"Table {page_num}",
-        n_rows=len(rows),
-        n_cols=max(len(row) for row in rows),
-        cells=cells,
-        extraction_backend="test",
-        metadata={"bbox": (0.0, 0.0, 100.0, 40.0)},
-    )
-
-
 def _profile(table_id: str, family: str = "descriptive_characteristics") -> TableProfile:
     return TableProfile(table_id=table_id, table_family=family, family_confidence=0.9)
+
+
+def _schema(table: NormalizedTable, signature: list[str]) -> ColumnHeaderSchema:
+    return ColumnHeaderSchema(
+        schema_id=f"{table.table_id}-column-schema",
+        table_id=table.table_id,
+        n_cols=table.n_cols,
+        flattened_signature=signature,
+    )
 
 
 def test_column_checks_include_descriptive_continuations_beyond_table1() -> None:
@@ -98,16 +71,13 @@ def test_column_checks_include_descriptive_continuations_beyond_table1() -> None
     rows = [["Variable", "Overall", "Cases"], ["Age", "52", "58"]]
     base = _normalized_table("tbl-7a", table_number=7, rows=rows, page_num=3)
     continuation = _normalized_table("tbl-7b", table_number=7, rows=rows, is_continuation=True, page_num=4)
-    extracted = [
-        _extracted_table("tbl-7a", rows=rows, page_num=3, col_boxes=[(0.0, 20.0), (20.0, 60.0), (60.0, 100.0)]),
-        _extracted_table("tbl-7b", rows=rows, page_num=4, col_boxes=[(1.0, 21.0), (21.0, 61.0), (61.0, 101.0)]),
-    ]
 
     checks = build_table_continuation_column_checks(
         [base, continuation],
-        extracted,
+        None,
         [_profile("tbl-7a", "estimate_results"), _profile("tbl-7b", "unknown")],
         ["demographic_description", "unknown"],
+        [_schema(base, ["Variable", "Overall", "Cases"]), _schema(continuation, ["Variable", "Overall", "Cases"])],
     )
 
     assert len(checks) == 1
@@ -117,31 +87,26 @@ def test_column_checks_include_descriptive_continuations_beyond_table1() -> None
     assert checks[0].base_table_category == "demographic_description"
     assert checks[0].normalized_column_count_match is True
     assert checks[0].header_signature_status == "match"
-    assert checks[0].coordinate_status == "compatible"
     assert checks[0].overall_status == "compatible"
 
 
-def test_column_checks_flag_shifted_continuation_coordinates() -> None:
-    """Explicit continuations with shifted value columns should be reported as incompatible."""
+def test_column_checks_ignore_page_coordinates() -> None:
+    """Page coordinate differences should not be part of continuation compatibility."""
     rows = [["Variable", "Overall", "Cases"], ["Age", "52", "58"]]
     base = _normalized_table("tbl-2a", table_number=2, rows=rows, page_num=3)
     continuation = _normalized_table("tbl-2b", table_number=2, rows=rows, is_continuation=True, page_num=4)
-    extracted = [
-        _extracted_table("tbl-2a", rows=rows, page_num=3, col_boxes=[(0.0, 20.0), (20.0, 60.0), (60.0, 100.0)]),
-        _extracted_table("tbl-2b", rows=rows, page_num=4, col_boxes=[(0.0, 20.0), (40.0, 70.0), (80.0, 100.0)]),
-    ]
 
     checks = build_table_continuation_column_checks(
         [base, continuation],
-        extracted,
+        None,
         [_profile("tbl-2a"), _profile("tbl-2b")],
         ["demographic_description", "demographic_description"],
+        [_schema(base, ["Variable", "Overall", "Cases"]), _schema(continuation, ["Variable", "Overall", "Cases"])],
     )
 
     assert len(checks) == 1
-    assert checks[0].coordinate_status == "incompatible"
-    assert checks[0].overall_status == "incompatible"
-    assert any(entry.status == "mismatched" for entry in checks[0].column_map)
+    assert checks[0].header_signature_status == "match"
+    assert checks[0].overall_status == "compatible"
 
 
 def test_column_checks_skip_non_descriptive_continuations_when_profiles_are_available() -> None:
@@ -185,3 +150,61 @@ def test_column_checks_do_not_try_random_same_number_pairs() -> None:
     )
 
     assert checks == []
+
+
+def test_column_checks_include_uncaptioned_next_page_demographic_fragment() -> None:
+    """Uncaptioned adjacent demographic fragments should get continuation diagnostics."""
+    rows = [["Variable", "Q1", "Q2"], ["Age", "52", "58"]]
+    base = _normalized_table("tbl-1a", table_number=1, rows=rows, page_num=2)
+    continuation = NormalizedTable(
+        table_id="tbl-1b",
+        title=None,
+        caption=None,
+        header_rows=[0],
+        body_rows=[1],
+        row_views=[_row_view(1, ["BMI", "29", "31"])],
+        n_rows=2,
+        n_cols=3,
+        metadata={
+            "bbox": (0.0, 0.0, 100.0, 40.0),
+            "cleaned_rows": [["Variable", "Q1", "Q2"], ["BMI", "29", "31"]],
+            "table_number": None,
+            "is_continuation": False,
+            "continuation_of_table_number": None,
+            "source_page_num": 3,
+        },
+    )
+
+    checks = build_table_continuation_column_checks(
+        [base, continuation],
+        table_profiles=[_profile("tbl-1a"), _profile("tbl-1b")],
+        table_categories=["demographic_description", "demographic_description"],
+        column_header_schemas=[
+            _schema(base, ["Variable", "Q1", "Q2"]),
+            _schema(continuation, ["Variable", "Q1", "Q2"]),
+        ],
+    )
+
+    assert len(checks) == 1
+    assert checks[0].table_number == 1
+    assert checks[0].base_table_id == "tbl-1a"
+    assert checks[0].continuation_table_id == "tbl-1b"
+    assert checks[0].overall_status == "compatible"
+
+
+def test_column_checks_fail_without_column_schema() -> None:
+    """Continuation checks should not infer header signatures without schema artifacts."""
+    rows = [["Variable", "Q1", "Q2"], ["Age", "52", "58"]]
+    base = _normalized_table("tbl-1a", table_number=1, rows=rows, page_num=2)
+    continuation = _normalized_table("tbl-1b", table_number=1, rows=rows, is_continuation=True, page_num=3)
+
+    checks = build_table_continuation_column_checks(
+        [base, continuation],
+        table_profiles=[_profile("tbl-1a"), _profile("tbl-1b")],
+        table_categories=["demographic_description", "demographic_description"],
+    )
+
+    assert len(checks) == 1
+    assert checks[0].header_signature_status == "missing_both"
+    assert checks[0].overall_status == "incompatible"
+    assert any("column_header_schema_missing_or_empty" in item for item in checks[0].diagnostics)

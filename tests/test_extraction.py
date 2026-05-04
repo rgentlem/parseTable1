@@ -13,6 +13,7 @@ from table1_parser.extract import build_extractor
 from table1_parser.extract import pymupdf4llm_extractor as pymupdf4llm_extractor_module
 from table1_parser.extract.layout_fallback import (
     _build_rows_from_line_segment,
+    build_row_grid_from_lines,
     build_text_layout_candidates,
 )
 from table1_parser.extract.pymupdf4llm_extractor import PyMuPDF4LLMExtractor
@@ -1029,6 +1030,60 @@ def test_text_layout_candidates_preserve_cell_bboxes_for_indentation() -> None:
     assert candidates[0].raw_rows[2][0] == "Male"
     table_cells = candidates[0].metadata["table_cells"]
     assert table_cells[2][0] == (68.0, 112.0, 92.0, 120.0)
+
+
+def test_text_layout_candidates_keep_lowercase_sentence_fragment_in_caption() -> None:
+    """A wrapped lowercase sentence tail belongs to the caption, not row zero."""
+    words = [
+        {"text": "Table", "x0": 50.0, "x1": 76.0, "top": 60.0, "bottom": 68.0},
+        {"text": "1.", "x0": 80.0, "x1": 90.0, "top": 60.0, "bottom": 68.0},
+        {"text": "Baseline", "x0": 94.0, "x1": 136.0, "top": 60.0, "bottom": 68.0},
+        {"text": "income", "x0": 140.0, "x1": 174.0, "top": 60.0, "bottom": 68.0},
+        {"text": "to", "x0": 178.0, "x1": 188.0, "top": 60.0, "bottom": 68.0},
+        {"text": "poverty;", "x0": 50.0, "x1": 88.0, "top": 70.0, "bottom": 78.0},
+        {"text": "GHGe,", "x0": 92.0, "x1": 124.0, "top": 70.0, "bottom": 78.0},
+        {"text": "greenhouse", "x0": 128.0, "x1": 182.0, "top": 70.0, "bottom": 78.0},
+        {"text": "gas", "x0": 186.0, "x1": 204.0, "top": 70.0, "bottom": 78.0},
+        {"text": "emissions.", "x0": 208.0, "x1": 260.0, "top": 70.0, "bottom": 78.0},
+        {"text": "Characteristic", "x0": 50.0, "x1": 112.0, "top": 90.0, "bottom": 98.0},
+        {"text": "Q1", "x0": 200.0, "x1": 212.0, "top": 90.0, "bottom": 98.0},
+        {"text": "Q2", "x0": 260.0, "x1": 272.0, "top": 90.0, "bottom": 98.0},
+        {"text": "Age", "x0": 50.0, "x1": 68.0, "top": 104.0, "bottom": 112.0},
+        {"text": "43", "x0": 200.0, "x1": 212.0, "top": 104.0, "bottom": 112.0},
+        {"text": "46", "x0": 260.0, "x1": 272.0, "top": 104.0, "bottom": 112.0},
+    ]
+
+    candidates = build_text_layout_candidates(
+        page_num=1,
+        page_text="Table 1. Baseline income to\npoverty; GHGe, greenhouse gas emissions.",
+        words=words,
+        layout_source="pymupdf_text_positions",
+    )
+
+    assert len(candidates) == 1
+    assert candidates[0].caption == "Table 1. Baseline income to\npoverty; GHGe, greenhouse gas emissions."
+    assert "poverty" not in " ".join(candidates[0].raw_rows[0])
+    assert candidates[0].raw_rows[0][0].startswith("Characteristic")
+
+
+def test_text_layout_grid_prefers_early_stable_value_anchors() -> None:
+    """Later noisy rows should not collapse a clear early value-column layout."""
+    lines: list[dict[str, object]] = []
+    for line_idx in range(4):
+        words = [{"text": "Age" if line_idx else "Characteristic", "x0": 10.0, "x1": 50.0, "top": line_idx * 10.0, "bottom": line_idx * 10.0 + 5.0}]
+        for col_idx, x0 in enumerate([100.0, 150.0, 200.0, 250.0], start=1):
+            words.append({"text": str(10 * line_idx + col_idx), "x0": x0, "x1": x0 + 8.0, "top": line_idx * 10.0, "bottom": line_idx * 10.0 + 5.0})
+        lines.append({"text": " ".join(str(word["text"]) for word in words), "words": words})
+    for line_idx in range(4, 28):
+        words = [{"text": f"Label {line_idx}", "x0": 10.0, "x1": 55.0, "top": line_idx * 10.0, "bottom": line_idx * 10.0 + 5.0}]
+        for x0 in [100.0, 166.0, 183.0, 250.0]:
+            words.append({"text": str(line_idx), "x0": x0, "x1": x0 + 8.0, "top": line_idx * 10.0, "bottom": line_idx * 10.0 + 5.0})
+        lines.append({"text": " ".join(str(word["text"]) for word in words), "words": words})
+
+    rows, _bboxes = build_row_grid_from_lines(lines)
+
+    assert len(rows[0]) == 5
+    assert rows[1][1:] == ["11", "12", "13", "14"]
 
 
 def test_detect_table_candidates_scores_tables_on_a_page() -> None:

@@ -303,7 +303,6 @@ show_paper_table_inventory <- function(paper_dir) {
       "base_n_cols",
       "continuation_n_cols",
       "header_signature_status",
-      "coordinate_status",
       "overall_status",
       "confidence"
     )
@@ -695,7 +694,6 @@ table_continuation_column_checks_df <- function(outputs) {
       continuation_n_cols = as.integer(check$continuation_n_cols %||% NA_integer_),
       normalized_column_count_match = as.logical(check$normalized_column_count_match %||% NA),
       header_signature_status = as.character(check$header_signature_status %||% ""),
-      coordinate_status = as.character(check$coordinate_status %||% ""),
       overall_status = as.character(check$overall_status %||% ""),
       confidence = as.numeric(check$confidence %||% NA_real_),
       diagnostics = paste(as.character(unlist(check$diagnostics %||% list())), collapse = " | "),
@@ -716,7 +714,6 @@ table_continuation_column_checks_df <- function(outputs) {
       continuation_n_cols = integer(),
       normalized_column_count_match = logical(),
       header_signature_status = character(),
-      coordinate_status = character(),
       overall_status = character(),
       confidence = numeric(),
       diagnostics = character(),
@@ -755,32 +752,14 @@ show_table_continuation_column_check <- function(paper_dir, check_index = 0L) {
   cat(sprintf("categories: %s -> %s\n", as.character(check$base_table_category %||% ""), as.character(check$continuation_table_category %||% "")))
   cat(sprintf("columns: %s -> %s\n", as.integer(check$base_n_cols %||% NA_integer_), as.integer(check$continuation_n_cols %||% NA_integer_)))
   cat(sprintf("header_signature_status: %s\n", as.character(check$header_signature_status %||% "")))
-  cat(sprintf("coordinate_status: %s\n", as.character(check$coordinate_status %||% "")))
   cat(sprintf("overall_status: %s\n", as.character(check$overall_status %||% "")))
   cat(sprintf("confidence: %.3f\n\n", as.numeric(check$confidence %||% NA_real_)))
 
-  column_map <- check$column_map %||% list()
-  column_rows <- lapply(column_map, function(entry) {
-    data.frame(
-      base_col_idx = as.integer(entry$base_col_idx %||% NA_integer_),
-      continuation_col_idx = as.integer(entry$continuation_col_idx %||% NA_integer_),
-      base_center = as.numeric(entry$base_center %||% NA_real_),
-      continuation_center = as.numeric(entry$continuation_center %||% NA_real_),
-      center_delta = as.numeric(entry$center_delta %||% NA_real_),
-      base_width = as.numeric(entry$base_width %||% NA_real_),
-      continuation_width = as.numeric(entry$continuation_width %||% NA_real_),
-      width_delta = as.numeric(entry$width_delta %||% NA_real_),
-      status = as.character(entry$status %||% ""),
-      stringsAsFactors = FALSE
-    )
-  })
-  cat("Column Map\n")
-  if (length(column_rows) == 0) {
-    cat("[No rows]\n\n")
-  } else {
-    print(do.call(rbind, column_rows), row.names = FALSE, right = FALSE)
-    cat("\n")
-  }
+  cat("Base Column Signature\n")
+  cat(paste0("- ", as.character(unlist(check$base_column_signature %||% list())), collapse = "\n"))
+  cat("\n\nContinuation Column Signature\n")
+  cat(paste0("- ", as.character(unlist(check$continuation_column_signature %||% list())), collapse = "\n"))
+  cat("\n\n")
 
   diagnostics <- as.character(unlist(check$diagnostics %||% list()))
   cat("Diagnostics\n")

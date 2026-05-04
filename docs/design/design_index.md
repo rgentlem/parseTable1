@@ -28,7 +28,7 @@ Then use the documents below as needed.
   Design for writing deterministic row/column/value-pattern diagnostics as a normal parse artifact without changing parser behavior.
 
 - `docs/design/table_continuation_resolution.md`
-  Planned successor design for resolving explicit continued table fragments into a single working table artifact before semantic table definition, including column-coordinate compatibility gates and source provenance.
+  Planned successor design for resolving explicit continued table fragments into a single working table artifact before semantic table definition, including schema-derived column compatibility gates and source provenance.
 
 - `docs/design/column_header_schema.md`
   Design for a parser-native column header tree / column schema artifact between `NormalizedTable` and `TableDefinition`, preserving leaf columns, spanning header groups, raw cell evidence, and coordinates before downstream semantic projection or stored tableone-style summary rendering.

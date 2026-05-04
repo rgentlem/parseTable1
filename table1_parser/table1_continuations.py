@@ -1,21 +1,21 @@
-"""Artifact-only grouping and merging for explicit Table 1 continuations."""
+"""Artifact-only grouping and merging for Table 1 continuations."""
 
 from __future__ import annotations
 
 import re
 
-from table1_parser.schemas import NormalizedTable, RowView, Table1ContinuationGroup, Table1ContinuationMember
+from table1_parser.schemas import ColumnHeaderSchema, NormalizedTable, RowView, Table1ContinuationGroup, Table1ContinuationMember
 
 
 TABLE_1_CAPTION_PATTERN = re.compile(r"\btable\s*1\b", re.IGNORECASE)
 CONTINUATION_PATTERN = re.compile(r"\bcont(?:inued)?\.?\b|\(\s*continued\s*\)", re.IGNORECASE)
-SAMPLE_SIZE_PATTERN = re.compile(r"\(?\s*n\s*=\s*[0-9,]+\s*\)?", re.IGNORECASE)
 MARKUP_PATTERN = re.compile(r"[*_`]+")
 SPACE_PATTERN = re.compile(r"\s+")
 
 
 def build_table1_continuation_artifacts(
     normalized_tables: list[NormalizedTable],
+    column_header_schemas: list[ColumnHeaderSchema] | None = None,
 ) -> tuple[list[Table1ContinuationGroup], list[NormalizedTable]]:
     """Build Table 1 continuation decision records and merged normalized-table artifacts."""
     groups: list[Table1ContinuationGroup] = []
@@ -25,10 +25,25 @@ def build_table1_continuation_artifacts(
     for table_index, table in enumerate(normalized_tables):
         if table_index in consumed_continuation_indices:
             continue
-        if not _is_table_1(table) or not _is_explicit_continuation(table):
+        base_index = _previous_table1_index(normalized_tables, table_index)
+        prior_page = normalized_tables[base_index].metadata.get("source_page_num") if base_index is not None else None
+        page = table.metadata.get("source_page_num")
+        rows = table.metadata.get("cleaned_rows")
+        inferred_continuation = (
+            base_index is not None
+            and not _is_table_1(table)
+            and not _is_explicit_continuation(table)
+            and not table.title
+            and not table.caption
+            and table.metadata.get("table_number") is None
+            and not (isinstance(prior_page, int) and isinstance(page, int) and page != prior_page + 1)
+            and isinstance(rows, list)
+            and bool(table.body_rows)
+            and table.n_cols >= 2
+        )
+        if not ((_is_table_1(table) and _is_explicit_continuation(table)) or inferred_continuation):
             continue
 
-        base_index = _previous_table1_index(normalized_tables, table_index)
         if base_index is None:
             groups.append(
                 _build_group(
@@ -39,7 +54,10 @@ def build_table1_continuation_artifacts(
                     decision_reason="no_prior_table1_fragment",
                     confidence=0.0,
                     column_signature=[],
-                    diagnostics=["Continuation signal found but no prior Table 1 fragment was available."],
+                    diagnostics=[
+                        "Continuation signal found but no prior Table 1 fragment was available.",
+                        "column_header_schema_required_for_signature_comparison",
+                    ],
                 )
             )
             continue
@@ -55,11 +73,15 @@ def build_table1_continuation_artifacts(
                 continue
             break
 
-        signature = _column_signature(normalized_tables[base_index])
+        signature = _column_signature(normalized_tables[base_index], column_header_schemas, base_index)
         diagnostics: list[str] = []
+        if not signature:
+            diagnostics.append(f"column_header_schema_missing_or_empty:table_index={base_index}")
         signatures_match = bool(signature)
         for source_index in source_indices[1:]:
-            continuation_signature = _column_signature(normalized_tables[source_index])
+            continuation_signature = _column_signature(normalized_tables[source_index], column_header_schemas, source_index)
+            if not continuation_signature:
+                diagnostics.append(f"column_header_schema_missing_or_empty:table_index={source_index}")
             if continuation_signature != signature:
                 signatures_match = False
                 diagnostics.append(
@@ -70,14 +92,19 @@ def build_table1_continuation_artifacts(
 
         group_id = f"table1_continuation_{len(groups)}"
         if signatures_match:
+            reason = (
+                "uncaptioned_table1_continuation_candidate_and_matching_columns"
+                if inferred_continuation
+                else "explicit_table1_continuation_and_matching_columns"
+            )
             groups.append(
                 _build_group(
                     group_id=group_id,
                     normalized_tables=normalized_tables,
                     source_indices=source_indices,
                     merge_decision="merge",
-                    decision_reason="explicit_table1_continuation_and_matching_columns",
-                    confidence=0.98,
+                    decision_reason=reason,
+                    confidence=0.82 if inferred_continuation else 0.98,
                     column_signature=signature,
                     diagnostics=diagnostics,
                 )
@@ -85,14 +112,19 @@ def build_table1_continuation_artifacts(
             merged_tables.append(_merge_table1_group(group_id, normalized_tables, source_indices, signature))
             consumed_continuation_indices.update(source_indices[1:])
         else:
+            reason = (
+                "uncaptioned_table1_continuation_candidate_but_incompatible_columns"
+                if inferred_continuation
+                else "explicit_table1_continuation_but_incompatible_columns"
+            )
             groups.append(
                 _build_group(
                     group_id=group_id,
                     normalized_tables=normalized_tables,
                     source_indices=source_indices,
                     merge_decision="skip",
-                    decision_reason="explicit_table1_continuation_but_incompatible_columns",
-                    confidence=0.35,
+                    decision_reason=reason,
+                    confidence=0.3 if inferred_continuation else 0.35,
                     column_signature=signature,
                     diagnostics=diagnostics,
                 )
@@ -139,38 +171,24 @@ def _previous_table1_index(tables: list[NormalizedTable], table_index: int) -> i
     return None
 
 
-def _column_signature(table: NormalizedTable) -> list[str]:
-    rows = table.metadata.get("cleaned_rows")
-    if not isinstance(rows, list):
+def _column_signature(
+    table: NormalizedTable,
+    column_header_schemas: list[ColumnHeaderSchema] | None = None,
+    table_index: int | None = None,
+) -> list[str]:
+    if column_header_schemas is None or table_index is None or table_index >= len(column_header_schemas):
         return []
-    header_rows = table.header_rows or list(range(min(2, len(rows))))
-    usable_header_rows: list[list[str]] = []
-    for row_idx in header_rows:
-        if row_idx >= len(rows) or not isinstance(rows[row_idx], list):
-            continue
-        cleaned_row = [str(cell) for cell in rows[row_idx]]
-        nonempty = [cell for cell in cleaned_row if cell.strip()]
-        if len(nonempty) == 1 and CONTINUATION_PATTERN.search(nonempty[0]):
-            continue
-        usable_header_rows.append(cleaned_row)
-    if not usable_header_rows:
+    schema = column_header_schemas[table_index]
+    if schema.table_id != table.table_id or not schema.flattened_signature:
         return []
-    width = max(len(row) for row in usable_header_rows)
-    signature: list[str] = []
-    for col_idx in range(width):
-        pieces = [row[col_idx] for row in usable_header_rows if col_idx < len(row) and row[col_idx].strip()]
-        signature.append(_normalize_header_cell(" ".join(pieces)))
-    return signature
+    return [_normalize_header_cell(item) for item in schema.flattened_signature]
 
 
 def _normalize_header_cell(text: str) -> str:
     normalized = MARKUP_PATTERN.sub("", text)
     normalized = normalized.replace("\u00a0", " ").replace("\u2009", " ").replace("\u202f", " ")
-    normalized = SAMPLE_SIZE_PATTERN.sub("", normalized)
     normalized = SPACE_PATTERN.sub(" ", normalized).strip().lower()
     normalized = normalized.strip(" .,:;")
-    normalized = re.sub(r"\bp\s*[-–—]?\s*value\b", "p_value", normalized)
-    normalized = re.sub(r"\bvariables?\b|\bcharacteristics?\b", "variable", normalized)
     return SPACE_PATTERN.sub(" ", normalized).strip()
 
 
@@ -303,4 +321,3 @@ def _merge_table1_group(
             "metadata": merged_metadata,
         }
     )
-

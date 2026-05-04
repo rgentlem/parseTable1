@@ -65,12 +65,17 @@ def build_column_header_schema(
     declared_leaf_header_row_idx = (
         max(declared_leaf_header_candidates) if declared_leaf_header_candidates else max(header_rows, default=None)
     )
-    usable_header_rows = [
-        row_idx
-        for row_idx in header_rows
-        if (len(header_rows) > 1 and row_idx == declared_leaf_header_row_idx)
-        or not _looks_like_title_or_continuation_header([_grid_cell(grid, row_idx, col_idx) for col_idx in range(table.n_cols)])
-    ]
+    header_detection = table.metadata.get("header_detection")
+    header_detection_source = header_detection.get("source") if isinstance(header_detection, dict) else None
+    if header_detection_source == "value_matrix_boundary":
+        usable_header_rows = list(header_rows)
+    else:
+        usable_header_rows = [
+            row_idx
+            for row_idx in header_rows
+            if (len(header_rows) > 1 and row_idx == declared_leaf_header_row_idx)
+            or not _looks_like_title_or_continuation_header([_grid_cell(grid, row_idx, col_idx) for col_idx in range(table.n_cols)])
+        ]
     skipped_leaf_header_rows = [row_idx for row_idx in header_rows if row_idx not in usable_header_rows]
     for row_idx in skipped_leaf_header_rows:
         diagnostics.append(f"skipped_title_like_leaf_header_row:row={row_idx}")
@@ -120,7 +125,36 @@ def build_column_header_schema(
     if leaf_header_row_idx is not None:
         prior_rows = [row_idx for row_idx in usable_header_rows if row_idx < leaf_header_row_idx]
         if prior_rows:
-            if inferred_header_rows_used:
+            bounded_header_rows = sorted(row_idx for row_idx in usable_header_rows if row_idx <= leaf_header_row_idx)
+            row_bounds = table.metadata.get("row_bounds")
+            rules = table.metadata.get("horizontal_rules")
+            split_after_position: int | None = None
+            if isinstance(row_bounds, list) and isinstance(rules, list):
+                numeric_rules = sorted(float(rule) for rule in rules if isinstance(rule, (int, float)))
+                for position, (upper_row_idx, lower_row_idx) in enumerate(
+                    zip(bounded_header_rows, bounded_header_rows[1:], strict=False)
+                ):
+                    if upper_row_idx >= len(row_bounds) or lower_row_idx >= len(row_bounds):
+                        continue
+                    upper_bounds = row_bounds[upper_row_idx]
+                    lower_bounds = row_bounds[lower_row_idx]
+                    if (
+                        not isinstance(upper_bounds, (list, tuple))
+                        or not isinstance(lower_bounds, (list, tuple))
+                        or len(upper_bounds) != 2
+                        or len(lower_bounds) != 2
+                    ):
+                        continue
+                    upper_bottom = float(upper_bounds[1])
+                    lower_top = float(lower_bounds[0])
+                    if any(upper_bottom - 2.0 <= rule <= lower_top + 2.0 for rule in numeric_rules):
+                        split_after_position = position
+            if split_after_position is not None:
+                split_rows = bounded_header_rows[split_after_position + 1 :]
+                if len(split_rows) > 1 and leaf_header_row_idx in split_rows:
+                    leaf_header_row_indices = split_rows
+                    diagnostics.append(f"split_wrapped_leaf_header_rows_by_rule:rows={','.join(map(str, split_rows))}")
+            if leaf_header_row_indices == [leaf_header_row_idx] and inferred_header_rows_used:
                 stacked_rows = [leaf_header_row_idx]
                 for prior_row_idx in sorted(prior_rows, reverse=True):
                     if _physical_row_gap(table.metadata, prior_row_idx, stacked_rows[0]) > 5.0:
@@ -148,6 +182,7 @@ def build_column_header_schema(
     metadata_cells = table.metadata.get("table_cells")
     evidence: list[ColumnHeaderCellEvidence] = []
     evidence_by_position: dict[tuple[int, int], str] = {}
+    leaf_stack_start = min(leaf_header_row_indices) if leaf_header_row_indices else leaf_header_row_idx
 
     def evidence_for(row_idx: int, col_idx: int) -> str:
         existing_id = evidence_by_position.get((row_idx, col_idx))
@@ -197,6 +232,20 @@ def build_column_header_schema(
             if not leaf_label and col_idx == 0 and _looks_like_row_label_column(grid, body_rows, col_idx):
                 leaf_label = "Characteristics"
                 diagnostics.append(f"inferred_row_label_leaf_header:col={col_idx}")
+            elif not leaf_label and col_idx == 0:
+                upper_label = next(
+                    (
+                        _grid_cell(grid, row_idx, col_idx)
+                        for row_idx in sorted(usable_header_rows)
+                        if leaf_stack_start is not None
+                        and row_idx < leaf_stack_start
+                        and clean_text(_grid_cell(grid, row_idx, col_idx)).lower() in LABEL_COLUMN_TOKENS
+                    ),
+                    "",
+                )
+                if upper_label:
+                    leaf_label = upper_label
+                    diagnostics.append(f"used_upper_row_label_leaf_header:col={col_idx}")
             elif not leaf_label and _looks_like_count_column(grid, body_rows, col_idx):
                 leaf_label = "n"
                 diagnostics.append(f"inferred_count_leaf_header:col={col_idx}")
@@ -722,51 +771,81 @@ def _header_runs_for_groups(
     metadata: dict[str, object],
 ) -> list[_HeaderRun]:
     runs: list[_HeaderRun] = []
+    header_detection = metadata.get("header_detection")
+    trust_structural_header_rows = (
+        isinstance(header_detection, dict) and header_detection.get("source") == "value_matrix_boundary"
+    )
     for row_idx in sorted(row_indices):
         row = [_grid_cell(grid, row_idx, col_idx) for col_idx in range(n_cols)]
-        if _looks_like_title_or_continuation_header(row):
+        if not trust_structural_header_rows and _looks_like_title_or_continuation_header(row):
             continue
-        split_distinct_cols: set[int] = set()
-        probe_col = 0
-        while probe_col < n_cols:
-            if not row[probe_col]:
-                probe_col += 1
-                continue
-            segment_start = probe_col
-            seen_segment: set[str] = set()
-            while probe_col < n_cols and row[probe_col] and row[probe_col] not in seen_segment:
-                seen_segment.add(row[probe_col])
-                probe_col += 1
-            if probe_col == n_cols and len(seen_segment) > 3 and segment_start <= max(1, n_cols // 3):
-                split_distinct_cols.update(range(segment_start, probe_col))
-            while probe_col < n_cols and row[probe_col]:
-                probe_col += 1
         row_runs: list[_HeaderRun] = []
-        col_idx = 0
-        while col_idx < n_cols:
-            if not row[col_idx]:
-                col_idx += 1
-                continue
-            start = col_idx
-            values: list[str] = []
-            positions: list[tuple[int, int]] = []
-            repeated_block = start + 1 < n_cols and row[start + 1] == row[start]
-            seen: set[str] = set()
-            while col_idx < n_cols and row[col_idx] and (start != 0 or col_idx == 0):
-                if start in split_distinct_cols and col_idx > start:
-                    break
-                if repeated_block and row[col_idx] != row[start]:
-                    break
-                if not repeated_block and row[col_idx] in seen:
-                    break
-                values.append(row[col_idx])
-                positions.append((row_idx, col_idx))
-                seen.add(row[col_idx])
-                col_idx += 1
-            label = values[0] if len(set(values)) == 1 else clean_text(" ".join(values))
-            inference_rule = "repeated_label_span" if len(values) > 1 and len(set(values)) == 1 else "explicit_cell_span"
-            confidence = 0.92 if inference_rule == "repeated_label_span" else 0.86
-            row_runs.append(_HeaderRun(row_idx, row_idx, start, col_idx - 1, label, tuple(positions), inference_rule, confidence))
+        geometry_gap_used = False
+        if n_cols >= 4 and clean_text(row[0]).lower() in LABEL_COLUMN_TOKENS and all(row[col_idx] for col_idx in range(1, n_cols)):
+            gaps: list[tuple[int, float]] = []
+            for col_idx in range(1, n_cols - 1):
+                left_bbox = _metadata_cell_bbox(metadata.get("table_cells"), row_idx, col_idx)
+                right_bbox = _metadata_cell_bbox(metadata.get("table_cells"), row_idx, col_idx + 1)
+                if left_bbox is not None and right_bbox is not None:
+                    gaps.append((col_idx, float(right_bbox[0]) - float(left_bbox[2])))
+            positive_gaps = [gap for _, gap in gaps if gap > 0]
+            split_cols = [
+                col_idx
+                for col_idx, gap in gaps
+                if positive_gaps and gap >= max(24.0, median(positive_gaps) * 3.0)
+            ]
+            if split_cols:
+                geometry_gap_used = True
+                start = 1
+                for split_col in [*split_cols, n_cols - 1]:
+                    label = clean_text(" ".join(row[col_idx] for col_idx in range(start, split_col + 1)))
+                    if split_col > start and label:
+                        positions = tuple((row_idx, col_idx) for col_idx in range(start, split_col + 1))
+                        row_runs.append(
+                            _HeaderRun(row_idx, row_idx, start, split_col, label, positions, "explicit_cell_span", 0.82)
+                        )
+                    start = split_col + 1
+        if not row_runs:
+            split_distinct_cols: set[int] = set()
+            probe_col = 0
+            while probe_col < n_cols:
+                if not row[probe_col]:
+                    probe_col += 1
+                    continue
+                segment_start = probe_col
+                seen_segment: set[str] = set()
+                while probe_col < n_cols and row[probe_col] and row[probe_col] not in seen_segment:
+                    seen_segment.add(row[probe_col])
+                    probe_col += 1
+                if probe_col == n_cols and len(seen_segment) > 3 and segment_start <= max(1, n_cols // 3):
+                    split_distinct_cols.update(range(segment_start, probe_col))
+                while probe_col < n_cols and row[probe_col]:
+                    probe_col += 1
+            col_idx = 0
+            while col_idx < n_cols:
+                if not row[col_idx]:
+                    col_idx += 1
+                    continue
+                start = col_idx
+                values: list[str] = []
+                positions: list[tuple[int, int]] = []
+                repeated_block = start + 1 < n_cols and row[start + 1] == row[start]
+                seen: set[str] = set()
+                while col_idx < n_cols and row[col_idx] and (start != 0 or col_idx == 0):
+                    if start in split_distinct_cols and col_idx > start:
+                        break
+                    if repeated_block and row[col_idx] != row[start]:
+                        break
+                    if not repeated_block and row[col_idx] in seen:
+                        break
+                    values.append(row[col_idx])
+                    positions.append((row_idx, col_idx))
+                    seen.add(row[col_idx])
+                    col_idx += 1
+                label = values[0] if len(set(values)) == 1 else clean_text(" ".join(values))
+                inference_rule = "repeated_label_span" if len(values) > 1 and len(set(values)) == 1 else "explicit_cell_span"
+                confidence = 0.92 if inference_rule == "repeated_label_span" else 0.86
+                row_runs.append(_HeaderRun(row_idx, row_idx, start, col_idx - 1, label, tuple(positions), inference_rule, confidence))
         value_runs = [
             run
             for run in row_runs
@@ -785,7 +864,7 @@ def _header_runs_for_groups(
             and len({run.label for run in value_runs}) == 1
             and all(run.col_start == run.col_end for run in value_runs)
         )
-        if len(value_runs) >= 2 and (has_blank_gap or has_text_run) and not repeated_single_cell_labels:
+        if not geometry_gap_used and len(value_runs) >= 2 and (has_blank_gap or has_text_run) and not repeated_single_cell_labels:
             expanded: list[_HeaderRun] = []
             for run in row_runs:
                 if run not in value_runs:

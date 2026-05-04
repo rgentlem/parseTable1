@@ -371,18 +371,34 @@ def _drop_sparse_nonmatrix_value_columns(
         return raw_rows, cleaned_rows, []
     dropped: list[dict[str, int]] = []
     keep_indices = [0]
+    matrix_rows = [row_idx for row_idx in body_rows if row_idx < len(cleaned_rows) and _has_substantive_row_values(cleaned_rows[row_idx][1:])]
+    if len(matrix_rows) < 3:
+        matrix_rows = body_rows
     for col_idx in range(1, len(cleaned_rows[0])):
         populated = 0
         numeric = 0
-        for row_idx in body_rows:
+        left_numeric = 0
+        right_numeric = 0
+        for row_idx in matrix_rows:
             if row_idx >= len(cleaned_rows):
                 continue
             value = clean_text(cleaned_rows[row_idx][col_idx])
+            if col_idx > 1:
+                left_numeric += int(_looks_like_numeric_matrix_cell(cleaned_rows[row_idx][col_idx - 1]))
+            if col_idx + 1 < len(cleaned_rows[row_idx]):
+                right_numeric += int(_looks_like_numeric_matrix_cell(cleaned_rows[row_idx][col_idx + 1]))
             if not value:
                 continue
             populated += 1
             numeric += int(_looks_like_numeric_matrix_cell(value))
-        if populated and numeric == 0 and populated <= max(4, len(body_rows) // 4):
+        if (
+            (populated and numeric == 0 and populated <= max(4, len(body_rows) // 4))
+            or (
+                populated == 0
+                and left_numeric >= max(3, len(matrix_rows) // 4)
+                and right_numeric >= max(3, len(matrix_rows) // 4)
+            )
+        ):
             dropped.append({"dropped_col_idx": col_idx, "populated_body_rows": populated})
             continue
         keep_indices.append(col_idx)
@@ -758,7 +774,10 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
                 or COUNT_PCT_STYLE_PATTERN.search(row[1]) is not None
                 or row[1] == "(%)"
             )
-            and any(clean_text(cell) for cell in row[2:])
+            and (
+                _has_data_like_values(row[2:])
+                or (row[1] == "(%)" and any(clean_text(cell) for cell in row[2:]))
+            )
         ]
         second_column_value_like_count = sum(
             detect_value_pattern(cleaned_rows[row_idx][1]).pattern != "unknown"
@@ -821,6 +840,30 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
                 "source": "extra_wide_value_column_boundary",
                 "extra_wide_header_rows": repaired_header_rows,
                 "extra_wide_first_value_row_idx": extra_wide_value_column_repair.get("first_value_row_idx"),
+            }
+    first_matrix_row_idx = _first_dense_numeric_matrix_row(cleaned_rows)
+    if (
+        extra_wide_value_column_repair is None
+        and first_matrix_row_idx is not None
+        and 2 < first_matrix_row_idx <= 5
+        and len(header_rows) < first_matrix_row_idx
+    ):
+        repaired_header_rows = [row_idx for row_idx in range(first_matrix_row_idx) if any(clean_text(cell) for cell in cleaned_rows[row_idx])]
+        while len(repaired_header_rows) > 1:
+            first_row = cleaned_rows[repaired_header_rows[0]]
+            later_counts = [sum(bool(clean_text(cell)) for cell in cleaned_rows[row_idx]) for row_idx in repaired_header_rows[1:]]
+            if sum(bool(clean_text(cell)) for cell in first_row) <= 2 and max(later_counts, default=0) >= max(3, len(first_row) // 2):
+                repaired_header_rows = repaired_header_rows[1:]
+                continue
+            break
+        if len(repaired_header_rows) > len(header_rows):
+            header_rows = repaired_header_rows
+            body_rows = [row_idx for row_idx in range(first_matrix_row_idx, len(cleaned_rows))]
+            header_detection = {
+                **header_detection,
+                "source": "value_matrix_boundary",
+                "value_matrix_header_rows": repaired_header_rows,
+                "value_matrix_first_value_row_idx": first_matrix_row_idx,
             }
     suppressed_stub_row_indices = (
         set(sparse_stub_label_column_repair.get("removed_stub_row_indices", []))

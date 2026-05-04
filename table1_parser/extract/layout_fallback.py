@@ -16,6 +16,7 @@ from table1_parser.extract.table_detector import (
 ALPHA_TOKEN_PATTERN = re.compile(r"[A-Za-z]")
 NUMERIC_TOKEN_PATTERN = re.compile(r"\d")
 TABLE_CAPTION_PATTERN = re.compile(r"^\s*table\s*\d+\b(?:\s*[:.])?", re.IGNORECASE)
+SENTENCE_TERMINAL_PATTERN = re.compile(r"[.!?][\"')\]]*$")
 LINE_MERGE_TOLERANCE = 4.0
 COLUMN_CLUSTER_TOLERANCE = 18.0
 COLLAPSED_LABEL_PATTERN = re.compile(r"[a-z][A-Z]|[A-Za-z-]{8,}")
@@ -260,6 +261,22 @@ def build_row_grid_from_lines(
             for cluster in clusters
             if len({_line_index for _position, _line_index in cluster}) >= minimum_anchor_lines
         ]
+        if line_count > 20:
+            for prefix_limit in (4, 8, 12, 16, 20):
+                prefix_items = [(position, line_index) for position, line_index in numeric_position_items if line_index < prefix_limit]
+                prefix_clusters: list[list[tuple[float, int]]] = [[prefix_items[0]]] if prefix_items else []
+                for position_item in prefix_items[1:]:
+                    if abs(position_item[0] - prefix_clusters[-1][-1][0]) <= COLUMN_CLUSTER_TOLERANCE:
+                        prefix_clusters[-1].append(position_item)
+                    else:
+                        prefix_clusters.append([position_item])
+                prefix_anchors = [
+                    sum(position for position, _line_index in cluster) / len(cluster)
+                    for cluster in prefix_clusters
+                    if len({_line_index for _position, _line_index in cluster}) >= 3
+                ]
+                if len(prefix_anchors) >= 4 and len(prefix_anchors) > len(value_anchors):
+                    value_anchors = prefix_anchors
         if len(value_anchors) < 3 and broad_numeric_positions:
             broad_clusters: list[list[float]] = [[broad_numeric_positions[0]]]
             for position in broad_numeric_positions[1:]:
@@ -296,6 +313,10 @@ def build_row_grid_from_lines(
         row_bboxes: list[tuple[float, float, float, float] | None] = [None] * row_width
         for word in line["words"]:
             text = str(word["text"]).strip()
+            word_width = float(word["x1"]) - float(word["x0"])
+            word_height = float(word["bottom"]) - float(word["top"])
+            if text.isdigit() and len(text) >= 4 and word_width <= max(6.0, word_height * 0.5):
+                continue
             column_index = 0
             while column_index < len(boundaries) and float(word["x0"]) >= boundaries[column_index]:
                 column_index += 1
@@ -315,9 +336,9 @@ def build_row_grid_from_lines(
                     chars_in_word = [
                         char
                         for char in page_chars
-                        if float(char["x0"]) >= x0 - 0.5
+                        if top - 0.5 <= (float(char["top"]) + float(char["bottom"])) / 2.0 <= bottom + 0.5
+                        and float(char["x0"]) >= x0 - 0.5
                         and float(char["x1"]) <= x1 + 0.5
-                        and min(bottom, float(char["bottom"])) >= max(top, float(char["top"]))
                     ]
                     if chars_in_word:
                         ordered_chars = sorted(chars_in_word, key=lambda char: float(char["x0"]))
@@ -435,16 +456,25 @@ def build_text_layout_candidates(
             else first_caption_text
         ]
         content_start = 1
-        if len(segment_lines) > 1:
-            second_line_text = str(segment_lines[1]["text"]).strip()
-            second_line_word_count = len(segment_lines[1]["words"])
+        while content_start < len(segment_lines) and not SENTENCE_TERMINAL_PATTERN.search(" ".join(caption_parts)):
+            next_line_text = str(segment_lines[content_start]["text"]).strip()
+            next_line_word_count = len(segment_lines[content_start]["words"])
             if (
-                len(second_line_text) >= 4
-                and second_line_word_count <= 2
-                and not _is_numeric_like(second_line_text)
+                len(next_line_text) >= 4
+                and (
+                    next_line_word_count <= 2
+                    or (
+                        next_line_word_count <= 12
+                        and next_line_text[:1].islower()
+                        and SENTENCE_TERMINAL_PATTERN.search(next_line_text)
+                    )
+                )
+                and not _is_numeric_like(next_line_text)
             ):
-                caption_parts.append(second_line_text)
-                content_start = 2
+                caption_parts.append(next_line_text)
+                content_start += 1
+                continue
+            break
         content_lines = segment_lines[content_start:]
         rows, cell_bboxes = build_row_grid_from_lines(content_lines, page_chars=page_chars)
         if not rows:

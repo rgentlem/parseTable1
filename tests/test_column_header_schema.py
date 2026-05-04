@@ -141,6 +141,70 @@ def test_build_schema_preserves_extra_wide_header_stack() -> None:
     assert schema.flattened_signature[2] == "Severity >=3 mm SE"
 
 
+def test_build_schema_uses_internal_header_rule_for_wrapped_leaf_stack() -> None:
+    """A rule inside the header separates spanning groups from wrapped leaf labels."""
+    rows = [
+        ["Characteristic", "Group A", "Group A", "Group B", "Group B"],
+        ["", "Q1", "Q2", "Q1", "Q2"],
+        ["", "(10-35)", "(35-43)", "(17-52)", "(52-60)"],
+        ["", "N = 10", "N = 11", "N = 20", "N = 21"],
+        ["Age", "43", "46", "57", "58"],
+    ]
+    table = _normalized_table("tbl-internal-header-rule", rows, header_rows=[0, 1, 2, 3], body_rows=[4])
+    table.metadata["row_bounds"] = [(0.0, 5.0), (10.0, 15.0), (16.0, 21.0), (22.0, 27.0), (35.0, 40.0)]
+    table.metadata["horizontal_rules"] = [7.0, 30.0]
+
+    schema = build_column_header_schema(table, _extracted_table("tbl-internal-header-rule", rows))
+
+    assert [leaf.leaf_label for leaf in schema.leaves] == [
+        "Characteristic",
+        "Q1 (10-35) N = 10",
+        "Q2 (35-43) N = 11",
+        "Q1 (17-52) N = 20",
+        "Q2 (52-60) N = 21",
+    ]
+    assert [(group.label, group.col_start, group.col_end) for group in schema.groups] == [
+        ("Group A", 1, 2),
+        ("Group B", 3, 4),
+    ]
+    assert "split_wrapped_leaf_header_rows_by_rule:rows=1,2,3" in schema.diagnostics
+
+
+def test_build_schema_splits_value_region_group_headers_by_geometry_gap() -> None:
+    """A value-only group row can start after the row-label column and split at a large gap."""
+    rows = [
+        ["Characteristic", "Group", "A", "Label", "Group", "B"],
+        ["", "Q1", "Q2", "Q3", "Q1", "Q2"],
+        ["", "N = 10", "N = 11", "N = 12", "N = 20", "N = 21"],
+        ["Age", "43", "46", "48", "57", "58"],
+    ]
+    table = _normalized_table("tbl-value-region-gap", rows, header_rows=[0, 1, 2], body_rows=[3])
+    table.metadata["row_bounds"] = [(0.0, 5.0), (10.0, 15.0), (16.0, 21.0), (30.0, 35.0)]
+    table.metadata["horizontal_rules"] = [7.0, 24.0]
+    table.metadata["table_cells"] = [
+        [
+            [0.0, 0.0, 40.0, 5.0],
+            [100.0, 0.0, 130.0, 5.0],
+            [132.0, 0.0, 150.0, 5.0],
+            [152.0, 0.0, 180.0, 5.0],
+            [250.0, 0.0, 280.0, 5.0],
+            [282.0, 0.0, 300.0, 5.0],
+        ],
+        [None, None, None, None, None, None],
+        [None, None, None, None, None, None],
+        [None, None, None, None, None, None],
+    ]
+
+    schema = build_column_header_schema(table, _extracted_table("tbl-value-region-gap", rows))
+
+    assert [(group.label, group.col_start, group.col_end, group.inference_rule) for group in schema.groups] == [
+        ("Group A Label", 1, 3, "explicit_cell_span"),
+        ("Group B", 4, 5, "explicit_cell_span"),
+    ]
+    assert schema.flattened_signature[1] == "Group A Label Q1 N = 10"
+    assert schema.flattened_signature[4] == "Group B Q1 N = 20"
+
+
 def test_build_schema_skips_eke_table1_title_like_header_rows() -> None:
     """Eke-like table title rows should not become spanning groups over leaves."""
     rows = [

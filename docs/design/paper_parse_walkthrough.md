@@ -141,6 +141,8 @@ The extractor still scores candidates, but the score is now diagnostic rather th
 - allow explicit-table grid refinement when rule and word geometry clearly support a better internal column structure
 - suppress backend table-like boxes once the document has entered a `References` or bibliography section, because reference lists are document metadata rather than epidemiology tables; any future reference parser should consume them as atomic citation records, not tokenized table cells
 - require page-text-layout fallback candidates to have a real table-number/caption signal unless their reconstructed grid has strong table geometry: at least three columns, at least four rows, a header-like top row, stable multi-column alignment, and multiple rows with data-like trailing cells
+- when a text-position fallback caption wraps onto the next line, keep a short caption continuation line with the table label, and also keep a lowercase sentence fragment ending in punctuation with the caption instead of treating it as the first table row
+- when text-position fallback builds column anchors, prefer an early stable table prefix if using the full page would collapse separated value columns because of later wrapped rows, page-margin text, or other noisy numeric positions
 
 This matters for papers with table continuations, odd numbering, or weak captions. A bad score should be inspectable, not silently destructive.
 
@@ -246,6 +248,11 @@ This exists because parser-facing cleanup is useful, but it should not be invisi
 Normalization separates header rows from body rows.
 
 The detector uses the cleaned grid and, when available, row geometry such as row bounds and horizontal rules.
+When the first dense numeric value row is a stronger structural signal than
+the initial detector, normalization can use it as the body boundary and treat
+the non-empty rows above it as the header band. A sparse leading caption or
+note tail above that band remains preserved in `metadata.cleaned_rows`, but it
+is excluded from both `header_rows` and `body_rows`.
 
 This is an important turning point in the parse, because many later steps assume the system already knows which rows are header material and which rows are body material.
 
@@ -366,13 +373,31 @@ When this fires, normalization:
 
 This treats the visual table as a normal multi-column table while preserving the original collapsed cell text in `ExtractedTable`.
 
-#### 3.12 Drop Columns Emptied By Repair
+#### 3.12 Recover Header Bands From Value-Matrix Boundaries
+
+Some extracted table fragments begin with a stray caption tail or note row,
+followed by a compact multi-row header and then a dense numeric value matrix.
+If the numeric matrix starts early in the table and the rows above it are
+structurally header-like, normalization can use that first matrix row as the
+header/body boundary.
+
+When this fires, normalization:
+
+- promotes the non-empty rows above the value matrix into `header_rows`
+- trims a sparse leading note/caption tail out of the promoted header band
+- starts `body_rows` at the first dense numeric value row
+- records the boundary source in `metadata.header_detection`
+
+This is a structural boundary repair, not a semantic interpretation of the
+header words.
+
+#### 3.13 Drop Columns Emptied By Repair
 
 If a split-value repair empties a helper column across the table, normalization can drop that now-empty column and rerun header detection on the repaired grid.
 
 This keeps the normalized grid closer to the logical table structure that the later parser actually wants.
 
-#### 3.13 Decide Whether Indentation Is Informative
+#### 3.14 Decide Whether Indentation Is Informative
 
 For some papers, first-column indentation clearly helps distinguish parent rows from level rows.
 
@@ -432,6 +457,14 @@ though it lies left of the adjacent leaf boundary. The repair is structural and
 keeps the moved-from cell as evidence; it should not depend on recognizing
 paper-specific words.
 
+The schema builder also uses rule and coordinate evidence inside the header
+band. A horizontal rule between header rows can mark the rows below it as the
+wrapped leaf-header stack while keeping higher rows as spanning groups. The
+row-label column is allowed to sit outside value-region group headers, since
+those group headers often describe only subsets of the data columns. If a
+value-region group header is extracted as adjacent text fragments, a large
+horizontal gap can split those fragments into separate groups.
+
 The schema is deliberately not a tableone object and does not store summary
 values. It supplies the column axis that later semantic and stored-summary
 objects can consume.
@@ -447,31 +480,32 @@ Why this exists:
 ## Step 5: Build Continuation Inspection Artifacts
 
 When parse outputs are written and the paper-level table inventory is
-available, the parser checks whether explicit `demographic_description` table
-continuations have compatible columns.
+available, the parser checks whether explicit or narrow inferred
+`demographic_description` table continuations have compatible columns.
 
 This is a diagnostic-only stage. It does not try random integrations. A
 continuation fragment must already have clear continuation evidence for a
-specific table number before the parser compares it to the closest prior
-fragment for that table number. The demographic-description gate comes from the
-same paper-level table taxonomy written to `paper_table_inventory.json`.
+specific table number, or be an uncaptained, unnumbered adjacent-page fragment
+after a demographic table, before the parser compares it to the closest prior
+fragment for that table number. The demographic-description gate comes from
+the same paper-level table taxonomy written to `paper_table_inventory.json`.
 
 The parser writes:
 
 - `table_continuation_column_checks.json`
   records normalized column-count agreement, column-header signature agreement,
-  cell coordinate profiles when available, per-column coordinate deltas, and an
-  overall compatible/possibly-compatible/incompatible/no-parent status
+  and an overall compatible/incompatible/no-parent status
 
-The same parse still checks whether the paper appears to have an explicit Table 1 continuation.
+The same parse still checks whether the paper appears to have a Table 1 continuation.
 
-This stage is intentionally narrow. It only considers Table 1, and it only accepts a merge when the continuation evidence is explicit and the normalized column signatures are compatible.
+This stage is intentionally narrow. It only considers Table 1, and it only accepts a merge when the continuation evidence is explicit or strongly inferred and the normalized column signatures are compatible.
 
 Current examples of continuation evidence include:
 
 - extractor metadata indicating a continuation of table number 1
 - title or caption text such as `Table 1 (continued)`
 - a continuation marker in the first normalized rows
+- an uncaptained, unnumbered table-like fragment on the next page after Table 1
 
 When the evidence is compatible, the parser writes two inspection artifacts:
 
@@ -487,9 +521,12 @@ This stage does not currently feed the merged rows into `TableDefinition` or `Pa
 The default parser still defines and parses the original normalized tables separately.
 That constraint keeps this change useful for inspection without silently changing downstream table semantics.
 
-When available, the continuation column check uses
-`ColumnHeaderSchema.flattened_signature` for header-signature comparison. It
-still does not merge tables or change downstream parse inputs.
+Continuation header comparison is schema-only: the continuation artifacts use
+`ColumnHeaderSchema.flattened_signature` and do not reconstruct signatures from
+normalized header rows. If a usable schema is missing, compatibility fails with
+a structured diagnostic instead of falling back to a cruder comparison.
+Coordinate profiles remain separate diagnostics and do not override a matching
+schema signature with matching normalized column counts.
 
 ## Step 6: Provisional Table Routing With `TableProfile`
 
@@ -744,7 +781,7 @@ When a parse looks wrong, inspect the outputs in this order.
    Public R inspection should use the paper's `table_number` as the conceptual selector; extraction-order indices are retained only for low-level provenance/debug mapping.
 
 4. `table_continuation_column_checks.json`
-   If a demographic-description table has an explicit continuation, inspect this to see whether the normalized column count, header signature, and available cell coordinates are compatible before any future integration work.
+   If a demographic-description table has an explicit continuation, inspect this to see whether the normalized column count and schema-derived header signature are compatible before any future integration work.
 
 5. `table_profiles.json`
    If the table was routed to the wrong family, the problem is in routing.

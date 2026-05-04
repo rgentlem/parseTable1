@@ -114,7 +114,7 @@ only render that object.
 A leaf column is a parser-facing normalized column that may carry body content.
 The schema should keep the row-label column as a leaf-like column with
 `is_row_label_column = true`, because it participates in header alignment and
-coordinate compatibility. Data columns should have `is_value_column = true`.
+downstream column identity. Data columns should have `is_value_column = true`.
 
 Leaf columns are inferred from:
 

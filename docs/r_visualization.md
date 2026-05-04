@@ -116,9 +116,9 @@ What these are for:
 - `summarize_table1_continuations(...)`
   print one row per detected Table 1 continuation group, including merge/skip decision and source table IDs
 - `summarize_table_continuation_column_checks(...)`
-  print one row per explicit demographic-description continuation column check, including column-count, header-signature, coordinate, and overall compatibility status
+  print one row per explicit demographic-description continuation column check, including column-count, schema-derived header-signature, and overall compatibility status
 - `show_table_continuation_column_check(...)`
-  print one continuation column check in detail, including the per-column coordinate map and diagnostics
+  print one continuation column check in detail, including schema signatures and diagnostics
 - `show_parse_quality(...)`
   print deterministic table, row, and column diagnostics, including column-role warnings such as weak p-value columns
 - `show_merged_table1(...)`
