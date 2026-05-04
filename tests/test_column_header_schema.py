@@ -253,6 +253,27 @@ def test_build_schema_moves_geometric_leading_leaf_fragment_to_previous_column()
     )
 
 
+def test_build_schema_preserves_dense_declared_leaf_header_row() -> None:
+    """Long repeated leaf labels should not be discarded as title text."""
+    rows = [
+        ["Characteristic", "Shared group", "Shared group", "Shared group", "Shared group"],
+        [
+            "",
+            "Quintile 1 (10-35), N = 10,737",
+            "Quintile 2 (35-43), N = 10,737",
+            "Quintile 3 (43-51), N = 10,736",
+            "Quintile 4 (51-95), N = 10,737",
+        ],
+        ["Age", "10", "11", "12", "13"],
+    ]
+    table = _normalized_table("tbl-dense-leaf-header", rows, header_rows=[0, 1])
+    schema = build_column_header_schema(table, _extracted_table("tbl-dense-leaf-header", rows))
+
+    assert schema.leaf_header_row_idx == 1
+    assert [leaf.leaf_label for leaf in schema.leaves[1:]] == rows[1][1:]
+    assert [(group.label, group.col_start, group.col_end) for group in schema.groups] == [("Shared group", 1, 4)]
+
+
 def test_build_schema_degrades_without_header_rows() -> None:
     """A table with no reliable headers should keep leaves and diagnostics."""
     rows = [["Age, years", "52.3", "0.03"], ["Male", "34", "0.10"]]

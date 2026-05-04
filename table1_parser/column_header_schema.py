@@ -58,10 +58,18 @@ def build_column_header_schema(
     if len(body_rows) != len(table.body_rows):
         diagnostics.append("some_body_rows_out_of_grid_bounds")
 
+    first_declared_body_row = min(body_rows) if body_rows else None
+    declared_leaf_header_candidates = [
+        row_idx for row_idx in header_rows if first_declared_body_row is None or row_idx < first_declared_body_row
+    ]
+    declared_leaf_header_row_idx = (
+        max(declared_leaf_header_candidates) if declared_leaf_header_candidates else max(header_rows, default=None)
+    )
     usable_header_rows = [
         row_idx
         for row_idx in header_rows
-        if not _looks_like_title_or_continuation_header([_grid_cell(grid, row_idx, col_idx) for col_idx in range(table.n_cols)])
+        if (len(header_rows) > 1 and row_idx == declared_leaf_header_row_idx)
+        or not _looks_like_title_or_continuation_header([_grid_cell(grid, row_idx, col_idx) for col_idx in range(table.n_cols)])
     ]
     skipped_leaf_header_rows = [row_idx for row_idx in header_rows if row_idx not in usable_header_rows]
     for row_idx in skipped_leaf_header_rows:

@@ -360,6 +360,8 @@ When this fires, normalization:
 - keeps the first extracted column as the row-label field
 - splits the broad value-region cell into separate parser-facing columns
 - repeats coarser shared header labels over their leaf value/statistic columns
+- chunks dense multi-line header stacks into one label per expanded value column
+- records the recovered header band and first value row as boundary evidence
 - records the repair evidence in `metadata.column_repairs.extra_wide_value_column`
 
 This treats the visual table as a normal multi-column table while preserving the original collapsed cell text in `ExtractedTable`.

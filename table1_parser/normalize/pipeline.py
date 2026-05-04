@@ -430,7 +430,13 @@ def _repair_extra_wide_value_column(
     header_stack_rows = [
         row_idx
         for row_idx, parts in enumerate(cleaned_parts_by_row[:first_value_row_idx])
-        if parts and (len(parts) == 1 or len(parts) == expected_width or expected_width % len(parts) == 0)
+        if parts
+        and (
+            len(parts) == 1
+            or len(parts) == expected_width
+            or expected_width % len(parts) == 0
+            or len(parts) % expected_width == 0
+        )
     ]
     if not header_stack_rows:
         return raw_rows, cleaned_rows, None
@@ -445,6 +451,16 @@ def _repair_extra_wide_value_column(
         if len(raw_parts) == expected_width:
             expanded_raw = raw_parts
             expanded_cleaned = cleaned_parts
+        elif row_idx < first_value_row_idx and len(raw_parts) > expected_width and len(raw_parts) % expected_width == 0:
+            chunk_size = len(raw_parts) // expected_width
+            expanded_raw = [
+                clean_text(" ".join(raw_parts[start : start + chunk_size]))
+                for start in range(0, len(raw_parts), chunk_size)
+            ]
+            expanded_cleaned = [
+                clean_text(" ".join(cleaned_parts[start : start + chunk_size]))
+                for start in range(0, len(cleaned_parts), chunk_size)
+            ]
         elif row_idx < first_value_row_idx and len(raw_parts) == 1:
             expanded_raw = raw_parts * expected_width
             expanded_cleaned = cleaned_parts * expected_width
@@ -470,6 +486,7 @@ def _repair_extra_wide_value_column(
         "created_value_columns": expected_width,
         "value_stack_row_indices": value_stack_rows,
         "first_value_row_idx": first_value_row_idx,
+        "header_stack_row_indices": header_stack_rows,
         "repeated_header_row_indices": repeated_header_rows,
         "padded_or_truncated_row_indices": padded_or_truncated_rows,
         "evidence": {
@@ -790,6 +807,21 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
         row_bounds=header_row_bounds,
         horizontal_rules=header_horizontal_rules,
     )
+    if extra_wide_value_column_repair is not None:
+        repaired_header_rows = [
+            row_idx
+            for row_idx in extra_wide_value_column_repair.get("header_stack_row_indices", [])
+            if isinstance(row_idx, int) and 0 <= row_idx < len(cleaned_rows)
+        ]
+        if repaired_header_rows:
+            header_rows = repaired_header_rows
+            body_rows = [row_idx for row_idx in range(len(cleaned_rows)) if row_idx not in set(header_rows)]
+            header_detection = {
+                **header_detection,
+                "source": "extra_wide_value_column_boundary",
+                "extra_wide_header_rows": repaired_header_rows,
+                "extra_wide_first_value_row_idx": extra_wide_value_column_repair.get("first_value_row_idx"),
+            }
     suppressed_stub_row_indices = (
         set(sparse_stub_label_column_repair.get("removed_stub_row_indices", []))
         if sparse_stub_label_column_repair is not None

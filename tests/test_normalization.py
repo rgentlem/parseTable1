@@ -456,7 +456,7 @@ def test_normalization_expands_extra_wide_stacked_value_column() -> None:
     repair = normalized.metadata["column_repairs"]["extra_wide_value_column"]
     assert normalized.n_cols == 13
     assert normalized.header_rows == [0, 1]
-    assert normalized.metadata["header_detection"]["source"] == "content"
+    assert normalized.metadata["header_detection"]["source"] == "extra_wide_value_column_boundary"
     assert normalized.metadata["cleaned_rows"][0][1:] == ["Severity of AL, %"] * 12
     assert normalized.metadata["cleaned_rows"][1][1:5] == ["‡3 mm", "SE", "‡4 mm", "SE"]
     assert normalized.metadata["cleaned_rows"][2][1:] == [
@@ -475,6 +475,7 @@ def test_normalization_expands_extra_wide_stacked_value_column() -> None:
     ]
     assert repair["created_value_columns"] == 12
     assert repair["first_value_row_idx"] == 2
+    assert repair["header_stack_row_indices"] == [0, 1]
 
 
 def test_normalization_expands_grouped_extra_wide_header_stack() -> None:
@@ -512,7 +513,52 @@ def test_normalization_expands_grouped_extra_wide_header_stack() -> None:
     assert normalized.metadata["cleaned_rows"][1][1:7] == ["‡3 mm", "‡3 mm", "‡4 mm", "‡4 mm", "‡5 mm", "‡5 mm"]
     assert normalized.metadata["cleaned_rows"][2][1:7] == ["%", "SE", "%", "SE", "%", "SE"]
     assert repair["created_value_columns"] == 10
+    assert repair["header_stack_row_indices"] == [0, 1, 2]
     assert repair["repeated_header_row_indices"] == [0, 1]
+
+
+def test_normalization_chunks_multi_line_extra_wide_leaf_headers() -> None:
+    """Dense stacked header rows can carry several lines per visual value column."""
+    rows = [
+        ["Characteristic", "US NHANES\nUS NHANES\nUKB\nUKB"],
+        [
+            "",
+            "Quintile 1\n(10-35)\nN = 10\nQuintile 2\n(35-43)\nN = 11\n"
+            "Quintile 1\n(17-52)\nN = 20\nQuintile 2\n(52-60)\nN = 21",
+        ],
+        ["Age", "1\n2\n3\n4"],
+        ["Male", "5\n6\n7\n8"],
+        ["Female", "9\n10\n11\n12"],
+    ]
+    extracted = ExtractedTable(
+        table_id="tbl-extra-wide-chunked-headers",
+        source_pdf="paper.pdf",
+        page_num=1,
+        n_rows=len(rows),
+        n_cols=2,
+        cells=[
+            TableCell(row_idx=row_idx, col_idx=col_idx, text=value)
+            for row_idx, row in enumerate(rows)
+            for col_idx, value in enumerate(row)
+        ],
+        extraction_backend="pymupdf4llm",
+    )
+
+    normalized = normalize_extracted_table(extracted)
+
+    repair = normalized.metadata["column_repairs"]["extra_wide_value_column"]
+    assert normalized.n_cols == 5
+    assert normalized.header_rows == [0, 1]
+    assert normalized.metadata["cleaned_rows"][0][1:] == ["US NHANES", "US NHANES", "UKB", "UKB"]
+    assert normalized.metadata["cleaned_rows"][1][1:] == [
+        "Quintile 1 (10-35) N = 10",
+        "Quintile 2 (35-43) N = 11",
+        "Quintile 1 (17-52) N = 20",
+        "Quintile 2 (52-60) N = 21",
+    ]
+    assert repair["created_value_columns"] == 4
+    assert repair["header_stack_row_indices"] == [0, 1]
+    assert repair["padded_or_truncated_row_indices"] == []
 
 
 def test_normalization_repairs_embedded_label_count_in_first_value_column() -> None:
