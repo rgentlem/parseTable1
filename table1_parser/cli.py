@@ -229,6 +229,7 @@ def _handle_parse(args: argparse.Namespace) -> int:
         artifacts.table_profiles,
         artifacts.table_definitions,
         artifacts.parsed_tables,
+        artifacts.parse_quality_reports,
     )
     table_definitions, parsed_tables = _annotate_parse_failures(
         artifacts.table_definitions,
@@ -263,6 +264,7 @@ def _handle_review_variable_plausibility(args: argparse.Namespace) -> int:
         artifacts.table_profiles,
         artifacts.table_definitions,
         artifacts.parsed_tables,
+        artifacts.parse_quality_reports,
     )
     table_definitions, parsed_tables = _annotate_parse_failures(
         artifacts.table_definitions,

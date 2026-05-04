@@ -288,13 +288,31 @@ When this fires, normalization:
 
 This is intentionally a structural repair. It should not depend on exact words such as `Outcomes` or `Covariates`.
 
-#### 3.9 Drop Columns Emptied By Repair
+#### 3.9 Repair Split Row-Label Field Columns
+
+Some PDF table extractors split the single logical row-label field across two adjacent columns. Typical examples are categorical levels that appear in the second extracted column while parent variables appear in the first, or labels such as `Married/` plus `Living with partner` split across the first two columns.
+
+Normalization can merge this two-column row-label field when strong row-pattern evidence shows that:
+
+- the second column repeatedly contains row-label fragments
+- data-like values begin to the right of the first two columns
+- both shifted rows and merged-label rows are present
+
+When this fires, normalization:
+
+- shifts second-column label fragments into the first column
+- merges first-column and second-column fragments when both contain label text
+- records the repair evidence in `metadata.column_repairs.split_row_label_field_columns`
+
+This repair preserves raw extracted text in `ExtractedTable`; it only changes the parser-facing normalized grid.
+
+#### 3.10 Drop Columns Emptied By Repair
 
 If a split-value repair empties a helper column across the table, normalization can drop that now-empty column and rerun header detection on the repaired grid.
 
 This keeps the normalized grid closer to the logical table structure that the later parser actually wants.
 
-#### 3.10 Decide Whether Indentation Is Informative
+#### 3.11 Decide Whether Indentation Is Informative
 
 For some papers, first-column indentation clearly helps distinguish parent rows from level rows.
 
@@ -382,6 +400,7 @@ For rows:
 - categorical parent rows
 - child level rows
 - one-row binary indicator rows, where a single `n (%)` row reports the counted state and the complementary state is implicit
+- count-percent categorical level continuations, where value-pattern continuity can preserve levels under an `n (%)` parent even when indentation is unavailable or unreliable
 - variable labels
 - normalized variable names
 - row spans

@@ -258,6 +258,47 @@ table_definition_by_index <- function(outputs, table_index = 0L) {
   table
 }
 
+table_number_for_normalized_table <- function(table) {
+  metadata <- table$metadata %||% list()
+  signals <- metadata$signals %||% list()
+  value <- metadata$table_number %||% signals$caption_table_number %||% NULL
+  if (is.null(value) || length(value) == 0 || is.na(value)) {
+    return(NA_integer_)
+  }
+  as.integer(value)
+}
+
+table_index_by_number <- function(outputs, table_number) {
+  requested <- as.integer(table_number)
+  matches <- which(vapply(
+    outputs$normalized_tables %||% list(),
+    function(x) identical(table_number_for_normalized_table(x), requested),
+    logical(1)
+  ))
+  if (length(matches) == 0) {
+    stop(sprintf("No table found for table_number=%s.", requested), call. = FALSE)
+  }
+  if (length(matches) == 1) {
+    return(as.integer(matches[[1]] - 1L))
+  }
+
+  non_failed <- matches[vapply(matches, function(idx) {
+    status <- table_processing_status_by_index(outputs, table_index = idx - 1L)
+    !identical(status$status %||% "", "failed")
+  }, logical(1))]
+  if (length(non_failed) > 0) {
+    return(as.integer(non_failed[[1]] - 1L))
+  }
+  as.integer(matches[[1]] - 1L)
+}
+
+resolve_table_index <- function(outputs, table_index = 0L, table_number = NULL) {
+  if (!is.null(table_number)) {
+    return(table_index_by_number(outputs, table_number))
+  }
+  as.integer(table_index)
+}
+
 list_llm_variable_plausibility_debug_runs <- function(paper_dir) {
   debug_root <- paper_output_paths(paper_dir)$variable_plausibility_debug_dir
   if (!dir.exists(debug_root)) {
@@ -632,8 +673,9 @@ summarize_table_processing <- function(paper_dir) {
   invisible(summary_df)
 }
 
-show_table_processing <- function(paper_dir, table_index = 0L) {
+show_table_processing <- function(paper_dir, table_index = 0L, table_number = NULL) {
   outputs <- load_paper_outputs(paper_dir)
+  table_index <- resolve_table_index(outputs, table_index = table_index, table_number = table_number)
   normalized <- normalized_table_by_index(outputs, table_index)
   definition <- table_definition_by_index(outputs, table_index)
   parsed <- parsed_table_by_index(outputs, table_index)
@@ -702,8 +744,9 @@ show_table_processing <- function(paper_dir, table_index = 0L) {
   invisible(status_record)
 }
 
-show_parse_quality <- function(paper_dir, table_index = 0L) {
+show_parse_quality <- function(paper_dir, table_index = 0L, table_number = NULL) {
   outputs <- load_paper_outputs(paper_dir)
+  table_index <- resolve_table_index(outputs, table_index = table_index, table_number = table_number)
   normalized <- normalized_table_by_index(outputs, table_index)
   report <- parse_quality_report_by_index(
     outputs,
@@ -743,8 +786,9 @@ show_parse_quality <- function(paper_dir, table_index = 0L) {
   invisible(report)
 }
 
-show_table_structure <- function(paper_dir, table_index = 0L, max_rows = NULL) {
+show_table_structure <- function(paper_dir, table_index = 0L, table_number = NULL, max_rows = NULL) {
   outputs <- load_paper_outputs(paper_dir)
+  table_index <- resolve_table_index(outputs, table_index = table_index, table_number = table_number)
   normalized <- normalized_table_by_index(outputs, table_index)
   definition <- table_definition_by_index(outputs, table_index)
   status_record <- table_processing_status_by_index(
@@ -1145,8 +1189,9 @@ show_paper_references <- function(paper_dir, reference_kind = NULL, reference_la
   invisible(references)
 }
 
-show_table_context <- function(paper_dir, table_index = 0L, match_type = NULL) {
+show_table_context <- function(paper_dir, table_index = 0L, table_number = NULL, match_type = NULL) {
   outputs <- load_paper_outputs(paper_dir)
+  table_index <- resolve_table_index(outputs, table_index = table_index, table_number = table_number)
   context <- table_context_by_index(outputs, table_index)
   passages <- context$passages %||% list()
   if (!is.null(match_type)) {

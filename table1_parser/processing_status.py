@@ -21,23 +21,61 @@ def build_table_processing_statuses(
     table_profiles: Sequence[TableProfile],
     table_definitions: Sequence[TableDefinition],
     parsed_tables: Sequence[ParsedTable],
+    parse_quality_reports: Sequence[object] | None = None,
 ) -> list[TableProcessingStatus]:
     """Build per-table rescue and failure status records using current pipeline outputs."""
     statuses: list[TableProcessingStatus] = []
-    for extracted_table, normalized_table, table_profile, table_definition, parsed_table in zip(
+    for table_index, (extracted_table, normalized_table, table_profile, table_definition, parsed_table) in enumerate(zip(
         extracted_tables,
         normalized_tables,
         table_profiles,
         table_definitions,
         parsed_tables,
         strict=True,
-    ):
+    )):
         extracted_rows = [["" for _ in range(extracted_table.n_cols)] for _ in range(extracted_table.n_rows)]
         for cell in extracted_table.cells:
             if cell.row_idx < extracted_table.n_rows and cell.col_idx < extracted_table.n_cols:
                 extracted_rows[cell.row_idx][cell.col_idx] = cell.text
         extracted_metadata = extracted_table.metadata if isinstance(extracted_table.metadata, dict) else {}
         extracted_signals = extracted_metadata.get("signals", {})
+        quality_report = (
+            parse_quality_reports[table_index]
+            if parse_quality_reports is not None and table_index < len(parse_quality_reports)
+            else None
+        )
+        quality_error_codes = {
+            str(item.code)
+            for item in getattr(quality_report, "table_diagnostics", [])
+            if getattr(item, "severity", None) == "error"
+        }
+        has_table_signal = bool(
+            extracted_table.title
+            or extracted_table.caption
+            or extracted_metadata.get("table_number")
+            or (
+                isinstance(extracted_signals, dict)
+                and (
+                    extracted_signals.get("caption_match")
+                    or extracted_signals.get("table_1_match")
+                    or extracted_signals.get("caption_table_number")
+                )
+            )
+        )
+        non_semantic_layout_candidate = (
+            not has_table_signal
+            and table_profile.table_family == "unknown"
+            and bool(
+                quality_error_codes.intersection(
+                    {
+                        "unknown_row_fraction_likely_failure",
+                        "low_value_pattern_recognition",
+                        "weak_variable_structure",
+                        "multiple_quality_warnings",
+                    }
+                )
+            )
+        )
         is_descriptive_candidate = (
             table_profile.table_family == "descriptive_characteristics"
             or bool(isinstance(extracted_signals, dict) and extracted_signals.get("table_1_match"))
@@ -163,7 +201,12 @@ def build_table_processing_statuses(
             notes.append("descriptive_table_candidate")
         if isinstance(extracted_signals, dict) and extracted_signals.get("table_1_match"):
             notes.append("table_1_candidate")
-        if is_descriptive_candidate and extraction_inadequate:
+        if non_semantic_layout_candidate:
+            status = "failed"
+            failure_stage = "extraction"
+            failure_reason = "non_table_layout_candidate"
+            notes.append("non_semantic_table_candidate")
+        elif is_descriptive_candidate and extraction_inadequate:
             status = "failed"
             failure_stage = "extraction"
             failure_reason = (

@@ -110,6 +110,14 @@ What these are for:
 table1-parser parse testpapers/OPEandRA.pdf
 ```
 
+When a paper contains non-table layout boxes before the published tables, prefer `table_number` in the inspection helpers:
+
+```r
+source("R/inspect_paper_outputs.R")
+show_table_structure("outputs/papers/OPEandRA", table_number = 1L)
+show_parse_quality("outputs/papers/OPEandRA", table_number = 1L)
+```
+
 2. Run the optional variable-plausibility review with debug tracing enabled:
 
 ```bash

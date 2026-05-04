@@ -7,16 +7,53 @@ import re
 from table1_parser.heuristics.level_detector import detect_level_row_indices
 from table1_parser.heuristics.models import RowClassification, VariableBlock
 from table1_parser.heuristics.row_classifier import classify_rows, indentation_is_informative
+from table1_parser.heuristics.value_pattern_detector import detect_value_pattern
 from table1_parser.schemas import NormalizedTable, RowView
 from table1_parser.text_cleaning import clean_text
 
 
 THRESHOLD_LEVEL_PATTERN = re.compile(r"^\s*(?P<operator><=|>=|<|>|≤|≥)\s*(?P<threshold>.+?)\s*$")
+COUNT_PCT_PARENT_PATTERN = re.compile(r"\bn\s*\(\s*%\s*\)", re.IGNORECASE)
 
 
 def _nonempty_trailing_cell_count(row_view: RowView) -> int:
     """Count meaningful trailing cells while preserving raw row text elsewhere."""
     return sum(bool(clean_text(cell)) for cell in row_view.raw_cells[1:])
+
+
+def _has_count_like_values(row_view: RowView) -> bool:
+    """Return whether a row has enough count/count-percent cells to behave as a categorical level."""
+    patterns = [
+        detect_value_pattern(clean_text(cell)).pattern
+        for cell in row_view.raw_cells[1:]
+        if clean_text(cell) and detect_value_pattern(clean_text(cell)).pattern != "p_value"
+    ]
+    if not patterns:
+        return False
+    count_like = sum(pattern in {"count_pct", "n_only"} for pattern in patterns)
+    return count_like >= 2 and count_like >= len(patterns) - 1
+
+
+def _count_pct_continuation_level_rows(
+    parent_row_idx: int,
+    row_order: list[int],
+    row_views_by_idx: dict[int, RowView],
+) -> list[int]:
+    """Collect count-percent level rows below an n (%) parent without relying on indentation."""
+    parent = row_views_by_idx[parent_row_idx]
+    if COUNT_PCT_PARENT_PATTERN.search(parent.first_cell_raw) is None:
+        return []
+    level_rows: list[int] = []
+    for candidate_row_idx in row_order[row_order.index(parent_row_idx) + 1 :]:
+        candidate = row_views_by_idx[candidate_row_idx]
+        candidate_label = clean_text(candidate.first_cell_raw)
+        if COUNT_PCT_PARENT_PATTERN.search(candidate_label) is not None:
+            break
+        if _has_count_like_values(candidate):
+            level_rows.append(candidate_row_idx)
+            continue
+        break
+    return level_rows
 
 
 def group_variable_blocks(
@@ -124,7 +161,11 @@ def group_variable_blocks(
             continue
 
         if classification == "variable_header":
-            level_rows = detect_level_row_indices(
+            level_rows = _count_pct_continuation_level_rows(
+                parent_row_idx=row_idx,
+                row_order=row_order,
+                row_views_by_idx=row_views_by_idx,
+            ) or detect_level_row_indices(
                 parent_row_idx=row_idx,
                 row_order=row_order,
                 classifications_by_row=classifications_by_row,

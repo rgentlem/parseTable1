@@ -35,6 +35,20 @@ def _looks_like_label_cell(value: str) -> bool:
     return bool(cleaned) and bool(ALPHA_PATTERN.search(cleaned)) and len(cleaned) >= 2
 
 
+def _has_data_like_values(values: list[str]) -> bool:
+    """Return whether cells look like table data after ignoring p-values."""
+    populated = [clean_text(value) for value in values if clean_text(value)]
+    if not populated:
+        return False
+    data_like = sum(
+        detect_value_pattern(value).pattern not in {"unknown", "p_value"} or (
+            any(char.isdigit() for char in value) and detect_value_pattern(value).pattern != "p_value"
+        )
+        for value in populated
+    )
+    return data_like >= max(1, len(populated) // 2)
+
+
 def _repair_sparse_stub_label_column(
     raw_rows: list[list[str]],
     cleaned_rows: list[list[str]],
@@ -129,6 +143,90 @@ def _repair_sparse_stub_label_column(
     }
 
 
+def _repair_split_row_label_field_columns(
+    raw_rows: list[list[str]],
+    cleaned_rows: list[list[str]],
+) -> tuple[list[list[str]], list[list[str]], dict[str, object] | None]:
+    """Merge two adjacent row-label field columns when values clearly start to their right."""
+    if not raw_rows or not raw_rows[0] or len(raw_rows[0]) < 4 or len(raw_rows) < 8:
+        return raw_rows, cleaned_rows, None
+
+    row_count = len(cleaned_rows)
+    shifted_label_rows: list[int] = []
+    merged_label_rows: list[int] = []
+    parent_like_rows = 0
+    right_value_rows = 0
+    second_col_nonempty = 0
+    second_col_label_like = 0
+    second_col_value_like = 0
+
+    for row_idx, row in enumerate(cleaned_rows):
+        first = clean_text(row[0])
+        second = clean_text(row[1])
+        right_cells = [clean_text(cell) for cell in row[2:]]
+        has_right_data = _has_data_like_values(right_cells)
+        right_value_rows += int(has_right_data)
+        if second:
+            second_col_nonempty += 1
+            second_col_label_like += int(_looks_like_label_cell(second))
+            second_col_value_like += int(detect_value_pattern(second).pattern not in {"unknown", "p_value"})
+        if not first and second and has_right_data:
+            shifted_label_rows.append(row_idx)
+        if _looks_like_label_cell(first) and _looks_like_label_cell(second):
+            if has_right_data:
+                merged_label_rows.append(row_idx)
+            else:
+                parent_like_rows += 1
+
+    if not (
+        len(shifted_label_rows) >= max(4, row_count // 5)
+        and right_value_rows >= max(6, row_count // 3)
+        and second_col_nonempty >= max(6, row_count // 3)
+        and second_col_label_like >= max(4, second_col_nonempty // 2)
+        and second_col_value_like <= max(2, second_col_nonempty // 8)
+        and (len(merged_label_rows) + parent_like_rows) >= 2
+    ):
+        return raw_rows, cleaned_rows, None
+
+    repaired_raw_rows: list[list[str]] = []
+    repaired_cleaned_rows: list[list[str]] = []
+    shifted_count = 0
+    merged_rows: list[int] = []
+    for row_idx, row in enumerate(raw_rows):
+        cleaned_row = cleaned_rows[row_idx]
+        first_clean = clean_text(cleaned_row[0])
+        second_clean = clean_text(cleaned_row[1])
+        right_clean = [clean_text(cell) for cell in cleaned_row[2:]]
+        if first_clean and second_clean:
+            merged_raw = clean_text(f"{row[0]} {row[1]}")
+            merged_cleaned = clean_text(f"{cleaned_row[0]} {cleaned_row[1]}")
+            repaired_raw_rows.append([merged_raw, *row[2:]])
+            repaired_cleaned_rows.append([merged_cleaned, *cleaned_row[2:]])
+            merged_rows.append(row_idx)
+            continue
+        if not first_clean and second_clean and _has_data_like_values(right_clean):
+            repaired_raw_rows.append([row[1], *row[2:]])
+            repaired_cleaned_rows.append([cleaned_row[1], *cleaned_row[2:]])
+            shifted_count += 1
+            continue
+        repaired_raw_rows.append([row[0], *row[2:]])
+        repaired_cleaned_rows.append([cleaned_row[0], *cleaned_row[2:]])
+
+    return repaired_raw_rows, repaired_cleaned_rows, {
+        "from_col_idx": 1,
+        "to_col_idx": 0,
+        "shifted_label_row_count": shifted_count,
+        "merged_label_row_indices": merged_rows,
+        "evidence": {
+            "row_count": row_count,
+            "second_col_nonempty": second_col_nonempty,
+            "second_col_label_like": second_col_label_like,
+            "shifted_label_row_count": len(shifted_label_rows),
+            "right_value_row_count": right_value_rows,
+        },
+    }
+
+
 def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
     """Convert a raw extracted table into the normalized intermediate schema."""
     raw_rows = [["" for _ in range(table.n_cols)] for _ in range(table.n_rows)]
@@ -176,6 +274,12 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
         )
         if sparse_stub_label_column_repair is not None:
             dropped_leading_cols = 1
+    split_row_label_field_repair: dict[str, object] | None = None
+    if sparse_stub_label_column_repair is None:
+        raw_rows, cleaned_rows, split_row_label_field_repair = _repair_split_row_label_field_columns(
+            raw_rows,
+            cleaned_rows,
+        )
     merged_split_label_columns: list[dict[str, int]] = []
     if raw_rows and len(raw_rows[0]) >= 3:
         candidate_split_label_rows = [
@@ -363,6 +467,7 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
             "merged_columns": merged_columns,
             "merged_split_label_columns": merged_split_label_columns,
             "sparse_stub_label_column": sparse_stub_label_column_repair,
+            "split_row_label_field_columns": split_row_label_field_repair,
             "dropped_empty_columns_after_repair": dropped_repaired_cols,
         },
         "header_detection": header_detection,

@@ -209,10 +209,13 @@ source("R/inspect_paper_outputs.R")
 summarize_table_processing("outputs/papers/cobaltpaper")
 show_table_processing("outputs/papers/cobaltpaper", table_index = 0L)
 show_table_structure("outputs/papers/cobaltpaper", table_index = 0L)
+show_table_structure("outputs/papers/cobaltpaper", table_number = 1L)
 show_paper_variable_candidates("outputs/papers/cobaltpaper")
 show_paper_variable_mentions("outputs/papers/cobaltpaper", source_type = "text_based", mention_role = "variable")
 show_table_context("outputs/papers/cobaltpaper", table_index = 0L)
 ```
+
+Use `table_number = 1L` when you want the published Table 1 rather than the first extracted table-like object.
 
 If `review-variable-plausibility` has been run:
 
