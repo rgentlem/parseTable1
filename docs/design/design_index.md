@@ -27,6 +27,9 @@ Then use the documents below as needed.
 - `docs/design/parse_quality_reports_artifact.md`
   Design for writing deterministic row/column/value-pattern diagnostics as a normal parse artifact without changing parser behavior.
 
+- `docs/design/table_continuation_resolution.md`
+  Planned successor design for resolving explicit continued table fragments into a single working table artifact before semantic table definition, including column-coordinate compatibility gates and source provenance.
+
 - `docs/design/collapsed_grid_refinement_scope.md`
   Narrow scope for consolidating the duplicated rotated/upright collapsed-grid refinement logic in the extractor.
 
@@ -122,6 +125,10 @@ Then use the documents below as needed.
 - If you are changing extraction, normalization, heuristics, LLM parsing, validation, or final exports:
   read `docs/design/codex_build_spec.md` and `docs/design/parsing_output_design.md`.
   If those changes alter the implemented paper parse flow or the role of any intermediate artifact, also update `docs/design/paper_parse_walkthrough.md`.
+
+- If you are changing continued-table grouping, merged table artifacts, resolved semantic table sets, or source-table provenance for continuations:
+  read `docs/design/table_continuation_resolution.md`.
+  If the resolved table set becomes parser input, also update `docs/design/parsing_output_design.md` and `docs/design/paper_parse_walkthrough.md`.
 
 - If you are changing symbol normalization, parser-facing text canonicalization, or categorical `n (%)` value parsing:
   read `docs/design/value_parsing_spec.md`.

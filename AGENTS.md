@@ -19,6 +19,12 @@ For parsing design intentions and newer semantic-table planning notes, also read
 
 docs/design/design_index.md
 
+Before starting parser work, also check:
+
+docs/implementation/parser_todo.md
+
+Use this file as the persistent implementation ToDo list. When work resolves, changes, or creates an important parser priority, update the ToDo list in the same change so project context does not get lost. Keep detailed epidemiology-table reasoning and implementation planning there or in a linked implementation note, not in the high-level design docs unless the schema, artifact contract, or pipeline design actually changes.
+
 When changing CLI behavior, persisted outputs, schema shape, markdown-context handling, or design assumptions, update the relevant `docs/*.md` files in the same change. Keep the design docs current.
 
 If you change the implemented parse flow, the order of pipeline stages, the purpose of an intermediate artifact, or the paper-level/table-level outputs written by `table1-parser parse`, also update:
