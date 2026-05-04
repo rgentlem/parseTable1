@@ -9,6 +9,7 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
 1. [ ] Add a parser-native column header schema artifact.
    Build `ColumnHeaderSchema` between `NormalizedTable` and `TableDefinition` so leaf columns, higher spanning header groups, group-to-leaf relationships, raw cell evidence, and coordinates are explicit before any tableone-style projection.
    Design note: `docs/design/column_header_schema.md`.
+   Implementation plan: `docs/implementation/column_header_schema_implementation_plan.md`.
    This should become the primary column model consumed by `TableDefinition` and any later stored summary/tableone projection; continuation compatibility is an important later consumer, but not the main design driver.
 
 2. [ ] Make continuations semantically real.

@@ -71,6 +71,9 @@ Then use the documents below as needed.
 - `docs/implementation/column_grouping_semantics_plan.md`
   Focused implementation plan for the newer grouped-column semantics work inside deterministic `TableDefinition` assembly.
 
+- `docs/implementation/column_header_schema_implementation_plan.md`
+  Concrete implementation plan for adding `ColumnHeaderSchema`, writing `column_header_schemas.json`, then refactoring `TableDefinition`, continuation checks, and R inspection to consume the parser-native column model.
+
 - `docs/implementation/parse_quality_reports_implementation_spec.md`
   Concrete implementation steps for writing `parse_quality_reports.json` and exposing deterministic quality diagnostics in R.
 
@@ -141,7 +144,7 @@ Then use the documents below as needed.
   For concrete sequencing, also read `docs/implementation/multitable_implementation_plan.md`.
 
 - If you are working on the new value-free semantic stage for database matching:
-  read `docs/design/column_header_schema.md`, `docs/design/table_definition_scope.md`, `docs/design/table_definition_schema.md`, and `docs/implementation/table_definition_implementation_plan.md`.
+  read `docs/design/column_header_schema.md`, `docs/implementation/column_header_schema_implementation_plan.md`, `docs/design/table_definition_scope.md`, `docs/design/table_definition_schema.md`, and `docs/implementation/table_definition_implementation_plan.md`.
 
 - If you are working on the downstream R-side component that consumes `table_definitions.json` and `parsed_tables.json`:
   read `docs/design/observed_tableone_component.md` and `docs/implementation/observed_tableone_r_plan.md`.
