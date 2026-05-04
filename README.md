@@ -207,6 +207,7 @@ For paper-level inspection there is also:
 ```r
 source("R/inspect_paper_outputs.R")
 summarize_table_processing("outputs/papers/cobaltpaper")
+show_paper_table_inventory("outputs/papers/cobaltpaper")
 show_table_structure("outputs/papers/cobaltpaper", table_number = 1L)
 show_table_processing("outputs/papers/cobaltpaper", table_number = 1L)
 show_paper_variable_candidates("outputs/papers/cobaltpaper")

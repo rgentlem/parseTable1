@@ -28,6 +28,7 @@ Public functions:
 
 - `load_paper_outputs(paper_dir)`
 - `summarize_table_processing(paper_dir)`
+- `show_paper_table_inventory(paper_dir)`
 - `show_table_processing(paper_dir, table_number = 1L)`
 - `show_parse_quality(paper_dir, table_number = 1L)`
 - `summarize_table1_continuations(paper_dir)`
@@ -52,6 +53,7 @@ source("R/inspect_paper_outputs.R")
 
 x <- load_paper_outputs("outputs/papers/cobaltpaper")
 summarize_table_processing("outputs/papers/cobaltpaper")
+show_paper_table_inventory("outputs/papers/cobaltpaper")
 show_table_processing("outputs/papers/cobaltpaper", table_number = 1L)
 show_parse_quality("outputs/papers/cobaltpaper", table_number = 1L)
 summarize_table1_continuations("outputs/papers/cobaltpaper")
@@ -72,6 +74,8 @@ What these are for:
 
 - `show_table_structure(...)`
   print one saved table's normalized rows, deterministic columns, and row-variable definitions together
+- `show_paper_table_inventory(...)`
+  print one row per table taxonomy prediction, including table number, category, confidence, continuation parent, and evidence
 - `summarize_table1_continuations(...)`
   print one row per detected Table 1 continuation group, including merge/skip decision and source table IDs
 - `show_parse_quality(...)`
@@ -96,6 +100,7 @@ What these are for:
 - `parsed_tables`
 - `table_processing_status`
 - `parse_quality_reports`
+- `paper_table_inventory`
 - `table1_continuation_groups`
 - `merged_table1_tables`
 - `table_variable_plausibility_llm`

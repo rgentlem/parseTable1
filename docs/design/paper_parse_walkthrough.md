@@ -30,6 +30,7 @@ Today that directory may contain:
 - `table1_continuation_groups.json`
 - `merged_table1_tables.json`
 - `table_profiles.json`
+- `paper_table_inventory.json`
 - `table_definitions.json`
 - `parsed_tables.json`
 - `table_processing_status.json`
@@ -52,6 +53,7 @@ The parser deliberately keeps several versions of the same table because each st
 - `ExtractedTable` answers: what did the PDF extractor recover?
 - `NormalizedTable` answers: what cleaned table structure should downstream logic reason over?
 - `TableProfile` answers: what kind of table does this appear to be?
+- `PaperTableInventory` answers: what broad paper-level category was assigned to each table number?
 - `TableDefinition` answers: what do the rows and columns mean, before we parse values?
 - `ParsedTable` answers: what final variables, levels, columns, and values did we infer?
 
@@ -609,19 +611,22 @@ When a parse looks wrong, inspect the outputs in this order.
 4. `table_profiles.json`
    If the table was routed to the wrong family, the problem is in routing.
 
-5. `table_definitions.json`
+5. `paper_table_inventory.json`
+   If a table is assigned to the wrong broad category, inspect this artifact's chosen category, confidence, and evidence.
+
+6. `table_definitions.json`
    If row meanings or column meanings are wrong, the problem is in the semantic heuristics.
 
-6. `parsed_tables.json`
+7. `parsed_tables.json`
    If row and column meanings are right but the final values are wrong, the problem is in value parsing.
 
-7. `table_processing_status.json`
+8. `table_processing_status.json`
    If a table is empty or incomplete, inspect this next to see which rescue paths were attempted and where failure was recorded.
 
-8. `parse_quality_reports.json`
+9. `parse_quality_reports.json`
    If the parse succeeded but the columns, p-values, headers, or row classifications look suspicious, inspect this artifact for deterministic quality warnings.
 
-9. `paper_markdown.md`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and `table_contexts/*.json`
+10. `paper_markdown.md`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and `table_contexts/*.json`
    If semantic context retrieval is weak, inspect these next.
 
 10. `table_variable_plausibility_llm.json`

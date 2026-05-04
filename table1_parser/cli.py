@@ -25,6 +25,7 @@ from table1_parser.context import (
 from table1_parser.diagnostics import ParseQualityReport, build_parse_quality_report
 from table1_parser.extract import build_extractor
 from table1_parser.heuristics.column_role_detector import detect_column_roles
+from table1_parser.heuristics.paper_table_inventory import build_paper_table_inventory, paper_table_inventory_to_payload
 from table1_parser.heuristics.row_classifier import classify_rows
 from table1_parser.heuristics.table_definition_builder import build_table_definitions, table_definitions_to_payload
 from table1_parser.heuristics.table_profile import build_table_profiles, table_profiles_to_payload
@@ -476,6 +477,7 @@ def _write_parse_outputs(
     paper_visual_inventory_output_path = paper_dir / "paper_visual_inventory.json"
     paper_references_output_path = paper_dir / "paper_references.json"
     paper_variable_inventory_output_path = paper_dir / "paper_variable_inventory.json"
+    paper_table_inventory_output_path = paper_dir / "paper_table_inventory.json"
     table_context_output_dir = paper_dir / "table_contexts"
 
     paper_dir.mkdir(parents=True, exist_ok=True)
@@ -505,6 +507,20 @@ def _write_parse_outputs(
     )
     processing_status_output_path.write_text(
         json.dumps([status.model_dump(mode="json") for status in table_processing_statuses], indent=2) + "\n",
+        encoding="utf-8",
+    )
+    paper_table_inventory = build_paper_table_inventory(
+        artifacts.paper_stem,
+        artifacts.extracted_tables,
+        artifacts.normalized_tables,
+        artifacts.table_profiles,
+        table_definitions,
+        parsed_tables,
+        artifacts.parse_quality_reports,
+        table_processing_statuses,
+    )
+    paper_table_inventory_output_path.write_text(
+        json.dumps(paper_table_inventory_to_payload(paper_table_inventory), indent=2) + "\n",
         encoding="utf-8",
     )
     parse_quality_reports_output_path.write_text(

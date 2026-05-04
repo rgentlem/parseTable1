@@ -404,6 +404,24 @@ def _write_sample_paper_outputs(
             }
         ],
     }
+    paper_table_inventory = {
+        "paper_id": "paper",
+        "tables": [
+            {
+                "table_id": "tbl-1",
+                "table_number": 1,
+                "title": "Table 1",
+                "caption": "Baseline characteristics by DKD status",
+                "table_category": "demographic_description",
+                "category_confidence": 0.85,
+                "category_evidence": ["caption_or_title_mentions_population_description"],
+                "continuation_of_table_number": None,
+                "table_family": "descriptive_characteristics",
+                "processing_status": "ok",
+                "failure_reason": None,
+            }
+        ],
+    }
     table_context = {
         "table_id": "tbl-1",
         "table_index": 0,
@@ -493,6 +511,7 @@ def _write_sample_paper_outputs(
     _write_json(paper_dir / "paper_visual_inventory.json", paper_visual_inventory)
     _write_json(paper_dir / "paper_references.json", paper_references)
     _write_json(paper_dir / "paper_variable_inventory.json", paper_variable_inventory)
+    _write_json(paper_dir / "paper_table_inventory.json", paper_table_inventory)
     _write_json(context_dir / "table_0_context.json", table_context)
 
     if include_processing_status:
@@ -629,6 +648,37 @@ def test_r_inspection_loads_and_shows_paper_variable_inventory(tmp_path) -> None
     assert "Paper variable candidates" in result.stdout
     assert "Paper variable mentions" in result.stdout
     assert "Age" in result.stdout
+
+
+def test_r_inspection_loads_and_shows_paper_table_inventory(tmp_path) -> None:
+    """The R helper should load and print paper table taxonomy predictions."""
+    if not _r_dependencies_available():
+        return
+
+    paper_dir = tmp_path / "paper_table_inventory" / "papers" / "paper"
+    _write_sample_paper_outputs(paper_dir, include_variable_review=False, include_processing_status=True)
+
+    result = subprocess.run(
+        [
+            "Rscript",
+            "-e",
+            (
+                f'source("{R_SCRIPT}"); '
+                f'outputs <- load_paper_outputs("{paper_dir}"); '
+                "print(paper_table_inventory_df(outputs)); "
+                f'show_paper_table_inventory("{paper_dir}")'
+            ),
+        ],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "Paper table inventory" in result.stdout
+    assert "demographic_description" in result.stdout
+    assert "table_number" in result.stdout
 
 
 def test_r_inspection_loads_and_shows_paper_visual_references(tmp_path) -> None:

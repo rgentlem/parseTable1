@@ -64,7 +64,7 @@ When designing or revising schemas:
 - keep enum-like string vocabularies stable and documented
 - avoid shapes that are easy in Python but ambiguous or awkward in R
 
-This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifacts, and `paper_variable_inventory.json`.
+This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifacts, `paper_variable_inventory.json`, and `paper_table_inventory.json`.
 
 ## Output Layers
 
@@ -74,6 +74,7 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Normalization | `NormalizedTable` | Written now as `normalized_tables.json` by `normalize` and `parse` | Clean rows, detect headers, derive row features |
 | Table 1 continuation inspection | `Table1ContinuationGroup`, `NormalizedTable` | Written now as `table1_continuation_groups.json` and `merged_table1_tables.json` by `parse` | Persist artifact-only grouping and merged normalized rows for explicit Table 1 continuations without altering the main parse |
 | Table routing | `TableProfile` | Written now as `table_profiles.json` by `parse` | Persist deterministic family routing decisions |
+| Paper table inventory | `PaperTableInventory`, `PaperTableRecord` | Written now as `paper_table_inventory.json` by `parse` | Persist one deterministic taxonomy prediction per table-like object |
 | Table definition | `TableDefinition` | Written now as `table_definitions.json` by `parse` | Persist value-free row-variable, level, and column semantics |
 | Paper context | `PaperSection`, `PaperVisual`, `PaperVisualReference`, `TableContext` | Written now as `paper_markdown.md`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, and `table_contexts/*.json` by `parse` | Persist markdown sections, actual in-paper visual objects, anchored table/figure references, and per-table retrieval bundles, with only conservative glyph repair in the markdown text |
 | Paper variable inventory | `PaperVariableInventory`, `VariableMention`, `VariableCandidate` | Written now as `paper_variable_inventory.json` by `parse` | Persist the paper-level candidate variable reference list with explicit text/table provenance |
@@ -759,6 +760,61 @@ Design intent:
 - allow `table_processing_status.json` to mark obvious non-table layout artifacts, such as article-info/abstract boxes emitted as explicit backend tables, as failed non-semantic candidates while preserving them in extraction and normalization artifacts
 - support R-side inspection and corpus review before making higher-risk changes such as consolidated Table 1 parsing
 - treat representative real-paper parsing checks as an important complement to unit tests, because deterministic table heuristics often fail on structural variants that synthetic tests do not cover
+
+## 11. `paper_table_inventory.json`
+
+Current status:
+
+- canonical paper-level taxonomy schema exists now
+- written by the `parse` CLI command as `paper_table_inventory.json`
+- inspection and routing-support artifact only; it does not alter table definitions or parsed tables
+
+Current CLI path:
+
+```text
+outputs/papers/<paper_stem>/paper_table_inventory.json
+```
+
+Canonical models:
+
+- `PaperTableInventory`
+- child model: `PaperTableRecord`
+
+Top-level design components:
+
+- `paper_id`
+- `tables`
+
+Each table record contains:
+
+- `table_id`
+- `table_number`
+- `table_category`
+- `category_confidence`
+- `category_evidence`
+- `continuation_of_table_number`
+- `table_family`
+- `processing_status`
+- `failure_reason`
+- `title`
+- `caption`
+
+Allowed `table_category` values:
+
+- `demographic_description`
+- `analysis_outputs`
+- `data_presentation`
+- `general`
+- `unknown`
+- `non_table_artifact`
+
+Design intent:
+
+- use the paper's table number as the public conceptual identifier where available
+- keep continuation as `continuation_of_table_number`, with `null` when the table is not a continuation
+- choose only one max-score category and persist only the chosen category, confidence, and evidence
+- prioritize effect or estimate columns for `analysis_outputs`; p-values and model labels alone should not override a demographic-description classification
+- keep this artifact deterministic and computable so R can expose it as a data frame or print method later
 
 ## Trace Wrappers vs Canonical Payloads
 

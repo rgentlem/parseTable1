@@ -81,12 +81,13 @@ This separation keeps the parser safer and easier to debug.
 
 If you are looking at parser outputs:
 
-- `table1-parser parse path/to/paper.pdf` is the main entry point and currently writes `extracted_tables.json`, `normalized_tables.json`, `table_profiles.json`, `table_definitions.json`, `parsed_tables.json`, `paper_markdown.md`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and per-table context JSON files
+- `table1-parser parse path/to/paper.pdf` is the main entry point and currently writes `extracted_tables.json`, `normalized_tables.json`, `table_profiles.json`, `paper_table_inventory.json`, `table_definitions.json`, `parsed_tables.json`, `paper_markdown.md`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and per-table context JSON files
 - `extract` and `normalize` remain useful for inspecting a single stage in isolation
 
 - raw extraction output answers: "What table did the PDF extractor recover?"
 - normalized output answers: "What cleaned table structure will the parser reason over?"
 - table-profile output answers: "What table family did the deterministic router infer, and should semantic LLM run?"
+- paper-table-inventory output answers: "What broad table category did the deterministic taxonomy assign to each paper table number?"
 - table-definition output answers: "What row variables, levels, and columns did the deterministic parser infer?"
 - paper-context output answers: "What document sections, visual references, and passages are relevant to this table?"
 - paper-variable-inventory output answers: "What candidate variables recur across the paper text and tables?"

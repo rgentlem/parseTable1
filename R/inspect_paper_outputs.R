@@ -39,6 +39,7 @@ paper_output_paths <- function(paper_dir) {
     paper_visual_inventory = file.path(paper_dir, "paper_visual_inventory.json"),
     paper_references = file.path(paper_dir, "paper_references.json"),
     paper_variable_inventory = file.path(paper_dir, "paper_variable_inventory.json"),
+    paper_table_inventory = file.path(paper_dir, "paper_table_inventory.json"),
     table_profiles = file.path(paper_dir, "table_profiles.json"),
     table_context_dir = file.path(paper_dir, "table_contexts")
   )
@@ -80,6 +81,7 @@ load_paper_outputs <- function(paper_dir) {
     paper_visual_inventory = read_optional_json(paths$paper_visual_inventory) %||% list(),
     paper_references = read_optional_json(paths$paper_references) %||% list(),
     paper_variable_inventory = read_optional_json(paths$paper_variable_inventory),
+    paper_table_inventory = read_optional_json(paths$paper_table_inventory),
     table_contexts = read_table_contexts(paths$table_context_dir)
   )
 }
@@ -229,6 +231,55 @@ show_paper_variable_candidates <- function(paper_dir, min_priority = NULL) {
   }
   print(candidates_df, row.names = FALSE, right = FALSE)
   invisible(candidates_df)
+}
+
+paper_table_inventory_df <- function(outputs) {
+  records <- outputs$paper_table_inventory$tables %||% list()
+  rows <- lapply(records, function(record) {
+    data.frame(
+      table_number = as.integer(record$table_number %||% NA_integer_),
+      table_id = as.character(record$table_id %||% ""),
+      table_category = as.character(record$table_category %||% ""),
+      category_confidence = as.numeric(record$category_confidence %||% NA_real_),
+      continuation_of_table_number = as.integer(record$continuation_of_table_number %||% NA_integer_),
+      table_family = as.character(record$table_family %||% NA_character_),
+      processing_status = as.character(record$processing_status %||% NA_character_),
+      failure_reason = as.character(record$failure_reason %||% NA_character_),
+      title = as.character(record$title %||% record$caption %||% ""),
+      evidence = paste(as.character(unlist(record$category_evidence %||% list(), use.names = FALSE)), collapse = " | "),
+      stringsAsFactors = FALSE
+    )
+  })
+  if (length(rows) == 0) {
+    data.frame(
+      table_number = integer(),
+      table_id = character(),
+      table_category = character(),
+      category_confidence = numeric(),
+      continuation_of_table_number = integer(),
+      table_family = character(),
+      processing_status = character(),
+      failure_reason = character(),
+      title = character(),
+      evidence = character(),
+      stringsAsFactors = FALSE
+    )
+  } else {
+    do.call(rbind, rows)
+  }
+}
+
+show_paper_table_inventory <- function(paper_dir) {
+  outputs <- load_paper_outputs(paper_dir)
+  inventory_df <- paper_table_inventory_df(outputs)
+
+  cat(sprintf("Paper table inventory for %s\n\n", normalizePath(paper_dir, winslash = "/", mustWork = TRUE)))
+  if (nrow(inventory_df) == 0) {
+    cat("[No rows]\n")
+    return(invisible(inventory_df))
+  }
+  print(inventory_df, row.names = FALSE, right = FALSE)
+  invisible(inventory_df)
 }
 
 normalized_table_by_index <- function(outputs, table_index = 0L) {
