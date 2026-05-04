@@ -755,6 +755,7 @@ Design intent:
 - keep softer quality warnings separate from `table_processing_status.json`, which records coarse pass/fail outcomes and rescue attempts
 - preserve parse behavior: warnings and errors in this artifact do not halt parsing and do not rewrite `table_definitions.json` or `parsed_tables.json`
 - support R-side inspection and corpus review before making higher-risk changes such as consolidated Table 1 parsing
+- treat representative real-paper parsing checks as an important complement to unit tests, because deterministic table heuristics often fail on structural variants that synthetic tests do not cover
 
 ## Trace Wrappers vs Canonical Payloads
 

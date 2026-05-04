@@ -12,9 +12,10 @@ from table1_parser.text_cleaning import clean_text
 
 
 SUMMARY_SUFFIX_PATTERN = re.compile(
-    r"(?:,\s*)?(?:n\s*\(%\)|no\.\s*\(%\)|mean\s*[±+-]?\s*\(?sd\)?|median\s*\(?iqr\)?|mean\s*\(\s*sd\s*\))$",
+    r"(?:\s*,?\s*)?(?:\[\s*)?(?:n\s*\(%\)|no\.\s*\(%\)|mean\s*[±+-]?\s*\(?sd\)?|median\s*\(?iqr\)?|mean\s*\(\s*sd\s*\))(?:\s*\])?$",
     re.IGNORECASE,
 )
+COUNT_PCT_LABEL_PATTERN = re.compile(r"(?:n|no\.?)\s*\(\s*%\s*\)", re.IGNORECASE)
 PAREN_UNITS_PATTERN = re.compile(r"\(([^()]+)\)")
 KNOWN_BINARY_LEVELS = {
     frozenset({"male", "female"}),
@@ -41,19 +42,6 @@ def build_defined_variables(table: NormalizedTable) -> list[DefinedVariable]:
             )
             for row_idx in block.level_row_indices
         ]
-        if block.variable_kind == "continuous":
-            variable_type = "continuous"
-        elif block.variable_kind == "binary":
-            variable_type = "binary"
-        elif levels:
-            level_names = {
-                normalize_label_text(level.level_name).lower()
-                for level in levels
-                if normalize_label_text(level.level_name)
-            }
-            variable_type = "binary" if frozenset(level_names) in KNOWN_BINARY_LEVELS else "categorical"
-        else:
-            variable_type = "unknown"
         cleaned = clean_text(variable_label)
         without_suffix = SUMMARY_SUFFIX_PATTERN.sub("", cleaned).strip(" ,")
         without_paren_units = PAREN_UNITS_PATTERN.sub("", without_suffix).strip(" ,")
@@ -89,6 +77,26 @@ def build_defined_variables(table: NormalizedTable) -> list[DefinedVariable]:
                 if pattern not in {"unknown", "p_value"}:
                     summary_style_hint = pattern
                     break
+        one_row_count_pct_indicator = (
+            not levels
+            and summary_style_hint == "count_pct"
+            and COUNT_PCT_LABEL_PATTERN.search(cleaned) is not None
+        )
+        if one_row_count_pct_indicator:
+            variable_type = "binary"
+        elif block.variable_kind == "continuous":
+            variable_type = "continuous"
+        elif block.variable_kind == "binary":
+            variable_type = "binary"
+        elif levels:
+            level_names = {
+                normalize_label_text(level.level_name).lower()
+                for level in levels
+                if normalize_label_text(level.level_name)
+            }
+            variable_type = "binary" if frozenset(level_names) in KNOWN_BINARY_LEVELS else "categorical"
+        else:
+            variable_type = "unknown"
         confidence = 0.55
         if variable_type == "continuous":
             confidence = 0.9

@@ -381,6 +381,7 @@ For rows:
 - continuous variable rows
 - categorical parent rows
 - child level rows
+- one-row binary indicator rows, where a single `n (%)` row reports the counted state and the complementary state is implicit
 - variable labels
 - normalized variable names
 - row spans
