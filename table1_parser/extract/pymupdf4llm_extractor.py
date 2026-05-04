@@ -255,6 +255,175 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                     page_text=page_text,
                     page_candidates=page_candidates,
                 )
+                if page is not None and page_words:
+                    extracted_page_text = extract_page_text(page)
+                    sideways_page_text = page_text
+                    if extracted_page_text and extracted_page_text not in sideways_page_text:
+                        sideways_page_text = f"{sideways_page_text}\n{extracted_page_text}".strip()
+                    page_rect = getattr(page, "rect", None)
+                    if page_rect is not None and all(hasattr(page_rect, attr) for attr in ("width", "height")):
+                        page_bbox = (0.0, 0.0, float(page_rect.width), float(page_rect.height))
+                    else:
+                        page_bbox = (
+                            min(float(word["x0"]) for word in page_words),
+                            min(float(word["top"]) for word in page_words),
+                            max(float(word["x1"]) for word in page_words),
+                            max(float(word["bottom"]) for word in page_words),
+                        )
+                    page_width = max(1.0, page_bbox[2] - page_bbox[0])
+                    page_height = max(1.0, page_bbox[3] - page_bbox[1])
+                    page_rotation = int(getattr(page, "rotation", 0) or 0)
+                    page_directions = extract_clipped_line_directions(page, page_bbox)
+                    horizontal_count = 0
+                    vertical_up_count = 0
+                    vertical_down_count = 0
+                    for dx, dy in page_directions:
+                        if abs(dx) >= 0.8 and abs(dy) <= 0.2:
+                            horizontal_count += 1
+                            continue
+                        if abs(dy) >= 0.8 and abs(dx) <= 0.2:
+                            if dy < 0:
+                                vertical_up_count += 1
+                            else:
+                                vertical_down_count += 1
+                    vertical_count = vertical_up_count + vertical_down_count
+                    considered_count = horizontal_count + vertical_count
+                    vertical_confidence = (
+                        vertical_count / considered_count
+                        if considered_count
+                        else 0.0
+                    )
+                    caption_lines = _find_table_caption_lines(sideways_page_text)
+                    collapsed_page_candidate = any(
+                        _column_count(candidate) <= 4
+                        and len(candidate.raw_rows) >= 3
+                        and any(
+                            len(str(cell).split()) >= 20
+                            for row in candidate.raw_rows
+                            for cell in row
+                        )
+                        for candidate in page_candidates
+                    )
+                    sideways_signals: list[str] = []
+                    if page_width < page_height:
+                        sideways_signals.append("portrait_page")
+                    if page_rotation == 0:
+                        sideways_signals.append("page_rotation_zero")
+                    if vertical_confidence >= 0.75 and vertical_count >= max(8, horizontal_count * 2):
+                        sideways_signals.append("vertical_line_directions")
+                    if caption_lines:
+                        sideways_signals.append("table_caption_in_page_text")
+                    if collapsed_page_candidate:
+                        sideways_signals.append("collapsed_upright_candidate")
+                    is_sideways_page = (
+                        (
+                            page_width < page_height
+                            and page_rotation == 0
+                            and vertical_confidence >= 0.75
+                            and vertical_count >= max(8, horizontal_count * 2)
+                            and bool(caption_lines)
+                        )
+                        or (
+                            page_width < page_height
+                            and page_rotation == 0
+                            and vertical_count >= 20
+                            and bool(caption_lines)
+                            and collapsed_page_candidate
+                        )
+                    )
+                    if is_sideways_page:
+                        rotation_direction = (
+                            "vertical_text_up"
+                            if vertical_up_count >= vertical_down_count
+                            else "vertical_text_down"
+                        )
+                        (
+                            transformed_words,
+                            transformed_chars,
+                            transformed_rule_segments,
+                            _transformed_bbox,
+                        ) = normalize_positioned_geometry_for_rotation(
+                            words=page_words,
+                            chars=page_chars,
+                            rule_segments=page_rule_segments,
+                            bbox=page_bbox,
+                            rotation_direction=rotation_direction,
+                        )
+                        sideways_candidates = build_text_layout_candidates(
+                            page_num=page_num,
+                            page_text=sideways_page_text,
+                            words=transformed_words,
+                            chars=transformed_chars,
+                            rule_segments=transformed_rule_segments,
+                            layout_source="sideways_text_positions",
+                        )
+                        for sideways_candidate in sideways_candidates:
+                            n_cols = _column_count(sideways_candidate)
+                            data_like_rows = sum(
+                                sum(
+                                    bool(re.search(r"\d", cell))
+                                    for cell in row[1:]
+                                    if cell.strip()
+                                )
+                                >= 2
+                                for row in sideways_candidate.raw_rows[1:]
+                            )
+                            if (
+                                len(sideways_candidate.raw_rows) < 4
+                                or n_cols < 3
+                                or data_like_rows < 2
+                            ):
+                                continue
+                            target_table_index = sideways_candidate.table_index
+                            sideways_table_number = sideways_candidate.metadata.get("table_number")
+                            same_number_candidates = [
+                                candidate
+                                for candidate in page_candidates
+                                if candidate.metadata.get("table_number") == sideways_table_number
+                                and sideways_table_number is not None
+                            ]
+                            if same_number_candidates:
+                                target_table_index = same_number_candidates[0].table_index
+                            elif len(sideways_candidates) == 1 and len(page_candidates) == 1:
+                                target_table_index = page_candidates[0].table_index
+                            replacement_candidate = sideways_candidate.model_copy(
+                                update={
+                                    "table_index": target_table_index,
+                                    "metadata": {
+                                        **sideways_candidate.metadata,
+                                        "primary_representation": "json",
+                                        "extractor_used": self.backend_name,
+                                        "fallback_used": True,
+                                        "orientation_strategy": "sideways_transformed",
+                                        "sideways_candidate": True,
+                                        "sideways_detection_signals": sideways_signals,
+                                        "sideways_vertical_confidence": round(vertical_confidence, 4),
+                                        "rotation_direction": rotation_direction,
+                                        "caption_detection_space": "transformed_coordinates",
+                                        "geometry_coordinate_frame": "page_sideways_transformed",
+                                        "grid_refinement_source": "sideways_text_positions",
+                                        "table_orientation": "rotated",
+                                        "rotation_source": "pymupdf_page_line_direction",
+                                        "rotation_confidence": round(vertical_confidence, 4),
+                                    },
+                                }
+                            )
+                            replaced_candidate = False
+                            for candidate_index, existing_candidate in enumerate(page_candidates):
+                                if existing_candidate.table_index != target_table_index:
+                                    continue
+                                if (
+                                    replacement_candidate.score >= existing_candidate.score
+                                    and (
+                                        _column_count(replacement_candidate) > _column_count(existing_candidate)
+                                        or len(replacement_candidate.raw_rows) > len(existing_candidate.raw_rows)
+                                    )
+                                ):
+                                    page_candidates[candidate_index] = replacement_candidate
+                                    replaced_candidate = True
+                                break
+                            if not replaced_candidate:
+                                page_candidates.append(replacement_candidate)
                 if page_candidates:
                     explicit_page_nums.add(page_num)
                     candidates.extend(page_candidates)

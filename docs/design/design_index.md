@@ -74,6 +74,9 @@ Then use the documents below as needed.
 - `docs/implementation/collapsed_grid_refinement_implementation_plan.md`
   Narrow implementation plan for consolidating duplicated rotated/upright collapsed-grid refinement logic in the extractor.
 
+- `docs/implementation/sideways_table_extraction_implementation_spec.md`
+  Concrete implementation plan for extracting visually landscape tables drawn sideways on portrait pages.
+
 - `docs/implementation/categorical_block_state_implementation_spec.md`
   Focused implementation steps for categorical-block state and standalone one-row-binary detection in deterministic heuristics.
 

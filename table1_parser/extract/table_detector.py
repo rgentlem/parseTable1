@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 
 
 TABLE_CAPTION_LINE_PATTERN = re.compile(r"^\s*table\s*(\d+)\b(?:\s*[:.])?", re.IGNORECASE)
-TABLE_CONTINUATION_PATTERN = re.compile(r"^(?:\(\s*continued\s*\)|continued)(?:\b|$)", re.IGNORECASE)
+TABLE_CONTINUATION_PATTERN = re.compile(r"^(?:\(\s*continued\s*\)|continued)(?:\s|\b|$)", re.IGNORECASE)
 TABLE_PROSE_REFERENCE_PATTERN = re.compile(
     r"^(?:displays?|shows?|presents?|describes?|illustrates?|reports?|lists?|contains?|"
     r"summarizes?|compares?|demonstrates?|highlights?|details?|examines?|provides?|"
@@ -52,8 +52,9 @@ def _find_table_caption_lines(text_block: str) -> list[str]:
     captions: list[str] = []
     for raw_line in text_block.splitlines():
         line = raw_line.strip()
-        if line and _table_caption_metadata(line) is not None:
-            captions.append(line)
+        caption_metadata = _table_caption_metadata(line) if line else None
+        if caption_metadata is not None:
+            captions.append(str(caption_metadata["caption"]))
     return captions
 
 
@@ -69,8 +70,9 @@ def _table_caption_metadata(line: str) -> dict[str, Any] | None:
     remainder = stripped[match.end():].strip()
     continuation_match = TABLE_CONTINUATION_PATTERN.match(remainder)
     if continuation_match is not None:
+        canonical_caption = f"{stripped[:match.end()].strip()} {remainder[:continuation_match.end()].strip()}".strip()
         return {
-            "caption": stripped,
+            "caption": canonical_caption,
             "table_number": table_number,
             "is_continuation": True,
             "continuation_of_table_number": table_number,

@@ -24,6 +24,14 @@ from table1_parser.extract.table_detector import (
 from table1_parser.extract.table_selector import select_top_candidates
 
 
+class FakeRect:
+    """Simple page rectangle with PyMuPDF-like width and height attributes."""
+
+    def __init__(self, width: float, height: float) -> None:
+        self.width = width
+        self.height = height
+
+
 class FakeCroppedPage:
     """Simple cropped-page test double."""
 
@@ -119,11 +127,15 @@ class FakePyMuPage:
         words: list[dict[str, object]],
         chars: list[dict[str, object]] | None = None,
         rule_segments: list[tuple[float, float, float, float]] | None = None,
+        rect: FakeRect | None = None,
+        rotation: int = 0,
     ) -> None:
         self.text = text
         self.words = words
         self.chars = chars or []
         self.rule_segments = rule_segments or []
+        self.rect = rect
+        self.rotation = rotation
 
 
 class FakePyMuDoc:
@@ -662,6 +674,240 @@ def test_pymupdf4llm_extractor_refines_rotated_explicit_tables_from_words_and_ru
     assert tables[0].n_cols >= 4
     assert tables[0].metadata["refined_table_cells"] is not None
     assert tables[0].cells[0].bbox is None
+
+
+def test_pymupdf4llm_extractor_replaces_collapsed_sideways_page_candidate(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    """Sideways page extraction should replace a collapsed explicit candidate with a usable grid."""
+    pdf_path = tmp_path / "paper.pdf"
+    pdf_path.write_text("placeholder")
+    page_height = 500.0
+
+    def to_sideways_page_bbox(
+        local_x0: float,
+        local_top: float,
+        local_x1: float,
+        local_bottom: float,
+    ) -> tuple[float, float, float, float]:
+        corners = [
+            (local_top, page_height - local_x0),
+            (local_top, page_height - local_x1),
+            (local_bottom, page_height - local_x0),
+            (local_bottom, page_height - local_x1),
+        ]
+        return (
+            min(point[0] for point in corners),
+            min(point[1] for point in corners),
+            max(point[0] for point in corners),
+            max(point[1] for point in corners),
+        )
+
+    upright_words = [
+        {"text": "Table", "x0": 20.0, "x1": 48.0, "top": 20.0, "bottom": 28.0},
+        {"text": "1.", "x0": 52.0, "x1": 62.0, "top": 20.0, "bottom": 28.0},
+        {"text": "Baseline", "x0": 70.0, "x1": 112.0, "top": 20.0, "bottom": 28.0},
+        {"text": "Variable", "x0": 20.0, "x1": 58.0, "top": 46.0, "bottom": 54.0},
+        {"text": "Overall", "x0": 120.0, "x1": 154.0, "top": 46.0, "bottom": 54.0},
+        {"text": "Exposed", "x0": 180.0, "x1": 214.0, "top": 46.0, "bottom": 54.0},
+        {"text": "P", "x0": 240.0, "x1": 246.0, "top": 46.0, "bottom": 54.0},
+        {"text": "Age", "x0": 20.0, "x1": 38.0, "top": 66.0, "bottom": 74.0},
+        {"text": "52.1", "x0": 120.0, "x1": 140.0, "top": 66.0, "bottom": 74.0},
+        {"text": "53.4", "x0": 180.0, "x1": 200.0, "top": 66.0, "bottom": 74.0},
+        {"text": "0.10", "x0": 240.0, "x1": 260.0, "top": 66.0, "bottom": 74.0},
+        {"text": "BMI", "x0": 20.0, "x1": 38.0, "top": 86.0, "bottom": 94.0},
+        {"text": "27.0", "x0": 120.0, "x1": 140.0, "top": 86.0, "bottom": 94.0},
+        {"text": "29.1", "x0": 180.0, "x1": 200.0, "top": 86.0, "bottom": 94.0},
+        {"text": "0.03", "x0": 240.0, "x1": 260.0, "top": 86.0, "bottom": 94.0},
+        {"text": "Male", "x0": 20.0, "x1": 42.0, "top": 106.0, "bottom": 114.0},
+        {"text": "40", "x0": 120.0, "x1": 132.0, "top": 106.0, "bottom": 114.0},
+        {"text": "45", "x0": 180.0, "x1": 192.0, "top": 106.0, "bottom": 114.0},
+        {"text": "0.20", "x0": 240.0, "x1": 260.0, "top": 106.0, "bottom": 114.0},
+    ]
+    sideways_words = [
+        {
+            "text": word["text"],
+            "x0": to_sideways_page_bbox(word["x0"], word["top"], word["x1"], word["bottom"])[0],
+            "x1": to_sideways_page_bbox(word["x0"], word["top"], word["x1"], word["bottom"])[2],
+            "top": to_sideways_page_bbox(word["x0"], word["top"], word["x1"], word["bottom"])[1],
+            "bottom": to_sideways_page_bbox(word["x0"], word["top"], word["x1"], word["bottom"])[3],
+        }
+        for word in upright_words
+    ]
+    _install_fake_pymupdf4llm(
+        monkeypatch,
+        {
+            "pages": [
+                {
+                    "page_number": 1,
+                    "boxes": [
+                        {
+                            "bbox": [20, 388, 28, 480],
+                            "boxclass": "text",
+                            "textlines": [{"spans": [{"text": "Table 1. Baseline"}]}],
+                        },
+                        {
+                            "bbox": [46, 240, 114, 480],
+                            "boxclass": "table",
+                            "table": {
+                                "bbox": [46, 240, 114, 480],
+                                "row_count": 4,
+                                "col_count": 3,
+                                "extract": [
+                                    ["Variable Overall Exposed P", "Age 52.1 53.4 0.10", ""],
+                                    ["BMI 27.0 29.1 0.03", "", ""],
+                                    ["Male 40 45 0.20", "", ""],
+                                    ["", "", ""],
+                                ],
+                                "cells": [],
+                            },
+                        },
+                    ],
+                }
+            ]
+        },
+    )
+    monkeypatch.setattr(
+        pymupdf4llm_extractor_module,
+        "extract_clipped_line_directions",
+        lambda page, clip_bbox: [(0.0, -1.0)] * 20,
+    )
+    _install_fake_pymupdf_document(
+        monkeypatch,
+        [
+            FakePyMuPage(
+                text="Table 1. Baseline",
+                words=sideways_words,
+                rect=FakeRect(width=300.0, height=500.0),
+            )
+        ],
+    )
+
+    tables = PyMuPDF4LLMExtractor(max_candidates=5, heuristic_confidence_threshold=0.0).extract(str(pdf_path))
+
+    assert len(tables) == 1
+    assert tables[0].metadata["orientation_strategy"] == "sideways_transformed"
+    assert tables[0].metadata["caption_detection_space"] == "transformed_coordinates"
+    assert tables[0].metadata["table_number"] == 1
+    assert tables[0].n_rows == 4
+    assert tables[0].n_cols == 4
+    cell_map = {(cell.row_idx, cell.col_idx): cell.text for cell in tables[0].cells}
+    assert cell_map[(0, 0)] == "Variable"
+    assert cell_map[(1, 1)] == "52.1"
+    assert cell_map[(3, 3)] == "0.20"
+
+
+def test_pymupdf4llm_extractor_preserves_sideways_continuation_metadata(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    """Sideways transformed captions should retain explicit continuation metadata."""
+    pdf_path = tmp_path / "paper.pdf"
+    pdf_path.write_text("placeholder")
+    page_height = 500.0
+
+    def to_sideways_page_bbox(
+        local_x0: float,
+        local_top: float,
+        local_x1: float,
+        local_bottom: float,
+    ) -> tuple[float, float, float, float]:
+        corners = [
+            (local_top, page_height - local_x0),
+            (local_top, page_height - local_x1),
+            (local_bottom, page_height - local_x0),
+            (local_bottom, page_height - local_x1),
+        ]
+        return (
+            min(point[0] for point in corners),
+            min(point[1] for point in corners),
+            max(point[0] for point in corners),
+            max(point[1] for point in corners),
+        )
+
+    upright_words = [
+        {"text": "Table", "x0": 20.0, "x1": 48.0, "top": 20.0, "bottom": 28.0},
+        {"text": "1.", "x0": 52.0, "x1": 62.0, "top": 20.0, "bottom": 28.0},
+        {"text": "(continued)", "x0": 70.0, "x1": 126.0, "top": 20.0, "bottom": 28.0},
+        {"text": "Variable", "x0": 20.0, "x1": 58.0, "top": 46.0, "bottom": 54.0},
+        {"text": "Overall", "x0": 120.0, "x1": 154.0, "top": 46.0, "bottom": 54.0},
+        {"text": "Exposed", "x0": 180.0, "x1": 214.0, "top": 46.0, "bottom": 54.0},
+        {"text": "P", "x0": 240.0, "x1": 246.0, "top": 46.0, "bottom": 54.0},
+        {"text": "Smoking", "x0": 20.0, "x1": 56.0, "top": 66.0, "bottom": 74.0},
+        {"text": "25", "x0": 120.0, "x1": 132.0, "top": 66.0, "bottom": 74.0},
+        {"text": "40", "x0": 180.0, "x1": 192.0, "top": 66.0, "bottom": 74.0},
+        {"text": "0.01", "x0": 240.0, "x1": 260.0, "top": 66.0, "bottom": 74.0},
+        {"text": "Alcohol", "x0": 20.0, "x1": 56.0, "top": 86.0, "bottom": 94.0},
+        {"text": "12", "x0": 120.0, "x1": 132.0, "top": 86.0, "bottom": 94.0},
+        {"text": "18", "x0": 180.0, "x1": 192.0, "top": 86.0, "bottom": 94.0},
+        {"text": "0.30", "x0": 240.0, "x1": 260.0, "top": 86.0, "bottom": 94.0},
+        {"text": "Diabetes", "x0": 20.0, "x1": 62.0, "top": 106.0, "bottom": 114.0},
+        {"text": "10", "x0": 120.0, "x1": 132.0, "top": 106.0, "bottom": 114.0},
+        {"text": "20", "x0": 180.0, "x1": 192.0, "top": 106.0, "bottom": 114.0},
+        {"text": "0.02", "x0": 240.0, "x1": 260.0, "top": 106.0, "bottom": 114.0},
+    ]
+    sideways_words = [
+        {
+            "text": word["text"],
+            "x0": to_sideways_page_bbox(word["x0"], word["top"], word["x1"], word["bottom"])[0],
+            "x1": to_sideways_page_bbox(word["x0"], word["top"], word["x1"], word["bottom"])[2],
+            "top": to_sideways_page_bbox(word["x0"], word["top"], word["x1"], word["bottom"])[1],
+            "bottom": to_sideways_page_bbox(word["x0"], word["top"], word["x1"], word["bottom"])[3],
+        }
+        for word in upright_words
+    ]
+    _install_fake_pymupdf4llm(
+        monkeypatch,
+        {
+            "pages": [
+                {
+                    "page_number": 1,
+                    "boxes": [
+                        {
+                            "bbox": [20, 374, 28, 480],
+                            "boxclass": "text",
+                            "textlines": [{"spans": [{"text": "Table 1. (continued)"}]}],
+                        },
+                        {
+                            "bbox": [46, 240, 114, 480],
+                            "boxclass": "table",
+                            "table": {
+                                "bbox": [46, 240, 114, 480],
+                                "row_count": 4,
+                                "col_count": 3,
+                                "extract": [["Variable Overall Exposed P", "Smoking 25 40 0.01", ""]],
+                                "cells": [],
+                            },
+                        },
+                    ],
+                }
+            ]
+        },
+    )
+    monkeypatch.setattr(
+        pymupdf4llm_extractor_module,
+        "extract_clipped_line_directions",
+        lambda page, clip_bbox: [(0.0, -1.0)] * 20,
+    )
+    _install_fake_pymupdf_document(
+        monkeypatch,
+        [
+            FakePyMuPage(
+                text="Table 1. (continued)",
+                words=sideways_words,
+                rect=FakeRect(width=300.0, height=500.0),
+            )
+        ],
+    )
+
+    tables = PyMuPDF4LLMExtractor(max_candidates=5, heuristic_confidence_threshold=0.0).extract(str(pdf_path))
+
+    assert len(tables) == 1
+    assert tables[0].metadata["orientation_strategy"] == "sideways_transformed"
+    assert tables[0].metadata["table_number"] == 1
+    assert tables[0].metadata["is_continuation"] is True
+    assert tables[0].metadata["continuation_of_table_number"] == 1
 
 
 def test_pymupdf4llm_extractor_uses_text_layout_fallback_when_json_has_no_tables(

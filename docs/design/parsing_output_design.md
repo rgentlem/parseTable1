@@ -155,6 +155,10 @@ Important current `metadata` keys produced by extraction may include:
 - `explicit_grid_refined_from_words`
 - `grid_refinement_source`
 - `geometry_coordinate_frame`
+- `orientation_strategy`
+- `sideways_candidate`
+- `sideways_detection_signals`
+- `caption_detection_space`
 - `first_column_text_x0_by_row`
 
 `TableCell` design components:

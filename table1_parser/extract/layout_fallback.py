@@ -427,12 +427,22 @@ def build_text_layout_candidates(
         segment_lines = lines[start_index:end_index]
         if len(segment_lines) < 3:
             continue
-        caption_parts = [str(segment_lines[0]["text"]).strip()]
+        first_caption_text = str(segment_lines[0]["text"]).strip()
+        first_caption_metadata = _table_caption_metadata(first_caption_text)
+        caption_parts = [
+            str(first_caption_metadata["caption"])
+            if first_caption_metadata is not None
+            else first_caption_text
+        ]
         content_start = 1
         if len(segment_lines) > 1:
             second_line_text = str(segment_lines[1]["text"]).strip()
             second_line_word_count = len(segment_lines[1]["words"])
-            if second_line_text and second_line_word_count <= 2 and not _is_numeric_like(second_line_text):
+            if (
+                len(second_line_text) >= 4
+                and second_line_word_count <= 2
+                and not _is_numeric_like(second_line_text)
+            ):
                 caption_parts.append(second_line_text)
                 content_start = 2
         content_lines = segment_lines[content_start:]
@@ -440,7 +450,7 @@ def build_text_layout_candidates(
         if not rows:
             continue
         caption = "\n".join(caption_parts)
-        caption_signal = _table_caption_metadata(caption_parts[0]) is not None
+        caption_signal = first_caption_metadata is not None
         strong_geometry = _has_strong_uncaptioned_table_geometry(rows)
         if not caption_signal and not strong_geometry:
             continue

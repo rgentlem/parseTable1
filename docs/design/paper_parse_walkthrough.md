@@ -121,6 +121,14 @@ For collapsed explicit grids, word-position refinement treats stable value colum
 
 That refinement is no longer limited to upright tables. For rotated explicit tables, extraction can normalize the clipped word and rule coordinates into a table-local upright frame, rebuild the row/column grid there, and then write the improved grid into `ExtractedTable` while preserving the original rotation metadata separately.
 
+Some PDFs draw visually landscape tables sideways on portrait pages without setting
+page-level rotation. For those pages, extraction may detect dominant vertical table
+text, transform the page geometry into a table-readable coordinate frame, run
+caption and layout detection in that transformed frame, and write a normal
+`ExtractedTable` with orientation metadata such as `orientation_strategy`,
+`sideways_candidate`, and `caption_detection_space`. This happens before
+normalization so downstream stages still consume ordinary table objects.
+
 The extractor still scores candidates, but the score is now diagnostic rather than a hard keep-drop gate for explicit extracted tables. The current rule is:
 
 - deduplicate exact candidate collisions
