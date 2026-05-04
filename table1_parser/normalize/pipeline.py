@@ -17,6 +17,7 @@ ALPHA_PATTERN = re.compile(r"[A-Za-z]")
 ALNUM_PATTERN = re.compile(r"[A-Za-z0-9]")
 COUNT_PCT_STYLE_PATTERN = re.compile(r"\bn\s*\(\s*%\s*\)")
 PERCENT_FRAGMENT_PATTERN = re.compile(r"^\(\s*\d+(?:\.\d+)?%\s*\)$")
+UNCERTAINTY_FRAGMENT_PATTERN = re.compile(r"^(?:[+\-±]\s*)?\d+(?:\.\d+)?$")
 STACKED_CELL_LINE_PATTERN = re.compile(r"(?:\r\n|\r|\n)+")
 EMBEDDED_LABEL_COUNT_PATTERN = re.compile(r"^(?P<label>.*[A-Za-z][A-Za-z/%() .,\-]*)\s+(?P<count>\d[\d,]*)$")
 FOOTNOTE_MARK_PATTERN = re.compile(r"[†‡§¶*]")
@@ -219,6 +220,179 @@ def _looks_like_stacked_numeric_value(value: str) -> bool:
     if not any(char.isdigit() for char in cleaned):
         return False
     return not ALPHA_PATTERN.search(cleaned)
+
+
+def _looks_like_uncertainty_fragment(value: str) -> bool:
+    """Return whether a cell looks like an adjacent uncertainty fragment."""
+    cleaned = clean_text(value)
+    if not cleaned or not UNCERTAINTY_FRAGMENT_PATTERN.fullmatch(cleaned):
+        return False
+    return cleaned[0] in {"+", "-", "±"}
+
+
+def _looks_like_estimate_value(value: str) -> bool:
+    """Return whether a cell can be the estimate paired with an uncertainty fragment."""
+    cleaned = clean_text(value)
+    if not cleaned or not any(char.isdigit() for char in cleaned):
+        return False
+    if ALPHA_PATTERN.search(cleaned):
+        return False
+    return detect_value_pattern(cleaned).pattern in {"number", "percent", "unknown"}
+
+
+def _looks_like_numeric_matrix_cell(value: str) -> bool:
+    """Return whether a cell is numeric enough to belong to a value matrix."""
+    cleaned = clean_text(value)
+    if not cleaned or ALPHA_PATTERN.search(cleaned):
+        return False
+    return any(char.isdigit() for char in cleaned)
+
+
+def _repair_split_uncertainty_columns(
+    raw_rows: list[list[str]],
+    cleaned_rows: list[list[str]],
+    body_rows: list[int],
+) -> tuple[list[list[str]], list[list[str]], list[dict[str, int]]]:
+    """Merge adjacent estimate and uncertainty-fragment columns."""
+    if not raw_rows or len(raw_rows[0]) < 4 or len(body_rows) < 3:
+        return raw_rows, cleaned_rows, []
+
+    repaired_raw_rows = [list(row) for row in raw_rows]
+    repaired_cleaned_rows = [list(row) for row in cleaned_rows]
+    repairs: list[dict[str, int]] = []
+    first_matrix_row_idx = _first_dense_numeric_matrix_row(cleaned_rows)
+    repair_body_rows = [
+        row_idx
+        for row_idx in body_rows
+        if first_matrix_row_idx is None or row_idx >= first_matrix_row_idx
+    ]
+    for col_idx in range(2, len(cleaned_rows[0])):
+        supporting_rows = 0
+        nonempty_candidate_rows = 0
+        for row_idx in repair_body_rows:
+            if row_idx >= len(cleaned_rows):
+                continue
+            left = clean_text(repaired_cleaned_rows[row_idx][col_idx - 1])
+            right = clean_text(repaired_cleaned_rows[row_idx][col_idx])
+            if not right:
+                continue
+            nonempty_candidate_rows += 1
+            if _looks_like_estimate_value(left) and _looks_like_uncertainty_fragment(right):
+                supporting_rows += 1
+        if (
+            supporting_rows < max(3, len(repair_body_rows) // 5)
+            or supporting_rows * 3 < max(1, nonempty_candidate_rows * 2)
+        ):
+            continue
+        merged_row_count = 0
+        for row_idx in repair_body_rows:
+            if row_idx >= len(repaired_cleaned_rows):
+                continue
+            left = clean_text(repaired_cleaned_rows[row_idx][col_idx - 1])
+            right = clean_text(repaired_cleaned_rows[row_idx][col_idx])
+            if not (_looks_like_estimate_value(left) and _looks_like_uncertainty_fragment(right)):
+                continue
+            repaired_raw_rows[row_idx][col_idx - 1] = clean_text(
+                f"{repaired_raw_rows[row_idx][col_idx - 1]} {repaired_raw_rows[row_idx][col_idx]}"
+            )
+            repaired_cleaned_rows[row_idx][col_idx - 1] = clean_text(f"{left} {right}")
+            repaired_raw_rows[row_idx][col_idx] = ""
+            repaired_cleaned_rows[row_idx][col_idx] = ""
+            merged_row_count += 1
+        for row_idx in range(len(repaired_cleaned_rows)):
+            if first_matrix_row_idx is not None and row_idx >= first_matrix_row_idx:
+                continue
+            left = clean_text(repaired_cleaned_rows[row_idx][col_idx - 1])
+            right = clean_text(repaired_cleaned_rows[row_idx][col_idx])
+            if not right:
+                continue
+            repaired_raw_rows[row_idx][col_idx - 1] = clean_text(f"{repaired_raw_rows[row_idx][col_idx - 1]} {repaired_raw_rows[row_idx][col_idx]}")
+            repaired_cleaned_rows[row_idx][col_idx - 1] = clean_text(f"{left} {right}")
+            repaired_raw_rows[row_idx][col_idx] = ""
+            repaired_cleaned_rows[row_idx][col_idx] = ""
+        repairs.append({"from_col_idx": col_idx, "to_col_idx": col_idx - 1, "merged_row_count": merged_row_count})
+    return repaired_raw_rows, repaired_cleaned_rows, repairs
+
+
+def _first_dense_numeric_matrix_row(cleaned_rows: list[list[str]]) -> int | None:
+    """Find the first row that looks like the start of the numeric value matrix."""
+    for row_idx, row in enumerate(cleaned_rows):
+        if len(row) < 4 or not clean_text(row[0]):
+            continue
+        populated_right = [clean_text(cell) for cell in row[1:] if clean_text(cell)]
+        if len(populated_right) < 3:
+            continue
+        numeric_right = sum(_looks_like_numeric_matrix_cell(cell) for cell in populated_right)
+        if numeric_right >= max(3, int(len(populated_right) * 0.65)):
+            return row_idx
+    return None
+
+
+def _drop_trailing_nondata_column(
+    raw_rows: list[list[str]],
+    cleaned_rows: list[list[str]],
+    body_rows: list[int],
+) -> tuple[list[list[str]], list[list[str]], dict[str, int] | None]:
+    """Drop a rightmost column that is populated but not part of the value matrix."""
+    if not raw_rows or len(raw_rows[0]) < 4 or len(body_rows) < 3:
+        return raw_rows, cleaned_rows, None
+    last_col_idx = len(cleaned_rows[0]) - 1
+    populated = 0
+    data_like = 0
+    previous_data_like = 0
+    for row_idx in body_rows:
+        if row_idx >= len(cleaned_rows):
+            continue
+        last = clean_text(cleaned_rows[row_idx][last_col_idx])
+        previous = clean_text(cleaned_rows[row_idx][last_col_idx - 1])
+        populated += int(bool(last))
+        data_like += int(_looks_like_numeric_matrix_cell(last))
+        previous_data_like += int(_looks_like_numeric_matrix_cell(previous))
+    if (
+        populated < max(3, len(body_rows) // 5)
+        or data_like >= max(3, len(body_rows) // 4)
+        or previous_data_like < max(3, len(body_rows) // 4)
+    ):
+        return raw_rows, cleaned_rows, None
+    return (
+        [row[:last_col_idx] for row in raw_rows],
+        [row[:last_col_idx] for row in cleaned_rows],
+        {"dropped_col_idx": last_col_idx, "populated_body_rows": populated, "data_like_body_rows": data_like},
+    )
+
+
+def _drop_sparse_nonmatrix_value_columns(
+    raw_rows: list[list[str]],
+    cleaned_rows: list[list[str]],
+    body_rows: list[int],
+) -> tuple[list[list[str]], list[list[str]], list[dict[str, int]]]:
+    """Drop sparse non-numeric value columns introduced by page-margin text."""
+    if not raw_rows or len(raw_rows[0]) < 4 or len(body_rows) < 3:
+        return raw_rows, cleaned_rows, []
+    dropped: list[dict[str, int]] = []
+    keep_indices = [0]
+    for col_idx in range(1, len(cleaned_rows[0])):
+        populated = 0
+        numeric = 0
+        for row_idx in body_rows:
+            if row_idx >= len(cleaned_rows):
+                continue
+            value = clean_text(cleaned_rows[row_idx][col_idx])
+            if not value:
+                continue
+            populated += 1
+            numeric += int(_looks_like_numeric_matrix_cell(value))
+        if populated and numeric == 0 and populated <= max(4, len(body_rows) // 4):
+            dropped.append({"dropped_col_idx": col_idx, "populated_body_rows": populated})
+            continue
+        keep_indices.append(col_idx)
+    if not dropped:
+        return raw_rows, cleaned_rows, []
+    return (
+        [[row[col_idx] for col_idx in keep_indices] for row in raw_rows],
+        [[row[col_idx] for col_idx in keep_indices] for row in cleaned_rows],
+        dropped,
+    )
 
 
 def _repair_extra_wide_value_column(
@@ -622,6 +796,25 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
     )
     suppressed_row_indices = suppressed_stub_row_indices | suppressed_continuation_row_indices
     body_rows = [row_idx for row_idx in body_rows if row_idx not in suppressed_row_indices]
+    split_uncertainty_column_repairs: list[dict[str, int]] = []
+    raw_rows, cleaned_rows, split_uncertainty_column_repairs = _repair_split_uncertainty_columns(
+        raw_rows,
+        cleaned_rows,
+        body_rows,
+    )
+    trailing_nondata_column_repair: dict[str, int] | None = None
+    raw_rows, cleaned_rows, trailing_nondata_column_repair = _drop_trailing_nondata_column(
+        raw_rows,
+        cleaned_rows,
+        body_rows,
+    )
+    if split_uncertainty_column_repairs or trailing_nondata_column_repair is not None:
+        header_rows, body_rows, header_detection = detect_header_rows_with_metadata(
+            cleaned_rows,
+            row_bounds=header_row_bounds,
+            horizontal_rules=header_horizontal_rules,
+        )
+        body_rows = [row_idx for row_idx in body_rows if row_idx not in suppressed_row_indices]
     first_column_bboxes: dict[int, tuple[float, float, float, float]] = {}
     x0_values: list[float] = []
     first_column_text_x0_by_row: dict[int, float] = {}
@@ -737,6 +930,79 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
                 )
                 for row_idx in body_rows
             ]
+    trailing_nondata_after_drop: dict[str, int] | None = None
+    raw_rows, cleaned_rows, trailing_nondata_after_drop = _drop_trailing_nondata_column(
+        raw_rows,
+        cleaned_rows,
+        body_rows,
+    )
+    if trailing_nondata_after_drop is not None:
+        trailing_nondata_column_repair = trailing_nondata_after_drop
+        header_rows, body_rows, header_detection = detect_header_rows_with_metadata(
+            cleaned_rows,
+            row_bounds=header_row_bounds,
+            horizontal_rules=header_horizontal_rules,
+        )
+        body_rows = [row_idx for row_idx in body_rows if row_idx not in suppressed_row_indices]
+        row_views = [
+            build_row_signature(
+                row_idx,
+                raw_rows[row_idx],
+                first_cell_bbox=first_column_bboxes.get(row_idx),
+                base_x0=base_x0,
+                first_cell_text_x0=first_column_text_x0_by_row.get(row_idx),
+                base_text_x0=base_text_x0,
+            )
+            for row_idx in body_rows
+        ]
+    sparse_nonmatrix_column_repairs: list[dict[str, int]] = []
+    raw_rows, cleaned_rows, sparse_nonmatrix_column_repairs = _drop_sparse_nonmatrix_value_columns(
+        raw_rows,
+        cleaned_rows,
+        body_rows,
+    )
+    if sparse_nonmatrix_column_repairs:
+        header_rows, body_rows, header_detection = detect_header_rows_with_metadata(
+            cleaned_rows,
+            row_bounds=header_row_bounds,
+            horizontal_rules=header_horizontal_rules,
+        )
+        body_rows = [row_idx for row_idx in body_rows if row_idx not in suppressed_row_indices]
+        row_views = [
+            build_row_signature(
+                row_idx,
+                raw_rows[row_idx],
+                first_cell_bbox=first_column_bboxes.get(row_idx),
+                base_x0=base_x0,
+                first_cell_text_x0=first_column_text_x0_by_row.get(row_idx),
+                base_text_x0=base_text_x0,
+            )
+            for row_idx in body_rows
+        ]
+        raw_rows, cleaned_rows, trailing_nondata_after_drop = _drop_trailing_nondata_column(
+            raw_rows,
+            cleaned_rows,
+            body_rows,
+        )
+        if trailing_nondata_after_drop is not None:
+            trailing_nondata_column_repair = trailing_nondata_after_drop
+            header_rows, body_rows, header_detection = detect_header_rows_with_metadata(
+                cleaned_rows,
+                row_bounds=header_row_bounds,
+                horizontal_rules=header_horizontal_rules,
+            )
+            body_rows = [row_idx for row_idx in body_rows if row_idx not in suppressed_row_indices]
+            row_views = [
+                build_row_signature(
+                    row_idx,
+                    raw_rows[row_idx],
+                    first_cell_bbox=first_column_bboxes.get(row_idx),
+                    base_x0=base_x0,
+                    first_cell_text_x0=first_column_text_x0_by_row.get(row_idx),
+                    base_text_x0=base_text_x0,
+                )
+                for row_idx in body_rows
+            ]
     indent_levels = [row_view.indent_level for row_view in row_views if row_view.indent_level is not None]
     if len(indent_levels) < 3:
         indentation_informative = False
@@ -755,12 +1021,15 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
         "dropped_trailing_cols": dropped_trailing_cols,
         "column_repairs": {
             "merged_columns": merged_columns,
+            "split_uncertainty_columns": split_uncertainty_column_repairs,
             "merged_split_label_columns": merged_split_label_columns,
             "embedded_label_count_cells": embedded_label_count_repair,
             "sparse_stub_label_column": sparse_stub_label_column_repair,
             "split_row_label_field_columns": split_row_label_field_repair,
             "vertical_label_continuations": vertical_label_continuation_repair,
             "extra_wide_value_column": extra_wide_value_column_repair,
+            "trailing_nondata_column": trailing_nondata_column_repair,
+            "sparse_nonmatrix_value_columns": sparse_nonmatrix_column_repairs,
             "dropped_empty_columns_after_repair": dropped_repaired_cols,
         },
         "header_detection": header_detection,

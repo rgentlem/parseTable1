@@ -49,6 +49,8 @@ def build_column_header_schema(
         diagnostics.append("missing_cleaned_rows")
         raw_grid = []
     grid = [[clean_text(str(cell)) for cell in row] if isinstance(row, list) else [] for row in raw_grid]
+    first_numeric_body_row = _first_numeric_body_row(grid, table.n_cols)
+    grid = _repair_wrapped_header_fragments(grid, table.n_cols, first_numeric_body_row)
     header_rows = [row_idx for row_idx in table.header_rows if 0 <= row_idx < len(grid)]
     body_rows = [row_idx for row_idx in table.body_rows if 0 <= row_idx < len(grid)]
     if len(header_rows) != len(table.header_rows):
@@ -66,8 +68,20 @@ def build_column_header_schema(
         diagnostics.append(f"skipped_title_like_leaf_header_row:row={row_idx}")
 
     inferred_header_rows_used = False
+    geometry_header_rows, geometry_body_start = _infer_header_rows_from_geometry(grid, table.n_cols, table.metadata)
+    if usable_header_rows and geometry_header_rows and _header_rows_before_first_rule(usable_header_rows, table.metadata):
+        usable_header_rows = geometry_header_rows
+        header_rows = geometry_header_rows
+        inferred_header_rows_used = True
+        diagnostics.append(f"replaced_title_rows_with_geometry_header_rows:rows={','.join(map(str, geometry_header_rows))}")
+        if geometry_body_start is not None:
+            body_rows = [row_idx for row_idx in body_rows if row_idx >= geometry_body_start] or [
+                row_idx
+                for row_idx in range(geometry_body_start, len(grid))
+                if any(_grid_cell(grid, row_idx, col_idx) for col_idx in range(table.n_cols))
+            ]
     if not usable_header_rows:
-        inferred_header_rows, inferred_body_start = _infer_header_rows_from_geometry(grid, table.n_cols, table.metadata)
+        inferred_header_rows, inferred_body_start = geometry_header_rows, geometry_body_start
         if not inferred_header_rows:
             inferred_header_rows, inferred_body_start = _infer_header_rows_from_grid(grid, table.n_cols)
         if inferred_header_rows:
@@ -98,10 +112,17 @@ def build_column_header_schema(
     if leaf_header_row_idx is not None:
         prior_rows = [row_idx for row_idx in usable_header_rows if row_idx < leaf_header_row_idx]
         if prior_rows:
-            prior_row_idx = max(prior_rows)
-            if inferred_header_rows_used and _physical_row_gap(table.metadata, prior_row_idx, leaf_header_row_idx) <= 4.0:
-                leaf_header_row_indices = [prior_row_idx, leaf_header_row_idx]
-                diagnostics.append(f"merged_wrapped_leaf_header_rows:rows={prior_row_idx},{leaf_header_row_idx}")
+            if inferred_header_rows_used:
+                stacked_rows = [leaf_header_row_idx]
+                for prior_row_idx in sorted(prior_rows, reverse=True):
+                    if _physical_row_gap(table.metadata, prior_row_idx, stacked_rows[0]) > 5.0:
+                        break
+                    if _row_nonempty_count(grid, prior_row_idx, table.n_cols) < max(4, table.n_cols // 3):
+                        break
+                    stacked_rows.insert(0, prior_row_idx)
+                if len(stacked_rows) > 1:
+                    leaf_header_row_indices = stacked_rows
+                    diagnostics.append(f"merged_wrapped_leaf_header_rows:rows={','.join(map(str, stacked_rows))}")
     leaf_header_row_set = set(leaf_header_row_indices)
 
     schema_id = f"{table.table_id}:column_header_schema"
@@ -158,6 +179,12 @@ def build_column_header_schema(
         leaf_label = ""
         if leaf_header_row_idx is not None:
             leaf_label = clean_text(" ".join(_grid_cell(grid, row_idx, col_idx) for row_idx in leaf_header_row_indices))
+            if not leaf_label and col_idx == 0 and _looks_like_row_label_column(grid, body_rows, col_idx):
+                leaf_label = "Characteristics"
+                diagnostics.append(f"inferred_row_label_leaf_header:col={col_idx}")
+            elif not leaf_label and _looks_like_count_column(grid, body_rows, col_idx):
+                leaf_label = "n"
+                diagnostics.append(f"inferred_count_leaf_header:col={col_idx}")
             leaf_evidence_ids.extend(evidence_for(row_idx, col_idx) for row_idx in leaf_header_row_indices)
             if not leaf_label:
                 diagnostics.append(f"blank_leaf_header:col={col_idx}")
@@ -393,6 +420,29 @@ def _physical_row_gap(metadata: dict[str, object], upper_row_idx: int, lower_row
         return float("inf")
 
 
+def _header_rows_before_first_rule(row_indices: list[int], metadata: dict[str, object]) -> bool:
+    row_bounds = metadata.get("row_bounds")
+    rules = metadata.get("horizontal_rules")
+    if not isinstance(row_bounds, list) or not isinstance(rules, list) or not row_indices:
+        return False
+    numeric_rules = sorted(float(value) for value in rules if isinstance(value, (int, float)))
+    if not numeric_rules:
+        return False
+    first_rule = numeric_rules[0]
+    for row_idx in row_indices:
+        if row_idx >= len(row_bounds):
+            return False
+        bounds = row_bounds[row_idx]
+        if not isinstance(bounds, (list, tuple)) or len(bounds) != 2:
+            return False
+        try:
+            if float(bounds[1]) > first_rule + 3.0:
+                return False
+        except (TypeError, ValueError):
+            return False
+    return True
+
+
 def _infer_header_rows_from_geometry(
     grid: list[list[str]],
     n_cols: int,
@@ -474,6 +524,59 @@ def _looks_like_numeric_body_value(value: str) -> bool:
     alpha_count = sum(char.isalpha() for char in cleaned)
     digit_count = sum(char.isdigit() for char in cleaned)
     return digit_count >= alpha_count
+
+
+def _looks_like_row_label_column(grid: list[list[str]], body_rows: list[int], col_idx: int) -> bool:
+    values = [clean_text(_grid_cell(grid, row_idx, col_idx)) for row_idx in body_rows]
+    populated = [value for value in values if value]
+    if len(populated) < max(3, len(body_rows) // 4):
+        return False
+    alpha_values = sum(bool(ALPHA_BOUNDARY_SEPARATOR_PATTERN.search(value) or any(char.isalpha() for char in value)) for value in populated)
+    numeric_like = sum(_looks_like_numeric_body_value(value) for value in populated)
+    return alpha_values >= max(3, len(populated) // 2) and numeric_like <= max(1, len(populated) // 5)
+
+
+def _looks_like_count_column(grid: list[list[str]], body_rows: list[int], col_idx: int) -> bool:
+    populated = [clean_text(_grid_cell(grid, row_idx, col_idx)) for row_idx in body_rows if clean_text(_grid_cell(grid, row_idx, col_idx))]
+    if len(populated) < max(3, len(body_rows) // 4):
+        return False
+    integer_like = sum(bool(re.fullmatch(r"\d[\d,]*", value)) for value in populated)
+    decimal_like = sum(bool(re.search(r"\d+\.\d+", value)) for value in populated)
+    alpha_like = sum(any(char.isalpha() for char in value) for value in populated)
+    return (
+        integer_like >= max(3, int(len(populated) * 0.65))
+        and decimal_like == 0
+        and alpha_like <= max(2, len(populated) // 8)
+    )
+
+
+def _repair_wrapped_header_fragments(
+    grid: list[list[str]],
+    n_cols: int,
+    first_body_row_idx: int | None,
+) -> list[list[str]]:
+    if first_body_row_idx is None:
+        return grid
+    repaired = [list(row) for row in grid]
+    for row_idx in range(min(first_body_row_idx, len(repaired))):
+        row = repaired[row_idx]
+        for col_idx in range(1, min(n_cols, len(row))):
+            left = clean_text(row[col_idx - 1])
+            right = clean_text(row[col_idx])
+            if not left or not right or left.count("(") <= left.count(")"):
+                continue
+            balance = left.count("(") - left.count(")")
+            prefix_tokens: list[str] = []
+            suffix_tokens = right.split()
+            while suffix_tokens and balance > 0:
+                token = suffix_tokens.pop(0)
+                prefix_tokens.append(token)
+                balance += token.count("(") - token.count(")")
+            if balance > 0 or not prefix_tokens:
+                continue
+            row[col_idx - 1] = clean_text(f"{left} {' '.join(prefix_tokens)}")
+            row[col_idx] = clean_text(" ".join(suffix_tokens))
+    return repaired
 
 
 def _header_runs_for_groups(
