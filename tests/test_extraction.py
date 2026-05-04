@@ -995,6 +995,42 @@ def test_pymupdf4llm_extractor_uses_text_layout_fallback_when_json_has_no_tables
     assert cell_map[(1, 0)].startswith("Family poverty-income ratio, n (%)")
 
 
+def test_text_layout_candidates_preserve_cell_bboxes_for_indentation() -> None:
+    """Text-position fallback should retain first-cell text starts for later indentation inference."""
+    words = [
+        {"text": "Table", "x0": 50.0, "x1": 76.0, "top": 60.0, "bottom": 68.0},
+        {"text": "1.", "x0": 80.0, "x1": 90.0, "top": 60.0, "bottom": 68.0},
+        {"text": "Characteristic", "x0": 50.0, "x1": 112.0, "top": 84.0, "bottom": 92.0},
+        {"text": "Overall", "x0": 200.0, "x1": 236.0, "top": 84.0, "bottom": 92.0},
+        {"text": "Cases", "x0": 260.0, "x1": 288.0, "top": 84.0, "bottom": 92.0},
+        {"text": "Controls", "x0": 320.0, "x1": 360.0, "top": 84.0, "bottom": 92.0},
+        {"text": "Race", "x0": 50.0, "x1": 74.0, "top": 98.0, "bottom": 106.0},
+        {"text": "10", "x0": 200.0, "x1": 212.0, "top": 98.0, "bottom": 106.0},
+        {"text": "12", "x0": 260.0, "x1": 272.0, "top": 98.0, "bottom": 106.0},
+        {"text": "14", "x0": 320.0, "x1": 332.0, "top": 98.0, "bottom": 106.0},
+        {"text": "Male", "x0": 68.0, "x1": 92.0, "top": 112.0, "bottom": 120.0},
+        {"text": "4", "x0": 200.0, "x1": 206.0, "top": 112.0, "bottom": 120.0},
+        {"text": "6", "x0": 260.0, "x1": 266.0, "top": 112.0, "bottom": 120.0},
+        {"text": "8", "x0": 320.0, "x1": 326.0, "top": 112.0, "bottom": 120.0},
+        {"text": "Female", "x0": 68.0, "x1": 102.0, "top": 126.0, "bottom": 134.0},
+        {"text": "6", "x0": 200.0, "x1": 206.0, "top": 126.0, "bottom": 134.0},
+        {"text": "6", "x0": 260.0, "x1": 266.0, "top": 126.0, "bottom": 134.0},
+        {"text": "6", "x0": 320.0, "x1": 326.0, "top": 126.0, "bottom": 134.0},
+    ]
+
+    candidates = build_text_layout_candidates(
+        page_num=1,
+        page_text="Table 1. Baseline",
+        words=words,
+        layout_source="pymupdf_text_positions",
+    )
+
+    assert len(candidates) == 1
+    assert candidates[0].raw_rows[2][0] == "Male"
+    table_cells = candidates[0].metadata["table_cells"]
+    assert table_cells[2][0] == (68.0, 112.0, 92.0, 120.0)
+
+
 def test_detect_table_candidates_scores_tables_on_a_page() -> None:
     """Table detection should score candidates extracted from a PDF page."""
     pdf = FakePDF(

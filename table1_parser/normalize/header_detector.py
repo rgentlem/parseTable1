@@ -9,6 +9,14 @@ NUMERIC_PATTERN = re.compile(r"\d")
 HEADER_KEYWORD_PATTERN = re.compile(r"\b(overall|p[\s-]?value|total|n|%)\b", re.IGNORECASE)
 COUNT_ROW_LABEL_PATTERN = re.compile(r"^(n|N|no\.?|number)$")
 RANGE_LABEL_PATTERN = re.compile(r"^(?:[<>]=?\s*)?-?\d+(?:\.\d+)?(?:\s*-\s*-?\d+(?:\.\d+)?)?$")
+COLUMN_THRESHOLD_HEADER_PATTERN = re.compile(
+    r"^(?:(?:[<>]=?|[≤≥‡])\s*)?\d+(?:\.\d+)?\s*(?:mm|cm|m|kg|g|mg|ug|µg|years?|yr|yrs|%)$",
+    re.IGNORECASE,
+)
+STATISTIC_HEADER_PATTERN = re.compile(
+    r"^(?:%|se|sd|ci|iqr|mean(?:\s+[A-Za-z]+)?(?:,\s*[A-Za-z]+)?)$",
+    re.IGNORECASE,
+)
 TOP_RULE_GAP = 12.0
 BOUNDARY_RULE_TOLERANCE = 3.0
 MAX_HEADER_ROWS = 3
@@ -45,10 +53,18 @@ def header_score(row: list[str], row_idx: int) -> float:
         if populated
         else 0.0
     )
+    threshold_header_cells = sum(bool(COLUMN_THRESHOLD_HEADER_PATTERN.fullmatch(cell.strip())) for cell in populated)
+    statistic_header_cells = sum(bool(STATISTIC_HEADER_PATTERN.fullmatch(cell.strip())) for cell in populated)
     if text_density >= 0.75:
         score += 0.2
     if _numeric_density(row) <= 0.25:
         score += 0.2
+    if (
+        row_idx < MAX_HEADER_ROWS
+        and populated
+        and threshold_header_cells + statistic_header_cells >= max(2, len(populated) // 2)
+    ):
+        score += 0.35
     if row_idx > 0 and COUNT_ROW_LABEL_PATTERN.fullmatch(first_cell.strip()) and _numeric_density(row) >= 0.75:
         score -= 0.45
     return min(score, 1.0)

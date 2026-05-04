@@ -161,6 +161,8 @@ For rotated refinements, the recovered `row_bounds` and `horizontal_rules` may b
 
 For explicit tables, extraction may also record the visible first-word x-position for each first-column row label. This exists because backend cell boxes often describe the full column boundary, while the actual text inside that cell may be indented. Normalization uses that compact word-position metadata for indentation inference while preserving the original cell boxes as grid geometry.
 
+For text-position fallback and sideways-transformed candidates, extraction may preserve recovered cell text bounding boxes directly in `table_cells`. These boxes are in the same coordinate frame as the recovered grid and allow normalization to infer row-label indentation even when the backend did not emit explicit table cells.
+
 ### Why `ExtractedTable` Exists
 
 This is the audit trail for extraction.
@@ -316,13 +318,32 @@ When this fires, normalization:
 
 This repair preserves raw extracted text in `ExtractedTable`; it only changes the parser-facing normalized grid.
 
-#### 3.10 Drop Columns Emptied By Repair
+#### 3.10 Expand Extra-Wide Stacked Value Columns
+
+Some upright, visually wide data tables can be flattened by extraction into a row-label cell plus one broad value-region cell. The visual table is still multi-column; the broad extracted cell may preserve those visual columns as a stable newline-delimited stack.
+
+Normalization can expand that collapsed value-region cell only when the evidence is strong:
+
+- several rows share the same stack width
+- the stacked body tokens are mostly numeric value-like tokens
+- top header stacks can be aligned to the same width or cleanly repeated over paired leaf columns
+
+When this fires, normalization:
+
+- keeps the first extracted column as the row-label field
+- splits the broad value-region cell into separate parser-facing columns
+- repeats coarser shared header labels over their leaf value/statistic columns
+- records the repair evidence in `metadata.column_repairs.extra_wide_value_column`
+
+This treats the visual table as a normal multi-column table while preserving the original collapsed cell text in `ExtractedTable`.
+
+#### 3.11 Drop Columns Emptied By Repair
 
 If a split-value repair empties a helper column across the table, normalization can drop that now-empty column and rerun header detection on the repaired grid.
 
 This keeps the normalized grid closer to the logical table structure that the later parser actually wants.
 
-#### 3.11 Decide Whether Indentation Is Informative
+#### 3.12 Decide Whether Indentation Is Informative
 
 For some papers, first-column indentation clearly helps distinguish parent rows from level rows.
 
@@ -601,6 +622,8 @@ This artifact records:
 - which ones ran
 - whether the table ended as `ok`, `rescued`, or `failed`
 - the terminal failure stage and failure reason when rescue was exhausted
+
+If a broad extracted value cell was expanded into visual value columns during normalization, that repair is recorded as an `extra_wide_value_column_repair` attempt rather than treating the original newline-stacked extraction as an unrecovered collapsed grid.
 
 ## What A Human Should Inspect First
 

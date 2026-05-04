@@ -423,6 +423,98 @@ def test_normalization_repairs_split_left_label_columns() -> None:
     ]
 
 
+def test_normalization_expands_extra_wide_stacked_value_column() -> None:
+    """A visually wide upright table collapsed into one value stack should regain its value columns."""
+    rows = [
+        ["", "Severity of AL, %"],
+        ["Characteristics", "‡3 mm\nSE\n‡4 mm\nSE\n‡5 mm\nSE\n‡6 mm\nSE\n‡7 mm\nSE\nMean AL, mm\nSE"],
+        ["Total", "88.1\n0.8\n60.8\n1.6\n40.9\n1.4\n24.2\n1.0\n14.7\n0.6\n1.72\n0.03"],
+        ["Age (mean: 24 teeth)", ""],
+        ["30 to 34 years", "72.3\n1.8\n32.6\n2.3\n16.4\n1.8\n8.3\n1.0\n3.2\n0.7\n1.23\n0.04"],
+        ["35 to 49 years", "85.7\n1.1\n51.8\n2.2\n32.4\n1.9\n17.0\n1.2\n10.4\n0.8\n1.52\n0.04"],
+    ]
+    extracted = ExtractedTable(
+        table_id="tbl-extra-wide",
+        source_pdf="paper.pdf",
+        page_num=1,
+        n_rows=len(rows),
+        n_cols=2,
+        cells=[
+            TableCell(row_idx=row_idx, col_idx=col_idx, text=value)
+            for row_idx, row in enumerate(rows)
+            for col_idx, value in enumerate(row)
+        ],
+        extraction_backend="pymupdf4llm",
+        metadata={
+            "row_bounds": [(float(idx * 10), float(idx * 10 + 8)) for idx in range(len(rows))],
+            "horizontal_rules": [float(idx * 10) for idx in range(len(rows) + 1)],
+        },
+    )
+
+    normalized = normalize_extracted_table(extracted)
+
+    repair = normalized.metadata["column_repairs"]["extra_wide_value_column"]
+    assert normalized.n_cols == 13
+    assert normalized.header_rows == [0, 1]
+    assert normalized.metadata["header_detection"]["source"] == "content"
+    assert normalized.metadata["cleaned_rows"][0][1:] == ["Severity of AL, %"] * 12
+    assert normalized.metadata["cleaned_rows"][1][1:5] == ["‡3 mm", "SE", "‡4 mm", "SE"]
+    assert normalized.metadata["cleaned_rows"][2][1:] == [
+        "88.1",
+        "0.8",
+        "60.8",
+        "1.6",
+        "40.9",
+        "1.4",
+        "24.2",
+        "1.0",
+        "14.7",
+        "0.6",
+        "1.72",
+        "0.03",
+    ]
+    assert repair["created_value_columns"] == 12
+    assert repair["first_value_row_idx"] == 2
+
+
+def test_normalization_expands_grouped_extra_wide_header_stack() -> None:
+    """Coarser header stacks should repeat over paired value/statistic leaf columns."""
+    rows = [
+        ["", "Severity"],
+        ["", "‡3 mm\n‡4 mm\n‡5 mm\n‡6 mm\n‡7 mm"],
+        ["Extent", "%\nSE\n%\nSE\n%\nSE\n%\nSE\n%\nSE"],
+        ["Site specific", ""],
+        ["PD", ""],
+        ["‡5% sites", "44.9\n2.2\n17.0\n0.9\n6.3\n0.6\n2.4\n0.3\n0.6\n0.09"],
+        ["‡10% sites", "31.2\n1.8\n10.6\n0.6\n3.1\n0.4\n1.2\n0.2\n0.2\n0.05"],
+        ["Mean", "11.9\n0.7\n3.8\n0.2\n1.2\n0.1\n0.5\n0.05\n0.1\n0.01"],
+    ]
+    extracted = ExtractedTable(
+        table_id="tbl-extra-wide-grouped",
+        source_pdf="paper.pdf",
+        page_num=1,
+        n_rows=len(rows),
+        n_cols=2,
+        cells=[
+            TableCell(row_idx=row_idx, col_idx=col_idx, text=value)
+            for row_idx, row in enumerate(rows)
+            for col_idx, value in enumerate(row)
+        ],
+        extraction_backend="pymupdf4llm",
+    )
+
+    normalized = normalize_extracted_table(extracted)
+
+    repair = normalized.metadata["column_repairs"]["extra_wide_value_column"]
+    assert normalized.n_cols == 11
+    assert normalized.header_rows == [0, 1, 2]
+    assert normalized.metadata["cleaned_rows"][0][1:] == ["Severity"] * 10
+    assert normalized.metadata["cleaned_rows"][1][1:7] == ["‡3 mm", "‡3 mm", "‡4 mm", "‡4 mm", "‡5 mm", "‡5 mm"]
+    assert normalized.metadata["cleaned_rows"][2][1:7] == ["%", "SE", "%", "SE", "%", "SE"]
+    assert repair["created_value_columns"] == 10
+    assert repair["repeated_header_row_indices"] == [0, 1]
+
+
 def test_normalization_preserves_table_orientation_metadata() -> None:
     """Normalization should preserve extraction metadata about table orientation."""
     extracted = ExtractedTable(

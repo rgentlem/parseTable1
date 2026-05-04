@@ -81,13 +81,22 @@ def build_table_processing_statuses(
             or bool(isinstance(extracted_signals, dict) and extracted_signals.get("table_1_match"))
             or "title_or_caption_mentions_characteristics" in table_profile.evidence
         )
+        column_repairs = normalized_table.metadata.get("column_repairs", {})
+        extra_wide_value_column_repair = (
+            column_repairs.get("extra_wide_value_column") if isinstance(column_repairs, dict) else None
+        )
+        extra_wide_value_column_repaired = isinstance(extra_wide_value_column_repair, dict)
+        stacked_value_cells_unrepaired = any(
+            isinstance(cell, str) and cell.count("\n") >= 4
+            for row in extracted_rows
+            for cell in row[1:]
+        ) and not extra_wide_value_column_repaired
         extraction_inadequate = (
             extracted_table.n_rows <= 1
             or (is_descriptive_candidate and extracted_table.n_rows <= 3 and extracted_table.n_cols <= 2)
             or any(isinstance(row[0], str) and row[0].count("\n") >= 4 for row in extracted_rows if row)
-            or any(isinstance(cell, str) and cell.count("\n") >= 4 for row in extracted_rows for cell in row[1:])
+            or stacked_value_cells_unrepaired
         )
-        column_repairs = normalized_table.metadata.get("column_repairs", {})
         text_cleaning_provenance = normalized_table.metadata.get("text_cleaning_provenance", {})
         dropped_leading_cols = int(normalized_table.metadata.get("dropped_leading_cols", 0))
         dropped_trailing_cols = int(normalized_table.metadata.get("dropped_trailing_cols", 0))
@@ -153,6 +162,18 @@ def build_table_processing_statuses(
                 note=(
                     f"merged_columns={sum(1 for item in merged_columns if isinstance(item, dict) and int(item.get('merged_row_count', 0)) > 0)}"
                     if any(int(item.get("merged_row_count", 0)) > 0 for item in merged_columns if isinstance(item, dict))
+                    else None
+                ),
+            ),
+            TableProcessingAttempt(
+                stage="normalization",
+                name="extra_wide_value_column_repair",
+                considered=True,
+                ran=extra_wide_value_column_repaired,
+                succeeded=extra_wide_value_column_repaired,
+                note=(
+                    f"value_columns={int(extra_wide_value_column_repair.get('created_value_columns', 0))}"
+                    if extra_wide_value_column_repaired
                     else None
                 ),
             ),

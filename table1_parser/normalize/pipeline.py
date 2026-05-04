@@ -17,6 +17,7 @@ ALPHA_PATTERN = re.compile(r"[A-Za-z]")
 ALNUM_PATTERN = re.compile(r"[A-Za-z0-9]")
 COUNT_PCT_STYLE_PATTERN = re.compile(r"\bn\s*\(\s*%\s*\)")
 PERCENT_FRAGMENT_PATTERN = re.compile(r"^\(\s*\d+(?:\.\d+)?%\s*\)$")
+STACKED_CELL_LINE_PATTERN = re.compile(r"(?:\r\n|\r|\n)+")
 
 
 def _is_noninformative_cell(value: str) -> bool:
@@ -47,6 +48,116 @@ def _has_data_like_values(values: list[str]) -> bool:
         for value in populated
     )
     return data_like >= max(1, len(populated) // 2)
+
+
+def _split_stacked_cell_lines(value: str, *, cleaned: bool) -> list[str]:
+    """Split extractor-preserved line stacks in one wide cell."""
+    parts: list[str] = []
+    for part in STACKED_CELL_LINE_PATTERN.split(value):
+        stripped = part.strip()
+        if not stripped:
+            continue
+        parts.append(clean_text(stripped) if cleaned else stripped)
+    return parts
+
+
+def _looks_like_stacked_numeric_value(value: str) -> bool:
+    """Return whether a stacked-cell token is value-like enough to define a data column."""
+    cleaned = clean_text(value)
+    if not cleaned:
+        return False
+    if detect_value_pattern(cleaned).pattern != "unknown":
+        return True
+    if not any(char.isdigit() for char in cleaned):
+        return False
+    return not ALPHA_PATTERN.search(cleaned)
+
+
+def _repair_extra_wide_value_column(
+    raw_rows: list[list[str]],
+    cleaned_rows: list[list[str]],
+) -> tuple[list[list[str]], list[list[str]], dict[str, object] | None]:
+    """Expand a collapsed extracted value-region cell into visual value columns."""
+    if not raw_rows or len(raw_rows) < 5 or max((len(row) for row in raw_rows), default=0) != 2:
+        return raw_rows, cleaned_rows, None
+
+    raw_parts_by_row = [_split_stacked_cell_lines(row[1], cleaned=False) for row in raw_rows]
+    cleaned_parts_by_row = [_split_stacked_cell_lines(row[1], cleaned=True) for row in raw_rows]
+    value_stack_rows: list[int] = []
+    for row_idx, parts in enumerate(cleaned_parts_by_row):
+        if len(parts) < 4:
+            continue
+        numeric_like_count = sum(_looks_like_stacked_numeric_value(part) for part in parts)
+        if numeric_like_count >= max(4, int(len(parts) * 0.8)):
+            value_stack_rows.append(row_idx)
+
+    if len(value_stack_rows) < max(3, len(raw_rows) // 5):
+        return raw_rows, cleaned_rows, None
+
+    width_counts: dict[int, int] = {}
+    for row_idx in value_stack_rows:
+        width = len(cleaned_parts_by_row[row_idx])
+        width_counts[width] = width_counts.get(width, 0) + 1
+    expected_width = max(width_counts, key=lambda width: (width_counts[width], width))
+    if expected_width < 4 or expected_width > 24:
+        return raw_rows, cleaned_rows, None
+    if width_counts[expected_width] < max(3, len(value_stack_rows) // 2):
+        return raw_rows, cleaned_rows, None
+
+    first_value_row_idx = min(row_idx for row_idx in value_stack_rows if len(cleaned_parts_by_row[row_idx]) == expected_width)
+    header_stack_rows = [
+        row_idx
+        for row_idx, parts in enumerate(cleaned_parts_by_row[:first_value_row_idx])
+        if parts and (len(parts) == 1 or len(parts) == expected_width or expected_width % len(parts) == 0)
+    ]
+    if not header_stack_rows:
+        return raw_rows, cleaned_rows, None
+
+    repaired_raw_rows: list[list[str]] = []
+    repaired_cleaned_rows: list[list[str]] = []
+    repeated_header_rows: list[int] = []
+    padded_or_truncated_rows: list[int] = []
+    for row_idx, row in enumerate(raw_rows):
+        raw_parts = raw_parts_by_row[row_idx]
+        cleaned_parts = cleaned_parts_by_row[row_idx]
+        if len(raw_parts) == expected_width:
+            expanded_raw = raw_parts
+            expanded_cleaned = cleaned_parts
+        elif row_idx < first_value_row_idx and len(raw_parts) == 1:
+            expanded_raw = raw_parts * expected_width
+            expanded_cleaned = cleaned_parts * expected_width
+            repeated_header_rows.append(row_idx)
+        elif row_idx < first_value_row_idx and raw_parts and expected_width % len(raw_parts) == 0:
+            repeat_count = expected_width // len(raw_parts)
+            expanded_raw = [part for part in raw_parts for _ in range(repeat_count)]
+            expanded_cleaned = [part for part in cleaned_parts for _ in range(repeat_count)]
+            repeated_header_rows.append(row_idx)
+        else:
+            expanded_raw = [*raw_parts[:expected_width], *["" for _ in range(max(0, expected_width - len(raw_parts)))]]
+            expanded_cleaned = [
+                *cleaned_parts[:expected_width],
+                *["" for _ in range(max(0, expected_width - len(cleaned_parts)))],
+            ]
+            if raw_parts and len(raw_parts) != expected_width:
+                padded_or_truncated_rows.append(row_idx)
+        repaired_raw_rows.append([row[0], *expanded_raw])
+        repaired_cleaned_rows.append([cleaned_rows[row_idx][0], *expanded_cleaned])
+
+    return repaired_raw_rows, repaired_cleaned_rows, {
+        "from_col_idx": 1,
+        "created_value_columns": expected_width,
+        "value_stack_row_indices": value_stack_rows,
+        "first_value_row_idx": first_value_row_idx,
+        "repeated_header_row_indices": repeated_header_rows,
+        "padded_or_truncated_row_indices": padded_or_truncated_rows,
+        "evidence": {
+            "row_count": len(raw_rows),
+            "value_stack_row_count": len(value_stack_rows),
+            "modal_stack_width": expected_width,
+            "modal_stack_width_row_count": width_counts[expected_width],
+            "header_stack_row_count": len(header_stack_rows),
+        },
+    }
 
 
 def _repair_sparse_stub_label_column(
@@ -309,6 +420,11 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
             merged_split_label_columns.append(
                 {"from_col_idx": 1, "to_col_idx": 0, "merged_row_count": merged_row_count}
             )
+    extra_wide_value_column_repair: dict[str, object] | None = None
+    raw_rows, cleaned_rows, extra_wide_value_column_repair = _repair_extra_wide_value_column(
+        raw_rows,
+        cleaned_rows,
+    )
     raw_bounds = table.metadata.get("row_bounds")
     if isinstance(raw_bounds, list) and len(raw_bounds) == table.n_rows:
         row_bounds: list[tuple[float, float]] | None = []
@@ -321,10 +437,12 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
         row_bounds = None
     raw_rules = table.metadata.get("horizontal_rules")
     horizontal_rules = [float(value) for value in raw_rules] if isinstance(raw_rules, list) else None
+    header_row_bounds = None if extra_wide_value_column_repair is not None else row_bounds
+    header_horizontal_rules = None if extra_wide_value_column_repair is not None else horizontal_rules
     header_rows, body_rows, header_detection = detect_header_rows_with_metadata(
         cleaned_rows,
-        row_bounds=row_bounds,
-        horizontal_rules=horizontal_rules,
+        row_bounds=header_row_bounds,
+        horizontal_rules=header_horizontal_rules,
     )
     suppressed_stub_row_indices = (
         set(sparse_stub_label_column_repair.get("removed_stub_row_indices", []))
@@ -432,8 +550,8 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
             cleaned_rows = [[row[col_idx] for col_idx in keep_indices] for row in cleaned_rows]
             header_rows, body_rows, header_detection = detect_header_rows_with_metadata(
                 cleaned_rows,
-                row_bounds=row_bounds,
-                horizontal_rules=horizontal_rules,
+                row_bounds=header_row_bounds,
+                horizontal_rules=header_horizontal_rules,
             )
             body_rows = [row_idx for row_idx in body_rows if row_idx not in suppressed_stub_row_indices]
             row_views = [
@@ -468,6 +586,7 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
             "merged_split_label_columns": merged_split_label_columns,
             "sparse_stub_label_column": sparse_stub_label_column_repair,
             "split_row_label_field_columns": split_row_label_field_repair,
+            "extra_wide_value_column": extra_wide_value_column_repair,
             "dropped_empty_columns_after_repair": dropped_repaired_cols,
         },
         "header_detection": header_detection,

@@ -446,7 +446,7 @@ def build_text_layout_candidates(
                 caption_parts.append(second_line_text)
                 content_start = 2
         content_lines = segment_lines[content_start:]
-        rows = _build_rows_from_line_segment(content_lines)
+        rows, cell_bboxes = build_row_grid_from_lines(content_lines, page_chars=page_chars)
         if not rows:
             continue
         caption = "\n".join(caption_parts)
@@ -462,12 +462,17 @@ def build_text_layout_candidates(
                 "caption_signal": caption_signal,
                 "strong_uncaptioned_table_geometry": strong_geometry,
                 "content_lines": content_lines,
+                "rows": rows,
+                "cell_bboxes": cell_bboxes,
                 "row_bounds": [(float(line["top"]), float(line["bottom"])) for line in content_lines],
                 "bbox": (left, float(segment_lines[0]["top"]), right, max(float(line["bottom"]) for line in content_lines)),
             }
         )
     for table_index, segment in enumerate(segments):
-        raw_rows = _build_rows_from_line_segment(segment["content_lines"], page_chars=page_chars)
+        raw_rows = segment.get("rows", [])
+        if not isinstance(raw_rows, list):
+            continue
+        table_rows = _normalize_rows(raw_rows)
         bbox = segment["bbox"]
         candidates.append(
             score_candidate(
@@ -475,12 +480,13 @@ def build_text_layout_candidates(
                     page_num=page_num,
                     table_index=table_index,
                     bbox=bbox,
-                    raw_rows=raw_rows,
+                    raw_rows=table_rows,
                     caption=segment["caption"],
                     page_text=page_text,
                     metadata={
-                        "is_rectangular": _is_rectangular(raw_rows),
+                        "is_rectangular": _is_rectangular(table_rows),
                         "layout_source": layout_source,
+                        "table_cells": segment.get("cell_bboxes", []),
                         "row_bounds": segment["row_bounds"],
                         "horizontal_rules": detect_horizontal_rules(rule_segments, bbox),
                         "caption_signal": segment["caption_signal"],

@@ -159,6 +159,7 @@ Important current `metadata` keys produced by extraction may include:
 - `sideways_candidate`
 - `sideways_detection_signals`
 - `caption_detection_space`
+- `table_cells`
 - `first_column_text_x0_by_row`
 
 `TableCell` design components:
@@ -182,6 +183,7 @@ Design intent:
 - collapsed-grid word-position refinement chooses value-column anchors from repeated value-like numeric positions rather than one-off digit-bearing label tokens; when needed, it preserves a left label anchor and pulls nonnumeric label fragments back from value columns on rows whose only right-side value is a trailing statistic such as a p-value
 - rotated explicit tables may be refined in a table-local normalized coordinate frame; when that happens, `row_bounds` and `horizontal_rules` describe that local frame rather than raw page coordinates
 - for explicit PyMuPDF4LLM tables, extraction may record `first_column_text_x0_by_row` so normalization can infer visible row-label indentation from word positions rather than full cell boundaries; this metadata supports row classification only and does not replace cell bboxes
+- text-position fallback candidates may preserve parser-facing cell text bounding boxes in `table_cells`; for these candidates, first-column cell boxes are based on the recovered text extents and can also support indentation-sensitive row classification
 
 ## 2. `NormalizedTable` JSON
 
@@ -264,6 +266,7 @@ Design intent:
 - normalization may apply conservative structural repairs when extraction has clearly split one logical value across adjacent columns
 - normalization may also drop a sparse structural stub column when strong row-pattern evidence shows that the next column is the true row-label field and columns to the right are the value region
 - normalization may also merge two adjacent row-label field columns when the second column repeatedly contains label fragments and data-like values clearly begin to the right
+- normalization may also expand a collapsed extracted value-region cell back into many visual value columns when that cell repeatedly contains a stable newline-delimited stack of numeric values; this repairs an extractor artifact where an upright wide data table has been flattened in the raw grid even though the visual table is multi-column
 - those repairs should be driven by row-style expectations and body-value patterns, not by paper-specific header templates
 - normalization may also repair a small set of extractor-facing glyph-to-Unicode failures in parser-facing text, such as a broken replacement character before a numeric threshold becoming `<=`
 - these symbol repairs belong in normalized text only; the original extracted cell text remains preserved in `ExtractedTable`
@@ -273,6 +276,7 @@ Design intent:
 Conservative repair rule:
 
 - when a categorical block implies `n (%)` values and adjacent cells are strongly consistent with `count` plus parenthesized percent fragments, normalization may merge those fragments back into one cell before later semantic stages run
+- when a broad extracted value cell contains a repeated fixed-width stack of mostly numeric tokens across several rows, normalization may split that stack into separate value columns, repeat coarser shared header labels over their leaf columns, and record the evidence in `metadata.column_repairs.extra_wide_value_column`
 - when that repair reveals a strongly header-like first body row, normalization may promote that row into `header_rows`
 - when a first column is sparse, value-free, and mostly section-like while the second column is dense and label-like, normalization may suppress pure stub rows, shift the second column into the row-label position, and merge first-plus-second labels for rows where both pieces form one label
 - when a single logical row-label field is split across the first two columns, normalization may shift second-column level labels left and merge first-plus-second label fragments before row signatures are built
@@ -727,6 +731,7 @@ Design intent:
 - record which ones actually ran
 - record whether a table ended as `ok`, `rescued`, or `failed`
 - make empty descriptive-table parses explicit failures rather than silent success
+- treat broad newline-stacked value cells as rescued when `metadata.column_repairs.extra_wide_value_column` successfully expands them into visual value columns
 
 ## 10. `parse_quality_reports.json`
 
