@@ -130,6 +130,27 @@ LLM usage should be limited to semantic disambiguation, not raw extraction.
 Paper-level candidate variable inventories are a first-class design artifact for later cross-table consistency.
 Keep them explicit, inspectable, and easy to consume from R.
 
+### No paper-specific parsing shortcuts
+
+Parser behavior must be designed to generalize across papers, journals, diseases, cohorts, exposures, surveys, and statistical presentations. Do not solve a failing paper by inventing a vocabulary shortcut.
+
+Do not add token lists such as particular disease names, survey names, outcome labels, exposure labels, statistic words, journal-specific phrases, or one-paper wording to decide parser structure. That does not generalize and usually turns one paper's extraction artifact into a hidden rule.
+
+For all parser stages, prefer evidence that is structural, typed, and portable:
+
+- horizontal rules and row bounds
+- cell bounding boxes, text positions, and span/coverage
+- adjacency of physical rows and columns
+- body/value/header boundary evidence
+- repeated, blank-spanned, or aligned cells as layout signals
+- row and column density, indentation, and value-region shape
+- schema-level constraints and validation failures
+- paper-level artifacts that aggregate evidence explicitly
+
+Domain vocabulary can be used only as weak semantic evidence after the structural parse is established, and it must not define rows, columns, spans, grouping, wrapping, continuation, or table boundaries by itself.
+
+For multi-row column headers specifically: rows below the horizontal rule that separates headers from data are leaf-column headers; if that leaf-header area has multiple physical rows, treat them first as wrapped text for the same leaf headers. Rows above that rule may become spanning groups only when their cells cover multiple lower-level leaves or groups. If additional rules split higher header bands, process those bands recursively by geometry. Do not promote a physical row into a semantic hierarchy level just because it contains recognizable words.
+
 ### LLM safety rules
 
 When the LLM is used:
