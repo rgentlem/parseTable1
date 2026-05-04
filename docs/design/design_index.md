@@ -30,6 +30,9 @@ Then use the documents below as needed.
 - `docs/design/collapsed_grid_refinement_scope.md`
   Narrow scope for consolidating the duplicated rotated/upright collapsed-grid refinement logic in the extractor.
 
+- `docs/design/sideways_table_extraction_design.md`
+  Design for detecting and extracting visually landscape tables drawn sideways on portrait PDF pages, including caption matching in transformed coordinates.
+
 - `docs/design/categorical_block_state_scope.md`
   Narrow scope for stateful categorical-block tracking and standalone one-row-binary detection in deterministic row classification.
 
