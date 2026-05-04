@@ -298,13 +298,14 @@ def build_column_header_schemas(
     extracted_tables: list[ExtractedTable] | None = None,
 ) -> list[ColumnHeaderSchema]:
     """Build column header schemas for normalized tables while preserving order."""
-    return [
+    schemas = [
         build_column_header_schema(
             table,
             extracted_tables[index] if extracted_tables is not None and index < len(extracted_tables) else None,
         )
         for index, table in enumerate(tables)
     ]
+    return _enrich_base_schema_leaf_labels_from_continuations(tables, schemas)
 
 
 def column_header_schemas_to_payload(
@@ -312,6 +313,79 @@ def column_header_schemas_to_payload(
 ) -> list[dict[str, object]]:
     """Serialize column header schemas as JSON-friendly records."""
     return [schema.model_dump(mode="json") for schema in schemas]
+
+
+def _enrich_base_schema_leaf_labels_from_continuations(
+    tables: list[NormalizedTable],
+    schemas: list[ColumnHeaderSchema],
+) -> list[ColumnHeaderSchema]:
+    enriched = list(schemas)
+    latest_base_by_number: dict[int, int] = {}
+    for index, table in enumerate(tables):
+        continuation_number = table.metadata.get("continuation_of_table_number")
+        table_number = table.metadata.get("table_number")
+        if isinstance(continuation_number, int):
+            base_index = latest_base_by_number.get(continuation_number)
+            if base_index is None or base_index >= len(enriched) or index >= len(enriched):
+                continue
+            base_schema = enriched[base_index]
+            continuation_schema = enriched[index]
+            if base_schema.n_cols != continuation_schema.n_cols:
+                continue
+            new_leaves: list[ColumnHeaderLeaf] = []
+            changed_cols: list[int] = []
+            for base_leaf, continuation_leaf in zip(base_schema.leaves, continuation_schema.leaves, strict=False):
+                replacement = _compatible_more_complete_leaf_label(base_leaf.leaf_label, continuation_leaf.leaf_label)
+                if replacement is None:
+                    new_leaves.append(base_leaf)
+                    continue
+                changed_cols.append(base_leaf.col_idx)
+                new_leaves.append(
+                    base_leaf.model_copy(
+                        update={
+                            "leaf_label": replacement,
+                            "leaf_name": _normalize_header_name(replacement) or base_leaf.leaf_name,
+                        }
+                    )
+                )
+            if changed_cols:
+                diagnostics = [
+                    *base_schema.diagnostics,
+                    "enriched_leaf_labels_from_continuation:"
+                    f"table_index={index}:cols={','.join(map(str, changed_cols))}",
+                ]
+                enriched[base_index] = base_schema.model_copy(
+                    update={
+                        "leaves": new_leaves,
+                        "flattened_signature": _flattened_signature(new_leaves, base_schema.groups, base_schema.relationships),
+                        "diagnostics": list(dict.fromkeys(diagnostics)),
+                    }
+                )
+        elif isinstance(table_number, int):
+            latest_base_by_number[table_number] = index
+    return enriched
+
+
+def _compatible_more_complete_leaf_label(base_label: str, continuation_label: str) -> str | None:
+    base = clean_text(base_label)
+    continuation = clean_text(continuation_label)
+    if not continuation or len(continuation) <= len(base):
+        return None
+    if not base:
+        return continuation
+    base_tokens = _normalized_label_tokens(base)
+    continuation_tokens = _normalized_label_tokens(continuation)
+    if not base_tokens:
+        return continuation
+    cursor = 0
+    for token in continuation_tokens:
+        if cursor < len(base_tokens) and token == base_tokens[cursor]:
+            cursor += 1
+    return continuation if cursor == len(base_tokens) else None
+
+
+def _normalized_label_tokens(label: str) -> list[str]:
+    return [token.lower() for token in re.findall(r"[A-Za-z0-9]+", clean_text(label))]
 
 
 def _grid_cell(grid: list[list[str]], row_idx: int, col_idx: int) -> str:
