@@ -244,6 +244,7 @@ Important current `metadata` keys produced by normalization:
 - `cleaned_rows`
 - `dropped_leading_cols`
 - `dropped_trailing_cols`
+- `column_repairs`
 - `header_detection`
 - `indentation_informative`
 - `text_cleaning_provenance`
@@ -256,6 +257,7 @@ Design intent:
 - saved normalized tables can be reloaded as formal downstream input
 - when wide horizontal boundaries sit just slightly above or below the first extracted text line, header detection may still use them as the top table boundary; minor geometry jitter should not suppress obvious header/body bracketing
 - normalization may apply conservative structural repairs when extraction has clearly split one logical value across adjacent columns
+- normalization may also drop a sparse structural stub column when strong row-pattern evidence shows that the next column is the true row-label field and columns to the right are the value region
 - those repairs should be driven by row-style expectations and body-value patterns, not by paper-specific header templates
 - normalization may also repair a small set of extractor-facing glyph-to-Unicode failures in parser-facing text, such as a broken replacement character before a numeric threshold becoming `<=`
 - these symbol repairs belong in normalized text only; the original extracted cell text remains preserved in `ExtractedTable`
@@ -266,6 +268,7 @@ Conservative repair rule:
 
 - when a categorical block implies `n (%)` values and adjacent cells are strongly consistent with `count` plus parenthesized percent fragments, normalization may merge those fragments back into one cell before later semantic stages run
 - when that repair reveals a strongly header-like first body row, normalization may promote that row into `header_rows`
+- when a first column is sparse, value-free, and mostly section-like while the second column is dense and label-like, normalization may suppress pure stub rows, shift the second column into the row-label position, and merge first-plus-second labels for rows where both pieces form one label
 - repair diagnostics should live in `metadata` rather than replacing the canonical `NormalizedTable` fields
 
 ## 3. Table 1 Continuation Inspection Artifacts

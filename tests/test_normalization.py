@@ -882,6 +882,75 @@ def test_meaningful_first_column_is_preserved() -> None:
     assert normalized.metadata["cleaned_rows"][1][0] == "Age, years"
 
 
+def test_sparse_stub_label_column_is_removed_before_row_signatures() -> None:
+    """Sparse section stubs should not hide a dense second-column row-label field."""
+    extracted = ExtractedTable(
+        table_id="tbl-sparse-stub-label",
+        source_pdf="paper.pdf",
+        page_num=1,
+        n_rows=9,
+        n_cols=4,
+        cells=[
+            TableCell(row_idx=0, col_idx=0, text="Characteristics"),
+            TableCell(row_idx=0, col_idx=1, text=""),
+            TableCell(row_idx=0, col_idx=2, text="White"),
+            TableCell(row_idx=0, col_idx=3, text="Black"),
+            TableCell(row_idx=1, col_idx=0, text=""),
+            TableCell(row_idx=1, col_idx=1, text=""),
+            TableCell(row_idx=1, col_idx=2, text="(n = 10)"),
+            TableCell(row_idx=1, col_idx=3, text="(n = 20)"),
+            TableCell(row_idx=2, col_idx=0, text="Outcomes"),
+            TableCell(row_idx=2, col_idx=1, text=""),
+            TableCell(row_idx=2, col_idx=2, text=""),
+            TableCell(row_idx=2, col_idx=3, text=""),
+            TableCell(row_idx=3, col_idx=0, text=""),
+            TableCell(row_idx=3, col_idx=1, text="Systolic blood pressure (mmHg)"),
+            TableCell(row_idx=3, col_idx=2, text="126.5 ± 21.6"),
+            TableCell(row_idx=3, col_idx=3, text="125.4 ± 21.6"),
+            TableCell(row_idx=4, col_idx=0, text=""),
+            TableCell(row_idx=4, col_idx=1, text="Hypertension diagnosis [n (%)]"),
+            TableCell(row_idx=4, col_idx=2, text="1917 (29.8)"),
+            TableCell(row_idx=4, col_idx=3, text="1297 (31.3)"),
+            TableCell(row_idx=5, col_idx=0, text="Covariates"),
+            TableCell(row_idx=5, col_idx=1, text=""),
+            TableCell(row_idx=5, col_idx=2, text=""),
+            TableCell(row_idx=5, col_idx=3, text=""),
+            TableCell(row_idx=6, col_idx=0, text=""),
+            TableCell(row_idx=6, col_idx=1, text="Age (years)"),
+            TableCell(row_idx=6, col_idx=2, text="54.7 ± 19.9"),
+            TableCell(row_idx=6, col_idx=3, text="43.6 ± 17.2"),
+            TableCell(row_idx=7, col_idx=0, text="Poverty"),
+            TableCell(row_idx=7, col_idx=1, text="income ratio"),
+            TableCell(row_idx=7, col_idx=2, text="3.2 ± 1.9"),
+            TableCell(row_idx=7, col_idx=3, text="2.0 ± 1.5"),
+            TableCell(row_idx=8, col_idx=0, text=""),
+            TableCell(row_idx=8, col_idx=1, text="Blood lead (μg/dL)"),
+            TableCell(row_idx=8, col_idx=2, text="3.7 ± 2.9"),
+            TableCell(row_idx=8, col_idx=3, text="4.4 ± 4.0"),
+        ],
+        extraction_backend="pymupdf4llm",
+    )
+
+    normalized = normalize_extracted_table(extracted)
+
+    repair = normalized.metadata["column_repairs"]["sparse_stub_label_column"]
+    assert normalized.n_cols == 3
+    assert normalized.metadata["dropped_leading_cols"] == 1
+    assert repair["removed_stub_row_indices"] == [2, 5]
+    assert repair["merged_label_row_indices"] == [7]
+    assert 2 not in normalized.body_rows
+    assert 5 not in normalized.body_rows
+    assert normalized.metadata["cleaned_rows"][3][0] == "Systolic blood pressure (mmHg)"
+    assert normalized.metadata["cleaned_rows"][7][0] == "Poverty income ratio"
+    assert [row_view.first_cell_raw for row_view in normalized.row_views] == [
+        "Systolic blood pressure (mmHg)",
+        "Hypertension diagnosis [n (%)]",
+        "Age (years)",
+        "Poverty income ratio",
+        "Blood lead (μg/dL)",
+    ]
+
+
 def test_trailing_mostly_empty_column_is_removed_conservatively() -> None:
     """A mostly empty trailing edge column should be removed without touching inner empties."""
     extracted = ExtractedTable(

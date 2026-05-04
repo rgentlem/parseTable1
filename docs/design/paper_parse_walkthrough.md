@@ -186,6 +186,8 @@ Normalization can conservatively drop:
 - a mostly non-informative leading column
 - a mostly empty trailing column
 
+It can also handle a rarer structural variant where the leftmost column is not empty but is only a sparse stub for section labels such as broad row groups, while the next column contains the actual row labels and the remaining columns contain values. In that case normalization may drop the sparse stub column, suppress stub-only rows, shift the real label column left, and merge the stub plus label text for rows where both cells together form one label.
+
 Why this happens here:
 
 - it is a structural cleanup, not a semantic inference
@@ -265,13 +267,34 @@ This is one of the main reasons normalization exists as a real stage rather than
 
 It is not just prettifying text. It is repairing table structure in a controlled way before semantic interpretation starts.
 
-#### 3.8 Drop Columns Emptied By Repair
+#### 3.8 Repair Sparse Stub Label Columns
+
+Some extracted grids contain a sparse first column whose only purpose is to hold section-like row stubs, while the actual variable names are in the next column. These rows can otherwise cause the downstream parser to see blank row labels for most data rows.
+
+Normalization can repair this only when the evidence is strong:
+
+- the first column is sparse and does not contain value-like cells
+- at least one first-column-only stub row is present
+- the second column is dense and label-like
+- many rows have a blank first column, a label-like second column, and value-like cells to the right
+- the right-side columns look like the data region
+
+When this fires, normalization:
+
+- suppresses pure stub rows from `body_rows`
+- shifts the second column into the row-label position
+- merges first-column and second-column text for rows where both pieces form one label
+- records the repair evidence in `metadata.column_repairs.sparse_stub_label_column`
+
+This is intentionally a structural repair. It should not depend on exact words such as `Outcomes` or `Covariates`.
+
+#### 3.9 Drop Columns Emptied By Repair
 
 If a split-value repair empties a helper column across the table, normalization can drop that now-empty column and rerun header detection on the repaired grid.
 
 This keeps the normalized grid closer to the logical table structure that the later parser actually wants.
 
-#### 3.9 Decide Whether Indentation Is Informative
+#### 3.10 Decide Whether Indentation Is Informative
 
 For some papers, first-column indentation clearly helps distinguish parent rows from level rows.
 

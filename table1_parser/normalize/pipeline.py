@@ -35,6 +35,100 @@ def _looks_like_label_cell(value: str) -> bool:
     return bool(cleaned) and bool(ALPHA_PATTERN.search(cleaned)) and len(cleaned) >= 2
 
 
+def _repair_sparse_stub_label_column(
+    raw_rows: list[list[str]],
+    cleaned_rows: list[list[str]],
+) -> tuple[list[list[str]], list[list[str]], dict[str, object] | None]:
+    """Drop a sparse structural stub column when the next column is the true label column."""
+    if not raw_rows or not raw_rows[0] or len(raw_rows[0]) < 4 or len(raw_rows) < 8:
+        return raw_rows, cleaned_rows, None
+
+    row_count = len(cleaned_rows)
+    first_col_nonempty = 0
+    first_col_value_like = 0
+    second_col_nonempty = 0
+    second_col_label_like = 0
+    second_col_value_like = 0
+    stub_only_rows: list[int] = []
+    shifted_label_rows: list[int] = []
+    merged_label_rows: list[int] = []
+    right_value_rows = 0
+
+    for row_idx, row in enumerate(cleaned_rows):
+        first = clean_text(row[0])
+        second = clean_text(row[1])
+        right_cells = [clean_text(cell) for cell in row[2:]]
+        populated_right = [cell for cell in right_cells if cell]
+        right_value_like = sum(
+            detect_value_pattern(cell).pattern != "unknown" or any(char.isdigit() for char in cell)
+            for cell in populated_right
+        )
+        has_right_values = bool(populated_right) and right_value_like >= max(1, len(populated_right) // 2)
+
+        if first:
+            first_col_nonempty += 1
+            if detect_value_pattern(first).pattern != "unknown" or any(char.isdigit() for char in first):
+                first_col_value_like += 1
+        if second:
+            second_col_nonempty += 1
+            if _looks_like_label_cell(second):
+                second_col_label_like += 1
+            if detect_value_pattern(second).pattern != "unknown":
+                second_col_value_like += 1
+        if has_right_values:
+            right_value_rows += 1
+        if first and not second and not populated_right:
+            stub_only_rows.append(row_idx)
+        if not first and _looks_like_label_cell(second) and has_right_values:
+            shifted_label_rows.append(row_idx)
+        if _looks_like_label_cell(first) and _looks_like_label_cell(second) and has_right_values:
+            merged_label_rows.append(row_idx)
+
+    if not (
+        first_col_nonempty <= max(4, row_count // 5)
+        and first_col_value_like == 0
+        and len(stub_only_rows) >= 1
+        and len(shifted_label_rows) >= max(4, row_count // 3)
+        and second_col_nonempty >= max(5, row_count // 2)
+        and second_col_label_like >= max(4, second_col_nonempty // 2)
+        and second_col_value_like <= max(1, second_col_nonempty // 10)
+        and right_value_rows >= max(4, row_count // 3)
+    ):
+        return raw_rows, cleaned_rows, None
+
+    repaired_raw_rows: list[list[str]] = []
+    repaired_cleaned_rows: list[list[str]] = []
+    for row_idx, row in enumerate(raw_rows):
+        cleaned_row = cleaned_rows[row_idx]
+        if row_idx in merged_label_rows:
+            merged_raw = clean_text(f"{row[0]} {row[1]}")
+            merged_cleaned = clean_text(f"{cleaned_row[0]} {cleaned_row[1]}")
+            repaired_raw_rows.append([merged_raw, *row[2:]])
+            repaired_cleaned_rows.append([merged_cleaned, *cleaned_row[2:]])
+            continue
+        if row_idx in stub_only_rows:
+            repaired_raw_rows.append(["", *["" for _ in row[2:]]])
+            repaired_cleaned_rows.append(["", *["" for _ in cleaned_row[2:]]])
+            continue
+        repaired_raw_rows.append([row[1], *row[2:]])
+        repaired_cleaned_rows.append([cleaned_row[1], *cleaned_row[2:]])
+
+    return repaired_raw_rows, repaired_cleaned_rows, {
+        "from_col_idx": 0,
+        "label_col_idx": 1,
+        "removed_stub_row_indices": stub_only_rows,
+        "shifted_label_row_count": len(shifted_label_rows),
+        "merged_label_row_indices": merged_label_rows,
+        "evidence": {
+            "row_count": row_count,
+            "first_col_nonempty": first_col_nonempty,
+            "second_col_nonempty": second_col_nonempty,
+            "shifted_label_row_count": len(shifted_label_rows),
+            "right_value_row_count": right_value_rows,
+        },
+    }
+
+
 def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
     """Convert a raw extracted table into the normalized intermediate schema."""
     raw_rows = [["" for _ in range(table.n_cols)] for _ in range(table.n_rows)]
@@ -74,6 +168,14 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
             dropped_trailing_cols = 0
         raw_rows = [row[:-dropped_trailing_cols] for row in rows_after_leading] if dropped_trailing_cols else rows_after_leading
     cleaned_rows = [[clean_text(cell) for cell in row] for row in raw_rows]
+    sparse_stub_label_column_repair: dict[str, object] | None = None
+    if dropped_leading_cols == 0:
+        raw_rows, cleaned_rows, sparse_stub_label_column_repair = _repair_sparse_stub_label_column(
+            raw_rows,
+            cleaned_rows,
+        )
+        if sparse_stub_label_column_repair is not None:
+            dropped_leading_cols = 1
     merged_split_label_columns: list[dict[str, int]] = []
     if raw_rows and len(raw_rows[0]) >= 3:
         candidate_split_label_rows = [
@@ -120,6 +222,12 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
         row_bounds=row_bounds,
         horizontal_rules=horizontal_rules,
     )
+    suppressed_stub_row_indices = (
+        set(sparse_stub_label_column_repair.get("removed_stub_row_indices", []))
+        if sparse_stub_label_column_repair is not None
+        else set()
+    )
+    body_rows = [row_idx for row_idx in body_rows if row_idx not in suppressed_stub_row_indices]
     first_column_bboxes: dict[int, tuple[float, float, float, float]] = {}
     x0_values: list[float] = []
     first_column_text_x0_by_row: dict[int, float] = {}
@@ -223,6 +331,7 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
                 row_bounds=row_bounds,
                 horizontal_rules=horizontal_rules,
             )
+            body_rows = [row_idx for row_idx in body_rows if row_idx not in suppressed_stub_row_indices]
             row_views = [
                 build_row_signature(
                     row_idx,
@@ -253,6 +362,7 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
         "column_repairs": {
             "merged_columns": merged_columns,
             "merged_split_label_columns": merged_split_label_columns,
+            "sparse_stub_label_column": sparse_stub_label_column_repair,
             "dropped_empty_columns_after_repair": dropped_repaired_cols,
         },
         "header_detection": header_detection,
