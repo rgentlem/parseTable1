@@ -48,6 +48,32 @@ This is a **research-oriented parsing system**, not just a PDF table extractor.
 
 ---
 
+# Output And Inspection Philosophy
+
+The project is not designed around chat-style interaction with users.
+
+Primary outputs should be:
+
+- machine-readable parse artifacts
+- stable Python and R data structures
+- R-native inspection objects with print, summary, and data-frame methods
+- computable artifacts that can support later analysis, validation, reporting, and review workflows
+
+Human-readable output should generally be a view over structured artifacts, not the artifact itself.
+
+In practice:
+
+- JSON is the transport layer, not the conceptual model
+- major paper-level and table-level concepts should have explicit schema objects
+- R helpers should return structured objects invisibly where appropriate
+- print methods should make those objects easy to review without hiding inference inside display code
+- reports should be generated from persisted artifacts and structured R/Python objects
+- CLI prose should remain minimal and should not be the only place where important parse decisions are represented
+
+When adding new capabilities, prefer designs that create stable computable artifacts first, then add human-readable inspection or reporting views on top.
+
+---
+
 # Architectural Principles
 
 Agents must follow these design principles.
