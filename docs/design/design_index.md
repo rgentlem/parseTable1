@@ -30,6 +30,9 @@ Then use the documents below as needed.
 - `docs/design/table_continuation_resolution.md`
   Planned successor design for resolving explicit continued table fragments into a single working table artifact before semantic table definition, including column-coordinate compatibility gates and source provenance.
 
+- `docs/design/column_header_schema.md`
+  Design for a parser-native column header tree / column schema artifact between `NormalizedTable` and `TableDefinition`, preserving leaf columns, spanning header groups, raw cell evidence, and coordinates before downstream semantic projection or stored tableone-style summary rendering.
+
 - `docs/design/collapsed_grid_refinement_scope.md`
   Narrow scope for consolidating the duplicated rotated/upright collapsed-grid refinement logic in the extractor.
 
@@ -138,7 +141,7 @@ Then use the documents below as needed.
   For concrete sequencing, also read `docs/implementation/multitable_implementation_plan.md`.
 
 - If you are working on the new value-free semantic stage for database matching:
-  read `docs/design/table_definition_scope.md`, `docs/design/table_definition_schema.md`, and `docs/implementation/table_definition_implementation_plan.md`.
+  read `docs/design/column_header_schema.md`, `docs/design/table_definition_scope.md`, `docs/design/table_definition_schema.md`, and `docs/implementation/table_definition_implementation_plan.md`.
 
 - If you are working on the downstream R-side component that consumes `table_definitions.json` and `parsed_tables.json`:
   read `docs/design/observed_tableone_component.md` and `docs/implementation/observed_tableone_r_plan.md`.
