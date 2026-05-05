@@ -8,6 +8,7 @@ from typing import Any, NamedTuple
 
 from table1_parser.schemas import (
     ColumnHeaderCellEvidence,
+    ColumnHeaderDescriptor,
     ColumnHeaderGroup,
     ColumnHeaderLeaf,
     ColumnHeaderRelationship,
@@ -24,6 +25,8 @@ CONTINUATION_PATTERN = re.compile(r"\bcont(?:inued)?\.?\b|\(\s*continued\s*\)", 
 TABLE_TITLE_PATTERN = re.compile(r"\btable\s*\d+\b", re.IGNORECASE)
 NON_ALNUM_PATTERN = re.compile(r"[^A-Za-z0-9]+")
 ALPHA_BOUNDARY_SEPARATOR_PATTERN = re.compile(r"(?<=[A-Za-z])[^A-Za-z0-9\s]+(?=[A-Za-z])")
+HEADER_MARKUP_PATTERN = re.compile(r"[*_`]+")
+HEADER_SPACE_PATTERN = re.compile(r"\s+")
 LABEL_COLUMN_TOKENS = {"characteristic", "characteristics", "variable", "variables", "factor", "covariate"}
 
 
@@ -385,20 +388,53 @@ def column_header_schemas_to_payload(
     return [schema.model_dump(mode="json") for schema in schemas]
 
 
-def column_header_labels(schema: ColumnHeaderSchema) -> list[str]:
-    """Return parser-facing column header labels from a column header schema."""
+def column_header_descriptors(schema: ColumnHeaderSchema) -> list[ColumnHeaderDescriptor]:
+    """Return canonical parser-facing column descriptors from a header schema."""
     groups_by_id = {group.group_id: group for group in schema.groups}
-    labels_by_leaf_id: dict[str, list[tuple[int, str]]] = {leaf.leaf_id: [] for leaf in schema.leaves}
+    context_by_leaf_id: dict[str, list[tuple[int, str]]] = {leaf.leaf_id: [] for leaf in schema.leaves}
     for relationship in schema.relationships:
         group = groups_by_id.get(relationship.parent_group_id)
         if group is not None:
-            labels_by_leaf_id.setdefault(relationship.child_leaf_id, []).append((group.row_idx, group.label))
-    labels: list[str] = []
+            context_by_leaf_id.setdefault(relationship.child_leaf_id, []).append((group.row_idx, group.label))
+    descriptors: list[ColumnHeaderDescriptor] = []
     for leaf in sorted(schema.leaves, key=lambda item: item.col_idx):
-        column_parts = [label for _, label in sorted(labels_by_leaf_id.get(leaf.leaf_id, []))]
+        context_labels = [label for _, label in sorted(context_by_leaf_id.get(leaf.leaf_id, []))]
+        shared_context_label = clean_text(" ".join(context_labels)) if context_labels else None
+        column_parts = [*context_labels]
         if leaf.leaf_label:
             column_parts.append(leaf.leaf_label)
-        labels.append(clean_text(" ".join(part for part in column_parts if part)))
+        column_label = clean_text(" ".join(part for part in column_parts if part))
+        descriptors.append(
+            ColumnHeaderDescriptor(
+                leaf_id=leaf.leaf_id,
+                col_idx=leaf.col_idx,
+                original_col_idx=leaf.original_col_idx,
+                column_label=column_label,
+                column_name=_normalize_header_name(column_label) or leaf.leaf_name or f"column_{leaf.col_idx}",
+                leaf_label=leaf.leaf_label,
+                leaf_name=leaf.leaf_name,
+                shared_context_label=shared_context_label,
+                is_row_label_column=leaf.is_row_label_column,
+                is_value_column=leaf.is_value_column,
+            )
+        )
+    return descriptors
+
+
+def column_header_labels(schema: ColumnHeaderSchema) -> list[str]:
+    """Return parser-facing column header labels from a column header schema."""
+    return [descriptor.column_label for descriptor in column_header_descriptors(schema)]
+
+
+def column_header_comparison_labels(schema: ColumnHeaderSchema) -> list[str]:
+    """Return normalized column labels for schema-based column comparison."""
+    labels: list[str] = []
+    for descriptor in column_header_descriptors(schema):
+        normalized = HEADER_MARKUP_PATTERN.sub("", descriptor.column_label)
+        normalized = normalized.replace("\u00a0", " ").replace("\u2009", " ").replace("\u202f", " ")
+        normalized = HEADER_SPACE_PATTERN.sub(" ", normalized).strip().lower()
+        normalized = normalized.strip(" .,:;")
+        labels.append(HEADER_SPACE_PATTERN.sub(" ", normalized).strip())
     return labels
 
 

@@ -1,6 +1,6 @@
 # Table Extraction Failures
 
-Batch output root: outputs/testpapers_batch_20260505_085844
+Batch output root: outputs/testpapers_batch_20260505_101132
 
 All 27 PDF parse commands completed successfully. The table candidates below
 were marked failed at the extraction stage in `table_processing_status.json`.

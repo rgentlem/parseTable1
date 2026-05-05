@@ -94,6 +94,8 @@ Recommended core object functions:
 - `print.ObservedTableOne(x, ...)`
 
 The constructor should build a named list and assign class `ObservedTableOne`.
+It should expose tableone-style `ContTable`, `CatTable`, and `MetaData` fields,
+with the existing lower-case fields retained as compatibility aliases.
 
 The validator should check:
 
@@ -128,6 +130,12 @@ Take row and semantic information from `table_definition`.
 
 Populate:
 
+- `vars`
+- `logiFactors`
+- `varFactors`
+- `varNumerics`
+- `percentMissing`
+- `varLabels`
 - variable order from `table_definition$variables`
 - variable labels and names from the same
 - row spans from `row_start` and `row_end`

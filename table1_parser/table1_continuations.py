@@ -4,14 +4,12 @@ from __future__ import annotations
 
 import re
 
-from table1_parser.column_header_schema import column_header_labels
+from table1_parser.column_header_schema import column_header_comparison_labels
 from table1_parser.schemas import ColumnHeaderSchema, NormalizedTable, RowView, Table1ContinuationGroup, Table1ContinuationMember
 
 
 TABLE_1_CAPTION_PATTERN = re.compile(r"\btable\s*1\b", re.IGNORECASE)
 CONTINUATION_PATTERN = re.compile(r"\bcont(?:inued)?\.?\b|\(\s*continued\s*\)", re.IGNORECASE)
-MARKUP_PATTERN = re.compile(r"[*_`]+")
-SPACE_PATTERN = re.compile(r"\s+")
 
 
 def build_table1_continuation_artifacts(
@@ -182,15 +180,7 @@ def _column_headers(
     schema = column_header_schemas[table_index]
     if schema.table_id != table.table_id or not schema.leaves:
         return []
-    return [_normalize_header_cell(item) for item in column_header_labels(schema)]
-
-
-def _normalize_header_cell(text: str) -> str:
-    normalized = MARKUP_PATTERN.sub("", text)
-    normalized = normalized.replace("\u00a0", " ").replace("\u2009", " ").replace("\u202f", " ")
-    normalized = SPACE_PATTERN.sub(" ", normalized).strip().lower()
-    normalized = normalized.strip(" .,:;")
-    return SPACE_PATTERN.sub(" ", normalized).strip()
+    return column_header_comparison_labels(schema)
 
 
 def _build_group(

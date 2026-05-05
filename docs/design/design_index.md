@@ -30,6 +30,9 @@ Then use the documents below as needed.
 - `docs/design/table_continuation_resolution.md`
   Planned successor design for resolving explicit continued table fragments into a single working table artifact before semantic table definition, including schema-derived column compatibility gates and source provenance.
 
+- `docs/design/separated_variable_description_integration.md`
+  Succinct design for integrating variable labels and levels split across compatible continued table fragments.
+
 - `docs/design/column_header_schema.md`
   Design for a parser-native column header tree / column schema artifact between `NormalizedTable` and `TableDefinition`, preserving leaf columns, spanning header groups, raw cell evidence, and coordinates before downstream semantic projection or stored tableone-style summary rendering.
 

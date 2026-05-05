@@ -122,6 +122,9 @@ Recommended top-level structure:
 - `table_id`
 - `title`
 - `caption`
+- `ContTable`
+- `CatTable`
+- `MetaData`
 - `metadata`
 - `columns`
 - `continuous`
@@ -132,6 +135,9 @@ Recommended top-level structure:
 - `overall_confidence`
 
 This should be implemented as an S3 object backed by a named list.
+`ContTable`, `CatTable`, and `MetaData` should be the tableone-style access
+surface. The lower-case fields may remain as compatibility aliases while the
+object matures.
 
 ## `metadata`
 
@@ -139,6 +145,12 @@ This should be implemented as an S3 object backed by a named list.
 
 Recommended fields:
 
+- `vars`
+- `logiFactors`
+- `varFactors`
+- `varNumerics`
+- `percentMissing`
+- `varLabels`
 - `variable_order`
 - `variables`
 - `grouping_label`

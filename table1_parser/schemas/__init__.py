@@ -2,6 +2,7 @@
 
 from table1_parser.schemas.column_header_schema import (
     ColumnHeaderCellEvidence,
+    ColumnHeaderDescriptor,
     ColumnHeaderGroup,
     ColumnHeaderLeaf,
     ColumnHeaderRelationship,
@@ -52,6 +53,7 @@ __all__ = [
     "PaperVariableInventory",
     "ColumnDefinition",
     "ColumnHeaderCellEvidence",
+    "ColumnHeaderDescriptor",
     "ColumnHeaderGroup",
     "ColumnHeaderLeaf",
     "ColumnHeaderRelationship",

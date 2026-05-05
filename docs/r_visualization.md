@@ -49,6 +49,14 @@ Public functions:
 
 These helpers use the same per-paper output directory written by `table1-parser parse` and, when run, `table1-parser review-variable-plausibility`.
 
+## Observed TableOne Helper
+
+`R/observed_table_one.R` builds an `ObservedTableOne` object from parser JSON.
+The object exposes tableone-style `ContTable`, `CatTable`, and `MetaData`
+fields, while preserving lower-case compatibility aliases. Its columns come
+from `TableDefinition.column_definition`, which is built from
+`ColumnHeaderSchema`.
+
 ### Interactive usage
 
 ```r
@@ -108,7 +116,7 @@ Filter(
 What these are for:
 
 - `show_table_structure(...)`
-  print one saved table's normalized rows, deterministic columns, and row-variable definitions together
+  print one saved table's normalized rows, deterministic columns, and row-variable definitions together; invisibly returns the normalized table, table definition, canonical columns, and canonical variables
 - `show_paper_table_inventory(...)`
   print one row per table taxonomy prediction, including table number, category, confidence, continuation parent, and evidence; when present, also prints compact continuation column-check statuses for possible demographic-description integrations
 - `paper_table_inventory_list(...)`

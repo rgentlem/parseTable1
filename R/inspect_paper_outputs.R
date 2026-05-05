@@ -53,6 +53,15 @@ read_optional_json <- function(path) {
   read_json_file(path)
 }
 
+table_definition_variables <- function(definition) {
+  definition$variables %||% list()
+}
+
+table_definition_columns <- function(definition) {
+  column_definition <- definition$column_definition %||% list()
+  column_definition$columns %||% definition$columns %||% list()
+}
+
 read_table_contexts <- function(context_dir) {
   if (!dir.exists(context_dir)) {
     return(list())
@@ -858,7 +867,8 @@ summarize_table_processing <- function(paper_dir) {
     status_record <- table_processing_status_by_index(outputs, table_index = table_index, table_id = table_id)
     table_profile <- table_profile_by_index(outputs, table_index = table_index, table_id = table_id)
     quality_report <- parse_quality_report_by_index(outputs, table_index = table_index, table_id = table_id)
-    columns <- definition$column_definition$columns %||% definition$columns %||% list()
+    columns <- table_definition_columns(definition)
+    variables <- table_definition_variables(definition)
     attempts <- status_record$attempts %||% list()
     data.frame(
       table_number = table_number_for_outputs(outputs, table_index),
@@ -877,7 +887,7 @@ summarize_table_processing <- function(paper_dir) {
       successful_attempt_count = as.integer(
         sum(vapply(attempts, function(attempt) isTRUE(attempt$succeeded %||% FALSE), logical(1)))
       ),
-      variable_count = as.integer(length(definition$variables %||% list())),
+      variable_count = as.integer(length(variables)),
       usable_column_count = as.integer(
         sum(vapply(
           columns,
@@ -965,7 +975,8 @@ show_table_processing <- function(paper_dir, table_number = 1L, table_index = NU
     return(invisible(NULL))
   }
 
-  columns <- definition$column_definition$columns %||% definition$columns %||% list()
+  columns <- table_definition_columns(definition)
+  variables <- table_definition_variables(definition)
   usable_column_count <- sum(vapply(
     columns,
     function(column) !identical(as.character(column$inferred_role %||% "unknown"), "unknown"),
@@ -982,7 +993,7 @@ show_table_processing <- function(paper_dir, table_number = 1L, table_index = NU
   if (length(notes) > 0) {
     cat(sprintf("notes: %s\n", paste(notes, collapse = " | ")))
   }
-  cat(sprintf("variable_count: %d\n", length(definition$variables %||% list())))
+  cat(sprintf("variable_count: %d\n", length(variables)))
   cat(sprintf("usable_column_count: %d\n", usable_column_count))
   cat(sprintf("value_count: %d\n\n", length(parsed$values %||% list())))
 
@@ -1110,7 +1121,7 @@ show_table_structure <- function(paper_dir, table_number = 1L, table_index = NUL
   }
 
   cat("Columns\n")
-  columns <- definition$column_definition$columns %||% definition$columns %||% list()
+  columns <- table_definition_columns(definition)
   if (length(columns) == 0) {
     cat("[No column definitions]\n\n")
   } else {
@@ -1131,7 +1142,7 @@ show_table_structure <- function(paper_dir, table_number = 1L, table_index = NUL
   }
 
   cat("Variables\n")
-  variables <- definition$variables %||% list()
+  variables <- table_definition_variables(definition)
   if (length(variables) == 0) {
     cat("[No variables]\n")
   } else {
@@ -1163,7 +1174,9 @@ show_table_structure <- function(paper_dir, table_number = 1L, table_index = NUL
 
   invisible(list(
     normalized_table = normalized,
-    table_definition = definition
+    table_definition = definition,
+    columns = columns,
+    variables = variables
   ))
 }
 
@@ -1276,7 +1289,7 @@ show_variable_plausibility_review <- function(review, normalized_table, table_de
   }
 
   cat("Deterministic Variables\n")
-  variables <- table_definition$variables %||% list()
+  variables <- table_definition_variables(table_definition)
   if (length(variables) == 0) {
     cat("[No variables]\n\n")
   } else {

@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from table1_parser.column_header_schema import build_column_header_schema, column_header_labels
+from table1_parser.column_header_schema import (
+    build_column_header_schema,
+    column_header_comparison_labels,
+    column_header_descriptors,
+    column_header_labels,
+)
 from table1_parser.heuristics.table_definition_builder import build_table_definition
 from table1_parser.schemas import (
     ColumnHeaderCellEvidence,
@@ -115,6 +120,12 @@ def test_build_schema_collapses_multirow_group_headers() -> None:
     labels = column_header_labels(schema)
     assert labels[2] == "Cobalt quartile Q1"
     assert labels[3] == "Cobalt quartile Q2"
+    descriptors = column_header_descriptors(schema)
+    assert descriptors[2].column_label == "Cobalt quartile Q1"
+    assert descriptors[2].shared_context_label == "Cobalt quartile"
+    assert descriptors[2].column_name == "Cobalt quartile Q1"
+    assert descriptors[2].leaf_label == "Q1"
+    assert column_header_comparison_labels(schema)[2] == "cobalt quartile q1"
 
     definition = build_table_definition(table, schema)
 

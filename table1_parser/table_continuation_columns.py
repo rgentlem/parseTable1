@@ -4,15 +4,13 @@ from __future__ import annotations
 
 import re
 
-from table1_parser.column_header_schema import column_header_labels
+from table1_parser.column_header_schema import column_header_comparison_labels
 from table1_parser.schemas import ColumnHeaderSchema, ExtractedTable, NormalizedTable, TableProfile
 from table1_parser.schemas.table_continuation_column_check import TableContinuationColumnCheck
 
 
 TABLE_NUMBER_PATTERN = re.compile(r"\btable\s*(\d+)\b", re.IGNORECASE)
 CONTINUATION_PATTERN = re.compile(r"\bcont(?:inued)?\.?\b|\(\s*continued\s*\)", re.IGNORECASE)
-MARKUP_PATTERN = re.compile(r"[*_`]+")
-SPACE_PATTERN = re.compile(r"\s+")
 
 
 def build_table_continuation_column_checks(
@@ -288,16 +286,8 @@ def _column_headers(
     column_schema: ColumnHeaderSchema | None = None,
 ) -> list[str]:
     if column_schema is not None and column_schema.table_id == table.table_id:
-        return [_normalize_header_cell(value) for value in column_header_labels(column_schema)]
+        return column_header_comparison_labels(column_schema)
     return []
-
-
-def _normalize_header_cell(text: str) -> str:
-    normalized = MARKUP_PATTERN.sub("", text)
-    normalized = normalized.replace("\u00a0", " ").replace("\u2009", " ").replace("\u202f", " ")
-    normalized = SPACE_PATTERN.sub(" ", normalized).strip().lower()
-    normalized = normalized.strip(" .,:;")
-    return SPACE_PATTERN.sub(" ", normalized).strip()
 
 
 def _column_header_status(base_headers: list[str], continuation_headers: list[str]) -> str:

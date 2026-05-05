@@ -239,8 +239,8 @@ def build_table_definitions(
     ...
 ```
 
-`table_definition_columns.py` should convert a `ColumnHeaderSchema` into the
-existing internal `HeaderDescriptor` concept:
+`table_definition_columns.py` should consume the canonical
+`ColumnHeaderDescriptor` projection from `column_header_schema.py`:
 
 - `leaf_label` comes from the leaf record
 - `shared_context_label` comes from related group labels

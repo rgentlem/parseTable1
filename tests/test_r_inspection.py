@@ -1084,7 +1084,9 @@ def test_r_inspection_loads_without_processing_status(tmp_path) -> None:
             "-e",
                 (
                     f'source("{R_SCRIPT}"); '
-                    f'show_table_structure("{paper_dir}", table_number = 1L)'
+                    f'x <- show_table_structure("{paper_dir}", table_number = 1L); '
+                    'cat(length(x$columns), "\\n"); '
+                    'cat(length(x$variables), "\\n")'
                 ),
         ],
         capture_output=True,
@@ -1096,6 +1098,7 @@ def test_r_inspection_loads_without_processing_status(tmp_path) -> None:
     assert result.returncode == 0, result.stderr
     assert "table_id: tbl-1" in result.stdout
     assert "Columns" in result.stdout
+    assert "\n2 \n" in result.stdout
 
 
 def test_r_inspection_shows_variable_plausibility_review(tmp_path) -> None:
@@ -1329,6 +1332,9 @@ def test_r_observed_table_one_from_paper_dir_includes_processing_status_provenan
                     f'source("{R_OBSERVED_SCRIPT}"); '
                     f'x <- build_observed_table_one_from_paper_dir("{paper_dir}", table_number = 1L); '
                     'print(x); '
+                    'cat(length(x$MetaData$vars), "\\n"); '
+                    'cat(length(x$ContTable$variables), "\\n"); '
+                    'cat(length(x$CatTable$variables), "\\n"); '
                     'cat(x$provenance$table_number, "\\n"); '
                     'cat(x$provenance$processing_status, "\\n"); '
                 'cat(x$provenance$failure_stage, "\\n"); '
@@ -1343,6 +1349,7 @@ def test_r_observed_table_one_from_paper_dir_includes_processing_status_provenan
 
     assert result.returncode == 0, result.stderr
     assert "processing status: failed" in result.stdout
+    assert "\n2 \n" in result.stdout
     assert "\n1 \n" in result.stdout
     assert "failure_stage: parsed_table" in result.stdout
     assert "failure_reason: no_values_after_parse" in result.stdout

@@ -79,6 +79,21 @@ class ColumnHeaderRelationship(BaseModel):
     confidence: float | None = Field(default=None, ge=0.0, le=1.0)
 
 
+class ColumnHeaderDescriptor(BaseModel):
+    """One canonical parser-facing column descriptor derived from a header schema."""
+
+    leaf_id: str
+    col_idx: int = Field(ge=0)
+    original_col_idx: int | None = Field(default=None, ge=0)
+    column_label: str
+    column_name: str
+    leaf_label: str
+    leaf_name: str
+    shared_context_label: str | None = None
+    is_row_label_column: bool = False
+    is_value_column: bool = True
+
+
 class ColumnHeaderSchema(BaseModel):
     """Parser-native column header tree represented as flat records."""
 

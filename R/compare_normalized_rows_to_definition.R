@@ -69,7 +69,7 @@ compare_normalized_rows_to_definition <- function(paper_dir, table_number = 1L, 
   )
 
   definition_rows <- list()
-  for (variable in definition$variables %||% list()) {
+  for (variable in table_definition_variables(definition)) {
     definition_rows[[length(definition_rows) + 1L]] <- data.frame(
       row_idx = as.integer(variable$row_start %||% -1L),
       row_kind = "variable",

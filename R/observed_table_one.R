@@ -52,6 +52,23 @@ pt1_order_by_col_idx <- function(x) {
   x[order(vapply(x, function(item) as.integer(pt1_clean_scalar(item$col_idx, default = -1L)), integer(1)))]
 }
 
+pt1_table_definition_variables <- function(table_definition) {
+  table_definition$variables %||% list()
+}
+
+pt1_table_definition_column_definition <- function(table_definition) {
+  table_definition$column_definition %||% list()
+}
+
+pt1_table_definition_columns <- function(table_definition, parsed_table = NULL) {
+  column_definition <- pt1_table_definition_column_definition(table_definition)
+  columns <- column_definition$columns %||% table_definition$columns %||% list()
+  if (length(columns) == 0 && !is.null(parsed_table)) {
+    columns <- parsed_table$columns %||% list()
+  }
+  pt1_order_by_col_idx(columns)
+}
+
 pt1_pick_table_by_index <- function(x, table_index = 0L) {
   index <- as.integer(table_index) + 1L
   if (index < 1L || index > length(x)) {
@@ -98,7 +115,7 @@ pt1_is_statistic_role <- function(role) {
 }
 
 pt1_variable_lookup <- function(table_definition) {
-  variables <- table_definition$variables %||% list()
+  variables <- pt1_table_definition_variables(table_definition)
   names(variables) <- vapply(
     variables,
     function(variable) pt1_character_or_null(variable$variable_name) %||% "",
@@ -128,6 +145,9 @@ new_observed_table_one <- function(
     table_id = as.character(table_id),
     title = pt1_character_or_null(title),
     caption = pt1_character_or_null(caption),
+    ContTable = continuous,
+    CatTable = categorical,
+    MetaData = metadata,
     metadata = metadata,
     columns = columns,
     continuous = continuous,
@@ -151,8 +171,17 @@ validate_observed_table_one <- function(x) {
   if (!is.list(x$metadata)) {
     stop("ObservedTableOne$metadata must be a list.", call. = FALSE)
   }
+  if (!is.list(x$MetaData)) {
+    stop("ObservedTableOne$MetaData must be a list.", call. = FALSE)
+  }
   if (!is.list(x$columns)) {
     stop("ObservedTableOne$columns must be a list.", call. = FALSE)
+  }
+  if (!is.list(x$ContTable) || is.null(x$ContTable$variables) || is.null(x$ContTable$values)) {
+    stop("ObservedTableOne$ContTable must contain 'variables' and 'values' lists.", call. = FALSE)
+  }
+  if (!is.list(x$CatTable) || is.null(x$CatTable$variables) || is.null(x$CatTable$values)) {
+    stop("ObservedTableOne$CatTable must contain 'variables' and 'values' lists.", call. = FALSE)
   }
   if (!is.list(x$continuous) || is.null(x$continuous$variables) || is.null(x$continuous$values)) {
     stop("ObservedTableOne$continuous must contain 'variables' and 'values' lists.", call. = FALSE)
@@ -176,12 +205,12 @@ print.ObservedTableOne <- function(x, ...) {
   if (!is.null(x$caption) && nzchar(x$caption) && !identical(x$caption, x$title)) {
     cat(sprintf("caption: %s\n", x$caption))
   }
-  cat(sprintf("variables: %d\n", length(x$metadata$variables %||% list())))
-  cat(sprintf("continuous variables: %d\n", length(x$continuous$variables %||% list())))
-  cat(sprintf("categorical variables: %d\n", length(x$categorical$variables %||% list())))
+  cat(sprintf("variables: %d\n", length(x$MetaData$vars %||% x$metadata$variables %||% list())))
+  cat(sprintf("continuous variables: %d\n", length(x$ContTable$variables %||% list())))
+  cat(sprintf("categorical variables: %d\n", length(x$CatTable$variables %||% list())))
   cat(sprintf("columns: %d\n", length(x$columns %||% list())))
   cat(sprintf("statistics: %d\n", length(x$statistics %||% list())))
-  grouping_label <- pt1_character_or_null(x$metadata$grouping_label)
+  grouping_label <- pt1_character_or_null(x$MetaData$grouping_label %||% x$metadata$grouping_label)
   if (!is.null(grouping_label) && nzchar(grouping_label)) {
     cat(sprintf("grouping: %s\n", grouping_label))
   }
@@ -201,7 +230,7 @@ print.ObservedTableOne <- function(x, ...) {
 }
 
 build_observed_metadata <- function(table_definition, parsed_table) {
-  variables <- lapply(table_definition$variables %||% list(), function(variable) {
+  variables <- lapply(pt1_table_definition_variables(table_definition), function(variable) {
     list(
       variable_name = pt1_character_or_null(variable$variable_name),
       variable_label = pt1_character_or_null(variable$variable_label),
@@ -221,10 +250,21 @@ build_observed_metadata <- function(table_definition, parsed_table) {
       confidence = pt1_numeric_or_null(variable$confidence)
     )
   })
-  column_definition <- table_definition$column_definition %||% list()
-  columns <- pt1_order_by_col_idx(column_definition$columns %||% list())
+  column_definition <- pt1_table_definition_column_definition(table_definition)
+  columns <- pt1_table_definition_columns(table_definition)
+  variable_order <- vapply(variables, function(variable) variable$variable_name %||% "", character(1))
+  variable_type_by_order <- vapply(variables, function(variable) variable$variable_type %||% "unknown", character(1))
+  logi_factors <- variable_type_by_order %in% c("binary", "categorical")
+  var_labels <- lapply(variables, function(variable) variable$variable_label)
+  names(var_labels) <- variable_order
   list(
-    variable_order = vapply(variables, function(variable) variable$variable_name %||% "", character(1)),
+    vars = variable_order,
+    logiFactors = logi_factors,
+    varFactors = variable_order[logi_factors],
+    varNumerics = variable_order[variable_type_by_order == "continuous"],
+    percentMissing = setNames(rep(NA_real_, length(variable_order)), variable_order),
+    varLabels = var_labels,
+    variable_order = variable_order,
     variables = variables,
     grouping_label = pt1_character_or_null(column_definition$grouping_label),
     grouping_name = pt1_character_or_null(column_definition$grouping_name),
@@ -250,11 +290,7 @@ build_observed_metadata <- function(table_definition, parsed_table) {
 }
 
 build_observed_columns <- function(table_definition, parsed_table) {
-  definition_columns <- pt1_order_by_col_idx(table_definition$column_definition$columns %||% list())
-  parsed_columns <- pt1_order_by_col_idx(parsed_table$columns %||% list())
-  if (length(definition_columns) == 0) {
-    definition_columns <- parsed_columns
-  }
+  definition_columns <- pt1_table_definition_columns(table_definition, parsed_table)
   lapply(definition_columns, function(column) {
     list(
       col_idx = pt1_integer_or_null(column$col_idx),
@@ -280,7 +316,7 @@ build_observed_continuous <- function(table_definition, parsed_table, columns) {
   )
   variables <- Filter(function(variable) {
     identical(pt1_character_or_null(variable$variable_type), "continuous")
-  }, table_definition$variables %||% list())
+  }, pt1_table_definition_variables(table_definition))
   variable_names <- vapply(variables, function(variable) pt1_character_or_null(variable$variable_name) %||% "", character(1))
   values <- lapply(
     Filter(function(value) {
@@ -330,7 +366,7 @@ build_observed_categorical <- function(table_definition, parsed_table, columns) 
   )
   variables <- Filter(function(variable) {
     length(variable$levels %||% list()) > 0
-  }, table_definition$variables %||% list())
+  }, pt1_table_definition_variables(table_definition))
   variable_names <- vapply(variables, function(variable) pt1_character_or_null(variable$variable_name) %||% "", character(1))
   values <- lapply(
     Filter(function(value) {
