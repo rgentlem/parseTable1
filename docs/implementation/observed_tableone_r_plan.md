@@ -134,7 +134,7 @@ Populate:
 - variable type from `variable_type`
 - summary style and units from `summary_style_hint` and `units_hint`
 - printed levels from `levels`
-- grouping info from `column_definition`
+- grouping info from `column_definition`, which must be derived from `ColumnHeaderSchema`
 
 Do not synthesize:
 
@@ -144,7 +144,9 @@ Do not synthesize:
 
 ### Column assembly
 
-Prefer `table_definition$column_definition$columns` as the semantic source.
+Prefer `table_definition$column_definition$columns` as the semantic source, and
+require that those columns come from the parser's `ColumnHeaderSchema` path.
+Observed-table code should not rebuild column meaning from local header text.
 
 If a column exists in `parsed_table$columns` but not in the definition, preserve it as best-effort fallback.
 

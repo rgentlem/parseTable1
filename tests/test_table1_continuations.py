@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from table1_parser.schemas import ColumnHeaderSchema, NormalizedTable, RowView
+from table1_parser.schemas import ColumnHeaderLeaf, ColumnHeaderSchema, NormalizedTable, RowView
 from table1_parser.table1_continuations import build_table1_continuation_artifacts
 
 
@@ -53,12 +53,23 @@ def _normalized_table(
     )
 
 
-def _schema(table: NormalizedTable, signature: list[str]) -> ColumnHeaderSchema:
+def _schema(table: NormalizedTable, headers: list[str]) -> ColumnHeaderSchema:
     return ColumnHeaderSchema(
         schema_id=f"{table.table_id}-column-schema",
         table_id=table.table_id,
         n_cols=table.n_cols,
-        flattened_signature=signature,
+        leaves=[
+            ColumnHeaderLeaf(
+                leaf_id=f"{table.table_id}-column-schema-leaf-{col_idx}",
+                table_id=table.table_id,
+                col_idx=col_idx,
+                is_row_label_column=col_idx == 0,
+                is_value_column=col_idx != 0,
+                leaf_label=header,
+                leaf_name=header,
+            )
+            for col_idx, header in enumerate(headers)
+        ],
     )
 
 
@@ -100,7 +111,7 @@ def test_table1_continuation_artifacts_merge_matching_table1_fragments() -> None
     assert len(groups) == 1
     assert groups[0].merge_decision == "merge"
     assert groups[0].source_table_ids == ["paper-p5-t0", "paper-p6-t0"]
-    assert groups[0].column_signature == ["variable", "overall", "cases", "p-value"]
+    assert groups[0].column_headers == ["variable", "overall", "cases", "p-value"]
     assert len(merged_tables) == 1
     merged = merged_tables[0]
     assert merged.table_id == "paper-p5-t0-merged-table1"
@@ -114,7 +125,7 @@ def test_table1_continuation_artifacts_merge_matching_table1_fragments() -> None
 
 
 def test_table1_continuation_artifacts_skip_incompatible_columns() -> None:
-    """Explicit continuations should not merge when column signatures differ."""
+    """Explicit continuations should not merge when column headers differ."""
     base = _normalized_table(
         "paper-p5-t0",
         rows=[["Variable", "Overall", "Cases"], ["Age", "52.1", "58.2"]],
@@ -205,7 +216,7 @@ def test_table1_continuation_artifacts_detect_uncaptioned_next_page_fragment() -
 
 
 def test_table1_continuation_artifacts_fail_without_column_schema() -> None:
-    """Continuation grouping should not reconstruct signatures when schemas are missing."""
+    """Continuation grouping should not reconstruct column headers when schemas are missing."""
     base = _normalized_table(
         "paper-p2-t0",
         rows=[["Variable", "Q1", "Q2"], ["Age", "52", "58"]],
@@ -225,6 +236,6 @@ def test_table1_continuation_artifacts_fail_without_column_schema() -> None:
 
     assert len(groups) == 1
     assert groups[0].merge_decision == "skip"
-    assert groups[0].column_signature == []
+    assert groups[0].column_headers == []
     assert any("column_header_schema_missing_or_empty" in item for item in groups[0].diagnostics)
     assert merged_tables == []

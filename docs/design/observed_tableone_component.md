@@ -27,6 +27,7 @@ In `parseTable1`, none of those inputs are reliably available.
 What we reliably have is:
 
 - the printed table grid
+- the parser-native column-header schema, including multicolumn header groups
 - row and column semantics inferred from that printed table
 - parsed cell values extracted from that printed table
 
@@ -37,7 +38,7 @@ The R-side component must therefore be designed around observed output, not gues
 The existing pipeline remains:
 
 ```text
-PDF -> ExtractedTable -> NormalizedTable -> TableDefinition -> ParsedTable
+PDF -> ExtractedTable -> NormalizedTable -> ColumnHeaderSchema -> TableDefinition -> ParsedTable
 ```
 
 The proposed R-side component is downstream of the JSON artifacts written by the parser.
@@ -45,7 +46,7 @@ The proposed R-side component is downstream of the JSON artifacts written by the
 Recommended conceptual flow:
 
 ```text
-table_definitions.json + parsed_tables.json (+ normalized_tables.json when useful)
+column_header_schemas.json + table_definitions.json + parsed_tables.json (+ normalized_tables.json when useful)
 -> ObservedTableOne
 ```
 
@@ -186,6 +187,10 @@ If later heuristics suggest such information, that can be stored only as optiona
 ## `columns`
 
 `columns` should describe the printed non-label columns in left-to-right order.
+The column axis should come from `ColumnHeaderSchema` or from
+`TableDefinition.column_definition` records that were built from that schema.
+Observed-table code should not compare or interpret columns by reconstructing
+header text locally.
 
 Each column entry should preserve:
 

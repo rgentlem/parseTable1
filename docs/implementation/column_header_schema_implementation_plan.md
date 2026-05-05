@@ -40,7 +40,7 @@ The main implementation seams are:
   Build and write `column_header_schemas.json`.
 - `table1_parser/heuristics/table_definition_columns.py`
   Later refactor so `TableDefinition` consumes `ColumnHeaderSchema` instead of
-  independently flattening headers.
+  independently rebuilding column-header context.
 - `table1_parser/table_continuation_columns.py`
   Later consumer for schema-based compatibility checks.
 - `R/inspect_paper_outputs.R` and related R helpers
@@ -135,8 +135,7 @@ Builder behavior:
 8. Fall back to normalized cleaned-row evidence when raw cells or coordinates
    are unavailable.
 9. Attach higher header rows as groups over leaf columns.
-10. Build `flattened_signature` as a review and compatibility convenience.
-11. Validate the schema before returning it.
+10. Validate the schema before returning it.
 
 Span inference should start conservatively:
 
@@ -255,7 +254,7 @@ Tests:
 
 - existing `tests/test_table_definition.py` should still pass
 - add explicit tests that TableDefinition column labels and group levels come
-  from the schema, not from ad hoc header flattening
+  from the schema, not from ad hoc local header reconstruction
 - add a regression where upper-row group labels must not replace blank leaf
   labels unless the table truly lacks a leaf header row
 
@@ -269,7 +268,7 @@ Documentation after this phase:
 ## Phase 5: Continuation Compatibility Consumer
 
 After `TableDefinition` uses the schema, update
-`table1_parser/table_continuation_columns.py` to consume schema signatures and
+`table1_parser/table_continuation_columns.py` to consume schema-derived column headers and
 relationships.
 
 This phase should compare:
@@ -284,8 +283,8 @@ Tests:
 
 - existing continuation column tests still pass
 - one continuation with omitted repeated headers is accepted only when the
-  schema-derived column signatures are compatible
-- one continuation with incompatible schema-derived signatures remains incompatible
+  schema-derived column headers are compatible
+- one continuation with incompatible schema-derived column headers remains incompatible
 
 ## Phase 6: R Inspection And Stored Summary Prep
 
@@ -365,7 +364,7 @@ The implementation is complete when:
 - raw text and coordinates are preserved when available
 - missing evidence is explicit in diagnostics
 - `TableDefinition` consumes the schema for column descriptors
-- continuation checks can use the schema without duplicating header flattening
+- continuation checks can use the schema without duplicating header reconstruction
 - R can inspect the schema as structured leaves/groups/relationships/evidence
 - docs describe the implemented parse flow and artifact contract
 

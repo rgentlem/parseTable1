@@ -4,7 +4,7 @@ This document describes the next deterministic improvement for `TableDefinition`
 
 ## Goal
 
-Infer column meaning from the table's grouping structure rather than from isolated flattened header strings.
+Infer column meaning from the table's grouping structure rather than from isolated header strings.
 
 The implementation should answer:
 
@@ -57,7 +57,7 @@ This structure can remain internal to the heuristic module for now.
 
 ## Header Interpretation Rules
 
-Use `NormalizedTable.header_rows` and `metadata["cleaned_rows"]` to build per-column header parts.
+Use `ColumnHeaderSchema` to build per-column header descriptors.
 
 For each column derive:
 
@@ -66,7 +66,7 @@ For each column derive:
 - the leaf header text
 - the top-level shared header context when present
 
-For multi-row headers, preserve structure long enough to infer grouping before flattening to stored labels.
+For multi-row headers, preserve leaf headers, spanning groups, and group-to-leaf relationships while inferring grouping.
 
 ## Column Partition Rules
 

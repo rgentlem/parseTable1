@@ -95,7 +95,7 @@ Typical corpus review patterns:
 # Count predicted table categories within each paper.
 lapply(taxonomy_by_paper, function(x) table(x$table_category, useNA = "ifany"))
 
-# Inspect all tables that were left unknown without flattening the whole corpus.
+# Inspect all tables that were left unknown without materializing the whole corpus.
 lapply(taxonomy_by_paper, function(x) x[x$table_category == "unknown", , drop = FALSE])
 
 # Find papers that have at least one Table 1 continuation.
@@ -116,9 +116,9 @@ What these are for:
 - `summarize_table1_continuations(...)`
   print one row per detected Table 1 continuation group, including merge/skip decision and source table IDs
 - `summarize_table_continuation_column_checks(...)`
-  print one row per explicit demographic-description continuation column check, including column-count, schema-derived header-signature, and overall compatibility status
+  print one row per explicit demographic-description continuation column check, including column-count, schema-derived column-header status, and overall compatibility status
 - `show_table_continuation_column_check(...)`
-  print one continuation column check in detail, including schema signatures and diagnostics
+  print one continuation column check in detail, including schema-derived column headers and diagnostics
 - `show_parse_quality(...)`
   print deterministic table, row, and column diagnostics, including column-role warnings such as weak p-value columns
 - `show_merged_table1(...)`
@@ -128,7 +128,7 @@ What these are for:
 - `show_paper_references(...)`
   print anchored table and figure mentions, including whether each mention resolved to an in-paper visual
 - `llm_variable_plausibility_df(...)`
-  flatten the saved variable-plausibility review into one row per variable
+  convert the saved variable-plausibility review into one row per variable
 - `show_llm_variable_plausibility(...)`
   print normalized rows, deterministic variables, and the LLM plausibility review together, with reviewed levels nested under each categorical variable
 - `list_llm_variable_plausibility_debug_runs(...)`

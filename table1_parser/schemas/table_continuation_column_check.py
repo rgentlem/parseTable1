@@ -7,7 +7,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
-HeaderSignatureStatus = Literal["match", "mismatch", "missing_base", "missing_continuation", "missing_both"]
+ColumnHeaderStatus = Literal["match", "mismatch", "missing_base", "missing_continuation", "missing_both"]
 ContinuationColumnOverallStatus = Literal["compatible", "possibly_compatible", "incompatible", "no_parent"]
 
 
@@ -29,9 +29,9 @@ class TableContinuationColumnCheck(BaseModel):
     base_table_category: str | None = None
     continuation_table_category: str | None = None
     normalized_column_count_match: bool | None = None
-    header_signature_status: HeaderSignatureStatus
-    base_column_signature: list[str] = Field(default_factory=list)
-    continuation_column_signature: list[str] = Field(default_factory=list)
+    column_header_status: ColumnHeaderStatus
+    base_column_headers: list[str] = Field(default_factory=list)
+    continuation_column_headers: list[str] = Field(default_factory=list)
     overall_status: ContinuationColumnOverallStatus
     confidence: float = Field(ge=0.0, le=1.0)
     diagnostics: list[str] = Field(default_factory=list)

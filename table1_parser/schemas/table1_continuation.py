@@ -34,8 +34,7 @@ class Table1ContinuationGroup(BaseModel):
     merge_decision: Table1ContinuationDecision
     decision_reason: str
     confidence: float = Field(ge=0.0, le=1.0)
-    column_signature_match: bool
-    column_signature: list[str] = Field(default_factory=list)
+    column_headers_match: bool
+    column_headers: list[str] = Field(default_factory=list)
     diagnostics: list[str] = Field(default_factory=list)
     members: list[Table1ContinuationMember] = Field(default_factory=list)
-

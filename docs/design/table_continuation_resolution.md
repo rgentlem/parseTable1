@@ -179,29 +179,30 @@ class ColumnSchemaCompatibilityDecision(BaseModel):
         "rejected",
         "schema_missing",
     ]
-    base_column_signature: list[str]
-    continuation_column_signature: list[str]
+    base_column_headers: list[str]
+    continuation_column_headers: list[str]
     normalized_column_count_match: bool
     decision_reason: str
     warnings: list[str]
 ```
 
-Compatibility must use `ColumnHeaderSchema.flattened_signature`. The resolver
-must not reconstruct a separate header signature from normalized rows when the
-schema is missing or weak. Missing schema evidence is a parser failure for this
-purpose and should reject integration with a structured diagnostic.
+Compatibility must use `ColumnHeaderSchema` through the parser's column-header
+tooling. The resolver must not reconstruct a separate header comparison from
+normalized rows when the schema is missing or weak. Missing schema evidence is a
+parser failure for this purpose and should reject integration with a structured
+diagnostic.
 
 Accepted evidence:
 
 - explicit continuation identity
 - same normalized column count
-- matching schema-derived column signatures
+- matching schema-derived column headers
 
 Rejected evidence:
 
 - missing parent or continuation column schema
 - different normalized column count
-- different schema-derived column signatures
+- different schema-derived column headers
 
 ### 5. Carry Forward Headers Only After Schema Match
 

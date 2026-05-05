@@ -345,7 +345,6 @@ def build_column_header_schema(
                     )
                 )
 
-    flattened_signature = _flattened_signature(leaves, groups, relationships)
     schema = ColumnHeaderSchema(
         schema_id=schema_id,
         table_id=table.table_id,
@@ -358,7 +357,6 @@ def build_column_header_schema(
         groups=groups,
         relationships=relationships,
         evidence=evidence,
-        flattened_signature=flattened_signature,
         diagnostics=list(dict.fromkeys(diagnostics)),
         confidence=_schema_confidence(diagnostics, leaves, groups),
     )
@@ -385,6 +383,23 @@ def column_header_schemas_to_payload(
 ) -> list[dict[str, object]]:
     """Serialize column header schemas as JSON-friendly records."""
     return [schema.model_dump(mode="json") for schema in schemas]
+
+
+def column_header_labels(schema: ColumnHeaderSchema) -> list[str]:
+    """Return parser-facing column header labels from a column header schema."""
+    groups_by_id = {group.group_id: group for group in schema.groups}
+    labels_by_leaf_id: dict[str, list[tuple[int, str]]] = {leaf.leaf_id: [] for leaf in schema.leaves}
+    for relationship in schema.relationships:
+        group = groups_by_id.get(relationship.parent_group_id)
+        if group is not None:
+            labels_by_leaf_id.setdefault(relationship.child_leaf_id, []).append((group.row_idx, group.label))
+    labels: list[str] = []
+    for leaf in sorted(schema.leaves, key=lambda item: item.col_idx):
+        column_parts = [label for _, label in sorted(labels_by_leaf_id.get(leaf.leaf_id, []))]
+        if leaf.leaf_label:
+            column_parts.append(leaf.leaf_label)
+        labels.append(clean_text(" ".join(part for part in column_parts if part)))
+    return labels
 
 
 def _enrich_base_schema_leaf_labels_from_continuations(
@@ -429,7 +444,6 @@ def _enrich_base_schema_leaf_labels_from_continuations(
                 enriched[base_index] = base_schema.model_copy(
                     update={
                         "leaves": new_leaves,
-                        "flattened_signature": _flattened_signature(new_leaves, base_schema.groups, base_schema.relationships),
                         "diagnostics": list(dict.fromkeys(diagnostics)),
                     }
                 )
@@ -928,26 +942,6 @@ def _can_stack_header_runs(
         and upper.col_start == lower.col_start
         and upper.col_end == lower.col_end
     )
-
-
-def _flattened_signature(
-    leaves: list[ColumnHeaderLeaf],
-    groups: list[ColumnHeaderGroup],
-    relationships: list[ColumnHeaderRelationship],
-) -> list[str]:
-    group_by_id = {group.group_id: group for group in groups}
-    labels_by_leaf_id: dict[str, list[tuple[int, str]]] = {leaf.leaf_id: [] for leaf in leaves}
-    for relationship in relationships:
-        group = group_by_id.get(relationship.parent_group_id)
-        if group is not None:
-            labels_by_leaf_id.setdefault(relationship.child_leaf_id, []).append((group.row_idx, group.label))
-    signature: list[str] = []
-    for leaf in leaves:
-        labels = [label for _, label in sorted(labels_by_leaf_id.get(leaf.leaf_id, []))]
-        if leaf.leaf_label:
-            labels.append(leaf.leaf_label)
-        signature.append(clean_text(" ".join(label for label in labels if label)))
-    return signature
 
 
 def _schema_confidence(

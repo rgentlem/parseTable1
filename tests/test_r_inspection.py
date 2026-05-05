@@ -305,7 +305,6 @@ def _write_sample_paper_outputs(
             "groups": [],
             "relationships": [],
             "evidence": [],
-            "flattened_signature": ["Characteristic", "Overall", "DKD"],
             "diagnostics": [],
             "confidence": 0.9,
         }
@@ -319,8 +318,8 @@ def _write_sample_paper_outputs(
             "merge_decision": "merge",
             "decision_reason": "explicit_table1_continuation_and_matching_columns",
             "confidence": 0.98,
-            "column_signature_match": True,
-            "column_signature": ["variable", "overall", "dkd"],
+            "column_headers_match": True,
+            "column_headers": ["variable", "overall", "dkd"],
             "diagnostics": [],
             "members": [],
         }
@@ -342,9 +341,9 @@ def _write_sample_paper_outputs(
             "base_table_category": "demographic_description",
             "continuation_table_category": "demographic_description",
             "normalized_column_count_match": True,
-            "header_signature_status": "match",
-            "base_column_signature": ["variable", "overall", "dkd"],
-            "continuation_column_signature": ["variable", "overall", "dkd"],
+            "column_header_status": "match",
+            "base_column_headers": ["variable", "overall", "dkd"],
+            "continuation_column_headers": ["variable", "overall", "dkd"],
             "overall_status": "compatible",
             "confidence": 0.95,
             "diagnostics": [],
@@ -369,7 +368,7 @@ def _write_sample_paper_outputs(
                     "group_id": "table1_continuation_0",
                     "source_table_indices": [0, 1],
                     "source_table_ids": ["tbl-1", "tbl-1-cont"],
-                    "column_signature": ["variable", "overall", "dkd"],
+                    "column_headers": ["variable", "overall", "dkd"],
                     "artifact_only": True,
                     "row_provenance": [
                         {"merged_row_idx": 0, "source_table_id": "tbl-1", "source_row_idx": 0},
@@ -980,8 +979,8 @@ def test_r_inspection_shows_table_continuation_column_checks(tmp_path) -> None:
     assert "Table continuation column check table_continuation_column_check_0" in result.stdout
     assert "overall_status" in result.stdout
     assert "compatible" in result.stdout
-    assert "Base Column Signature" in result.stdout
-    assert "Continuation Column Signature" in result.stdout
+    assert "Base Column Headers" in result.stdout
+    assert "Continuation Column Headers" in result.stdout
 
 
 def test_r_inspection_shows_all_column_header_trees(tmp_path) -> None:

@@ -74,7 +74,7 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Normalization | `NormalizedTable` | Written now as `normalized_tables.json` by `normalize` and `parse` | Clean rows, detect headers, derive row features |
 | Column header schema | `ColumnHeaderSchema` | Written now as `column_header_schemas.json` by `parse` | Persist parser-native leaf columns, spanning header groups, group-to-leaf relationships, raw cell evidence, and coordinates before semantic column projection |
 | Table 1 continuation inspection | `Table1ContinuationGroup`, `NormalizedTable` | Written now as `table1_continuation_groups.json` and `merged_table1_tables.json` by `parse` | Persist artifact-only grouping and merged normalized rows for explicit or strongly inferred Table 1 continuations without altering the main parse |
-| Continuation column compatibility | `TableContinuationColumnCheck` | Written now as `table_continuation_column_checks.json` by `parse` | Persist schema-derived column-signature compatibility checks for explicit or strongly inferred `demographic_description` continuations without altering the main parse |
+| Continuation column compatibility | `TableContinuationColumnCheck` | Written now as `table_continuation_column_checks.json` by `parse` | Persist schema-derived column-header compatibility checks for explicit or strongly inferred `demographic_description` continuations without altering the main parse |
 | Table routing | `TableProfile` | Written now as `table_profiles.json` by `parse` | Persist provisional deterministic parser-route decisions |
 | Paper table inventory | `PaperTableInventory`, `PaperTableRecord` | Written now as `paper_table_inventory.json` by `parse` | Persist one deterministic taxonomy prediction per table-like object |
 | Table definition | `TableDefinition` | Written now as `table_definitions.json` by `parse` | Persist value-free row-variable, level, and column semantics |
@@ -278,7 +278,7 @@ Design intent:
 - normalization may also merge two adjacent row-label field columns when the second column repeatedly contains label fragments and data-like values clearly begin to the right
 - normalization may also move an embedded count out of the first value column when that cell contains the tail of a row label plus a count-like value, recording evidence in `metadata.column_repairs.embedded_label_count_cells`
 - normalization may also merge label-only continuation rows into the preceding valued row when punctuation, footnote, or phrase-continuation cues show that the visual row label wrapped vertically, recording evidence in `metadata.column_repairs.vertical_label_continuations`
-- normalization may also expand a collapsed extracted value-region cell back into many visual value columns when that cell repeatedly contains a stable newline-delimited stack of numeric values; this repairs an extractor artifact where an upright wide data table has been flattened in the raw grid even though the visual table is multi-column
+- normalization may also expand a collapsed extracted value-region cell back into many visual value columns when that cell repeatedly contains a stable newline-delimited stack of numeric values; this repairs an extractor artifact where an upright wide data table has been collapsed in the raw grid even though the visual table is multi-column
 - those repairs should be driven by row-style expectations and body-value patterns, not by paper-specific header templates
 - normalization may also repair a small set of extractor-facing glyph-to-Unicode failures in parser-facing text, such as a broken replacement character before a numeric threshold becoming `<=`
 - these symbol repairs belong in normalized text only; the original extracted cell text remains preserved in `ExtractedTable`
@@ -341,9 +341,6 @@ Design components:
   records normalized row/column references, raw extracted text when available,
   parser-facing cleaned text, page number, and cell bounding boxes when
   available
-- `flattened_signature`
-  is a convenience view over the schema for quick comparison and compatibility
-  checks; it is not the conceptual model
 - `diagnostics`
   records degraded or missing evidence, skipped title-like header rows, blank
   leaf labels, and missing coordinate evidence
@@ -358,8 +355,8 @@ Design intent:
 - column-header recovery is a first-class parser artifact, not hidden inside
   `TableDefinition`
 - leaf labels come from the header row closest to the body
-- higher header rows become spanning groups rather than being flattened too
-  early
+- higher header rows become spanning groups with explicit relationships to leaf
+  columns
 - an internal horizontal rule within the header band may separate value-region
   spanning headers above the rule from wrapped leaf labels below it; the row
   label column may remain labeled above that rule and outside those value
@@ -397,7 +394,7 @@ Canonical models:
 Design components:
 
 - `table1_continuation_groups.json`
-  records explicit and strongly inferred Table 1 continuation candidates, their source table indices, source table IDs, column signatures, decision reasons, and merge/skip diagnostics
+  records explicit and strongly inferred Table 1 continuation candidates, their source table indices, source table IDs, schema-derived column headers, decision reasons, and merge/skip diagnostics
 - `merged_table1_tables.json`
   records one merged `NormalizedTable` per accepted group, preserving normalized cleaned rows and source-row provenance in `metadata.table1_continuation_merge`
 
@@ -405,7 +402,7 @@ Design intent:
 
 - handle explicit Table 1 continuation evidence, such as `Table 1 (continued)` or extractor continuation metadata for table number 1
 - also inspect an uncaptained, unnumbered table-like fragment on the next page after Table 1 when it has body rows and a plausible grid
-- require compatible normalized column signatures before writing a merged table artifact
+- require compatible schema-derived column headers before writing a merged table artifact
 - ignore non-Table 1 continuations, including later result tables that happen to span pages
 - preserve source table IDs and row indices so the merged view is auditable from the original `normalized_tables.json`
 - keep the merge artifact inspection-only until a later change deliberately wires it into semantic parsing
@@ -428,8 +425,8 @@ This artifact:
 - requires clear continuation evidence or a narrow adjacent-page uncaptained continuation candidate before checking a pair
 - compares the continuation to the closest prior fragment for the same table number
 - records normalized column-count agreement
-- records column-header signature agreement using `ColumnHeaderSchema.flattened_signature`
-- fails compatibility with a structured diagnostic when a usable column-header schema is missing, rather than reconstructing a header signature from normalized rows
+- records column-header agreement using `ColumnHeaderSchema`
+- fails compatibility with a structured diagnostic when a usable column-header schema is missing, rather than reconstructing column meaning from normalized rows
 - does not merge tables or change `TableDefinition`, `ParsedTable`, or processing-status behavior
 
 The public helper can fall back to the provisional `TableProfile` family

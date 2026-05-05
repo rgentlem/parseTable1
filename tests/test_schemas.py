@@ -255,7 +255,6 @@ def test_column_header_schema_creation_and_serialization() -> None:
                 source="extracted_cell",
             ),
         ],
-        flattened_signature=["", "Cobalt quartile Q1", ""],
     )
 
     dumped = schema.model_dump(mode="json")

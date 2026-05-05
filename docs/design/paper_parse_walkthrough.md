@@ -354,7 +354,7 @@ These repairs improve row-label integrity before row signatures and variable gro
 
 #### 3.11 Expand Extra-Wide Stacked Value Columns
 
-Some upright, visually wide data tables can be flattened by extraction into a row-label cell plus one broad value-region cell. The visual table is still multi-column; the broad extracted cell may preserve those visual columns as a stable newline-delimited stack.
+Some upright, visually wide data tables can be collapsed by extraction into a row-label cell plus one broad value-region cell. The visual table is still multi-column; the broad extracted cell may preserve those visual columns as a stable newline-delimited stack.
 
 Normalization can expand that collapsed value-region cell only when the evidence is strong:
 
@@ -471,7 +471,7 @@ objects can consume.
 
 Why this exists:
 
-- multi-row headers should be recoverable without flattening them too early
+- multi-row headers should be recoverable as structured leaf columns and spanning groups
 - `TableDefinition` should classify column semantics from a shared column model
   rather than rebuilding header structure locally
 - later tableone-style rendering needs a stored summary object before printing,
@@ -493,12 +493,12 @@ the same paper-level table taxonomy written to `paper_table_inventory.json`.
 The parser writes:
 
 - `table_continuation_column_checks.json`
-  records normalized column-count agreement, column-header signature agreement,
+  records normalized column-count agreement, schema-derived column-header agreement,
   and an overall compatible/incompatible/no-parent status
 
 The same parse still checks whether the paper appears to have a Table 1 continuation.
 
-This stage is intentionally narrow. It only considers Table 1, and it only accepts a merge when the continuation evidence is explicit or strongly inferred and the normalized column signatures are compatible.
+This stage is intentionally narrow. It only considers Table 1, and it only accepts a merge when the continuation evidence is explicit or strongly inferred and the schema-derived column headers are compatible.
 
 Current examples of continuation evidence include:
 
@@ -510,7 +510,7 @@ Current examples of continuation evidence include:
 When the evidence is compatible, the parser writes two inspection artifacts:
 
 - `table1_continuation_groups.json`
-  records the source table IDs, table indices, column-signature comparison, merge decision, and diagnostics
+  records the source table IDs, table indices, column-header comparison, merge decision, and diagnostics
 - `merged_table1_tables.json`
   records an artifact-only `NormalizedTable` that appends continuation body rows to the base Table 1 rows
 
@@ -522,11 +522,12 @@ The default parser still defines and parses the original normalized tables separ
 That constraint keeps this change useful for inspection without silently changing downstream table semantics.
 
 Continuation header comparison is schema-only: the continuation artifacts use
-`ColumnHeaderSchema.flattened_signature` and do not reconstruct signatures from
-normalized header rows. If a usable schema is missing, compatibility fails with
-a structured diagnostic instead of falling back to a cruder comparison.
-Coordinate profiles remain separate diagnostics and do not override a matching
-schema signature with matching normalized column counts.
+`ColumnHeaderSchema` through the parser's column-header tooling and do not
+reconstruct column meaning from normalized header rows. If a usable schema is
+missing, compatibility fails with a structured diagnostic instead of falling
+back to a cruder comparison. Coordinate profiles remain separate diagnostics
+and do not override matching column headers with matching normalized column
+counts.
 
 ## Step 6: Provisional Table Routing With `TableProfile`
 
@@ -777,11 +778,11 @@ When a parse looks wrong, inspect the outputs in this order.
    If the raw grid was usable but header rows, edge trimming, split-value repair, or cleaned text are wrong, the problem is normalization.
 
 3. `table1_continuation_groups.json` and `merged_table1_tables.json`
-   If one logical Table 1 spans pages, inspect these to see whether the continuation was detected, whether the column signatures matched, and how merged rows map back to source rows.
+   If one logical Table 1 spans pages, inspect these to see whether the continuation was detected, whether the schema-derived column headers matched, and how merged rows map back to source rows.
    Public R inspection should use the paper's `table_number` as the conceptual selector; extraction-order indices are retained only for low-level provenance/debug mapping.
 
 4. `table_continuation_column_checks.json`
-   If a demographic-description table has an explicit continuation, inspect this to see whether the normalized column count and schema-derived header signature are compatible before any future integration work.
+   If a demographic-description table has an explicit continuation, inspect this to see whether the normalized column count and schema-derived column headers are compatible before any future integration work.
 
 5. `table_profiles.json`
    If the table was routed to the wrong family, the problem is in routing.

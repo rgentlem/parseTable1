@@ -6,6 +6,7 @@ Research-oriented tooling for extracting, normalizing, heuristically interpretin
 
 - The main user command is now `table1-parser parse`, which runs the available pipeline stages once and writes all currently available paper outputs.
 - The `extract` and `normalize` commands are still available for stage-specific inspection and debugging.
+- `ColumnHeaderSchema` is now the canonical column-axis artifact and the only supported basis for comparing or interpreting columns after normalization.
 - `TableDefinition` is now implemented as a deterministic, value-free semantic representation of the table structure.
 - `ParsedTable` is now emitted as the final structured value layer, with conservative numeric parsing and soft Table 1 `n (%)` heuristics.
 - The repository also contains heuristic interpretation, diagnostics, paper-context artifacts, R inspection helpers, and a standalone LLM variable-plausibility review command.
@@ -17,7 +18,7 @@ The goal of this project is to parse Table 1-style tables from epidemiology pape
 The intended pipeline is:
 
 ```text
-PDF -> ExtractedTable -> NormalizedTable -> TableDefinition -> ParsedTable
+PDF -> ExtractedTable -> NormalizedTable -> ColumnHeaderSchema -> TableDefinition -> ParsedTable
 ```
 
 Each stage has a different purpose:
@@ -28,8 +29,11 @@ Each stage has a different purpose:
 - `NormalizedTable`
   A cleaned and organized version of the extracted table. This separates header rows from body rows, preserves row structure, and computes row-level signals that help later interpretation.
 
+- `ColumnHeaderSchema`
+  The canonical column-header model. It records leaf columns, multicolumn spanning headers, group-to-leaf relationships, row-label columns, raw evidence, and coordinates where available.
+
 - `TableDefinition`
-  The value-free semantic stage. This captures which variables appear in the rows, which ones are categorical, what their levels are, and how the columns were constructed, without including the table's printed values.
+  The value-free semantic stage. This captures which variables appear in the rows, which ones are categorical, what their levels are, and how the columns were constructed from `ColumnHeaderSchema`, without including the table's printed values.
 
 - `ParsedTable`
   The final semantic output. This combines variable definitions, column meanings, and parsed table values into a structured format.
@@ -40,6 +44,7 @@ At the moment, the repository can persist:
 
 - `ExtractedTable`
 - `NormalizedTable`
+- `ColumnHeaderSchema`
 - `TableProfile`
 - `TableDefinition`
 - `ParsedTable`
@@ -78,6 +83,7 @@ By default this writes:
 ```text
 outputs/papers/<paper_stem>/extracted_tables.json
 outputs/papers/<paper_stem>/normalized_tables.json
+outputs/papers/<paper_stem>/column_header_schemas.json
 outputs/papers/<paper_stem>/table_profiles.json
 outputs/papers/<paper_stem>/table_definitions.json
 outputs/papers/<paper_stem>/parsed_tables.json
@@ -96,7 +102,7 @@ For example:
 table1-parser parse testpapers/cobaltpaper.pdf
 ```
 
-This writes the extraction, normalization, table-profile, table-definition, final parsed-table, processing-status, visual-reference, and paper-context outputs in one run.
+This writes the extraction, normalization, column-header-schema, table-profile, table-definition, final parsed-table, processing-status, visual-reference, and paper-context outputs in one run.
 
 To run the optional LLM variable-plausibility review:
 
@@ -247,6 +253,7 @@ outputs/
     cobaltpaper/
       extracted_tables.json
       normalized_tables.json
+      column_header_schemas.json
       table_profiles.json
       table_definitions.json
       parsed_tables.json
@@ -273,14 +280,15 @@ The easiest way to inspect one paper is:
 
 1. start with `extracted_tables.json` if the recovered table grid looks wrong
 2. read `normalized_tables.json` to see the cleaned table structure
-3. read `table_profiles.json` to see how each table was routed
-4. read `table_definitions.json` to see the deterministic row and column interpretation
-5. read `paper_visual_inventory.json` and `paper_references.json` to see actual in-paper tables/figures and anchored prose mentions
-6. read `paper_variable_inventory.json` to see the paper-level candidate variable reference list
-7. read `parsed_tables.json` to see the final structured values
-8. read `table_processing_status.json` to see whether each table parsed cleanly, was rescued, or failed
-9. use `paper_sections.json` and `table_contexts/*.json` separately when you want to inspect the paper-context artifacts that may support later grounding work
-10. read `table_variable_plausibility_llm.json` when present to see the optional LLM variable-plausibility review
+3. read `column_header_schemas.json` to see the canonical column axis before interpreting any column roles
+4. read `table_profiles.json` to see how each table was routed
+5. read `table_definitions.json` to see the deterministic row and column interpretation
+6. read `paper_visual_inventory.json` and `paper_references.json` to see actual in-paper tables/figures and anchored prose mentions
+7. read `paper_variable_inventory.json` to see the paper-level candidate variable reference list
+8. read `parsed_tables.json` to see the final structured values
+9. read `table_processing_status.json` to see whether each table parsed cleanly, was rescued, or failed
+10. use `paper_sections.json` and `table_contexts/*.json` separately when you want to inspect the paper-context artifacts that may support later grounding work
+11. read `table_variable_plausibility_llm.json` when present to see the optional LLM variable-plausibility review
 
 In practice:
 
@@ -288,6 +296,8 @@ In practice:
   best for raw PDF recovery, page numbers, and extracted captions
 - `normalized_tables.json`
   best for stable row and column indices
+- `column_header_schemas.json`
+  best for column interpretation, including multicolumn headers, spanning groups, wrapped leaf headers, omitted continuation headers, and row-label columns outside value-region header groups
 - `table_definitions.json`
   best for the syntax-first semantic baseline
 - `paper_variable_inventory.json`
@@ -307,10 +317,12 @@ The repository keeps syntax and semantics separate.
 
 - syntax
   what rows and columns physically exist in the table
-  main files: `extracted_tables.json`, `normalized_tables.json`
+  main files: `extracted_tables.json`, `normalized_tables.json`, `column_header_schemas.json`
 - semantics
   what the rows mean and which levels belong under them
   main files: `table_definitions.json`, `parsed_tables.json`
+
+`ColumnHeaderSchema` is the required bridge from syntax to column semantics. It is the only supported source for comparing or interpreting columns after normalization. This matters most for multicolumn headers, where a visible group label can span several lower-level columns, leaf labels can wrap over several physical rows, and continuation fragments can omit repeated headers. Parser tools, R inspection helpers, observed-table data-frame construction, and LLM context builders should consume this schema or a typed object derived from it rather than rebuilding column meaning from local header text.
 
 The deterministic semantic files refer back to the same `table_id` and row-index space. The optional LLM review also preserves those variable identities, but it is a QA artifact rather than a replacement semantic definition.
 

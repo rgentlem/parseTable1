@@ -42,7 +42,7 @@ ExtractedTable -> NormalizedTable -> ColumnHeaderSchema -> TableDefinition -> Pa
 `NormalizedTable` remains the cleaned row/column grid. `ColumnHeaderSchema`
 becomes the explicit column-structure model built from that grid plus optional
 raw extraction evidence. `TableDefinition` can then consume a column schema
-instead of re-flattening header rows locally.
+instead of rebuilding header context locally.
 
 The artifact should be written by `table1-parser parse` as:
 
@@ -136,8 +136,8 @@ leaf header row exists at all.
 ### Header Groups
 
 Header groups are cells from higher header rows that span one or more leaf
-columns. They preserve upper-header structure instead of flattening everything
-into a single string too early.
+columns. They preserve upper-header structure as explicit group records and
+group-to-leaf relationships.
 
 Common cases:
 
@@ -262,13 +262,9 @@ class ColumnHeaderSchema(BaseModel):
     groups: list[ColumnHeaderGroup] = []
     relationships: list[ColumnHeaderRelationship] = []
     evidence: list[ColumnHeaderCellEvidence] = []
-    flattened_signature: list[str] = []
     diagnostics: list[str] = []
     confidence: float | None = None
 ```
-
-`flattened_signature` is a convenience view over the schema for compatibility
-checks and quick review. It is not the conceptual model.
 
 ## Inference Rules
 
@@ -314,7 +310,7 @@ For each leaf column, take the cleaned cell from the leaf header row at that
 column. Preserve a direct evidence reference to the raw extracted cell when
 available.
 
-Do not flatten upper group text into `leaf_label`. Upper rows belong in
+Do not place upper group text into `leaf_label`. Upper rows belong in
 `ColumnHeaderGroup` records and relationships.
 
 When geometry shows that a short leading text fragment in a leaf-band cell lies
@@ -376,7 +372,7 @@ bad table should not crash the whole parse.
 
 - leaf label comes from `ColumnHeaderLeaf.leaf_label`
 - shared context comes from related `ColumnHeaderGroup` labels
-- flattened display label can be derived as `group path + leaf label`
+- display labels can be derived from the schema's group path and leaf label
 - statistic columns and group columns are classified after the schema is built
 
 This keeps `TableDefinition` semantic. It should not own the raw mechanics of
@@ -408,7 +404,7 @@ summary object, while parser inference remains in parser artifacts.
 ### Continuation Compatibility
 
 Continuation checks should eventually compare column schemas rather than
-independent flattened signatures. Useful schema-level checks include:
+independent local header summaries. Useful schema-level checks include:
 
 - same leaf count
 - compatible row-label column
@@ -472,8 +468,8 @@ Regression expectations should assert:
 3. Add validation for schema integrity.
 4. Write `column_header_schemas.json` from `table1-parser parse`.
 5. Refactor `TableDefinition` column assembly to consume the schema.
-6. Update continuation compatibility checks to consume schema signatures and
-   coordinate evidence after the primary schema contract is stable.
+6. Update continuation compatibility checks to consume schema-derived column
+   headers and coordinate evidence after the primary schema contract is stable.
 7. Add R inspection helpers after the JSON contract has tests.
 
 The implementation should be staged so step 4 can land before changing

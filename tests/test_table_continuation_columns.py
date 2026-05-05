@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from table1_parser.schemas import ColumnHeaderSchema, NormalizedTable, RowView, TableProfile
+from table1_parser.schemas import ColumnHeaderLeaf, ColumnHeaderSchema, NormalizedTable, RowView, TableProfile
 from table1_parser.table_continuation_columns import build_table_continuation_column_checks
 
 
@@ -57,12 +57,23 @@ def _profile(table_id: str, family: str = "descriptive_characteristics") -> Tabl
     return TableProfile(table_id=table_id, table_family=family, family_confidence=0.9)
 
 
-def _schema(table: NormalizedTable, signature: list[str]) -> ColumnHeaderSchema:
+def _schema(table: NormalizedTable, headers: list[str]) -> ColumnHeaderSchema:
     return ColumnHeaderSchema(
         schema_id=f"{table.table_id}-column-schema",
         table_id=table.table_id,
         n_cols=table.n_cols,
-        flattened_signature=signature,
+        leaves=[
+            ColumnHeaderLeaf(
+                leaf_id=f"{table.table_id}-column-schema-leaf-{col_idx}",
+                table_id=table.table_id,
+                col_idx=col_idx,
+                is_row_label_column=col_idx == 0,
+                is_value_column=col_idx != 0,
+                leaf_label=header,
+                leaf_name=header,
+            )
+            for col_idx, header in enumerate(headers)
+        ],
     )
 
 
@@ -86,7 +97,7 @@ def test_column_checks_include_descriptive_continuations_beyond_table1() -> None
     assert checks[0].continuation_table_id == "tbl-7b"
     assert checks[0].base_table_category == "demographic_description"
     assert checks[0].normalized_column_count_match is True
-    assert checks[0].header_signature_status == "match"
+    assert checks[0].column_header_status == "match"
     assert checks[0].overall_status == "compatible"
 
 
@@ -105,7 +116,7 @@ def test_column_checks_ignore_page_coordinates() -> None:
     )
 
     assert len(checks) == 1
-    assert checks[0].header_signature_status == "match"
+    assert checks[0].column_header_status == "match"
     assert checks[0].overall_status == "compatible"
 
 
@@ -193,7 +204,7 @@ def test_column_checks_include_uncaptioned_next_page_demographic_fragment() -> N
 
 
 def test_column_checks_fail_without_column_schema() -> None:
-    """Continuation checks should not infer header signatures without schema artifacts."""
+    """Continuation checks should not infer column headers without schema artifacts."""
     rows = [["Variable", "Q1", "Q2"], ["Age", "52", "58"]]
     base = _normalized_table("tbl-1a", table_number=1, rows=rows, page_num=2)
     continuation = _normalized_table("tbl-1b", table_number=1, rows=rows, is_continuation=True, page_num=3)
@@ -205,6 +216,6 @@ def test_column_checks_fail_without_column_schema() -> None:
     )
 
     assert len(checks) == 1
-    assert checks[0].header_signature_status == "missing_both"
+    assert checks[0].column_header_status == "missing_both"
     assert checks[0].overall_status == "incompatible"
     assert any("column_header_schema_missing_or_empty" in item for item in checks[0].diagnostics)

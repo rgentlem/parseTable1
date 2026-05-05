@@ -75,7 +75,7 @@ Keep:
 - `_is_rectangular`
 - `_text_ratio`
 - `_numeric_ratio`
-- `_flatten_later_columns`
+- `_collapse_later_columns`
 - `_find_table_line`
 - `score_candidate`
 

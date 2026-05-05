@@ -302,7 +302,7 @@ show_paper_table_inventory <- function(paper_dir) {
       "continuation_table_id",
       "base_n_cols",
       "continuation_n_cols",
-      "header_signature_status",
+      "column_header_status",
       "overall_status",
       "confidence"
     )
@@ -646,7 +646,7 @@ summarize_table1_continuations <- function(paper_dir) {
       merge_decision = as.character(group$merge_decision %||% ""),
       decision_reason = as.character(group$decision_reason %||% ""),
       confidence = as.numeric(group$confidence %||% NA_real_),
-      column_signature_match = as.logical(group$column_signature_match %||% FALSE),
+      column_headers_match = as.logical(group$column_headers_match %||% FALSE),
       table_number = as.integer(group$table_number %||% NA_integer_),
       source_table_ids = paste(as.character(unlist(group$source_table_ids %||% list())), collapse = " | "),
       diagnostics = paste(as.character(unlist(group$diagnostics %||% list())), collapse = " | "),
@@ -659,7 +659,7 @@ summarize_table1_continuations <- function(paper_dir) {
       merge_decision = character(),
       decision_reason = character(),
       confidence = numeric(),
-      column_signature_match = logical(),
+      column_headers_match = logical(),
       table_number = integer(),
       source_table_ids = character(),
       diagnostics = character(),
@@ -693,7 +693,7 @@ table_continuation_column_checks_df <- function(outputs) {
       base_n_cols = as.integer(check$base_n_cols %||% NA_integer_),
       continuation_n_cols = as.integer(check$continuation_n_cols %||% NA_integer_),
       normalized_column_count_match = as.logical(check$normalized_column_count_match %||% NA),
-      header_signature_status = as.character(check$header_signature_status %||% ""),
+      column_header_status = as.character(check$column_header_status %||% ""),
       overall_status = as.character(check$overall_status %||% ""),
       confidence = as.numeric(check$confidence %||% NA_real_),
       diagnostics = paste(as.character(unlist(check$diagnostics %||% list())), collapse = " | "),
@@ -713,7 +713,7 @@ table_continuation_column_checks_df <- function(outputs) {
       base_n_cols = integer(),
       continuation_n_cols = integer(),
       normalized_column_count_match = logical(),
-      header_signature_status = character(),
+      column_header_status = character(),
       overall_status = character(),
       confidence = numeric(),
       diagnostics = character(),
@@ -751,14 +751,14 @@ show_table_continuation_column_check <- function(paper_dir, check_index = 0L) {
   cat(sprintf("continuation: %s\n", as.character(check$continuation_table_id %||% "")))
   cat(sprintf("categories: %s -> %s\n", as.character(check$base_table_category %||% ""), as.character(check$continuation_table_category %||% "")))
   cat(sprintf("columns: %s -> %s\n", as.integer(check$base_n_cols %||% NA_integer_), as.integer(check$continuation_n_cols %||% NA_integer_)))
-  cat(sprintf("header_signature_status: %s\n", as.character(check$header_signature_status %||% "")))
+  cat(sprintf("column_header_status: %s\n", as.character(check$column_header_status %||% "")))
   cat(sprintf("overall_status: %s\n", as.character(check$overall_status %||% "")))
   cat(sprintf("confidence: %.3f\n\n", as.numeric(check$confidence %||% NA_real_)))
 
-  cat("Base Column Signature\n")
-  cat(paste0("- ", as.character(unlist(check$base_column_signature %||% list())), collapse = "\n"))
-  cat("\n\nContinuation Column Signature\n")
-  cat(paste0("- ", as.character(unlist(check$continuation_column_signature %||% list())), collapse = "\n"))
+  cat("Base Column Headers\n")
+  cat(paste0("- ", as.character(unlist(check$base_column_headers %||% list())), collapse = "\n"))
+  cat("\n\nContinuation Column Headers\n")
+  cat(paste0("- ", as.character(unlist(check$continuation_column_headers %||% list())), collapse = "\n"))
   cat("\n\n")
 
   diagnostics <- as.character(unlist(check$diagnostics %||% list()))

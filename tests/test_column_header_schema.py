@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from table1_parser.column_header_schema import build_column_header_schema
+from table1_parser.column_header_schema import build_column_header_schema, column_header_labels
 from table1_parser.heuristics.table_definition_builder import build_table_definition
 from table1_parser.schemas import (
     ColumnHeaderCellEvidence,
@@ -112,8 +112,9 @@ def test_build_schema_collapses_multirow_group_headers() -> None:
     assert [(group.label, group.col_start, group.col_end, group.inference_rule) for group in schema.groups] == [
         ("Cobalt quartile", 2, 3, "repeated_label_span")
     ]
-    assert schema.flattened_signature[2] == "Cobalt quartile Q1"
-    assert schema.flattened_signature[3] == "Cobalt quartile Q2"
+    labels = column_header_labels(schema)
+    assert labels[2] == "Cobalt quartile Q1"
+    assert labels[3] == "Cobalt quartile Q2"
 
     definition = build_table_definition(table, schema)
 
@@ -137,8 +138,9 @@ def test_build_schema_preserves_extra_wide_header_stack() -> None:
         (">=3 mm", 1, 2),
         (">=4 mm", 3, 4),
     ]
-    assert schema.flattened_signature[1] == "Severity >=3 mm %"
-    assert schema.flattened_signature[2] == "Severity >=3 mm SE"
+    labels = column_header_labels(schema)
+    assert labels[1] == "Severity >=3 mm %"
+    assert labels[2] == "Severity >=3 mm SE"
 
 
 def test_build_schema_uses_internal_header_rule_for_wrapped_leaf_stack() -> None:
@@ -201,8 +203,9 @@ def test_build_schema_splits_value_region_group_headers_by_geometry_gap() -> Non
         ("Group A Label", 1, 3, "explicit_cell_span"),
         ("Group B", 4, 5, "explicit_cell_span"),
     ]
-    assert schema.flattened_signature[1] == "Group A Label Q1 N = 10"
-    assert schema.flattened_signature[4] == "Group B Q1 N = 20"
+    labels = column_header_labels(schema)
+    assert labels[1] == "Group A Label Q1 N = 10"
+    assert labels[4] == "Group B Q1 N = 20"
 
 
 def test_build_schema_skips_eke_table1_title_like_header_rows() -> None:
@@ -223,7 +226,7 @@ def test_build_schema_skips_eke_table1_title_like_header_rows() -> None:
     schema = build_column_header_schema(table, _extracted_table("tbl-eke-1", rows))
 
     assert schema.groups == []
-    assert schema.flattened_signature[3] == "Periodontitis"
+    assert column_header_labels(schema)[3] == "Periodontitis"
     assert "skipped_title_like_leaf_header_row:row=0" in schema.diagnostics
 
 
@@ -252,7 +255,7 @@ def test_build_schema_recovers_eke_headers_when_caption_is_only_header_row() -> 
     assert schema.leaf_header_row_idx == 3
     assert schema.body_rows_considered == [4]
     assert schema.groups[0].label == "Periodontitis (CDC/AAP Case Definitions)"
-    assert schema.flattened_signature[3] == "Periodontitis (CDC/AAP Case Definitions) Severe, %"
+    assert column_header_labels(schema)[3] == "Periodontitis (CDC/AAP Case Definitions) Severe, %"
     assert "inferred_header_rows_from_body_values:rows=2,3" in schema.diagnostics
     assert "trimmed_body_rows_after_inferred_headers:start=4" in schema.diagnostics
 
@@ -279,8 +282,9 @@ def test_build_schema_for_eke_table2_case_definition_groups() -> None:
         ("Periodontitis (CDC/AAP Case Definitions)", 1, 3, "single_cell_blank_span"),
         ("Periodontitis (EFP Case Definitions)", 4, 6, "single_cell_blank_span"),
     ]
-    assert schema.flattened_signature[1] == "Periodontitis (CDC/AAP Case Definitions) Mild"
-    assert schema.flattened_signature[4] == "Periodontitis (EFP Case Definitions) Stage I"
+    labels = column_header_labels(schema)
+    assert labels[1] == "Periodontitis (CDC/AAP Case Definitions) Mild"
+    assert labels[4] == "Periodontitis (EFP Case Definitions) Stage I"
 
 
 def test_build_schema_moves_geometric_leading_leaf_fragment_to_previous_column() -> None:

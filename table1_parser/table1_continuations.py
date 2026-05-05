@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 
+from table1_parser.column_header_schema import column_header_labels
 from table1_parser.schemas import ColumnHeaderSchema, NormalizedTable, RowView, Table1ContinuationGroup, Table1ContinuationMember
 
 
@@ -53,10 +54,10 @@ def build_table1_continuation_artifacts(
                     merge_decision="skip",
                     decision_reason="no_prior_table1_fragment",
                     confidence=0.0,
-                    column_signature=[],
+                    column_headers=[],
                     diagnostics=[
                         "Continuation signal found but no prior Table 1 fragment was available.",
-                        "column_header_schema_required_for_signature_comparison",
+                        "column_header_schema_required_for_column_comparison",
                     ],
                 )
             )
@@ -73,25 +74,25 @@ def build_table1_continuation_artifacts(
                 continue
             break
 
-        signature = _column_signature(normalized_tables[base_index], column_header_schemas, base_index)
+        base_headers = _column_headers(normalized_tables[base_index], column_header_schemas, base_index)
         diagnostics: list[str] = []
-        if not signature:
+        if not base_headers:
             diagnostics.append(f"column_header_schema_missing_or_empty:table_index={base_index}")
-        signatures_match = bool(signature)
+        headers_match = bool(base_headers)
         for source_index in source_indices[1:]:
-            continuation_signature = _column_signature(normalized_tables[source_index], column_header_schemas, source_index)
-            if not continuation_signature:
+            continuation_headers = _column_headers(normalized_tables[source_index], column_header_schemas, source_index)
+            if not continuation_headers:
                 diagnostics.append(f"column_header_schema_missing_or_empty:table_index={source_index}")
-            if continuation_signature != signature:
-                signatures_match = False
+            if continuation_headers != base_headers:
+                headers_match = False
                 diagnostics.append(
-                    "column_signature_mismatch:"
+                    "column_header_mismatch:"
                     f"table_index={source_index}:"
-                    f"expected={signature}:observed={continuation_signature}"
+                    f"expected={base_headers}:observed={continuation_headers}"
                 )
 
         group_id = f"table1_continuation_{len(groups)}"
-        if signatures_match:
+        if headers_match:
             reason = (
                 "uncaptioned_table1_continuation_candidate_and_matching_columns"
                 if inferred_continuation
@@ -105,11 +106,11 @@ def build_table1_continuation_artifacts(
                     merge_decision="merge",
                     decision_reason=reason,
                     confidence=0.82 if inferred_continuation else 0.98,
-                    column_signature=signature,
+                    column_headers=base_headers,
                     diagnostics=diagnostics,
                 )
             )
-            merged_tables.append(_merge_table1_group(group_id, normalized_tables, source_indices, signature))
+            merged_tables.append(_merge_table1_group(group_id, normalized_tables, source_indices, base_headers))
             consumed_continuation_indices.update(source_indices[1:])
         else:
             reason = (
@@ -125,7 +126,7 @@ def build_table1_continuation_artifacts(
                     merge_decision="skip",
                     decision_reason=reason,
                     confidence=0.3 if inferred_continuation else 0.35,
-                    column_signature=signature,
+                    column_headers=base_headers,
                     diagnostics=diagnostics,
                 )
             )
@@ -171,7 +172,7 @@ def _previous_table1_index(tables: list[NormalizedTable], table_index: int) -> i
     return None
 
 
-def _column_signature(
+def _column_headers(
     table: NormalizedTable,
     column_header_schemas: list[ColumnHeaderSchema] | None = None,
     table_index: int | None = None,
@@ -179,9 +180,9 @@ def _column_signature(
     if column_header_schemas is None or table_index is None or table_index >= len(column_header_schemas):
         return []
     schema = column_header_schemas[table_index]
-    if schema.table_id != table.table_id or not schema.flattened_signature:
+    if schema.table_id != table.table_id or not schema.leaves:
         return []
-    return [_normalize_header_cell(item) for item in schema.flattened_signature]
+    return [_normalize_header_cell(item) for item in column_header_labels(schema)]
 
 
 def _normalize_header_cell(text: str) -> str:
@@ -200,7 +201,7 @@ def _build_group(
     merge_decision: str,
     decision_reason: str,
     confidence: float,
-    column_signature: list[str],
+    column_headers: list[str],
     diagnostics: list[str],
 ) -> Table1ContinuationGroup:
     members = []
@@ -226,8 +227,8 @@ def _build_group(
         merge_decision=merge_decision,
         decision_reason=decision_reason,
         confidence=confidence,
-        column_signature_match=merge_decision == "merge",
-        column_signature=column_signature,
+        column_headers_match=merge_decision == "merge",
+        column_headers=column_headers,
         diagnostics=diagnostics,
         members=members,
     )
@@ -237,7 +238,7 @@ def _merge_table1_group(
     group_id: str,
     normalized_tables: list[NormalizedTable],
     source_indices: list[int],
-    column_signature: list[str],
+    column_headers: list[str],
 ) -> NormalizedTable:
     base_table = normalized_tables[source_indices[0]]
     merged_rows: list[list[str]] = []
@@ -303,7 +304,7 @@ def _merge_table1_group(
             "group_id": group_id,
             "source_table_indices": source_indices,
             "source_table_ids": [normalized_tables[index].table_id for index in source_indices],
-            "column_signature": column_signature,
+            "column_headers": column_headers,
             "row_provenance": row_provenance,
             "artifact_only": True,
         },

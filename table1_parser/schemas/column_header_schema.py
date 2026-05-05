@@ -93,6 +93,5 @@ class ColumnHeaderSchema(BaseModel):
     groups: list[ColumnHeaderGroup] = Field(default_factory=list)
     relationships: list[ColumnHeaderRelationship] = Field(default_factory=list)
     evidence: list[ColumnHeaderCellEvidence] = Field(default_factory=list)
-    flattened_signature: list[str] = Field(default_factory=list)
     diagnostics: list[str] = Field(default_factory=list)
     confidence: float | None = Field(default=None, ge=0.0, le=1.0)

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 
+from table1_parser.column_header_schema import column_header_labels
 from table1_parser.schemas import ColumnHeaderSchema, ExtractedTable, NormalizedTable, TableProfile
 from table1_parser.schemas.table_continuation_column_check import TableContinuationColumnCheck
 
@@ -104,8 +105,8 @@ def _build_column_check(
             continuation_n_cols=continuation_table.n_cols,
             continuation_table_family=_table_family_at(table_profiles, continuation_index),
             continuation_table_category=_table_category_at(table_categories, continuation_index),
-            header_signature_status="missing_base",
-            continuation_column_signature=_column_signature(
+            column_header_status="missing_base",
+            continuation_column_headers=_column_headers(
                 continuation_table,
                 _column_schema_at(column_header_schemas, continuation_index),
             ),
@@ -115,12 +116,12 @@ def _build_column_check(
         )
 
     base_table = normalized_tables[base_index]
-    base_signature = _column_signature(base_table, _column_schema_at(column_header_schemas, base_index))
-    continuation_signature = _column_signature(
+    base_headers = _column_headers(base_table, _column_schema_at(column_header_schemas, base_index))
+    continuation_headers = _column_headers(
         continuation_table,
         _column_schema_at(column_header_schemas, continuation_index),
     )
-    signature_status = _header_signature_status(base_signature, continuation_signature)
+    column_header_status = _column_header_status(base_headers, continuation_headers)
     normalized_column_count_match = base_table.n_cols == continuation_table.n_cols
     diagnostics: list[str] = []
 
@@ -128,18 +129,18 @@ def _build_column_check(
         diagnostics.append(
             f"normalized_column_count_mismatch:base={base_table.n_cols}:continuation={continuation_table.n_cols}"
         )
-    if signature_status == "mismatch":
+    if column_header_status == "mismatch":
         diagnostics.append(
-            f"header_signature_mismatch:base={base_signature}:continuation={continuation_signature}"
+            f"column_header_mismatch:base={base_headers}:continuation={continuation_headers}"
         )
-    if signature_status in {"missing_base", "missing_both"}:
+    if column_header_status in {"missing_base", "missing_both"}:
         diagnostics.append(f"column_header_schema_missing_or_empty:table_index={base_index}")
-    if signature_status in {"missing_continuation", "missing_both"}:
+    if column_header_status in {"missing_continuation", "missing_both"}:
         diagnostics.append(f"column_header_schema_missing_or_empty:table_index={continuation_index}")
 
     overall_status = "incompatible"
     confidence = 0.2
-    if signature_status != "match":
+    if column_header_status != "match":
         pass
     elif normalized_column_count_match:
         overall_status = "compatible"
@@ -161,9 +162,9 @@ def _build_column_check(
         base_table_category=_table_category_at(table_categories, base_index),
         continuation_table_category=_table_category_at(table_categories, continuation_index),
         normalized_column_count_match=normalized_column_count_match,
-        header_signature_status=signature_status,
-        base_column_signature=base_signature,
-        continuation_column_signature=continuation_signature,
+        column_header_status=column_header_status,
+        base_column_headers=base_headers,
+        continuation_column_headers=continuation_headers,
         overall_status=overall_status,
         confidence=confidence,
         diagnostics=diagnostics,
@@ -282,12 +283,12 @@ def _column_schema_at(
     return column_header_schemas[table_index]
 
 
-def _column_signature(
+def _column_headers(
     table: NormalizedTable,
     column_schema: ColumnHeaderSchema | None = None,
 ) -> list[str]:
     if column_schema is not None and column_schema.table_id == table.table_id:
-        return [_normalize_header_cell(value) for value in column_schema.flattened_signature]
+        return [_normalize_header_cell(value) for value in column_header_labels(column_schema)]
     return []
 
 
@@ -299,11 +300,11 @@ def _normalize_header_cell(text: str) -> str:
     return SPACE_PATTERN.sub(" ", normalized).strip()
 
 
-def _header_signature_status(base_signature: list[str], continuation_signature: list[str]) -> str:
-    if not base_signature and not continuation_signature:
+def _column_header_status(base_headers: list[str], continuation_headers: list[str]) -> str:
+    if not base_headers and not continuation_headers:
         return "missing_both"
-    if not base_signature:
+    if not base_headers:
         return "missing_base"
-    if not continuation_signature:
+    if not continuation_headers:
         return "missing_continuation"
-    return "match" if base_signature == continuation_signature else "mismatch"
+    return "match" if base_headers == continuation_headers else "mismatch"

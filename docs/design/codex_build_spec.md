@@ -1,12 +1,87 @@
-# Codex Task: Phase 1 Implementation
+# Codex Build Spec
 
-Read the full architecture spec:
+This is the top-level architecture specification for parser implementation work.
+Read this document with `AGENTS.md` before changing extraction, normalization,
+column interpretation, row semantics, value parsing, LLM review, R inspection, or
+observed-table outputs.
 
-docs/design/codex_build_spec.md
+## Current Canonical Pipeline
 
-Also read project constraints in:
+The parser is a staged system. Each stage has its own responsibility and its own
+typed artifacts:
 
-AGENTS.md
+```text
+PDF
+-> ExtractedTable
+-> NormalizedTable
+-> ColumnHeaderSchema
+-> TableDefinition
+-> ParsedTable
+```
+
+The stages must remain separate:
+
+- `ExtractedTable` preserves the raw recovered grid, raw cell text, page
+  information, cell bounding boxes where available, and extraction metadata.
+- `NormalizedTable` performs structural cleanup, header/body row separation,
+  row-level feature extraction, and normalization-time repairs while preserving
+  source text provenance.
+- `ColumnHeaderSchema` is the canonical column-axis artifact. It records leaf
+  columns, row-label columns, spanning header groups, group-to-leaf
+  relationships, raw header evidence, source row/column evidence, and
+  coordinates where available.
+- `TableDefinition` interprets row variables, categorical levels, and semantic
+  column roles from `NormalizedTable` plus `ColumnHeaderSchema`, without
+  extracting values.
+- `ParsedTable` combines the normalized grid, table definition, and value
+  parsing into final structured value records.
+
+## Mandatory Column-Header Rule
+
+`ColumnHeaderSchema` is the only parser-approved mechanism for comparing or
+interpreting columns after normalization.
+
+Every current and future tool that needs column meaning, column compatibility,
+column alignment, grouped-column context, statistic-column detection, observed
+table data-frame construction, R inspection, or LLM prompt context must consume
+`ColumnHeaderSchema` or an explicit typed object derived from it.
+
+Tools must not reconstruct column identity from ad hoc normalized header rows,
+raw string concatenation, positional list names, or locally invented header
+summaries once `ColumnHeaderSchema` is available. If the needed column schema is
+missing or inadequate, the tool should fail closed with a structured diagnostic
+rather than silently comparing or interpreting columns by another method.
+
+This rule is especially important for multicolumn headers. Epidemiology tables
+often use header bands where one visible label spans several lower-level columns,
+where repeated group labels define adjacent blocks, where leaf headers wrap over
+multiple physical rows, or where the row-label column sits outside value-region
+group headers. Continuation pages may also omit or abbreviate those headers.
+Those layouts cannot be interpreted safely by reading a single header row or by
+constructing local string summaries. Tools must use the leaf columns,
+spanning-group records, group-to-leaf relationships, and raw evidence preserved
+in `ColumnHeaderSchema`.
+
+Continuation and table-integration work should treat column alignment as a
+precondition. Once the column-header tool has established compatible columns,
+integration may combine row sequences and preserve row/cell provenance, but row
+integration should not invent a separate column model.
+
+Observed-table and R-side data frames should be materialized after row labels,
+levels, and variable types are settled. Those data frames should keep row and
+cell provenance back to `NormalizedTable` and, where available, `ExtractedTable`,
+while using the column definitions produced from `ColumnHeaderSchema`.
+
+The detailed column schema design lives in:
+
+- `docs/design/column_header_schema.md`
+- `docs/implementation/column_header_schema_implementation_plan.md`
+- `docs/design/paper_parse_walkthrough.md`
+
+## Historical Phase 1 Scaffold
+
+The original scaffold task below is retained for historical context. Current
+parser work should follow the canonical pipeline and column-header rule above.
 
 ---
 
