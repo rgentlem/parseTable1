@@ -257,13 +257,14 @@ build_observed_metadata <- function(table_definition, parsed_table) {
   logi_factors <- variable_type_by_order %in% c("binary", "categorical")
   var_labels <- lapply(variables, function(variable) variable$variable_label)
   names(var_labels) <- variable_order
+  source_tableone <- table_definition$metadata$tableone %||% list()
   list(
-    vars = variable_order,
-    logiFactors = logi_factors,
-    varFactors = variable_order[logi_factors],
-    varNumerics = variable_order[variable_type_by_order == "continuous"],
-    percentMissing = setNames(rep(NA_real_, length(variable_order)), variable_order),
-    varLabels = var_labels,
+    vars = pt1_character_vector(source_tableone$vars %||% variable_order),
+    logiFactors = as.logical(unlist(source_tableone$logiFactors %||% logi_factors, use.names = FALSE)),
+    varFactors = pt1_character_vector(source_tableone$varFactors %||% variable_order[logi_factors]),
+    varNumerics = pt1_character_vector(source_tableone$varNumerics %||% variable_order[variable_type_by_order == "continuous"]),
+    percentMissing = source_tableone$percentMissing %||% setNames(rep(NA_real_, length(variable_order)), variable_order),
+    varLabels = source_tableone$varLabels %||% var_labels,
     variable_order = variable_order,
     variables = variables,
     grouping_label = pt1_character_or_null(column_definition$grouping_label),

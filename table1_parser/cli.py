@@ -12,6 +12,10 @@ from pathlib import Path
 
 from table1_parser.column_header_schema import build_column_header_schemas, column_header_schemas_to_payload
 from table1_parser.config import Settings
+from table1_parser.continued_variable_integration import (
+    build_continued_variable_integrations,
+    continued_variable_integrations_to_payload,
+)
 from table1_parser.context import (
     annotate_visual_reference_checks,
     build_paper_visual_inventory,
@@ -76,6 +80,7 @@ class PaperParseArtifacts:
     merged_table1_tables: list[NormalizedTable]
     table_profiles: list[TableProfile]
     table_definitions: list[TableDefinition]
+    continued_variable_integrations: list[TableDefinition]
     parsed_tables: list[ParsedTable]
     parse_quality_reports: list[ParseQualityReport]
     paper_markdown: str
@@ -399,6 +404,11 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
             )
         )
     table_definitions = build_table_definitions(normalized_tables, column_header_schemas)
+    continued_variable_integrations = build_continued_variable_integrations(
+        normalized_tables,
+        table_definitions,
+        table1_continuation_groups,
+    )
     parsed_tables = build_parsed_tables(normalized_tables, table_definitions)
     paper_markdown = extract_paper_markdown(pdf_path)
     paper_sections = parse_markdown_sections(paper_markdown)
@@ -417,6 +427,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         merged_table1_tables=merged_table1_tables,
         table_profiles=table_profiles,
         table_definitions=table_definitions,
+        continued_variable_integrations=continued_variable_integrations,
         parsed_tables=parsed_tables,
         parse_quality_reports=parse_quality_reports,
         paper_markdown=paper_markdown,
@@ -483,6 +494,7 @@ def _write_parse_outputs(
     merged_table1_output_path = paper_dir / "merged_table1_tables.json"
     table_profile_output_path = paper_dir / "table_profiles.json"
     table_definition_output_path = paper_dir / "table_definitions.json"
+    continued_variable_integration_output_path = paper_dir / "continued_variable_integrations.json"
     parsed_output_path = paper_dir / "parsed_tables.json"
     processing_status_output_path = paper_dir / "table_processing_status.json"
     parse_quality_reports_output_path = paper_dir / "parse_quality_reports.json"
@@ -542,6 +554,14 @@ def _write_parse_outputs(
     )
     table_definition_output_path.write_text(
         json.dumps(table_definitions_to_payload(table_definitions), indent=2) + "\n",
+        encoding="utf-8",
+    )
+    continued_variable_integration_output_path.write_text(
+        json.dumps(
+            continued_variable_integrations_to_payload(artifacts.continued_variable_integrations),
+            indent=2,
+        )
+        + "\n",
         encoding="utf-8",
     )
     parsed_output_path.write_text(

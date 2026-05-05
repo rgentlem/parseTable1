@@ -30,6 +30,7 @@ paper_output_paths <- function(paper_dir) {
     table_continuation_column_checks = file.path(paper_dir, "table_continuation_column_checks.json"),
     merged_table1 = file.path(paper_dir, "merged_table1_tables.json"),
     deterministic = file.path(paper_dir, "table_definitions.json"),
+    continued_variable_integrations = file.path(paper_dir, "continued_variable_integrations.json"),
     parsed = file.path(paper_dir, "parsed_tables.json"),
     processing_status = file.path(paper_dir, "table_processing_status.json"),
     parse_quality_reports = file.path(paper_dir, "parse_quality_reports.json"),
@@ -82,6 +83,7 @@ load_paper_outputs <- function(paper_dir) {
     table_continuation_column_checks = read_optional_json(paths$table_continuation_column_checks),
     merged_table1_tables = read_optional_json(paths$merged_table1),
     table_definitions = read_json_file(paths$deterministic),
+    continued_variable_integrations = read_optional_json(paths$continued_variable_integrations),
     parsed_tables = read_optional_json(paths$parsed),
     table_processing_status = read_optional_json(paths$processing_status),
     parse_quality_reports = read_optional_json(paths$parse_quality_reports),
@@ -685,6 +687,111 @@ summarize_table1_continuations <- function(paper_dir) {
   }
   print(summary_df, row.names = FALSE, right = FALSE)
   invisible(summary_df)
+}
+
+continued_variable_integrations_df <- function(outputs) {
+  integrations <- outputs$continued_variable_integrations %||% list()
+  rows <- lapply(integrations, function(integration) {
+    metadata <- integration$metadata$continued_variable_integration %||% list()
+    decisions <- metadata$boundary_decisions %||% list()
+    data.frame(
+      table_id = as.character(integration$table_id %||% ""),
+      group_id = as.character(metadata$group_id %||% ""),
+      source_table_ids = paste(as.character(unlist(metadata$source_table_ids %||% list())), collapse = " | "),
+      variable_count = as.integer(length(integration$variables %||% list())),
+      boundary_decision_count = as.integer(length(decisions)),
+      attached_level_count = as.integer(sum(vapply(
+        decisions,
+        function(decision) as.integer(decision$attached_level_count %||% 0L),
+        integer(1)
+      ))),
+      diagnostics = paste(as.character(unlist(metadata$diagnostics %||% list())), collapse = " | "),
+      stringsAsFactors = FALSE
+    )
+  })
+  if (length(rows) == 0) {
+    data.frame(
+      table_id = character(),
+      group_id = character(),
+      source_table_ids = character(),
+      variable_count = integer(),
+      boundary_decision_count = integer(),
+      attached_level_count = integer(),
+      diagnostics = character(),
+      stringsAsFactors = FALSE
+    )
+  } else {
+    do.call(rbind, rows)
+  }
+}
+
+summarize_continued_variable_integrations <- function(paper_dir) {
+  outputs <- load_paper_outputs(paper_dir)
+  summary_df <- continued_variable_integrations_df(outputs)
+  cat(sprintf("Continued variable integrations for %s\n\n", outputs$paper_dir))
+  if (nrow(summary_df) == 0) {
+    cat("[No continued variable integrations]\n")
+    return(invisible(summary_df))
+  }
+  print(summary_df, row.names = FALSE, right = FALSE)
+  invisible(summary_df)
+}
+
+show_continued_variable_integration <- function(paper_dir, integration_index = 0L) {
+  outputs <- load_paper_outputs(paper_dir)
+  integrations <- outputs$continued_variable_integrations %||% list()
+  idx <- as.integer(integration_index) + 1L
+  if (idx < 1L || length(integrations) < idx) {
+    stop(sprintf("No continued variable integration found for integration_index=%s.", as.integer(integration_index)), call. = FALSE)
+  }
+  integration <- integrations[[idx]]
+  metadata <- integration$metadata$continued_variable_integration %||% list()
+  cat(sprintf("Continued variable integration %s\n", as.character(metadata$group_id %||% "")))
+  cat(sprintf("table_id: %s\n", as.character(integration$table_id %||% "")))
+  cat(sprintf("sources: %s\n\n", paste(as.character(unlist(metadata$source_table_ids %||% list())), collapse = " | ")))
+
+  cat("Boundary Decisions\n")
+  decisions <- metadata$boundary_decisions %||% list()
+  if (length(decisions) == 0) {
+    cat("[No rows]\n\n")
+  } else {
+    decision_df <- do.call(rbind, lapply(decisions, function(decision) {
+      data.frame(
+        boundary_id = as.character(decision$boundary_id %||% ""),
+        decision = as.character(decision$decision %||% ""),
+        parent_variable_name = as.character(decision$parent_variable_name %||% ""),
+        attached_level_count = as.integer(decision$attached_level_count %||% 0L),
+        reasons = paste(as.character(unlist(decision$reasons %||% list())), collapse = " | "),
+        stringsAsFactors = FALSE
+      )
+    }))
+    print(decision_df, row.names = FALSE, right = FALSE)
+    cat("\n")
+  }
+
+  cat("Variables\n")
+  variables <- table_definition_variables(integration)
+  if (length(variables) == 0) {
+    cat("[No variables]\n")
+  } else {
+    for (variable in variables) {
+      cat(sprintf(
+        "%2d-%2d | %s | %s\n",
+        as.integer(variable$row_start %||% -1L),
+        as.integer(variable$row_end %||% -1L),
+        as.character(variable$variable_type %||% ""),
+        as.character(variable$variable_label %||% variable$variable_name %||% "")
+      ))
+      for (level in variable$levels %||% list()) {
+        cat(sprintf(
+          "      level row %2d | %s\n",
+          as.integer(level$row_idx %||% -1L),
+          as.character(level$level_label %||% level$level_name %||% "")
+        ))
+      }
+    }
+  }
+  invisible(integration)
 }
 
 table_continuation_column_checks_df <- function(outputs) {

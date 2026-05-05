@@ -34,6 +34,7 @@ Today that directory may contain:
 - `table_profiles.json`
 - `paper_table_inventory.json`
 - `table_definitions.json`
+- `continued_variable_integrations.json`
 - `parsed_tables.json`
 - `table_processing_status.json`
 - `parse_quality_reports.json`
@@ -777,8 +778,9 @@ When a parse looks wrong, inspect the outputs in this order.
 2. `normalized_tables.json`
    If the raw grid was usable but header rows, edge trimming, split-value repair, or cleaned text are wrong, the problem is normalization.
 
-3. `table1_continuation_groups.json` and `merged_table1_tables.json`
+3. `table1_continuation_groups.json`, `merged_table1_tables.json`, and `continued_variable_integrations.json`
    If one logical Table 1 spans pages, inspect these to see whether the continuation was detected, whether the schema-derived column headers matched, and how merged rows map back to source rows.
+   The continued-variable artifact concatenates per-fragment `TableDefinition.variables`, reassesses only the continuation boundary, and records row evidence/provenance plus tableone-style metadata.
    Public R inspection should use the paper's `table_number` as the conceptual selector; extraction-order indices are retained only for low-level provenance/debug mapping.
 
 4. `table_continuation_column_checks.json`

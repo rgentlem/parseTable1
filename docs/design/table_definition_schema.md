@@ -105,8 +105,15 @@ Suggested fields:
 - `caption: str | None = None`
 - `variables: list[DefinedVariable] = []`
 - `column_definition: ColumnDefinition`
+- `metadata: dict[str, Any] = {}`
 - `notes: list[str] = []`
 - `overall_confidence: float | None = None`
+
+Notes:
+
+- `metadata` is for stage-specific extensions such as continued-variable
+  integration provenance and tableone-style metadata; core row and column
+  semantics remain in the explicit fields above
 
 ## Why This Shape
 

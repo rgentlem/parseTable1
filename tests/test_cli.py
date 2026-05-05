@@ -144,6 +144,9 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     merged_table1_path = tmp_path / "outputs" / "papers" / "paper" / "merged_table1_tables.json"
     table_profile_path = tmp_path / "outputs" / "papers" / "paper" / "table_profiles.json"
     table_definition_path = tmp_path / "outputs" / "papers" / "paper" / "table_definitions.json"
+    continued_variable_integrations_path = (
+        tmp_path / "outputs" / "papers" / "paper" / "continued_variable_integrations.json"
+    )
     parsed_path = tmp_path / "outputs" / "papers" / "paper" / "parsed_tables.json"
     processing_status_path = tmp_path / "outputs" / "papers" / "paper" / "table_processing_status.json"
     parse_quality_reports_path = tmp_path / "outputs" / "papers" / "paper" / "parse_quality_reports.json"
@@ -165,6 +168,7 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     assert merged_table1_path.exists()
     assert table_profile_path.exists()
     assert table_definition_path.exists()
+    assert continued_variable_integrations_path.exists()
     assert parsed_path.exists()
     assert processing_status_path.exists()
     assert parse_quality_reports_path.exists()
@@ -185,6 +189,7 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     assert json.loads(merged_table1_path.read_text(encoding="utf-8")) == []
     assert json.loads(table_profile_path.read_text(encoding="utf-8"))[0]["table_id"] == "tbl-1"
     assert json.loads(table_definition_path.read_text(encoding="utf-8"))[0]["table_id"] == "tbl-1"
+    assert json.loads(continued_variable_integrations_path.read_text(encoding="utf-8")) == []
     assert json.loads(parsed_path.read_text(encoding="utf-8"))[0]["table_id"] == "tbl-1"
     assert json.loads(processing_status_path.read_text(encoding="utf-8"))[0]["table_id"] == "tbl-1"
     parse_quality_payload = json.loads(parse_quality_reports_path.read_text(encoding="utf-8"))

@@ -78,6 +78,7 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Table routing | `TableProfile` | Written now as `table_profiles.json` by `parse` | Persist provisional deterministic parser-route decisions |
 | Paper table inventory | `PaperTableInventory`, `PaperTableRecord` | Written now as `paper_table_inventory.json` by `parse` | Persist one deterministic taxonomy prediction per table-like object |
 | Table definition | `TableDefinition` | Written now as `table_definitions.json` by `parse` | Persist value-free row-variable, level, and column semantics |
+| Continued variable integration | `TableDefinition` | Written now as `continued_variable_integrations.json` by `parse` | Persist integrated variable definitions for compatible continued Table 1 fragments, using existing `DefinedVariable`/`DefinedLevel` records plus integration and tableone-style metadata |
 | Paper context | `PaperSection`, `PaperVisual`, `PaperVisualReference`, `TableContext` | Written now as `paper_markdown.md`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, and `table_contexts/*.json` by `parse` | Persist markdown sections, actual in-paper visual objects, anchored table/figure references, and per-table retrieval bundles, with only conservative glyph repair in the markdown text |
 | Paper variable inventory | `PaperVariableInventory`, `VariableMention`, `VariableCandidate` | Written now as `paper_variable_inventory.json` by `parse` | Persist the paper-level candidate variable reference list with explicit text/table provenance |
 | Variable-plausibility LLM review | `LLMVariablePlausibilityTableReview` | Written now as `table_variable_plausibility_llm.json` by `review-variable-plausibility` when LLM config is available | Persist table-local QA scores for variable label/type/level plausibility without rewriting the deterministic definition |
@@ -383,6 +384,7 @@ Current CLI paths:
 outputs/papers/<paper_stem>/table1_continuation_groups.json
 outputs/papers/<paper_stem>/table_continuation_column_checks.json
 outputs/papers/<paper_stem>/merged_table1_tables.json
+outputs/papers/<paper_stem>/continued_variable_integrations.json
 ```
 
 Canonical models:
@@ -397,6 +399,8 @@ Design components:
   records explicit and strongly inferred Table 1 continuation candidates, their source table indices, source table IDs, schema-derived column headers, decision reasons, and merge/skip diagnostics
 - `merged_table1_tables.json`
   records one merged `NormalizedTable` per accepted group, preserving normalized cleaned rows and source-row provenance in `metadata.table1_continuation_merge`
+- `continued_variable_integrations.json`
+  records one integrated `TableDefinition` per compatible continuation group, preserving integrated variables, boundary decisions, row provenance, and tableone-style metadata in `metadata`
 
 Design intent:
 
@@ -405,7 +409,7 @@ Design intent:
 - require compatible schema-derived column headers before writing a merged table artifact
 - ignore non-Table 1 continuations, including later result tables that happen to span pages
 - preserve source table IDs and row indices so the merged view is auditable from the original `normalized_tables.json`
-- keep the merge artifact inspection-only until a later change deliberately wires it into semantic parsing
+- keep the merged-row and integrated-variable artifacts inspection-only until a later change deliberately wires them into value parsing
 - avoid changing existing `table_definitions.json`, `parsed_tables.json`, or `table_processing_status.json` behavior as a side effect
 
 The merged normalized table keeps the base table rows and appends continuation body rows after dropping continuation-only header/title rows. Its row indices are local to the merged artifact, while provenance records map each merged row back to the original table ID and original row index.
@@ -466,6 +470,7 @@ Top-level design components:
 - `table_id`, `title`, `caption`
 - `variables`
 - `column_definition`
+- `metadata`
 - `notes`
 - `overall_confidence`
 

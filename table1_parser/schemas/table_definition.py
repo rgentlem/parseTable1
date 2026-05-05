@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -67,5 +67,6 @@ class TableDefinition(BaseModel):
     caption: str | None = None
     variables: list[DefinedVariable] = Field(default_factory=list)
     column_definition: ColumnDefinition
+    metadata: dict[str, Any] = Field(default_factory=dict)
     notes: list[str] = Field(default_factory=list)
     overall_confidence: float | None = Field(default=None, ge=0.0, le=1.0)

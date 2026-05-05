@@ -33,8 +33,10 @@ Public functions:
 - `show_table_processing(paper_dir, table_number = 1L)`
 - `show_parse_quality(paper_dir, table_number = 1L)`
 - `summarize_table1_continuations(paper_dir)`
+- `summarize_continued_variable_integrations(paper_dir)`
 - `summarize_table_continuation_column_checks(paper_dir)`
 - `show_table_continuation_column_check(paper_dir, check_index = 0L)`
+- `show_continued_variable_integration(paper_dir, integration_index = 0L)`
 - `show_merged_table1(paper_dir, group_index = 0L, max_rows = 30L)`
 - `show_paper_variable_mentions(paper_dir, role_hint = NULL, source_type = NULL, mention_role = NULL)`
 - `show_paper_variable_candidates(paper_dir, min_priority = NULL)`
@@ -68,6 +70,7 @@ show_paper_table_inventory("outputs/papers/cobaltpaper")
 show_table_processing("outputs/papers/cobaltpaper", table_number = 1L)
 show_parse_quality("outputs/papers/cobaltpaper", table_number = 1L)
 summarize_table1_continuations("outputs/papers/cobaltpaper")
+summarize_continued_variable_integrations("outputs/papers/cobaltpaper")
 summarize_table_continuation_column_checks("outputs/papers/cobaltpaper")
 show_table_continuation_column_check("outputs/papers/cobaltpaper", check_index = 0L)
 show_merged_table1("outputs/papers/cobaltpaper", group_index = 0L, max_rows = 20L)
@@ -123,6 +126,10 @@ What these are for:
   return a named list with one table-taxonomy data frame per paper directory
 - `summarize_table1_continuations(...)`
   print one row per detected Table 1 continuation group, including merge/skip decision and source table IDs
+- `summarize_continued_variable_integrations(...)`
+  print one row per integrated continued-variable artifact, including source tables, boundary decision count, attached level count, and diagnostics
+- `show_continued_variable_integration(...)`
+  print boundary decisions and integrated variables for one continued-variable artifact
 - `summarize_table_continuation_column_checks(...)`
   print one row per explicit demographic-description continuation column check, including column-count, schema-derived column-header status, and overall compatibility status
 - `show_table_continuation_column_check(...)`
@@ -151,6 +158,7 @@ What these are for:
 - `parse_quality_reports`
 - `paper_table_inventory`
 - `table1_continuation_groups`
+- `continued_variable_integrations`
 - `table_continuation_column_checks`
 - `merged_table1_tables`
 - `table_variable_plausibility_llm`

@@ -1353,3 +1353,83 @@ def test_r_observed_table_one_from_paper_dir_includes_processing_status_provenan
     assert "\n1 \n" in result.stdout
     assert "failure_stage: parsed_table" in result.stdout
     assert "failure_reason: no_values_after_parse" in result.stdout
+
+
+def test_r_inspection_shows_continued_variable_integration(tmp_path) -> None:
+    """The R helper should print continued-variable integration boundary decisions."""
+    if not _r_dependencies_available():
+        return
+
+    paper_dir = tmp_path / "continued_variables" / "papers" / "paper"
+    _write_sample_paper_outputs(paper_dir, include_variable_review=False, include_processing_status=True)
+    _write_json(
+        paper_dir / "continued_variable_integrations.json",
+        [
+            {
+                "table_id": "tbl-1-continued-variable-integration",
+                "title": "Table 1",
+                "caption": "Baseline characteristics by DKD status",
+                "variables": [
+                    _make_variable(
+                        "Race",
+                        "Race, n (%)",
+                        "categorical",
+                        1,
+                        3,
+                        levels=[
+                            {"level_name": "White", "level_label": "White", "row_idx": 2},
+                            {"level_name": "Black", "level_label": "Black", "row_idx": 3},
+                        ],
+                    )
+                ],
+                "column_definition": {"columns": [_make_column(1, "Overall", "Overall", "overall")]},
+                "metadata": {
+                    "continued_variable_integration": {
+                        "group_id": "table1_continuation_0",
+                        "source_table_ids": ["tbl-1", "tbl-1-cont"],
+                        "boundary_decisions": [
+                            {
+                                "boundary_id": "continued_variable_boundary:0:1",
+                                "decision": "attached_levels",
+                                "parent_variable_name": "Race",
+                                "attached_level_count": 2,
+                                "reasons": ["leading_continuation_variables_rewritten_as_levels"],
+                            }
+                        ],
+                        "diagnostics": ["attached_continuation_levels:base=0:continuation=1:parent=Race:levels=2"],
+                    },
+                    "tableone": {
+                        "vars": ["Race"],
+                        "logiFactors": [True],
+                        "varFactors": ["Race"],
+                        "varNumerics": [],
+                        "varLabels": {"Race": "Race, n (%)"},
+                    },
+                },
+                "notes": [],
+                "overall_confidence": 0.86,
+            }
+        ],
+    )
+
+    result = subprocess.run(
+        [
+            "Rscript",
+            "-e",
+            (
+                f'source("{R_SCRIPT}"); '
+                f'summarize_continued_variable_integrations("{paper_dir}"); '
+                f'show_continued_variable_integration("{paper_dir}", integration_index = 0L)'
+            ),
+        ],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "continued variable integrations" in result.stdout.lower()
+    assert "attached_levels" in result.stdout
+    assert "Race, n (%)" in result.stdout
+    assert "level row  2 | White" in result.stdout
