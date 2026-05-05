@@ -147,6 +147,7 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     paper_visual_inventory_path = tmp_path / "outputs" / "papers" / "paper" / "paper_visual_inventory.json"
     paper_references_path = tmp_path / "outputs" / "papers" / "paper" / "paper_references.json"
     paper_variable_inventory_path = tmp_path / "outputs" / "papers" / "paper" / "paper_variable_inventory.json"
+    paper_table_inventory_path = tmp_path / "outputs" / "papers" / "paper" / "paper_table_inventory.json"
     table_context_path = tmp_path / "outputs" / "papers" / "paper" / "table_contexts" / "table_0_context.json"
 
     assert exit_code == 0
@@ -165,6 +166,7 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     assert paper_visual_inventory_path.exists()
     assert paper_references_path.exists()
     assert paper_variable_inventory_path.exists()
+    assert paper_table_inventory_path.exists()
     assert table_context_path.exists()
     assert json.loads(extracted_path.read_text(encoding="utf-8"))[0]["table_id"] == "tbl-1"
     assert json.loads(normalized_path.read_text(encoding="utf-8"))[0]["table_id"] == "tbl-1"
@@ -185,6 +187,10 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     assert visual_payload[0]["reference_check_status"] == "no_text_reference"
     assert json.loads(paper_references_path.read_text(encoding="utf-8")) == []
     assert json.loads(paper_variable_inventory_path.read_text(encoding="utf-8"))["paper_id"] == "paper"
+    table_inventory_payload = json.loads(paper_table_inventory_path.read_text(encoding="utf-8"))
+    assert table_inventory_payload["paper_id"] == "paper"
+    assert table_inventory_payload["tables"][0]["table_id"] == "tbl-1"
+    assert table_inventory_payload["tables"][0]["table_category"] == "demographic_description"
     assert json.loads(table_context_path.read_text(encoding="utf-8"))["table_id"] == "tbl-1"
     assert captured.out == ""
 

@@ -60,6 +60,39 @@ pt1_pick_table_by_index <- function(x, table_index = 0L) {
   x[[index]]
 }
 
+pt1_table_number_for_table <- function(table) {
+  metadata <- table$metadata %||% list()
+  signals <- metadata$signals %||% list()
+  value <- metadata$table_number %||% signals$caption_table_number %||% NULL
+  if (is.null(value) || length(value) == 0 || is.na(value)) {
+    text <- paste(
+      as.character(table$title %||% ""),
+      as.character(table$caption %||% ""),
+      sep = " "
+    )
+    match <- regexpr("\\b[Tt]able\\s+([0-9]+)\\b", text, perl = TRUE)
+    if (match < 0L) {
+      return(NA_integer_)
+    }
+    matched <- regmatches(text, match)
+    return(as.integer(sub(".*\\b[Tt]able\\s+([0-9]+)\\b.*", "\\1", matched, perl = TRUE)))
+  }
+  as.integer(value)
+}
+
+pt1_table_index_by_number <- function(tables, table_number) {
+  requested <- as.integer(table_number)
+  matches <- which(vapply(
+    tables %||% list(),
+    function(x) identical(pt1_table_number_for_table(x), requested),
+    logical(1)
+  ))
+  if (length(matches) == 0) {
+    stop(sprintf("No table found for table_number=%s.", requested), call. = FALSE)
+  }
+  as.integer(matches[[1]] - 1L)
+}
+
 pt1_is_statistic_role <- function(role) {
   role %in% c("p_value", "smd", "statistic")
 }
@@ -408,7 +441,7 @@ build_observed_table_one <- function(table_definition, parsed_table, normalized_
   )
 }
 
-build_observed_table_one_from_paper_dir <- function(paper_dir, table_index = 0L) {
+build_observed_table_one_from_paper_dir <- function(paper_dir, table_number = 1L, table_index = NULL) {
   paper_dir <- normalizePath(paper_dir, winslash = "/", mustWork = TRUE)
   table_definitions_path <- file.path(paper_dir, "table_definitions.json")
   parsed_tables_path <- file.path(paper_dir, "parsed_tables.json")
@@ -421,13 +454,29 @@ build_observed_table_one_from_paper_dir <- function(paper_dir, table_index = 0L)
   processing_status_payload <- pt1_read_optional_json(processing_status_path)
   normalized_table_list <- if (is.null(normalized_tables)) list() else pt1_unwrap_table_array(normalized_tables)
   processing_status_list <- if (is.null(processing_status_payload)) list() else pt1_unwrap_table_array(processing_status_payload)
+  resolved_table_index <- if (!is.null(table_index)) {
+    as.integer(table_index)
+  } else if (!is.null(table_number)) {
+    if (length(normalized_table_list) > 0) {
+      pt1_table_index_by_number(normalized_table_list, table_number)
+    } else {
+      pt1_table_index_by_number(table_definitions, table_number)
+    }
+  } else {
+    stop("Provide table_number for public construction, or table_index for low-level debugging.", call. = FALSE)
+  }
 
-  table_definition <- pt1_pick_table_by_index(table_definitions, table_index)
-  parsed_table <- pt1_pick_table_by_index(parsed_tables, table_index)
-  normalized_table <- if (length(normalized_table_list) > as.integer(table_index)) {
-    pt1_pick_table_by_index(normalized_table_list, table_index)
+  table_definition <- pt1_pick_table_by_index(table_definitions, resolved_table_index)
+  parsed_table <- pt1_pick_table_by_index(parsed_tables, resolved_table_index)
+  normalized_table <- if (length(normalized_table_list) > as.integer(resolved_table_index)) {
+    pt1_pick_table_by_index(normalized_table_list, resolved_table_index)
   } else {
     NULL
+  }
+  resolved_table_number <- if (!is.null(normalized_table)) {
+    pt1_table_number_for_table(normalized_table)
+  } else {
+    pt1_table_number_for_table(table_definition)
   }
   processing_status <- NULL
   if (length(processing_status_list) > 0) {
@@ -440,8 +489,8 @@ build_observed_table_one_from_paper_dir <- function(paper_dir, table_index = 0L)
     )
     if (length(matching_statuses) > 0) {
       processing_status <- matching_statuses[[1]]
-    } else if (length(processing_status_list) > as.integer(table_index)) {
-      processing_status <- pt1_pick_table_by_index(processing_status_list, table_index)
+    } else if (length(processing_status_list) > as.integer(resolved_table_index)) {
+      processing_status <- pt1_pick_table_by_index(processing_status_list, resolved_table_index)
     }
   }
 
@@ -451,7 +500,7 @@ build_observed_table_one_from_paper_dir <- function(paper_dir, table_index = 0L)
     normalized_table = normalized_table,
     provenance = list(
       paper_dir = paper_dir,
-      table_index = as.integer(table_index),
+      table_number = resolved_table_number,
       table_definition_source = table_definitions_path,
       parsed_table_source = parsed_tables_path,
       normalized_table_source = if (file.exists(normalized_tables_path)) normalized_tables_path else NULL,

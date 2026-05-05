@@ -13,6 +13,7 @@ from table1_parser.schemas.paper_variable_inventory import (
     VariableMention,
     VariableMentionRole,
 )
+from table1_parser.schemas.paper_table_inventory import PaperTableInventory, PaperTableRecord, TableCategory
 from table1_parser.schemas.paper_visual_references import PaperVisual, PaperVisualReference
 from table1_parser.schemas.parsed_table import (
     ParsedColumn,
@@ -38,6 +39,8 @@ __all__ = [
     "LLMVariablePlausibilityMonitoringReport",
     "NormalizedTable",
     "PaperSection",
+    "PaperTableInventory",
+    "PaperTableRecord",
     "PaperVariableInventory",
     "ColumnDefinition",
     "DefinedColumn",
@@ -56,6 +59,7 @@ __all__ = [
     "Table1ContinuationGroup",
     "Table1ContinuationMember",
     "TableCell",
+    "TableCategory",
     "TableProcessingAttempt",
     "TableProcessingStatus",
     "VariableCandidate",

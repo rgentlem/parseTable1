@@ -16,22 +16,23 @@ if (!exists("load_paper_outputs", mode = "function")) {
   source(helper_path)
 }
 
-compare_normalized_rows_to_definition <- function(paper_dir, table_index = 1L) {
-  table_index <- as.integer(table_index)
-  if (is.na(table_index) || table_index < 1L) {
-    stop("table_index must be a positive one-based index.", call. = FALSE)
-  }
-
+compare_normalized_rows_to_definition <- function(paper_dir, table_number = 1L, table_index = NULL) {
   outputs <- load_paper_outputs(paper_dir)
-  if (length(outputs$normalized_tables) < table_index) {
-    stop(sprintf("No normalized table found at table_index=%s.", table_index), call. = FALSE)
+  resolved_index <- if (!is.null(table_index)) {
+    as.integer(table_index) - 1L
+  } else {
+    resolve_table_index(outputs, table_number = table_number)
   }
-  if (length(outputs$table_definitions) < table_index) {
-    stop(sprintf("No table definition found at table_index=%s.", table_index), call. = FALSE)
+  list_position <- as.integer(resolved_index) + 1L
+  if (length(outputs$normalized_tables) < list_position) {
+    stop(sprintf("No normalized table found for table_number=%s.", as.integer(table_number)), call. = FALSE)
+  }
+  if (length(outputs$table_definitions) < list_position) {
+    stop(sprintf("No table definition found for table_number=%s.", as.integer(table_number)), call. = FALSE)
   }
 
-  normalized_table <- outputs$normalized_tables[[table_index]]
-  definition <- outputs$table_definitions[[table_index]]
+  normalized_table <- outputs$normalized_tables[[list_position]]
+  definition <- outputs$table_definitions[[list_position]]
 
   row_views <- normalized_table$row_views %||% list()
   row_view_map <- setNames(

@@ -404,6 +404,24 @@ def _write_sample_paper_outputs(
             }
         ],
     }
+    paper_table_inventory = {
+        "paper_id": "paper",
+        "tables": [
+            {
+                "table_id": "tbl-1",
+                "table_number": 1,
+                "title": "Table 1",
+                "caption": "Baseline characteristics by DKD status",
+                "table_category": "demographic_description",
+                "category_confidence": 0.85,
+                "category_evidence": ["caption_or_title_mentions_population_description"],
+                "continuation_of_table_number": None,
+                "table_family": "descriptive_characteristics",
+                "processing_status": "ok",
+                "failure_reason": None,
+            }
+        ],
+    }
     table_context = {
         "table_id": "tbl-1",
         "table_index": 0,
@@ -493,6 +511,7 @@ def _write_sample_paper_outputs(
     _write_json(paper_dir / "paper_visual_inventory.json", paper_visual_inventory)
     _write_json(paper_dir / "paper_references.json", paper_references)
     _write_json(paper_dir / "paper_variable_inventory.json", paper_variable_inventory)
+    _write_json(paper_dir / "paper_table_inventory.json", paper_table_inventory)
     _write_json(context_dir / "table_0_context.json", table_context)
 
     if include_processing_status:
@@ -631,6 +650,37 @@ def test_r_inspection_loads_and_shows_paper_variable_inventory(tmp_path) -> None
     assert "Age" in result.stdout
 
 
+def test_r_inspection_loads_and_shows_paper_table_inventory(tmp_path) -> None:
+    """The R helper should load and print paper table taxonomy predictions."""
+    if not _r_dependencies_available():
+        return
+
+    paper_dir = tmp_path / "paper_table_inventory" / "papers" / "paper"
+    _write_sample_paper_outputs(paper_dir, include_variable_review=False, include_processing_status=True)
+
+    result = subprocess.run(
+        [
+            "Rscript",
+            "-e",
+            (
+                f'source("{R_SCRIPT}"); '
+                f'outputs <- load_paper_outputs("{paper_dir}"); '
+                "print(paper_table_inventory_df(outputs)); "
+                f'show_paper_table_inventory("{paper_dir}")'
+            ),
+        ],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "Paper table inventory" in result.stdout
+    assert "demographic_description" in result.stdout
+    assert "table_number" in result.stdout
+
+
 def test_r_inspection_loads_and_shows_paper_visual_references(tmp_path) -> None:
     """The R helper should load and print paper visual inventory and references."""
     if not _r_dependencies_available():
@@ -643,12 +693,12 @@ def test_r_inspection_loads_and_shows_paper_visual_references(tmp_path) -> None:
         [
             "Rscript",
             "-e",
-            (
-                f'source("{R_SCRIPT}"); '
-                f'show_paper_visuals("{paper_dir}", visual_kind = "figure"); '
-                f'show_paper_references("{paper_dir}", resolution_status = "resolved"); '
-                f'show_table_context("{paper_dir}", table_index = 0L)'
-            ),
+                (
+                    f'source("{R_SCRIPT}"); '
+                    f'show_paper_visuals("{paper_dir}", visual_kind = "figure"); '
+                    f'show_paper_references("{paper_dir}", resolution_status = "resolved"); '
+                    f'show_table_context("{paper_dir}", table_number = 1L)'
+                ),
         ],
         capture_output=True,
         text=True,
@@ -662,6 +712,7 @@ def test_r_inspection_loads_and_shows_paper_visual_references(tmp_path) -> None:
     assert "Paper references" in result.stdout
     assert "paper_ref:section_0:p0:r0" in result.stdout
     assert "Reference IDs" in result.stdout
+    assert "Table context for table_number=1" in result.stdout
 
 
 def test_r_inspection_loads_processing_status_and_summarizes_tables(tmp_path) -> None:
@@ -690,6 +741,7 @@ def test_r_inspection_loads_processing_status_and_summarizes_tables(tmp_path) ->
     assert result.returncode == 0, result.stderr
     assert "Table processing summary" in result.stdout
     assert "tbl-1" in result.stdout
+    assert "table_number" in result.stdout
     assert "ok" in result.stdout
     assert "descriptive_characteristics" in result.stdout
     assert "quality_column_warning_count" in result.stdout
@@ -707,12 +759,12 @@ def test_r_inspection_loads_and_shows_parse_quality_reports(tmp_path) -> None:
         [
             "Rscript",
             "-e",
-            (
-                f'source("{R_SCRIPT}"); '
-                f'outputs <- load_paper_outputs("{paper_dir}"); '
-                f'print(length(outputs$parse_quality_reports)); '
-                f'show_parse_quality("{paper_dir}", table_index = 0L)'
-            ),
+                (
+                    f'source("{R_SCRIPT}"); '
+                    f'outputs <- load_paper_outputs("{paper_dir}"); '
+                    f'print(length(outputs$parse_quality_reports)); '
+                    f'show_parse_quality("{paper_dir}", table_number = 1L)'
+                ),
         ],
         capture_output=True,
         text=True,
@@ -722,7 +774,7 @@ def test_r_inspection_loads_and_shows_parse_quality_reports(tmp_path) -> None:
 
     assert result.returncode == 0, result.stderr
     assert "[1] 1" in result.stdout
-    assert "Parse quality" in result.stdout
+    assert "Parse quality for table_number=1" in result.stdout
     assert "Table Diagnostics" in result.stdout
     assert "Column Diagnostics" in result.stdout
     assert "header_rule_content_disagreement" in result.stdout
@@ -795,11 +847,11 @@ def test_r_inspection_shows_failed_table_processing_and_structure_header(tmp_pat
         [
             "Rscript",
             "-e",
-            (
-                f'source("{R_SCRIPT}"); '
-                f'show_table_processing("{paper_dir}", table_index = 0L); '
-                f'show_table_structure("{paper_dir}", table_index = 0L)'
-            ),
+                (
+                    f'source("{R_SCRIPT}"); '
+                    f'show_table_processing("{paper_dir}", table_number = 1L); '
+                    f'show_table_structure("{paper_dir}", table_number = 1L)'
+                ),
         ],
         capture_output=True,
         text=True,
@@ -809,6 +861,8 @@ def test_r_inspection_shows_failed_table_processing_and_structure_header(tmp_pat
 
     assert result.returncode == 0, result.stderr
     assert "failure_reason: no_values_after_parse" in result.stdout
+    assert "Table processing for table_number=1" in result.stdout
+    assert "table_number: 1" in result.stdout
     assert "Rows" in result.stdout
     assert "Variables" in result.stdout
     assert "Age, years" in result.stdout
@@ -826,10 +880,10 @@ def test_r_inspection_loads_without_processing_status(tmp_path) -> None:
         [
             "Rscript",
             "-e",
-            (
-                f'source("{R_SCRIPT}"); '
-                f'show_table_structure("{paper_dir}", table_index = 0L)'
-            ),
+                (
+                    f'source("{R_SCRIPT}"); '
+                    f'show_table_structure("{paper_dir}", table_number = 1L)'
+                ),
         ],
         capture_output=True,
         text=True,
@@ -854,12 +908,12 @@ def test_r_inspection_shows_variable_plausibility_review(tmp_path) -> None:
         [
             "Rscript",
             "-e",
-            (
-                f'source("{R_SCRIPT}"); '
-                f'x <- load_paper_outputs("{paper_dir}"); '
-                'print(llm_variable_plausibility_df(x)); '
-                f'show_llm_variable_plausibility("{paper_dir}", table_index = 0L)'
-            ),
+                (
+                    f'source("{R_SCRIPT}"); '
+                    f'x <- load_paper_outputs("{paper_dir}"); '
+                    'print(llm_variable_plausibility_df(x)); '
+                    f'show_llm_variable_plausibility("{paper_dir}", table_number = 1L)'
+                ),
         ],
         capture_output=True,
         text=True,
@@ -869,6 +923,7 @@ def test_r_inspection_shows_variable_plausibility_review(tmp_path) -> None:
 
     assert result.returncode == 0, result.stderr
     assert "plausibility_score" in result.stdout
+    assert "table_number" in result.stdout
     assert "Variable Plausibility Review" in result.stdout
     assert "Sex" in result.stdout
     assert "levels:" in result.stdout
@@ -876,8 +931,8 @@ def test_r_inspection_shows_variable_plausibility_review(tmp_path) -> None:
     assert "score=0.970" in result.stdout
 
 
-def test_r_compare_normalized_rows_to_definition_supports_one_based_table_index(tmp_path) -> None:
-    """The standalone R helper should compare normalized labels to definition labels for any saved table."""
+def test_r_compare_normalized_rows_to_definition_supports_table_number(tmp_path) -> None:
+    """The standalone R helper should compare normalized labels to definition labels by paper table number."""
     if not _r_dependencies_available():
         return
 
@@ -996,10 +1051,10 @@ def test_r_compare_normalized_rows_to_definition_supports_one_based_table_index(
         [
             "Rscript",
             "-e",
-            (
-                f'source("{R_COMPARE_SCRIPT}"); '
-                f'compare_normalized_rows_to_definition("{paper_dir}", table_index = 2L)'
-            ),
+                (
+                    f'source("{R_COMPARE_SCRIPT}"); '
+                    f'compare_normalized_rows_to_definition("{paper_dir}", table_number = 2L)'
+                ),
         ],
         capture_output=True,
         text=True,
@@ -1067,12 +1122,13 @@ def test_r_observed_table_one_from_paper_dir_includes_processing_status_provenan
         [
             "Rscript",
             "-e",
-            (
-                f'source("{R_JSON_IO_SCRIPT}"); '
-                f'source("{R_OBSERVED_SCRIPT}"); '
-                f'x <- build_observed_table_one_from_paper_dir("{paper_dir}", table_index = 0L); '
-                'print(x); '
-                'cat(x$provenance$processing_status, "\\n"); '
+                (
+                    f'source("{R_JSON_IO_SCRIPT}"); '
+                    f'source("{R_OBSERVED_SCRIPT}"); '
+                    f'x <- build_observed_table_one_from_paper_dir("{paper_dir}", table_number = 1L); '
+                    'print(x); '
+                    'cat(x$provenance$table_number, "\\n"); '
+                    'cat(x$provenance$processing_status, "\\n"); '
                 'cat(x$provenance$failure_stage, "\\n"); '
                 'cat(x$provenance$failure_reason, "\\n")'
             ),
@@ -1085,5 +1141,6 @@ def test_r_observed_table_one_from_paper_dir_includes_processing_status_provenan
 
     assert result.returncode == 0, result.stderr
     assert "processing status: failed" in result.stdout
+    assert "\n1 \n" in result.stdout
     assert "failure_stage: parsed_table" in result.stdout
     assert "failure_reason: no_values_after_parse" in result.stdout
