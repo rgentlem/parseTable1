@@ -33,6 +33,9 @@ Then use the documents below as needed.
 - `docs/design/separated_variable_description_integration.md`
   Succinct design for integrating variable labels and levels split across compatible continued table fragments.
 
+- `docs/implementation/continued_variable_integration_implementation_spec.md`
+  Concrete implementation spec for the continued-table variable integration artifact, boundary reinterpretation algorithm, provenance, CLI output, R inspection, and tests.
+
 - `docs/design/column_header_schema.md`
   Design for a parser-native column header tree / column schema artifact between `NormalizedTable` and `TableDefinition`, preserving leaf columns, spanning header groups, raw cell evidence, and coordinates before downstream semantic projection or stored tableone-style summary rendering.
 

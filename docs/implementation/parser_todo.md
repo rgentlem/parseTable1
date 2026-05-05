@@ -17,6 +17,8 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
 2. [ ] Make continuations semantically real.
    One logical Table 1 spanning pages should feed `TableDefinition` and `ParsedTable`, rather than leaving page-level and continuation-page parses as separate semantic outputs.
    Design note: `docs/design/table_continuation_resolution.md`.
+   Variable integration design: `docs/design/separated_variable_description_integration.md`.
+   Implementation spec: `docs/implementation/continued_variable_integration_implementation_spec.md`.
    First diagnostic step implemented: `table_continuation_column_checks.json` checks explicit and narrow inferred uncaptained adjacent-page `demographic_description` continuations for column count and schema-derived column-header compatibility without changing parser inputs. `table1_continuation_groups.json` can also report an uncaptained next-page Table 1 fragment, but merged artifacts are still inspection-only and are skipped when normalized columns or schema-derived column headers are incompatible.
    Follow-up: Planetary Health Table 1 now exposes its uncaptained next-page fragment as a continuation candidate, its wrapped lowercase caption tail is kept in the caption instead of table row zero, the top value-region group labels are recovered using the internal header rule plus a large geometry gap, and the base page uses early stable value anchors to preserve the visible 9-column structure. Merged continuation artifacts remain inspection-only; making them feed semantic parsing is still separate continuation-resolution work.
 
