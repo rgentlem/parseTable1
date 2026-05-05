@@ -1,22 +1,28 @@
 # Separated Variable Description Integration
 
-Prerequisite: run only for Table X / Table X continued pairs whose
-`ColumnHeaderSchema` comparison has passed.
+Prerequisite: run only for continued-table pairs whose `ColumnHeaderSchema` comparison has passed.
 
-## Canonical Inputs
+## Stage
 
-Use the table-structure representation returned by:
+Run after per-fragment normalization and deterministic variable extraction.
+Run before value-frame construction and before any LLM inference.
+
+Do not parse display text. Use the object shape exposed by:
 
 ```r
 show_table_structure(paper_dir, table_index = 0L)
 ```
 
-The integration input is:
+Canonical inputs:
 
 - `columns`
 - `variables`
 
-`variables` are the canonical `TableDefinition` variable records:
+`columns` are post-normalization column records from the canonical header
+projection. After the prerequisite passes, keep the base columns as the logical
+column set for the integrated table.
+
+`variables` are `TableDefinition` records with:
 
 - `variable_name`
 - `variable_label`
@@ -28,69 +34,67 @@ The integration input is:
 - `units_hint`
 - `confidence`
 
-`levels` preserve:
+Each level preserves `level_name`, `level_label`, `row_idx`, and `confidence`.
 
-- `level_name`
-- `level_label`
-- `row_idx`
+## Output
+
+Return an integrated variable-description artifact:
+
+- `source_table_ids`
+- `columns`
+- `variables`
+- `row_provenance`
+- `integration_boundaries`
+- `diagnostics`
 - `confidence`
 
-## Target Shape
+Each provenance record should include source table index/ID, source row index,
+integrated row index, page number when available, original variable or level
+name when available, and structural row evidence needed at the boundary:
+indentation, row role, nonempty/value-cell counts, and first-cell text.
 
-Adopt the `../tableone` style early:
+The downstream observed object should keep the `../tableone` style:
 
-- `ContTable`: observed continuous variable rows and values
+- `ContTable`: observed continuous rows and values
 - `CatTable`: observed categorical variables, printed levels, and values
 - `MetaData`: `vars`, `logiFactors`, `varFactors`, `varNumerics`,
-  `varLabels`, plus parser provenance
+  `varLabels`, and parser provenance
 
-This is an observed-table object, not a reconstruction of subject-level data.
+## Integration Task
 
-## Task
-
-1. Extract variables from Table X.
-
-2. Extract variables from Table X continued.
-
-3. Find the trailing open variable in Table X:
-   - categorical or unknown
-   - parent-like row
-   - no levels or incomplete levels
-   - row span reaches the fragment end
-
-4. Find leading continuation levels:
-   - level-like rows at the start of Table X continued
-   - weak or missing parent label
-   - better interpreted as levels than standalone variables
-
-5. Attach leading continuation levels to the open variable.
-
-6. Update the integrated variable:
-   - keep Table X `variable_name` and `variable_label`
-   - append continuation levels in source order
-   - set `row_end` to the last attached level
+1. Read variables from Table X.
+2. Read variables from Table X continued.
+3. Concatenate the two variable lists in source order, preserving source table
+   and row provenance for every variable and level.
+4. Reassess only the boundary between the fragments.
+5. Ask whether the concatenated sequence changes the interpretation of the last
+   base variable or the first continuation variables.
+6. If the last base variable is a categorical parent and the first continuation
+   variables are its levels, rewrite those continuation variables as levels.
+7. Stop rewriting as soon as the continuation reaches a true new variable.
+8. When rewriting a parent:
+   - keep base `variable_name` and `variable_label`
+   - append levels in source order
+   - extend `row_end`
    - set `variable_type = "categorical"` when levels are attached
-   - preserve source provenance for each row
-
-7. Keep unmatched continuation variables as new variables.
-
-8. Return:
-   - integrated `variables`
-   - unchanged `columns`
-   - source-row provenance
-   - diagnostics
+   - preserve every source row in provenance
+9. Leave all non-boundary variables unchanged.
+10. Recompute variable order and tableone-style metadata from the integrated
+   variable list.
 
 ## Reject Attachment When
 
-- no open variable exists
+- no open parent exists
 - the continuation clearly starts a new variable
-- row spans become invalid
-- duplicate levels lack supporting evidence
+- boundary reinterpretation creates invalid row order or overlapping spans
+- levels duplicate existing levels without supporting evidence
+- confidence would be lower than keeping fragments separate
 
 ## Minimum Tests
 
-- parent in Table X, all levels in Table X continued
-- parent in Table X, levels split across both fragments
+- concatenation without boundary reinterpretation preserves both fragments
+- all levels start in the continuation fragment
+- levels are split across both fragments
 - continuation starts with a new standalone variable
 - unmatched continuation variables are preserved
-- attached levels retain source table and row provenance
+- row provenance maps every integrated variable and level
