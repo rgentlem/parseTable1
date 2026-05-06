@@ -25,7 +25,7 @@ from table1_parser.normalize import normalize_extracted_table
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Debug one extracted table through normalization and heuristics.")
-    parser.add_argument("pdf_path", nargs="?", default="testpapers/cobaltpaper.pdf", help="Path to a PDF file.")
+    parser.add_argument("pdf_path", help="Path to a PDF file.")
     parser.add_argument("--table-index", type=int, default=0, help="Extracted table index to inspect.")
     args = parser.parse_args()
 

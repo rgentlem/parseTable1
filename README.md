@@ -99,7 +99,7 @@ outputs/papers/<paper_stem>/table_contexts/table_0_context.json
 For example:
 
 ```bash
-table1-parser parse testpapers/cobaltpaper.pdf
+table1-parser parse path/to/paper.pdf
 ```
 
 This writes the extraction, normalization, column-header-schema, table-profile, table-definition, final parsed-table, processing-status, visual-reference, and paper-context outputs in one run.
@@ -139,7 +139,7 @@ outputs/papers/<paper_stem>/extracted_tables.json
 For example:
 
 ```bash
-table1-parser extract testpapers/cobaltpaper.pdf
+table1-parser extract path/to/paper.pdf
 ```
 
 produces:
@@ -428,13 +428,13 @@ The repository also includes internal scripts for pipeline inspection, diagnosti
 Pipeline summary:
 
 ```bash
-python3 scripts/debug_pipeline.py testpapers/cobaltpaper.pdf
+python3 scripts/debug_pipeline.py path/to/paper.pdf
 ```
 
 Diagnostics:
 
 ```bash
-python3 scripts/debug_quality_report.py testpapers/cobaltpaper.pdf
+python3 scripts/debug_quality_report.py path/to/paper.pdf
 ```
 
 Variable-plausibility LLM debug artifacts are written by `table1-parser review-variable-plausibility` when `LLM_DEBUG=true`. The per-run directory contains `llm_variable_plausibility_monitoring.json` plus per-table files such as `variable_plausibility_llm_input.json`, `variable_plausibility_llm_metrics.json`, `variable_plausibility_llm_output.json`, and `variable_plausibility_llm_review.json`.

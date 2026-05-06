@@ -107,7 +107,7 @@ If provider setup is missing, `review-variable-plausibility` skips provider call
 ## Running The Configured LLM Path
 
 ```bash
-table1-parser review-variable-plausibility testpapers/cobaltpaper.pdf
+table1-parser review-variable-plausibility path/to/paper.pdf
 ```
 
 ## Debug Artifacts

@@ -19,6 +19,9 @@ dist/
 *.out
 *.log
 debug_*.txt
+TableExtractionFailures
+T1conts
+/xx
 /out
 test-results/
 trace_output/
@@ -27,4 +30,5 @@ parse_runs/
 parseTable1.out/
 
 # Large or local-only PDF fixtures
+/testpapers/*.pdf
 /testpapers/OPEandRA.pdf

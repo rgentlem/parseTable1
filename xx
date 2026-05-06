@@ -1,4 +1,0 @@
-Rscript -e 
-  source("R/inspect_paper_outputs.R"); options(width=200); 
- show_table_structure("outputs/papers/cobaltpaper", table_index = 1L)
-
