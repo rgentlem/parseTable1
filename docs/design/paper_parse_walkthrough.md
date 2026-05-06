@@ -518,6 +518,14 @@ When the evidence is compatible, the parser writes two inspection artifacts:
 The merged artifact preserves source-row provenance in `metadata.table1_continuation_merge`.
 That lets a human inspect a single logical Table 1 view while still tracing every merged row back to the original normalized table and row index.
 
+For compatible continuation groups, the parser also writes
+`continued_variable_integrations.json`. This artifact concatenates the
+per-fragment `TableDefinition.variables` and reassesses only the fragment
+boundary. At that boundary, the parser may use normalized leading body rows
+before the first standalone continuation variable as level candidates, so a
+row that was ambiguous in the continuation fragment alone can still attach to
+the last open variable from the prior fragment.
+
 This stage does not currently feed the merged rows into `TableDefinition` or `ParsedTable`.
 The default parser still defines and parses the original normalized tables separately.
 That constraint keeps this change useful for inspection without silently changing downstream table semantics.
@@ -780,7 +788,7 @@ When a parse looks wrong, inspect the outputs in this order.
 
 3. `table1_continuation_groups.json`, `merged_table1_tables.json`, and `continued_variable_integrations.json`
    If one logical Table 1 spans pages, inspect these to see whether the continuation was detected, whether the schema-derived column headers matched, and how merged rows map back to source rows.
-   The continued-variable artifact concatenates per-fragment `TableDefinition.variables`, reassesses only the continuation boundary, and records row evidence/provenance plus tableone-style metadata.
+   The continued-variable artifact concatenates per-fragment `TableDefinition.variables`, reassesses only the continuation boundary, can reinterpret unclaimed leading continuation body rows as levels, and records row evidence/provenance plus tableone-style metadata.
    Public R inspection should use the paper's `table_number` as the conceptual selector; extraction-order indices are retained only for low-level provenance/debug mapping.
 
 4. `table_continuation_column_checks.json`

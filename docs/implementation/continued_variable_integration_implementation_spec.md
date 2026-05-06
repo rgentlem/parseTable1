@@ -123,7 +123,10 @@ For each group where `merge_decision == "merge"` and columns match:
 5. Concatenate variables in source order.
 6. Reassess only the boundary between adjacent fragments.
 7. If the last base variable is a categorical parent and leading continuation
-   variables are its levels, rewrite those variables as `DefinedLevel` records.
+   body rows are its levels, rewrite those rows as `DefinedLevel` records.
+   Leading rows may come from continuation `DefinedVariable` records or from
+   unclaimed `NormalizedTable.body_rows` before the first standalone
+   continuation variable.
 8. Stop rewriting at the first true new variable.
 9. Leave all non-boundary variables unchanged.
 10. Recompute `metadata.tableone` from the integrated variables.
@@ -136,6 +139,8 @@ Use structural evidence only:
 - base row is parent-like or sparse
 - base variable has no levels or incomplete levels
 - continuation row has value cells
+- unclaimed leading body rows before the first standalone continuation
+  variable have count-like value cells
 - continuation row indentation is compatible with a level
 - continuation row lacks its own child levels
 - row role suggests level-like or variable-like structure

@@ -21,6 +21,7 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
    Implementation spec: `docs/implementation/continued_variable_integration_implementation_spec.md`.
    First diagnostic step implemented: `table_continuation_column_checks.json` checks explicit and narrow inferred uncaptained adjacent-page `demographic_description` continuations for column count and schema-derived column-header compatibility without changing parser inputs. `table1_continuation_groups.json` can also report an uncaptained next-page Table 1 fragment, but merged artifacts are still inspection-only and are skipped when normalized columns or schema-derived column headers are incompatible.
    Continued-variable integration now writes `continued_variable_integrations.json` as an inspection artifact made of existing `TableDefinition` objects with integrated `DefinedVariable` records plus integration provenance and tableone-style metadata. It is not yet consumed by value parsing.
+   Boundary handling now preserves and reinterprets leading continuation body rows before the first standalone continuation variable, so body rows that are ambiguous without the prior fragment can still attach as levels when compatible column and parent-variable context supports it.
    Follow-up: Planetary Health Table 1 now exposes its uncaptained next-page fragment as a continuation candidate, its wrapped lowercase caption tail is kept in the caption instead of table row zero, the top value-region group labels are recovered using the internal header rule plus a large geometry gap, and the base page uses early stable value anchors to preserve the visible 9-column structure. Merged continuation artifacts remain inspection-only; making them feed semantic parsing is still separate continuation-resolution work.
 
 3. [ ] Align parser route with table taxonomy.
@@ -35,10 +36,16 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
 6. [ ] Strengthen parent/level reasoning.
    Use table-local evidence such as repeated level blocks, blank or sparse parent rows, indentation, header value roles, continuation boundaries, and value-region shape. Indentation should be one strong signal, not the only signal.
 
-7. [ ] Add golden-paper regression tests.
+7. [ ] Clean up benign PDF text artifacts cautiously.
+   Some text-based PDFs include spreadsheet-like artifacts that should be normalized without hiding extraction evidence. Known examples:
+   - U+FEFF zero-width no-break/BOM characters embedded in extracted table cells, likely from spreadsheet copy/paste into the source document. These currently survive into row labels such as Planetary Health rows with invisible trailing characters.
+   - Single-row split label tails such as `Coronary heart disease, n` plus adjacent `(\%)`/`(%)` in the next cell when the fragment is physically adjacent to the row label and clearly before the first value column.
+   Treat these as normalization follow-ups, not emergency parser changes. Preserve raw extraction, add focused repairs with provenance, and avoid broad rules that could merge real value columns into labels.
+
+8. [ ] Add golden-paper regression tests.
    Create stable real-paper fixtures with expected table categories, parser routes, variables, levels, columns, and selected value records for Eke-like cases and other known structural variants.
 
-8. [ ] Improve R inspection workflow.
+9. [ ] Improve R inspection workflow.
    Provide R-native review objects and display methods that make variables, levels, columns, parse notes, category/route decisions, and diagnostics easy to inspect during corpus review.
    Current direction: `ObservedTableOne` exposes tableone-style `ContTable`, `CatTable`, and `MetaData` fields as the early R surface, while preserving lower-case compatibility aliases. R helpers should access variables and columns through canonical table-definition accessors rather than repeated direct list traversal.
 

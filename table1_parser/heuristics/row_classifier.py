@@ -285,7 +285,7 @@ def classify_row(
         and not has_continuous_cue
         and not has_only_statistic_values
         and (not is_common_level_label(label) or top_level_common_level_indicator)
-        and COUNT_LABEL_PATTERN.fullmatch(label.strip()) is None
+        and not looks_n_count_row
         and (
             active_parent_row_view is None
             or explicit_indicator_label

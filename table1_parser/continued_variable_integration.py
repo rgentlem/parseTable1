@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from table1_parser.heuristics.value_pattern_detector import detect_value_pattern
 from table1_parser.schemas import (
     DefinedLevel,
     DefinedVariable,
@@ -11,6 +12,9 @@ from table1_parser.schemas import (
     TableDefinition,
 )
 from table1_parser.text_cleaning import clean_text
+
+
+COUNT_LIKE_VALUE_PATTERNS = {"count_pct", "n_only"}
 
 
 def build_continued_variable_integrations(
@@ -50,6 +54,7 @@ def build_continued_variable_integrations(
                 variable_entries,
                 normalized_tables,
                 row_views_by_source,
+                row_idx_by_source,
                 prior_index,
                 continuation_index,
             )
@@ -183,6 +188,7 @@ def _reinterpret_boundary(
     variable_entries: list[dict[str, object]],
     normalized_tables: list[NormalizedTable],
     row_views_by_source: dict[tuple[int, int], RowView],
+    row_idx_by_source: dict[tuple[int, int], int],
     prior_index: int,
     continuation_index: int,
 ) -> dict[str, object]:
@@ -191,9 +197,7 @@ def _reinterpret_boundary(
         for position, entry in enumerate(variable_entries)
         if entry.get("source_index") == continuation_index and isinstance(entry.get("variable"), DefinedVariable)
     ]
-    if not continuation_positions:
-        return _boundary_decision(prior_index, continuation_index, "unchanged", ["no_continuation_variables"])
-    first_continuation_position = min(continuation_positions)
+    first_continuation_position = min(continuation_positions) if continuation_positions else len(variable_entries)
     prior_positions = [
         position
         for position, entry in enumerate(variable_entries[:first_continuation_position])
@@ -220,8 +224,48 @@ def _reinterpret_boundary(
         )
     attached_levels: list[DefinedLevel] = []
     remove_positions: list[int] = []
+    attachment_reasons: list[str] = []
     existing_labels = {clean_text(level.level_label).lower() for level in parent.levels}
     parent_row_view = row_views_by_source.get((prior_index, source_parent.row_start))
+    first_continuation_source_row = None
+    if continuation_positions:
+        first_continuation_source_rows = [
+            entry["source_variable"].row_start
+            for position in continuation_positions
+            if isinstance((entry := variable_entries[position]).get("source_variable"), DefinedVariable)
+        ]
+        first_continuation_source_row = min(first_continuation_source_rows) if first_continuation_source_rows else None
+    for candidate_row_view in _leading_unclaimed_body_rows(
+        normalized_tables[continuation_index],
+        continuation_index,
+        first_continuation_source_row,
+        row_views_by_source,
+    ):
+        if not _is_leading_row_level_candidate(candidate_row_view):
+            break
+        normalized_label = clean_text(candidate_row_view.first_cell_raw).lower()
+        if normalized_label in existing_labels:
+            return _boundary_decision(
+                prior_index,
+                continuation_index,
+                "rejected",
+                ["duplicate_level_label"],
+                parent.variable_name,
+            )
+        attached_levels.append(
+            DefinedLevel(
+                level_name=clean_text(candidate_row_view.first_cell_raw),
+                level_label=candidate_row_view.first_cell_raw,
+                row_idx=row_idx_by_source.get(
+                    (continuation_index, candidate_row_view.row_idx),
+                    candidate_row_view.row_idx,
+                ),
+                confidence=0.84,
+            )
+        )
+        existing_labels.add(normalized_label)
+        if "leading_body_rows_rewritten_as_levels" not in attachment_reasons:
+            attachment_reasons.append("leading_body_rows_rewritten_as_levels")
     for position in continuation_positions:
         entry = variable_entries[position]
         candidate = entry["variable"]
@@ -250,7 +294,17 @@ def _reinterpret_boundary(
         )
         existing_labels.add(normalized_label)
         remove_positions.append(position)
+        if "leading_continuation_variables_rewritten_as_levels" not in attachment_reasons:
+            attachment_reasons.append("leading_continuation_variables_rewritten_as_levels")
     if not attached_levels:
+        if not continuation_positions:
+            return _boundary_decision(
+                prior_index,
+                continuation_index,
+                "unchanged",
+                ["no_continuation_variables"],
+                parent.variable_name,
+            )
         return _boundary_decision(
             prior_index,
             continuation_index,
@@ -273,11 +327,44 @@ def _reinterpret_boundary(
         prior_index,
         continuation_index,
         "attached_levels",
-        ["leading_continuation_variables_rewritten_as_levels"],
+        attachment_reasons,
         parent.variable_name,
         attached_level_count=len(attached_levels),
         confidence=0.86,
     )
+
+
+def _leading_unclaimed_body_rows(
+    table: NormalizedTable,
+    source_index: int,
+    first_defined_variable_row: int | None,
+    row_views_by_source: dict[tuple[int, int], RowView],
+) -> list[RowView]:
+    rows: list[RowView] = []
+    for row_idx in table.body_rows:
+        if first_defined_variable_row is not None and row_idx >= first_defined_variable_row:
+            break
+        row_view = row_views_by_source.get((source_index, row_idx))
+        if row_view is not None:
+            rows.append(row_view)
+    return rows
+
+
+def _is_leading_row_level_candidate(row_view: RowView) -> bool:
+    if not row_view.has_trailing_values:
+        return False
+    value_patterns: list[str] = []
+    for cell in row_view.raw_cells[1:]:
+        cleaned = clean_text(cell)
+        if not cleaned:
+            continue
+        pattern = detect_value_pattern(cleaned).pattern
+        if pattern != "p_value":
+            value_patterns.append(pattern)
+    if not value_patterns:
+        return False
+    count_like_count = sum(pattern in COUNT_LIKE_VALUE_PATTERNS for pattern in value_patterns)
+    return count_like_count >= max(1, len(value_patterns) - 1)
 
 
 def _is_open_parent(variable: DefinedVariable, table: NormalizedTable, row_view: RowView | None) -> bool:

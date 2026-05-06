@@ -400,7 +400,7 @@ Design components:
 - `merged_table1_tables.json`
   records one merged `NormalizedTable` per accepted group, preserving normalized cleaned rows and source-row provenance in `metadata.table1_continuation_merge`
 - `continued_variable_integrations.json`
-  records one integrated `TableDefinition` per compatible continuation group, preserving integrated variables, boundary decisions, row provenance, and tableone-style metadata in `metadata`
+  records one integrated `TableDefinition` per compatible continuation group, preserving integrated variables, boundary decisions, row provenance, and tableone-style metadata in `metadata`; boundary decisions may reinterpret leading continuation body rows that were not standalone `DefinedVariable` records
 
 Design intent:
 

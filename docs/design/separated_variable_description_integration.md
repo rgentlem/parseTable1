@@ -17,6 +17,7 @@ Canonical inputs:
 
 - `columns`
 - `variables`
+- normalized body-row evidence at continuation boundaries
 
 `columns` are post-normalization column records from the canonical header
 projection. After the prerequisite passes, keep the base columns as the logical
@@ -66,11 +67,13 @@ The downstream observed object should keep the `../tableone` style:
 2. Read variables from Table X continued.
 3. Concatenate the two variable lists in source order, preserving source table
    and row provenance for every variable and level.
-4. Reassess only the boundary between the fragments.
+4. Reassess only the boundary between the fragments, including unclaimed
+   leading continuation body rows before the first standalone continuation
+   variable.
 5. Ask whether the concatenated sequence changes the interpretation of the last
    base variable or the first continuation variables.
 6. If the last base variable is a categorical parent and the first continuation
-   variables are its levels, rewrite those continuation variables as levels.
+   body rows are its levels, rewrite those continuation rows as levels.
 7. Stop rewriting as soon as the continuation reaches a true new variable.
 8. When rewriting a parent:
    - keep base `variable_name` and `variable_label`

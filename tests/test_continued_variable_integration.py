@@ -244,6 +244,80 @@ def test_continued_variable_integration_supports_levels_split_across_fragments()
     assert len(integrations[0].metadata["continued_variable_integration"]["row_provenance"]) == 3
 
 
+def test_continued_variable_integration_attaches_unclaimed_leading_body_rows() -> None:
+    """Leading body rows dropped by standalone parsing should still resolve at the continuation boundary."""
+    base = _table(
+        "tbl-base",
+        [["Characteristic", "Overall", "Group"], ["Disease, n (%)", "", ""], ["Yes", "34 (45%)", "10 (40%)"]],
+        page_num=2,
+    )
+    continuation = NormalizedTable(
+        table_id="tbl-cont",
+        title="Table 1 continued",
+        caption="Table 1 continued",
+        header_rows=[0, 1],
+        body_rows=[2, 3],
+        row_views=[
+            _row_view(2, ["No", "41 (55%)", "15 (60%)"]),
+            _row_view(3, ["Age, years", "52.1", "49.9"]),
+        ],
+        n_rows=4,
+        n_cols=3,
+        metadata={
+            "cleaned_rows": [
+                ["Characteristic", "Overall", "Group"],
+                ["", "(n = 75)", "(n = 25)"],
+                ["No", "41 (55%)", "15 (60%)"],
+                ["Age, years", "52.1", "49.9"],
+            ],
+            "source_page_num": 3,
+        },
+    )
+    base_definition = _definition(
+        "tbl-base",
+        [
+            DefinedVariable(
+                variable_name="Disease",
+                variable_label="Disease, n (%)",
+                variable_type="categorical",
+                row_start=1,
+                row_end=2,
+                levels=[DefinedLevel(level_name="Yes", level_label="Yes", row_idx=2)],
+                summary_style_hint="count_pct",
+            )
+        ],
+    )
+    continuation_definition = _definition(
+        "tbl-cont",
+        [
+            DefinedVariable(
+                variable_name="Age years",
+                variable_label="Age, years",
+                variable_type="continuous",
+                row_start=3,
+                row_end=3,
+                summary_style_hint="numeric",
+            )
+        ],
+    )
+
+    integrations = build_continued_variable_integrations(
+        [base, continuation],
+        [base_definition, continuation_definition],
+        [_group()],
+    )
+
+    variables = integrations[0].variables
+    assert [variable.variable_label for variable in variables] == ["Disease, n (%)", "Age, years"]
+    assert [level.level_label for level in variables[0].levels] == ["Yes", "No"]
+    assert variables[0].row_end == 3
+    decision = integrations[0].metadata["continued_variable_integration"]["boundary_decisions"][0]
+    assert decision["decision"] == "attached_levels"
+    assert decision["reasons"] == ["leading_body_rows_rewritten_as_levels"]
+    provenance = integrations[0].metadata["continued_variable_integration"]["row_provenance"]
+    assert any(item["source_label"] == "No" and item["source_row_idx"] == 2 for item in provenance)
+
+
 def test_continued_variable_integration_skips_nonmerge_groups() -> None:
     group = _group().model_copy(update={"merge_decision": "skip", "column_headers_match": False})
 

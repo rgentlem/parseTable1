@@ -405,6 +405,27 @@ def test_lowercase_n_with_integer_values_forms_one_row_variable_block() -> None:
     assert blocks[0].level_row_indices == []
 
 
+def test_body_count_percent_row_named_no_is_not_suppressed_as_count_label() -> None:
+    """Body rows with count-percent values should be resolved by value layout, not by a count-label regex."""
+    table = NormalizedTable(
+        table_id="tbl-body-no",
+        header_rows=[0, 1],
+        body_rows=[2],
+        row_views=[
+            _build_row(2, "No", ["6313 (95.32%)", "5646 (95.87%)", "667 (90.87%)", ""]),
+        ],
+        n_rows=3,
+        n_cols=5,
+    )
+
+    classifications = classify_rows(table)
+    blocks = group_variable_blocks(table, classifications=classifications)
+
+    assert classifications[0].classification == "binary_variable_row"
+    assert len(blocks) == 1
+    assert blocks[0].variable_label == "No"
+
+
 def test_uppercase_n_with_integer_values_forms_one_row_variable_block() -> None:
     """An uppercase N row with integer counts should be treated as a one-row variable."""
     table = NormalizedTable(
