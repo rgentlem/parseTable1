@@ -34,6 +34,45 @@ def test_build_text_layout_candidates_detects_unruled_table() -> None:
     assert candidates[0].raw_rows[0][2:4] == ["Q1", "Q2"]
 
 
+def test_build_text_layout_candidates_trims_footer_text_after_value_rows() -> None:
+    """Text-position fallback should stop before page footer text after the table body."""
+    words = [
+        {"text": "Table", "x0": 50.0, "x1": 76.0, "top": 60.0, "bottom": 68.0},
+        {"text": "1.", "x0": 80.0, "x1": 90.0, "top": 60.0, "bottom": 68.0},
+        {"text": "Periodontal", "x0": 94.0, "x1": 150.0, "top": 60.0, "bottom": 68.0},
+        {"text": "status.", "x0": 154.0, "x1": 190.0, "top": 60.0, "bottom": 68.0},
+        {"text": "Characteristics", "x0": 50.0, "x1": 120.0, "top": 88.0, "bottom": 96.0},
+        {"text": "n", "x0": 180.0, "x1": 186.0, "top": 88.0, "bottom": 96.0},
+        {"text": "%", "x0": 230.0, "x1": 238.0, "top": 88.0, "bottom": 96.0},
+        {"text": "SE", "x0": 280.0, "x1": 292.0, "top": 88.0, "bottom": 96.0},
+        {"text": "Total", "x0": 50.0, "x1": 72.0, "top": 102.0, "bottom": 110.0},
+        {"text": "3743", "x0": 180.0, "x1": 202.0, "top": 102.0, "bottom": 110.0},
+        {"text": "46.1", "x0": 230.0, "x1": 252.0, "top": 102.0, "bottom": 110.0},
+        {"text": "1.7", "x0": 280.0, "x1": 296.0, "top": 102.0, "bottom": 110.0},
+        {"text": "Age", "x0": 50.0, "x1": 70.0, "top": 116.0, "bottom": 124.0},
+        {"text": "435", "x0": 180.0, "x1": 198.0, "top": 116.0, "bottom": 124.0},
+        {"text": "24.4", "x0": 230.0, "x1": 252.0, "top": 116.0, "bottom": 124.0},
+        {"text": "2.7", "x0": 280.0, "x1": 296.0, "top": 116.0, "bottom": 124.0},
+        {"text": "Sex", "x0": 50.0, "x1": 66.0, "top": 130.0, "bottom": 138.0},
+        {"text": "1872", "x0": 180.0, "x1": 202.0, "top": 130.0, "bottom": 138.0},
+        {"text": "56.4", "x0": 230.0, "x1": 252.0, "top": 130.0, "bottom": 138.0},
+        {"text": "2.1", "x0": 280.0, "x1": 296.0, "top": 130.0, "bottom": 138.0},
+        {"text": "Downloaded", "x0": 50.0, "x1": 104.0, "top": 214.0, "bottom": 222.0},
+        {"text": "from", "x0": 110.0, "x1": 130.0, "top": 214.0, "bottom": 222.0},
+        {"text": "https://example.org/10.1902", "x0": 136.0, "x1": 260.0, "top": 214.0, "bottom": 222.0},
+        {"text": "Online", "x0": 266.0, "x1": 300.0, "top": 214.0, "bottom": 222.0},
+    ]
+
+    candidates = build_text_layout_candidates(page_num=1, page_text="Table 1. Periodontal status.", words=words)
+
+    assert len(candidates) == 1
+    assert len(candidates[0].raw_rows) == 4
+    assert all("Downloaded" not in " ".join(row) for row in candidates[0].raw_rows)
+    assert candidates[0].metadata["trailing_non_table_rows"]["reasons"] == [
+        "large_gap_after_last_value_row"
+    ]
+
+
 def test_text_layout_fallback_ignores_repeated_numeric_label_tokens_as_value_anchors() -> None:
     """Numeric-looking label text should not create extra value columns in collapsed grids."""
     lines = [

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from typing import NamedTuple
 
 from table1_parser.extract.table_detector import (
     DetectedTableCandidate,
@@ -20,6 +21,16 @@ SENTENCE_TERMINAL_PATTERN = re.compile(r"[.!?][\"')\]]*$")
 LINE_MERGE_TOLERANCE = 4.0
 COLUMN_CLUSTER_TOLERANCE = 18.0
 COLLAPSED_LABEL_PATTERN = re.compile(r"[a-z][A-Z]|[A-Za-z-]{8,}")
+TABLE_VALUE_TEXT_PATTERN = re.compile(r"^(?:[<>]=?\s*)?[\d.,/%()\-+±\s]+$")
+
+
+class TrimmedTableRows(NamedTuple):
+    """Candidate rows plus metadata after trailing non-table text removal."""
+
+    raw_rows: list[list[str]]
+    cell_bboxes: list[list[tuple[float, float, float, float] | None]]
+    row_bounds: list[tuple[float, float]]
+    metadata: dict[str, object] | None
 
 
 def detect_horizontal_rules(
@@ -160,6 +171,81 @@ def _is_numeric_like(text: str) -> bool:
 def _nonempty_cell_count(row: list[str]) -> int:
     """Count populated cells in one fallback row."""
     return sum(bool(cell.strip()) for cell in row)
+
+
+def _table_value_cell_count(row: list[str]) -> int:
+    """Count strict numeric/value cells outside the row-label column."""
+    return sum(
+        bool(TABLE_VALUE_TEXT_PATTERN.fullmatch(cell.strip()))
+        and bool(NUMERIC_TOKEN_PATTERN.search(cell))
+        for cell in row[1:]
+        if cell.strip()
+    )
+
+
+def trim_trailing_non_table_rows(
+    raw_rows: list[list[str]],
+    *,
+    cell_bboxes: list[list[tuple[float, float, float, float] | None]] | None = None,
+    row_bounds: list[tuple[float, float]] | None = None,
+) -> TrimmedTableRows:
+    """Remove footer/watermark rows that trail a recovered table candidate."""
+    rows = _normalize_rows(raw_rows)
+    bboxes = cell_bboxes or []
+    bounds = row_bounds or []
+    if len(rows) < 5:
+        return TrimmedTableRows(rows, bboxes, bounds, None)
+
+    data_row_indices = [
+        row_idx
+        for row_idx, row in enumerate(rows)
+        if _table_value_cell_count(row) >= (2 if len(row) >= 4 else 1)
+    ]
+    if len(data_row_indices) < 3:
+        return TrimmedTableRows(rows, bboxes, bounds, None)
+    last_data_row_idx = data_row_indices[-1]
+    if last_data_row_idx >= len(rows) - 1:
+        return TrimmedTableRows(rows, bboxes, bounds, None)
+
+    trailing_rows = rows[last_data_row_idx + 1 :]
+    trailing_nonempty_count = sum(_nonempty_cell_count(row) > 0 for row in trailing_rows)
+    trailing_blank_count = len(trailing_rows) - trailing_nonempty_count
+    trailing_text_spread_count = sum(
+        _nonempty_cell_count(row) >= 3 and _table_value_cell_count(row) <= 1
+        for row in trailing_rows
+    )
+    gap_after_last_data = None
+    if bounds and last_data_row_idx + 1 < len(bounds) and last_data_row_idx < len(bounds):
+        gap_after_last_data = round(
+            max(0.0, bounds[last_data_row_idx + 1][0] - bounds[last_data_row_idx][1]),
+            4,
+        )
+
+    reasons: list[str] = []
+    if trailing_blank_count >= 2:
+        reasons.append("multiple_blank_rows_after_last_value_row")
+    if trailing_text_spread_count and len(trailing_rows) >= 2:
+        reasons.append("text_spread_without_table_values_after_last_value_row")
+    if gap_after_last_data is not None and gap_after_last_data >= 24.0 and trailing_nonempty_count:
+        reasons.append("large_gap_after_last_value_row")
+    if not reasons and trailing_nonempty_count == 0:
+        reasons.append("blank_rows_after_last_value_row")
+    if not reasons:
+        return TrimmedTableRows(rows, bboxes, bounds, None)
+
+    keep_count = last_data_row_idx + 1
+    return TrimmedTableRows(
+        rows[:keep_count],
+        bboxes[:keep_count] if bboxes else bboxes,
+        bounds[:keep_count] if bounds else bounds,
+        {
+            "start_row_idx": keep_count,
+            "removed_row_count": len(rows) - keep_count,
+            "last_value_row_idx": last_data_row_idx,
+            "reasons": reasons,
+            "gap_after_last_value_row": gap_after_last_data,
+        },
+    )
 
 
 def _has_header_like_top_row(rows: list[list[str]]) -> bool:
@@ -479,6 +565,15 @@ def build_text_layout_candidates(
         rows, cell_bboxes = build_row_grid_from_lines(content_lines, page_chars=page_chars)
         if not rows:
             continue
+        initial_row_bounds = [(float(line["top"]), float(line["bottom"])) for line in content_lines]
+        trimmed = trim_trailing_non_table_rows(
+            rows,
+            cell_bboxes=cell_bboxes,
+            row_bounds=initial_row_bounds,
+        )
+        rows = trimmed.raw_rows
+        cell_bboxes = trimmed.cell_bboxes
+        content_lines = content_lines[: len(rows)]
         caption = "\n".join(caption_parts)
         caption_signal = first_caption_metadata is not None
         strong_geometry = _has_strong_uncaptioned_table_geometry(rows)
@@ -494,8 +589,14 @@ def build_text_layout_candidates(
                 "content_lines": content_lines,
                 "rows": rows,
                 "cell_bboxes": cell_bboxes,
-                "row_bounds": [(float(line["top"]), float(line["bottom"])) for line in content_lines],
-                "bbox": (left, float(segment_lines[0]["top"]), right, max(float(line["bottom"]) for line in content_lines)),
+                "row_bounds": trimmed.row_bounds,
+                "bbox": (
+                    left,
+                    float(segment_lines[0]["top"]),
+                    right,
+                    max(float(line["bottom"]) for line in content_lines),
+                ),
+                "trailing_non_table_rows": trimmed.metadata,
             }
         )
     for table_index, segment in enumerate(segments):
@@ -521,6 +622,7 @@ def build_text_layout_candidates(
                         "horizontal_rules": detect_horizontal_rules(rule_segments, bbox),
                         "caption_signal": segment["caption_signal"],
                         "strong_uncaptioned_table_geometry": segment["strong_uncaptioned_table_geometry"],
+                        "trailing_non_table_rows": segment["trailing_non_table_rows"],
                     },
                 )
             )

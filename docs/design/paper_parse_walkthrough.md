@@ -144,6 +144,7 @@ The extractor still scores candidates, but the score is now diagnostic rather th
 - require page-text-layout fallback candidates to have a real table-number/caption signal unless their reconstructed grid has strong table geometry: at least three columns, at least four rows, a header-like top row, stable multi-column alignment, and multiple rows with data-like trailing cells
 - when a text-position fallback caption wraps onto the next line, keep a short caption continuation line with the table label, and also keep a lowercase sentence fragment ending in punctuation with the caption instead of treating it as the first table row
 - when text-position fallback builds column anchors, prefer an early stable table prefix if using the full page would collapse separated value columns because of later wrapped rows, page-margin text, or other noisy numeric positions
+- trim trailing footer or watermark rows from explicit and text-position candidates when they appear after the final numeric value-matrix row and structural clues show they are outside the table, such as multiple blank rows, a large vertical gap, or text spread across many columns without table-like values; the trim is recorded in `metadata.trailing_non_table_rows`
 
 This matters for papers with table continuations, odd numbering, or weak captions. A bad score should be inspectable, not silently destructive.
 

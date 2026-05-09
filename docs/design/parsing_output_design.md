@@ -165,6 +165,7 @@ Important current `metadata` keys produced by extraction may include:
 - `caption_detection_space`
 - `table_cells`
 - `first_column_text_x0_by_row`
+- `trailing_non_table_rows`
 
 `TableCell` design components:
 
@@ -190,6 +191,7 @@ Design intent:
 - text-position fallback candidates may preserve parser-facing cell text bounding boxes in `table_cells`; for these candidates, first-column cell boxes are based on the recovered text extents and can also support indentation-sensitive row classification
 - text-position fallback caption collection may keep a short following caption line with the table label, and may also keep an immediately following lowercase sentence fragment that completes the caption with terminal punctuation; this prevents wrapped caption tails from entering the table grid as row zero
 - text-position fallback column anchors should prefer an early stable header/value prefix when later noisy rows would merge clearly separated value columns; visible repeated value positions near the top of the table are stronger evidence than page-margin or wrapped-body artifacts later on the page
+- extraction may trim trailing non-table rows from a candidate after the final numeric value-matrix row when structural page evidence shows the candidate has run into footer or watermark text, such as multiple blank rows, a large vertical gap, or text spread across many columns without table-like values; the removed range and reasons are recorded in `metadata.trailing_non_table_rows`
 
 ## 2. `NormalizedTable` JSON
 

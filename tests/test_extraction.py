@@ -336,6 +336,90 @@ def test_pymupdf4llm_extractor_returns_structured_tables(tmp_path, monkeypatch) 
     assert tables[0].cells[0].bbox == (120.0, 124.0, 250.0, 135.0)
 
 
+def test_pymupdf4llm_extractor_trims_trailing_watermark_rows_from_explicit_table(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    """Blank rows plus footer/watermark text after the value matrix should not become table rows."""
+    pdf_path = tmp_path / "paper.pdf"
+    pdf_path.write_text("placeholder")
+    raw_rows = [
+        ["Characteristics", "n", "Weighted n", "Periodontitis", "SE"],
+        ["Total", "3743", "137.1", "46.1", "1.7"],
+        ["30 to 34 years", "435", "16.7", "24.4", "2.7"],
+        ["35 to 49 years", "1352", "54.0", "36.6", "1.6"],
+        ["", "", "", "", ""],
+        ["", "", "", "", ""],
+        ["", "", "", "", ""],
+        ["", "", "", "", ""],
+        [
+            "evitaerC elbacilppa the by denrevog",
+            "are articles OA use; of rules",
+            "for Library Online",
+            "See [16/04/2026]. Online",
+            "Downloaded from https://aap.onlinelibrary.wiley.com/doi/10.1902/jop.2015.140520",
+        ],
+    ]
+    cell_bboxes = [
+        [
+            [120.0 + col_idx * 55.0, 124.0 + row_idx * 12.0, 170.0 + col_idx * 55.0, 134.0 + row_idx * 12.0]
+            for col_idx in range(5)
+        ]
+        for row_idx in range(len(raw_rows))
+    ]
+    _install_fake_pymupdf4llm(
+        monkeypatch,
+        {
+            "pages": [
+                {
+                    "page_number": 8,
+                    "boxes": [
+                        {
+                            "bbox": [100, 100, 420, 116],
+                            "boxclass": "text",
+                            "textlines": [{"spans": [{"text": "Table 1. Baseline characteristics"}]}],
+                        },
+                        {
+                            "bbox": [120, 124, 430, 240],
+                            "boxclass": "table",
+                            "table": {
+                                "bbox": [120, 124, 430, 240],
+                                "row_count": len(raw_rows),
+                                "col_count": 5,
+                                "cells": cell_bboxes,
+                                "extract": raw_rows,
+                                "markdown": "|Characteristics|n|Weighted n|Periodontitis|SE|",
+                            },
+                        },
+                    ],
+                }
+            ]
+        },
+    )
+    monkeypatch.setattr(
+        pymupdf4llm_extractor_module,
+        "extract_clipped_line_directions",
+        lambda page, clip_bbox: [(1.0, 0.0), (1.0, 0.0)],
+    )
+    _install_fake_pymupdf_document(monkeypatch, [FakePyMuPage(text="", words=[])])
+
+    tables = PyMuPDF4LLMExtractor(max_candidates=3, heuristic_confidence_threshold=0.0).extract(str(pdf_path))
+
+    assert len(tables) == 1
+    assert tables[0].n_rows == 4
+    assert all("onlinelibrary" not in cell.text for cell in tables[0].cells)
+    assert tables[0].metadata["trailing_non_table_rows"] == {
+        "start_row_idx": 4,
+        "removed_row_count": 5,
+        "last_value_row_idx": 3,
+        "reasons": [
+            "multiple_blank_rows_after_last_value_row",
+            "text_spread_without_table_values_after_last_value_row",
+        ],
+        "gap_after_last_value_row": 2.0,
+    }
+
+
 def test_pymupdf4llm_extractor_skips_tables_after_references_heading(tmp_path, monkeypatch) -> None:
     """Reference-list boxes should not enter the table pipeline once References begins."""
     pdf_path = tmp_path / "paper.pdf"

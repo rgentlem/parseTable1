@@ -17,6 +17,7 @@ from table1_parser.extract.layout_fallback import (
     build_word_lines,
     detect_horizontal_rules,
     normalize_positioned_geometry_for_rotation,
+    trim_trailing_non_table_rows,
 )
 from table1_parser.extract.pymupdf_page_adapter import (
     extract_clipped_line_directions,
@@ -184,6 +185,19 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                     cell_bboxes = refinement["table_cells"]
                     row_bounds = refinement["row_bounds"]
                     horizontal_rules = refinement["horizontal_rules"]
+                    trimmed = trim_trailing_non_table_rows(
+                        raw_rows,
+                        cell_bboxes=cell_bboxes,
+                        row_bounds=row_bounds,
+                    )
+                    raw_rows = trimmed.raw_rows
+                    cell_bboxes = trimmed.cell_bboxes
+                    row_bounds = trimmed.row_bounds
+                    if trimmed.metadata is not None and row_bounds:
+                        table_bottom = row_bounds[-1][1]
+                        horizontal_rules = [
+                            rule for rule in horizontal_rules if float(rule) <= table_bottom + 2.0
+                        ]
                     first_column_text_x0_by_row = _infer_first_column_text_x0_by_row(
                         raw_rows=raw_rows,
                         cell_bboxes=cell_bboxes,
@@ -244,6 +258,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                                     "original_backend_rows": table.get("extract") if raw_rows != original_raw_rows else None,
                                     "row_bounds": row_bounds,
                                     "horizontal_rules": horizontal_rules,
+                                    "trailing_non_table_rows": trimmed.metadata,
                                     **orientation_metadata,
                                 },
                             )

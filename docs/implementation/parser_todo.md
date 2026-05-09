@@ -53,3 +53,4 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
 
 - Do not mark a task complete just because one narrow case has been patched. Mark it complete only when the repo has a general implementation and tests for the intended scope.
 - If a task expands into multiple concrete implementation steps, add subitems or link to a dedicated implementation note.
+- Recent extraction guardrail: explicit and text-position candidates now trim structurally trailing non-table rows after the final numeric value-matrix row when footer/watermark evidence is present, recording `metadata.trailing_non_table_rows`. Keep future footer handling structural and page-geometry driven rather than source- or publisher-specific.
