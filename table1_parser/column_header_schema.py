@@ -68,17 +68,12 @@ def build_column_header_schema(
     declared_leaf_header_row_idx = (
         max(declared_leaf_header_candidates) if declared_leaf_header_candidates else max(header_rows, default=None)
     )
-    header_detection = table.metadata.get("header_detection")
-    header_detection_source = header_detection.get("source") if isinstance(header_detection, dict) else None
-    if header_detection_source == "value_matrix_boundary":
-        usable_header_rows = list(header_rows)
-    else:
-        usable_header_rows = [
-            row_idx
-            for row_idx in header_rows
-            if (len(header_rows) > 1 and row_idx == declared_leaf_header_row_idx)
-            or not _looks_like_title_or_continuation_header([_grid_cell(grid, row_idx, col_idx) for col_idx in range(table.n_cols)])
-        ]
+    usable_header_rows = [
+        row_idx
+        for row_idx in header_rows
+        if (len(header_rows) > 1 and row_idx == declared_leaf_header_row_idx)
+        or not _looks_like_title_or_continuation_header([_grid_cell(grid, row_idx, col_idx) for col_idx in range(table.n_cols)])
+    ]
     skipped_leaf_header_rows = [row_idx for row_idx in header_rows if row_idx not in usable_header_rows]
     for row_idx in skipped_leaf_header_rows:
         diagnostics.append(f"skipped_title_like_leaf_header_row:row={row_idx}")
@@ -155,6 +150,20 @@ def build_column_header_schema(
             if split_after_position is not None:
                 split_rows = bounded_header_rows[split_after_position + 1 :]
                 if len(split_rows) > 1 and leaf_header_row_idx in split_rows:
+                    dense_start = next(
+                        (
+                            position
+                            for position, row_idx in enumerate(split_rows)
+                            if _row_nonempty_count(grid, row_idx, table.n_cols) >= max(4, table.n_cols // 3)
+                        ),
+                        None,
+                    )
+                    if dense_start is not None and dense_start > 0:
+                        diagnostics.append(
+                            "trimmed_sparse_group_rows_from_leaf_header_split:"
+                            f"rows={','.join(map(str, split_rows[:dense_start]))}"
+                        )
+                        split_rows = split_rows[dense_start:]
                     leaf_header_row_indices = split_rows
                     diagnostics.append(f"split_wrapped_leaf_header_rows_by_rule:rows={','.join(map(str, split_rows))}")
             if leaf_header_row_indices == [leaf_header_row_idx] and inferred_header_rows_used:
@@ -391,19 +400,22 @@ def column_header_schemas_to_payload(
 def column_header_descriptors(schema: ColumnHeaderSchema) -> list[ColumnHeaderDescriptor]:
     """Return canonical parser-facing column descriptors from a header schema."""
     groups_by_id = {group.group_id: group for group in schema.groups}
-    context_by_leaf_id: dict[str, list[tuple[int, str]]] = {leaf.leaf_id: [] for leaf in schema.leaves}
+    context_by_leaf_id: dict[str, list[tuple[int, str, str]]] = {leaf.leaf_id: [] for leaf in schema.leaves}
     for relationship in schema.relationships:
         group = groups_by_id.get(relationship.parent_group_id)
         if group is not None:
-            context_by_leaf_id.setdefault(relationship.child_leaf_id, []).append((group.row_idx, group.label))
+            context_by_leaf_id.setdefault(relationship.child_leaf_id, []).append((group.row_idx, group.group_id, group.label))
     descriptors: list[ColumnHeaderDescriptor] = []
     for leaf in sorted(schema.leaves, key=lambda item: item.col_idx):
-        context_labels = [label for _, label in sorted(context_by_leaf_id.get(leaf.leaf_id, []))]
+        context_items = sorted(context_by_leaf_id.get(leaf.leaf_id, []))
+        context_labels = [label for _, _, label in context_items]
+        context_ids = [group_id for _, group_id, _ in context_items]
         shared_context_label = clean_text(" ".join(context_labels)) if context_labels else None
         column_parts = [*context_labels]
         if leaf.leaf_label:
             column_parts.append(leaf.leaf_label)
         column_label = clean_text(" ".join(part for part in column_parts if part))
+        header_path = [part for part in [*context_labels, leaf.leaf_label] if part]
         descriptors.append(
             ColumnHeaderDescriptor(
                 leaf_id=leaf.leaf_id,
@@ -413,6 +425,9 @@ def column_header_descriptors(schema: ColumnHeaderSchema) -> list[ColumnHeaderDe
                 column_name=_normalize_header_name(column_label) or leaf.leaf_name or f"column_{leaf.col_idx}",
                 leaf_label=leaf.leaf_label,
                 leaf_name=leaf.leaf_name,
+                header_group_ids=context_ids,
+                header_group_labels=context_labels,
+                header_path=header_path,
                 shared_context_label=shared_context_label,
                 is_row_label_column=leaf.is_row_label_column,
                 is_value_column=leaf.is_value_column,
@@ -671,11 +686,12 @@ def _infer_header_rows_from_geometry(
         return [], first_body_row_idx
     header_bottom_rule = max(lower_rules)
     upper_rules = [rule for rule in lower_rules if rule < header_bottom_rule]
-    header_top_rule = max(upper_rules) if upper_rules else None
+    header_top_rule = min(upper_rules) if upper_rules else None
     header_rows = [
         row_idx
         for row_idx, bounds in enumerate(row_bounds[:first_body_row_idx])
-        if bounds[1] <= header_bottom_rule + 3.0
+        if bounds[0] <= header_bottom_rule + 3.0
+        and bounds[1] <= body_top + 1.0
         and (header_top_rule is None or bounds[0] >= header_top_rule - 3.0)
         and _row_nonempty_count(grid, row_idx, n_cols) >= 2
     ]
@@ -794,20 +810,31 @@ def _repair_leading_leaf_fragments_by_geometry(
             parts = current.split(maxsplit=1)
             if not previous or len(parts) != 2 or len(parts[0]) > 2 or not any(char.isalnum() for char in parts[0]):
                 continue
+            should_move = False
             previous_source_col = original_col_indices[col_idx - 1] if col_idx - 1 < len(original_col_indices) else None
             current_source_col = original_col_indices[col_idx] if col_idx < len(original_col_indices) else None
-            if previous_source_col is None or current_source_col is None:
-                continue
-            previous_bbox = _metadata_cell_bbox(metadata.get("table_cells"), row_idx, previous_source_col)
-            current_bbox = _metadata_cell_bbox(metadata.get("table_cells"), row_idx, current_source_col)
-            if previous_bbox is None or current_bbox is None:
-                continue
-            previous_center = (previous_bbox[0] + previous_bbox[2]) / 2.0
-            current_center = (current_bbox[0] + current_bbox[2]) / 2.0
-            boundary = (previous_center + current_center) / 2.0
-            first_share = min(0.5, max(0.05, len(parts[0]) / max(1, len(current))))
-            first_center = current_bbox[0] + ((current_bbox[2] - current_bbox[0]) * first_share / 2.0)
-            if current_bbox[0] <= boundary and first_center < boundary:
+            if previous_source_col is not None and current_source_col is not None:
+                previous_bbox = _metadata_cell_bbox(metadata.get("table_cells"), row_idx, previous_source_col)
+                current_bbox = _metadata_cell_bbox(metadata.get("table_cells"), row_idx, current_source_col)
+                if previous_bbox is not None and current_bbox is not None:
+                    previous_center = (previous_bbox[0] + previous_bbox[2]) / 2.0
+                    current_center = (current_bbox[0] + current_bbox[2]) / 2.0
+                    boundary = (previous_center + current_center) / 2.0
+                    first_share = min(0.5, max(0.05, len(parts[0]) / max(1, len(current))))
+                    first_center = current_bbox[0] + ((current_bbox[2] - current_bbox[0]) * first_share / 2.0)
+                    should_move = current_bbox[0] <= boundary and first_center < boundary
+            if not should_move:
+                previous_stack_has_text = any(
+                    other_row_idx != row_idx and bool(_grid_cell(repaired, other_row_idx, col_idx - 1))
+                    for other_row_idx in row_indices
+                )
+                current_stack_has_text = any(
+                    other_row_idx != row_idx and bool(_grid_cell(repaired, other_row_idx, col_idx))
+                    for other_row_idx in row_indices
+                )
+                current_remainder_has_alpha = any(char.isalpha() for char in parts[1])
+                should_move = previous_stack_has_text and current_stack_has_text and current_remainder_has_alpha
+            if should_move:
                 repaired[row_idx][col_idx - 1] = clean_text(f"{previous} {parts[0]}")
                 repaired[row_idx][col_idx] = clean_text(parts[1])
                 moved_evidence.setdefault((row_idx, col_idx - 1), []).append(col_idx)
@@ -914,6 +941,25 @@ def _header_runs_for_groups(
             and len({run.label for run in value_runs}) == 1
             and all(run.col_start == run.col_end for run in value_runs)
         )
+        if repeated_single_cell_labels:
+            expanded_repeated: list[_HeaderRun] = []
+            for run in row_runs:
+                if run in value_runs and run.col_start > 1 and not row[run.col_start - 1]:
+                    expanded_repeated.append(
+                        run._replace(
+                            col_start=run.col_start - 1,
+                            inference_rule="single_cell_blank_span",
+                            confidence=min(run.confidence, 0.78),
+                        )
+                    )
+                else:
+                    expanded_repeated.append(run)
+            row_runs = expanded_repeated
+            value_runs = [
+                run
+                for run in row_runs
+                if not (run.col_start == 0 and clean_text(run.label).lower() in LABEL_COLUMN_TOKENS)
+            ]
         if not geometry_gap_used and len(value_runs) >= 2 and (has_blank_gap or has_text_run) and not repeated_single_cell_labels:
             expanded: list[_HeaderRun] = []
             for run in row_runs:

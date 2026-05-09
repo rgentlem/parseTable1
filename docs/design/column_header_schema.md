@@ -372,7 +372,9 @@ bad table should not crash the whole parse.
 
 - leaf label comes from `ColumnHeaderLeaf.leaf_label`
 - shared context comes from related `ColumnHeaderGroup` labels
-- display labels can be derived from the schema's group path and leaf label
+- per-column `header_path` comes from the schema's group path plus leaf label
+- table-level `header_spans` preserve displayable multirow group and leaf spans
+- `column_label` in `TableDefinition` is the leaf label, not the flattened path
 - statistic columns and group columns are classified after the schema is built
 
 This keeps `TableDefinition` semantic. It should not own the raw mechanics of

@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 DefinedVariableType = Literal["continuous", "categorical", "binary", "unknown"]
 DefinedColumnRole = Literal["overall", "group", "comparison_group", "p_value", "smd", "unknown"]
+DefinedColumnHeaderSpanSource = Literal["group", "leaf"]
 
 
 class DefinedLevel(BaseModel):
@@ -34,12 +35,31 @@ class DefinedVariable(BaseModel):
     confidence: float | None = Field(default=None, ge=0.0, le=1.0)
 
 
+class DefinedColumnHeaderSpan(BaseModel):
+    """One displayable column-header span derived from physical header bands."""
+
+    header_level: int = Field(ge=0)
+    row_idx: int | None = Field(default=None, ge=0)
+    label: str
+    col_start: int = Field(ge=0)
+    col_end: int = Field(ge=0)
+    leaf_col_indices: list[int] = Field(default_factory=list)
+    source: DefinedColumnHeaderSpanSource
+    source_id: str | None = None
+    confidence: float | None = Field(default=None, ge=0.0, le=1.0)
+
+
 class DefinedColumn(BaseModel):
     """A value-free semantic definition of one table column."""
 
     col_idx: int = Field(ge=0)
     column_name: str
     column_label: str
+    header_leaf_id: str | None = None
+    header_leaf_label: str | None = None
+    header_group_ids: list[str] = Field(default_factory=list)
+    header_group_labels: list[str] = Field(default_factory=list)
+    header_path: list[str] = Field(default_factory=list)
     inferred_role: DefinedColumnRole = "unknown"
     grouping_variable_hint: str | None = None
     group_level_label: str | None = None
@@ -56,6 +76,7 @@ class ColumnDefinition(BaseModel):
     grouping_name: str | None = None
     group_count: int | None = Field(default=None, ge=0)
     columns: list[DefinedColumn] = Field(default_factory=list)
+    header_spans: list[DefinedColumnHeaderSpan] = Field(default_factory=list)
     confidence: float | None = Field(default=None, ge=0.0, le=1.0)
 
 

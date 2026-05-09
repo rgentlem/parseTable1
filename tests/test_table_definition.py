@@ -515,6 +515,17 @@ def test_build_table_definition_infers_general_grouping_structure_from_multirow_
     ]
     assert [column.group_level_label for column in definition.column_definition.columns[:3]] == [None, "Q1", "Q2"]
     assert [column.group_order for column in definition.column_definition.columns[:3]] == [None, 1, 2]
+    assert [column.column_label for column in definition.column_definition.columns[:3]] == ["Overall", "Q1", "Q2"]
+    assert definition.column_definition.columns[1].header_path == ["Cobalt quartile", "Q1"]
+    assert [
+        (span.header_level, span.col_start, span.col_end, span.label, span.source)
+        for span in definition.column_definition.header_spans[:4]
+    ] == [
+        (0, 2, 3, "Cobalt quartile", "group"),
+        (1, 1, 1, "Overall", "leaf"),
+        (1, 2, 2, "Q1", "leaf"),
+        (1, 3, 3, "Q2", "leaf"),
+    ]
     assert definition.column_definition.columns[3].statistic_subtype == "p_value"
     assert definition.column_definition.columns[4].statistic_subtype == "p_trend"
 

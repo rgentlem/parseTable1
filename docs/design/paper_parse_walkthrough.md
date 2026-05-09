@@ -467,6 +467,19 @@ those group headers often describe only subsets of the data columns. If a
 value-region group header is extracted as adjacent text fragments, a large
 horizontal gap can split those fragments into separate groups.
 
+For dense multirow headers, sparse rows after an internal rule are not
+automatically treated as leaf labels. The schema builder trims sparse group
+rows from the inferred leaf stack, keeps them available as higher header
+groups, and can expand repeated single-cell group labels leftward when the
+physical extraction placed a centered spanning header into the right-hand leaf
+of a two-column span. This keeps headers such as survey-cycle groups,
+prevalence-estimate groups, and statistic/unit leaves separate.
+
+`TableDefinition.column_definition` now carries that structure forward. Each
+defined column stores a leaf `column_label`, a top-to-bottom `header_path`, the
+supporting header group IDs and labels, and table-level `header_spans` that can
+render multirow column headers without reconstructing them from flattened text.
+
 The schema is deliberately not a tableone object and does not store summary
 values. It supplies the column axis that later semantic and stored-summary
 objects can consume.

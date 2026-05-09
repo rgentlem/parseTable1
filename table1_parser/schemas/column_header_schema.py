@@ -89,6 +89,9 @@ class ColumnHeaderDescriptor(BaseModel):
     column_name: str
     leaf_label: str
     leaf_name: str
+    header_group_ids: list[str] = Field(default_factory=list)
+    header_group_labels: list[str] = Field(default_factory=list)
+    header_path: list[str] = Field(default_factory=list)
     shared_context_label: str | None = None
     is_row_label_column: bool = False
     is_value_column: bool = True

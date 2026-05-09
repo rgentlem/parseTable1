@@ -310,13 +310,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                     )
                     caption_lines = _find_table_caption_lines(sideways_page_text)
                     collapsed_page_candidate = any(
-                        _column_count(candidate) <= 4
-                        and len(candidate.raw_rows) >= 3
-                        and any(
-                            len(str(cell).split()) >= 20
-                            for row in candidate.raw_rows
-                            for cell in row
-                        )
+                        _looks_like_collapsed_grid_candidate(candidate)
                         for candidate in page_candidates
                     )
                     sideways_signals: list[str] = []
@@ -339,8 +333,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                             and bool(caption_lines)
                         )
                         or (
-                            page_width < page_height
-                            and page_rotation == 0
+                            vertical_confidence >= 0.75
                             and vertical_count >= 20
                             and bool(caption_lines)
                             and collapsed_page_candidate
@@ -427,13 +420,20 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                             for candidate_index, existing_candidate in enumerate(page_candidates):
                                 if existing_candidate.table_index != target_table_index:
                                     continue
-                                if (
+                                higher_quality_replacement = (
                                     replacement_candidate.score >= existing_candidate.score
                                     and (
                                         _column_count(replacement_candidate) > _column_count(existing_candidate)
                                         or len(replacement_candidate.raw_rows) > len(existing_candidate.raw_rows)
                                     )
-                                ):
+                                )
+                                structural_replacement = (
+                                    _looks_like_collapsed_grid_candidate(existing_candidate)
+                                    and replacement_candidate.score >= self.heuristic_confidence_threshold
+                                    and _column_count(replacement_candidate) > _column_count(existing_candidate)
+                                    and len(replacement_candidate.raw_rows) >= len(existing_candidate.raw_rows)
+                                )
+                                if higher_quality_replacement or structural_replacement:
                                     page_candidates[candidate_index] = replacement_candidate
                                     replaced_candidate = True
                                 break
@@ -948,6 +948,19 @@ def _refine_explicit_table_candidate_grid(
 def _column_count(candidate: DetectedTableCandidate) -> int:
     """Return the candidate column count."""
     return max((len(row) for row in candidate.raw_rows), default=0)
+
+
+def _looks_like_collapsed_grid_candidate(candidate: DetectedTableCandidate) -> bool:
+    """Return whether a grid has collapsed several physical columns into wide cells."""
+    return (
+        _column_count(candidate) <= 4
+        and len(candidate.raw_rows) >= 3
+        and any(
+            len(str(cell).split()) >= 20
+            for row in candidate.raw_rows
+            for cell in row
+        )
+    )
 
 
 def _first_column_fill_ratio(candidate: DetectedTableCandidate) -> float:

@@ -33,6 +33,7 @@ from table1_parser.schemas.parsed_table import (
 from table1_parser.schemas.table_definition import (
     ColumnDefinition,
     DefinedColumn,
+    DefinedColumnHeaderSpan,
     DefinedLevel,
     DefinedVariable,
     TableDefinition,
@@ -59,6 +60,7 @@ __all__ = [
     "ColumnHeaderRelationship",
     "ColumnHeaderSchema",
     "DefinedColumn",
+    "DefinedColumnHeaderSpan",
     "DefinedLevel",
     "DefinedVariable",
     "PaperVisual",

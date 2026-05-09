@@ -224,6 +224,15 @@ def _write_sample_paper_outputs(
         _make_column(1, "Overall", "Overall", "overall"),
         _make_column(2, "DKD", "DKD", "group", grouping_variable_hint="DKD status"),
     ]
+    columns[1].update(
+        {
+            "header_leaf_id": "tbl-1:column_header_schema:leaf:2",
+            "header_leaf_label": "DKD",
+            "header_group_ids": ["tbl-1:column_header_schema:group:1"],
+            "header_group_labels": ["DKD status"],
+            "header_path": ["DKD status", "DKD"],
+        }
+    )
     table_definitions = [
         {
             "table_id": "tbl-1",
@@ -234,6 +243,19 @@ def _write_sample_paper_outputs(
                 "grouping_label": "DKD status",
                 "grouping_name": "DKD status",
                 "columns": columns,
+                "header_spans": [
+                    {
+                        "header_level": 0,
+                        "row_idx": 0,
+                        "label": "DKD status",
+                        "col_start": 2,
+                        "col_end": 2,
+                        "leaf_col_indices": [2],
+                        "source": "group",
+                        "source_id": "tbl-1:column_header_schema:group:1",
+                        "confidence": 0.9,
+                    }
+                ],
                 "confidence": 0.9,
             },
             "notes": [],
@@ -1338,7 +1360,9 @@ def test_r_observed_table_one_from_paper_dir_includes_processing_status_provenan
                     'cat(x$provenance$table_number, "\\n"); '
                     'cat(x$provenance$processing_status, "\\n"); '
                 'cat(x$provenance$failure_stage, "\\n"); '
-                'cat(x$provenance$failure_reason, "\\n")'
+                'cat(x$provenance$failure_reason, "\\n"); '
+                'cat(paste(x$columns[[2]]$header_path, collapse = " > "), "\\n"); '
+                'cat(x$MetaData$column_header_spans[[1]]$label, "\\n")'
             ),
         ],
         capture_output=True,
@@ -1353,6 +1377,8 @@ def test_r_observed_table_one_from_paper_dir_includes_processing_status_provenan
     assert "\n1 \n" in result.stdout
     assert "failure_stage: parsed_table" in result.stdout
     assert "failure_reason: no_values_after_parse" in result.stdout
+    assert "DKD status > DKD" in result.stdout
+    assert "DKD status" in result.stdout
 
 
 def test_r_inspection_shows_continued_variable_integration(tmp_path) -> None:

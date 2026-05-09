@@ -505,6 +505,7 @@ from normalized rows.
 - `grouping_name`
 - `group_count`
 - `columns`
+- `header_spans`
 - `confidence`
 
 `DefinedColumn` design components:
@@ -512,6 +513,11 @@ from normalized rows.
 - `col_idx`
 - `column_name`
 - `column_label`
+- `header_leaf_id`
+- `header_leaf_label`
+- `header_group_ids`
+- `header_group_labels`
+- `header_path`
 - `inferred_role`
 - `grouping_variable_hint`
 - `group_level_label`
@@ -530,6 +536,7 @@ Design intent:
 - keep `level_name` semantically distinct for categorical levels, preserving threshold and range syntax such as `< 1.3`, `1.3-1.8`, and `>1.8`
 - model grouped columns explicitly enough to distinguish the overall population column, grouped data columns, and trailing statistic columns
 - preserve grouped-column level labels and left-to-right order so downstream matching can reconstruct the table's column grouping structure
+- keep multirow column headers structural: parent groups are stored in `header_spans`, per-column paths are stored in `header_path`, and `column_label` remains the leaf label instead of a fragile flattened header string
 
 ## 5. Paper Context Artifacts
 

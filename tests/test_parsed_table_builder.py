@@ -99,6 +99,11 @@ def _build_definition() -> TableDefinition:
                     col_idx=2,
                     column_name="cases",
                     column_label="Cases (n=40)",
+                    header_leaf_id="leaf-2",
+                    header_leaf_label="Cases (n=40)",
+                    header_group_ids=["group-1"],
+                    header_group_labels=["Case status"],
+                    header_path=["Case status", "Cases (n=40)"],
                     inferred_role="group",
                     confidence=0.92,
                 ),
@@ -127,6 +132,7 @@ def test_build_parsed_table_parses_count_percent_values_and_column_roles() -> No
 
     assert parsed.table_id == "tbl-parsed"
     assert [column.inferred_role for column in parsed.columns] == ["overall", "group", "group", "p_value"]
+    assert parsed.columns[1].header_path == ["Case status", "Cases (n=40)"]
     male_overall = next(
         value for value in parsed.values if value.variable_name == "Sex" and value.level_label == "Male" and value.col_idx == 1
     )

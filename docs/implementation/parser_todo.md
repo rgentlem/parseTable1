@@ -12,7 +12,7 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
    Implementation plan: `docs/implementation/column_header_schema_implementation_plan.md`.
    This should become the primary column model consumed by `TableDefinition` and any later stored summary/tableone projection; continuation compatibility is an important later consumer, but not the main design driver.
    Initial implementation is in place: `table1-parser parse` writes `column_header_schemas.json`, `TableDefinition` consumes it, continuation checks use schema-derived column headers, and tests cover Eke-like Table 1/Table 2 structures plus non-problem tables.
-   Follow-up: Eke Tables 1-2 show that multi-line header stacks can produce wrong parent paths when rule-banded header rows are extracted as many short text fragments. The current parser now repairs obvious split estimate/uncertainty value columns, drops sparse non-matrix page-text columns and empty separator columns, removes tall/narrow numeric margin text before grid construction, keeps adjacent header text runs together, only merges wrapped leaf rows after geometry-based header inference, preserves normalized-to-original column identity in `source_col_indices`, and uses leaf-band coordinates to move short leading fragments across adjacent column boundaries when the geometry supports it. Remaining work should expose ambiguous leaf-band fragment assignments as structured candidates that deterministic code or later LLM inference can adjudicate; do not hard-code paper-specific vocabulary.
+   Follow-up: Eke Tables 1-2 show that multi-line header stacks can produce wrong parent paths when rule-banded header rows are extracted as many short text fragments. The current parser now repairs obvious split estimate/uncertainty value columns, drops sparse non-matrix page-text columns and empty separator columns, removes tall/narrow numeric margin text before grid construction, keeps adjacent header text runs together, only merges wrapped leaf rows after geometry-based header inference, preserves normalized-to-original column identity in `source_col_indices`, moves short leading leaf fragments across adjacent column boundaries when structural or coordinate evidence supports it, trims sparse group rows out of the leaf-header stack, and persists `TableDefinition.column_definition.header_spans` plus per-column `header_path` so JSON no longer relies on flattened multirow labels. Remaining work should expose ambiguous leaf-band fragment assignments as structured candidates that deterministic code or later LLM inference can adjudicate; do not hard-code paper-specific vocabulary.
 
 2. [ ] Make continuations semantically real.
    One logical Table 1 spanning pages should feed `TableDefinition` and `ParsedTable`, rather than leaving page-level and continuation-page parses as separate semantic outputs.
@@ -24,13 +24,16 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
    Boundary handling now preserves and reinterprets leading continuation body rows before the first standalone continuation variable, so body rows that are ambiguous without the prior fragment can still attach as levels when compatible column and parent-variable context supports it.
    Follow-up: Planetary Health Table 1 now exposes its uncaptained next-page fragment as a continuation candidate, its wrapped lowercase caption tail is kept in the caption instead of table row zero, the top value-region group labels are recovered using the internal header rule plus a large geometry gap, and the base page uses early stable value anchors to preserve the visible 9-column structure. Merged continuation artifacts remain inspection-only; making them feed semantic parsing is still separate continuation-resolution work.
 
-3. [ ] Align parser route with table taxonomy.
+3. [ ] Add paper-level repeated marginal text and watermark detection.
+   The current extraction-time trailing-row trim is a necessary local guard, but repeated download notices, watermarks, page furniture, and marginal text should also be assessed across the whole paper once. A future paper-level artifact should identify repeated non-table text signatures and/or page regions, then extraction can ignore those regions consistently while keeping the table-local boundary trim as a fallback for one-off spillover.
+
+4. [ ] Align parser route with table taxonomy.
    `table_category` should drive routing once it is available. Current `table_family` is better understood as an early provisional parser-route signal; decide whether to rename, replace, or derive it from the paper table inventory.
 
-4. [ ] Add first-class support for data matrices.
+5. [ ] Add first-class support for data matrices.
    Tables categorized as `data_presentation` need a sibling semantic model/parser instead of being forced through Table 1 descriptive semantics or left as only normalized grids.
 
-5. [ ] Model value semantics beyond count/percent.
+6. [ ] Model value semantics beyond count/percent.
    Add explicit handling for weighted population sizes, prevalence/percent estimates, age-standardized estimates, standard errors, and `N/A`/not-estimable values where appropriate.
 
 6. [ ] Strengthen parent/level reasoning.

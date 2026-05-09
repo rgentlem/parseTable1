@@ -209,6 +209,11 @@ Each column entry should preserve:
 - `col_idx`
 - `column_name`
 - `column_label`
+- `header_leaf_id`
+- `header_leaf_label`
+- `header_group_ids`
+- `header_group_labels`
+- `header_path`
 - `role`
 - `grouping_variable_hint`
 - `group_level_label`
@@ -216,6 +221,13 @@ Each column entry should preserve:
 - `group_order`
 - `statistic_subtype`
 - `confidence`
+
+For multirow printed headers, `column_label` is the leaf label. Parent
+headers should be read from `header_path` on each column and from
+`MetaData$column_header_spans`, which mirrors
+`TableDefinition.column_definition.header_spans`. R-side observed-table code
+should use those stored spans for tableone-style spanners rather than
+reconstructing hierarchy by splitting flattened labels.
 
 Column roles should remain close to the current parser semantics:
 

@@ -271,6 +271,98 @@ def test_build_schema_recovers_eke_headers_when_caption_is_only_header_row() -> 
     assert "trimmed_body_rows_after_inferred_headers:start=4" in schema.diagnostics
 
 
+def test_build_schema_preserves_eke_table1_multirow_header_bands() -> None:
+    """Eke-like prevalence headers should keep cycle groups, estimate groups, and leaf units separate."""
+    rows = [
+        [
+            "Prevalence of",
+            "Total Periodontitis",
+            "",
+            "Using",
+            "NHANES",
+            "Data",
+            "by Selected",
+            "Characteristics",
+            "",
+            "and",
+            "Individual",
+            "NHANES",
+            "Cycles for",
+        ],
+        ["Individuals Aged", "‡30", "Years in", "the United", "States,", "2009", "to 2010", "and 2011", "to 2012", "", "", "", ""],
+        ["", "", "", "", "", "", "", "", "", "", "", "", ""],
+        ["", "", "", "", "", "", "", "", "", "NHANES", "2009 to 2012", "(Combined NHANES", "2009 to"],
+        ["", "", "NHANES", "2009 to 2010", "", "", "NHANES", "2011 to 2012", "", "", "2010", "and 2011 to 2012)", ""],
+        ["", "", "", "", "", "", "", "", "", "", "", "", ""],
+        ["", "", "", "", "Total", "", "", "", "Total", "", "", "", "Total"],
+        ["", "", "", "", "Periodontitis,", "", "", "", "Periodontitis,", "", "", "", "Periodontitis,"],
+        ["", "", "", "", "", "", "", "", "", "", "", "", ""],
+        ["", "", "", "Total", "Age", "", "", "Total", "Age", "", "", "Total", "Age"],
+        ["", "", "Weighted", "n Periodontitis", "Standardized", "", "Weighted", "n Periodontitis", "Standardized", "", "Weighted", "n Periodontitis", "Standardized"],
+        ["Characteristics", "n", "(millions)*", "(% - SE)†", "(% - SE)‡", "n", "(millions)", "(% - SE)", "(% - SE)", "n", "(millions)", "(% - SE)", "(% - SE)"],
+        ["All (NHANES 2009 to 2012)", "3,743", "137.1", "47.2 - 2.1", "47.7 - 1.9", "3,323", "144.8", "44.7 - 2.4", "45.2 - 2.2", "7,066", "141.0", "45.9 - 1.6", "46.47 - 1.5"],
+    ]
+    table = _normalized_table("tbl-eke-table1-header", rows, header_rows=[0], body_rows=list(range(1, len(rows))))
+    table.metadata["row_bounds"] = [
+        (54.22, 65.56),
+        (67.14, 79.50),
+        (76.08, 116.56),
+        (95.65, 103.82),
+        (107.61, 115.78),
+        (119.11, 125.83),
+        (125.64, 139.91),
+        (137.60, 145.77),
+        (142.52, 167.25),
+        (149.56, 157.73),
+        (161.52, 169.69),
+        (169.79, 190.03),
+        (190.51, 200.27),
+    ]
+    table.metadata["horizontal_rules"] = [89.52, 119.83, 185.70]
+
+    schema = build_column_header_schema(table)
+    definition = build_table_definition(table, schema)
+
+    assert schema.header_rows_considered == [3, 4, 6, 7, 9, 10, 11]
+    assert [leaf.leaf_label for leaf in schema.leaves[1:5]] == [
+        "n",
+        "Weighted n (millions)*",
+        "Total Periodontitis (% - SE)†",
+        "Age Standardized (% - SE)‡",
+    ]
+    assert [(group.label, group.col_start, group.col_end) for group in schema.groups] == [
+        ("NHANES 2009 to 2012 (Combined NHANES 2009 to 2010 and 2011 to 2012)", 9, 12),
+        ("NHANES 2009 to 2010", 1, 4),
+        ("NHANES 2011 to 2012", 5, 8),
+        ("Total Periodontitis,", 3, 4),
+        ("Total Periodontitis,", 7, 8),
+        ("Total Periodontitis,", 11, 12),
+    ]
+    assert definition.column_definition.columns[3].header_path == [
+        "NHANES 2009 to 2010",
+        "Total Periodontitis,",
+        "Age Standardized (% - SE)‡",
+    ]
+    assert definition.column_definition.columns[3].column_label == "Age Standardized (% - SE)‡"
+    assert [
+        (span.header_level, span.col_start, span.col_end, span.label, span.source)
+        for span in definition.column_definition.header_spans[:6]
+    ] == [
+        (0, 9, 12, "NHANES 2009 to 2012 (Combined NHANES 2009 to 2010 and 2011 to 2012)", "group"),
+        (1, 1, 4, "NHANES 2009 to 2010", "group"),
+        (1, 5, 8, "NHANES 2011 to 2012", "group"),
+        (2, 3, 4, "Total Periodontitis,", "group"),
+        (2, 7, 8, "Total Periodontitis,", "group"),
+        (2, 11, 12, "Total Periodontitis,", "group"),
+    ]
+    assert [column.group_level_label for column in definition.column_definition.columns[:4]] == [
+        "NHANES 2009 to 2010",
+        "NHANES 2009 to 2010",
+        "NHANES 2009 to 2010",
+        "NHANES 2009 to 2010",
+    ]
+
+
 def test_build_schema_for_eke_table2_case_definition_groups() -> None:
     """Eke Table 2-like case-definition headers should span their category leaves."""
     rows = [

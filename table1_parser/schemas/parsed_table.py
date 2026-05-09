@@ -37,6 +37,11 @@ class ParsedColumn(BaseModel):
     col_idx: int = Field(ge=0)
     column_name: str
     column_label: str
+    header_leaf_id: str | None = None
+    header_leaf_label: str | None = None
+    header_group_ids: list[str] = Field(default_factory=list)
+    header_group_labels: list[str] = Field(default_factory=list)
+    header_path: list[str] = Field(default_factory=list)
     inferred_role: ColumnRole = "unknown"
     confidence: float | None = Field(default=None, ge=0.0, le=1.0)
 

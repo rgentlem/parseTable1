@@ -13,6 +13,7 @@ from table1_parser.schemas import (
     ColumnHeaderRelationship,
     ColumnHeaderSchema,
     DefinedColumn,
+    DefinedColumnHeaderSpan,
     DefinedLevel,
     DefinedVariable,
     ExtractedTable,
@@ -175,8 +176,24 @@ def test_table_definition_creation_and_serialization() -> None:
                     col_idx=1,
                     column_name="Overall",
                     column_label="Overall",
+                    header_leaf_id="leaf-1",
+                    header_leaf_label="Overall",
+                    header_path=["Overall"],
                     inferred_role="overall",
                     grouping_variable_hint="RA status",
+                    confidence=0.95,
+                )
+            ],
+            header_spans=[
+                DefinedColumnHeaderSpan(
+                    header_level=0,
+                    row_idx=0,
+                    label="Overall",
+                    col_start=1,
+                    col_end=1,
+                    leaf_col_indices=[1],
+                    source="leaf",
+                    source_id="leaf-1",
                     confidence=0.95,
                 )
             ],
@@ -190,6 +207,8 @@ def test_table_definition_creation_and_serialization() -> None:
 
     assert dumped["variables"][0]["levels"][0]["level_label"] == "Male"
     assert dumped["column_definition"]["columns"][0]["inferred_role"] == "overall"
+    assert dumped["column_definition"]["columns"][0]["header_path"] == ["Overall"]
+    assert dumped["column_definition"]["header_spans"][0]["source"] == "leaf"
 
 
 def test_column_header_schema_creation_and_serialization() -> None:

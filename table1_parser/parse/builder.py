@@ -35,6 +35,11 @@ def build_parsed_table(table: NormalizedTable, definition: TableDefinition) -> P
             col_idx=column.col_idx,
             column_name=column.column_name,
             column_label=column.column_label,
+            header_leaf_id=column.header_leaf_id,
+            header_leaf_label=column.header_leaf_label,
+            header_group_ids=column.header_group_ids,
+            header_group_labels=column.header_group_labels,
+            header_path=column.header_path,
             inferred_role=(
                 column.inferred_role
                 if column.inferred_role in {"group", "overall", "p_value", "unknown"}

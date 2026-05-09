@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from collections import Counter
 from dataclasses import dataclass
 
 from table1_parser.column_header_schema import build_column_header_schema, column_header_descriptors
@@ -11,8 +12,10 @@ from table1_parser.normalize.text_normalizer import normalize_label_text
 from table1_parser.schemas import (
     ColumnDefinition,
     ColumnHeaderDescriptor,
+    ColumnHeaderGroup,
     ColumnHeaderSchema,
     DefinedColumn,
+    DefinedColumnHeaderSpan,
     NormalizedTable,
 )
 from table1_parser.text_cleaning import clean_text
@@ -59,6 +62,107 @@ class ColumnGroupingAnalysis:
     group_levels: dict[int, GroupLevelGuess]
     stat_columns: dict[int, StatColumnGuess]
     confidence: float | None
+
+
+@dataclass(slots=True)
+class HeaderProjection:
+    """Structured column-header paths and display spans derived from ColumnHeaderSchema."""
+
+    path_by_col_idx: dict[int, list[str]]
+    group_ids_by_col_idx: dict[int, list[str]]
+    group_labels_by_col_idx: dict[int, list[str]]
+    leaf_id_by_col_idx: dict[int, str]
+    leaf_label_by_col_idx: dict[int, str]
+    spans: list[DefinedColumnHeaderSpan]
+
+
+def _project_column_headers(schema: ColumnHeaderSchema, label_col_idx: int) -> HeaderProjection:
+    """Project physical header groups into per-column paths and table-level spans."""
+    groups_by_id = {group.group_id: group for group in schema.groups}
+    leaf_by_id = {leaf.leaf_id: leaf for leaf in schema.leaves}
+    group_items_by_leaf_id: dict[str, list[ColumnHeaderGroup]] = {leaf.leaf_id: [] for leaf in schema.leaves}
+    for relationship in schema.relationships:
+        group = groups_by_id.get(relationship.parent_group_id)
+        leaf = leaf_by_id.get(relationship.child_leaf_id)
+        if group is None or leaf is None:
+            continue
+        group_items_by_leaf_id.setdefault(leaf.leaf_id, []).append(group)
+
+    path_by_col_idx: dict[int, list[str]] = {}
+    group_ids_by_col_idx: dict[int, list[str]] = {}
+    group_labels_by_col_idx: dict[int, list[str]] = {}
+    leaf_id_by_col_idx: dict[int, str] = {}
+    leaf_label_by_col_idx: dict[int, str] = {}
+    value_leaf_col_indices = sorted(
+        leaf.col_idx
+        for leaf in schema.leaves
+        if leaf.col_idx != label_col_idx and leaf.is_value_column
+    )
+    value_leaf_col_set = set(value_leaf_col_indices)
+    for leaf in schema.leaves:
+        groups = sorted(
+            group_items_by_leaf_id.get(leaf.leaf_id, []),
+            key=lambda group: (group.row_idx, group.col_start, group.col_end),
+        )
+        group_labels = [group.label for group in groups if group.label]
+        group_ids = [group.group_id for group in groups]
+        path_by_col_idx[leaf.col_idx] = [part for part in [*group_labels, leaf.leaf_label] if part]
+        group_ids_by_col_idx[leaf.col_idx] = group_ids
+        group_labels_by_col_idx[leaf.col_idx] = group_labels
+        leaf_id_by_col_idx[leaf.col_idx] = leaf.leaf_id
+        leaf_label_by_col_idx[leaf.col_idx] = leaf.leaf_label
+
+    group_row_indices = sorted(
+        {
+            group.row_idx
+            for group in schema.groups
+            if value_leaf_col_set.intersection(group.leaf_col_indices)
+        }
+    )
+    header_level_by_row_idx = {row_idx: level for level, row_idx in enumerate(group_row_indices)}
+    spans: list[DefinedColumnHeaderSpan] = []
+    for group in sorted(schema.groups, key=lambda item: (item.row_idx, item.col_start, item.col_end, item.label)):
+        leaf_col_indices = sorted(value_leaf_col_set.intersection(group.leaf_col_indices))
+        if not leaf_col_indices:
+            continue
+        spans.append(
+            DefinedColumnHeaderSpan(
+                header_level=header_level_by_row_idx[group.row_idx],
+                row_idx=group.row_idx,
+                label=group.label,
+                col_start=leaf_col_indices[0],
+                col_end=leaf_col_indices[-1],
+                leaf_col_indices=leaf_col_indices,
+                source="group",
+                source_id=group.group_id,
+                confidence=group.confidence,
+            )
+        )
+    leaf_level = len(group_row_indices)
+    for leaf in sorted(schema.leaves, key=lambda item: item.col_idx):
+        if leaf.col_idx not in value_leaf_col_set:
+            continue
+        spans.append(
+            DefinedColumnHeaderSpan(
+                header_level=leaf_level,
+                row_idx=leaf.leaf_header_row_idx,
+                label=leaf.leaf_label,
+                col_start=leaf.col_idx,
+                col_end=leaf.col_idx,
+                leaf_col_indices=[leaf.col_idx],
+                source="leaf",
+                source_id=leaf.leaf_id,
+                confidence=schema.confidence,
+            )
+        )
+    return HeaderProjection(
+        path_by_col_idx=path_by_col_idx,
+        group_ids_by_col_idx=group_ids_by_col_idx,
+        group_labels_by_col_idx=group_labels_by_col_idx,
+        leaf_id_by_col_idx=leaf_id_by_col_idx,
+        leaf_label_by_col_idx=leaf_label_by_col_idx,
+        spans=spans,
+    )
 
 
 def _build_grouping_analysis(
@@ -113,8 +217,6 @@ def _build_grouping_analysis(
         ]
         if explicit_overall:
             overall_col_indices = [explicit_overall[0]]
-        elif len(data_descriptors) >= 2:
-            overall_col_indices = [data_descriptors[0].col_idx]
         elif len(data_descriptors) == 1 and any(descriptor.col_idx in stat_columns for descriptor in descriptors[1:]):
             overall_col_indices = [data_descriptors[0].col_idx]
     grouped_descriptors = [descriptor for descriptor in data_descriptors if descriptor.col_idx not in overall_col_indices]
@@ -134,41 +236,40 @@ def _build_grouping_analysis(
         if label_header and clean_text(label_header).lower() not in LABEL_COLUMN_TOKENS:
             grouping_label = label_header
     grouping_name = normalize_label_text(grouping_label) if grouping_label else None
-    group_levels = {
-        descriptor.col_idx: GroupLevelGuess(
-            col_idx=descriptor.col_idx,
-            level_label=(
-                descriptor.shared_context_label
-                if descriptor.shared_context_label
-                and (
-                    RANGE_LEVEL_PATTERN.fullmatch(descriptor.leaf_label.strip())
-                    or (
-                        any(char.isdigit() for char in descriptor.leaf_label)
-                        and not any(char.isalpha() for char in descriptor.leaf_label)
-                    )
-                )
-                else descriptor.leaf_label or descriptor.column_label
-            ),
-            level_name=normalize_label_text(
-                (
-                    descriptor.shared_context_label
-                    if descriptor.shared_context_label
-                    and (
-                        RANGE_LEVEL_PATTERN.fullmatch(descriptor.leaf_label.strip())
-                        or (
-                            any(char.isdigit() for char in descriptor.leaf_label)
-                            and not any(char.isalpha() for char in descriptor.leaf_label)
-                        )
-                    )
-                    else descriptor.leaf_label or descriptor.column_label
-                )
-            )
-            or descriptor.column_name,
-            order=order,
-            confidence=0.9 if descriptor.shared_context_label else 0.82,
+    leaf_label_counts = Counter(normalize_label_text(descriptor.leaf_label).lower() for descriptor in grouped_descriptors)
+    next_group_order = 1
+    group_order_by_label: dict[str, int] = {}
+    group_levels: dict[int, GroupLevelGuess] = {}
+    for descriptor in grouped_descriptors:
+        level_label: str
+        repeated_leaf_in_groups = (
+            bool(descriptor.header_group_labels)
+            and leaf_label_counts[normalize_label_text(descriptor.leaf_label).lower()] > 1
         )
-        for order, descriptor in enumerate(grouped_descriptors, start=1)
-    }
+        if repeated_leaf_in_groups:
+            level_label = descriptor.header_group_labels[0]
+        elif descriptor.shared_context_label and (
+            RANGE_LEVEL_PATTERN.fullmatch(descriptor.leaf_label.strip())
+            or (
+                any(char.isdigit() for char in descriptor.leaf_label)
+                and not any(char.isalpha() for char in descriptor.leaf_label)
+            )
+        ):
+            level_label = descriptor.shared_context_label
+        else:
+            level_label = descriptor.leaf_label or descriptor.column_label
+        level_name = normalize_label_text(level_label) or descriptor.column_name
+        order_key = clean_text(level_label).lower()
+        if order_key not in group_order_by_label:
+            group_order_by_label[order_key] = next_group_order
+            next_group_order += 1
+        group_levels[descriptor.col_idx] = GroupLevelGuess(
+            col_idx=descriptor.col_idx,
+            level_label=level_label,
+            level_name=level_name,
+            order=group_order_by_label[order_key],
+            confidence=0.9 if descriptor.header_group_labels or descriptor.shared_context_label else 0.82,
+        )
     confidence_components = [
         0.95 if overall_col_indices else 0.6,
         0.9 if grouped_descriptors else 0.65,
@@ -197,6 +298,7 @@ def build_column_definition(
         column_schema = build_column_header_schema(table)
     descriptors = column_header_descriptors(column_schema)
     analysis = _build_grouping_analysis(table, descriptors, column_schema.label_col_idx)
+    header_projection = _project_column_headers(column_schema, analysis.label_col_idx)
     columns: list[DefinedColumn] = []
     for descriptor in descriptors:
         if descriptor.col_idx == analysis.label_col_idx:
@@ -234,7 +336,12 @@ def build_column_definition(
             DefinedColumn(
                 col_idx=descriptor.col_idx,
                 column_name=descriptor.column_name,
-                column_label=descriptor.column_label,
+                column_label=header_projection.leaf_label_by_col_idx.get(descriptor.col_idx) or descriptor.leaf_label or descriptor.column_label,
+                header_leaf_id=header_projection.leaf_id_by_col_idx.get(descriptor.col_idx),
+                header_leaf_label=header_projection.leaf_label_by_col_idx.get(descriptor.col_idx) or descriptor.leaf_label,
+                header_group_ids=header_projection.group_ids_by_col_idx.get(descriptor.col_idx, []),
+                header_group_labels=header_projection.group_labels_by_col_idx.get(descriptor.col_idx, []),
+                header_path=header_projection.path_by_col_idx.get(descriptor.col_idx, descriptor.header_path),
                 inferred_role=role,
                 grouping_variable_hint=grouping_variable_hint,
                 group_level_label=group_level_label,
@@ -254,5 +361,6 @@ def build_column_definition(
         grouping_name=analysis.grouping_name,
         group_count=len(analysis.grouped_col_indices) if analysis.grouped_col_indices else None,
         columns=columns,
+        header_spans=header_projection.spans,
         confidence=definition_confidence,
     )

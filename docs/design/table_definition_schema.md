@@ -58,6 +58,11 @@ Suggested fields:
 - `col_idx: int`
 - `column_name: str`
 - `column_label: str`
+- `header_leaf_id: str | None = None`
+- `header_leaf_label: str | None = None`
+- `header_group_ids: list[str] = []`
+- `header_group_labels: list[str] = []`
+- `header_path: list[str] = []`
 - `inferred_role: Literal["overall", "group", "comparison_group", "p_value", "smd", "unknown"] = "unknown"`
 - `grouping_variable_hint: str | None = None`
 - `group_level_label: str | None = None`
@@ -68,8 +73,10 @@ Suggested fields:
 
 Notes:
 
-- `column_label` preserves the printed header
-- `column_name` is the normalized matching-friendly form
+- `column_label` is the leaf-column label, not a flattened concatenation of every parent header
+- `column_name` is the normalized matching-friendly form and may include enough parent context to remain unique
+- `header_path` preserves the structured top-to-bottom header path for the column, ending with the leaf label
+- `header_group_ids` and `header_group_labels` connect the column back to spanning header groups in `ColumnHeaderSchema`
 - `grouping_variable_hint` is the best guess for what defines the subgrouping, such as `ra_status`
 - `group_level_label` preserves the paper-facing label for one grouped column, such as `RA`, `non-RA`, `Q1`, or `Q4`
 - `group_level_name` is the matching-friendly grouped-column level form
@@ -86,12 +93,14 @@ Suggested fields:
 - `grouping_name: str | None = None`
 - `group_count: int | None = None`
 - `columns: list[DefinedColumn] = []`
+- `header_spans: list[DefinedColumnHeaderSpan] = []`
 - `confidence: float | None = None`
 
 Notes:
 
 - this allows the table to carry a table-level guess like `RA status` or `Diabetes status`
-- individual `DefinedColumn` records still preserve per-column roles and labels
+- individual `DefinedColumn` records preserve per-column roles, leaf labels, and header paths
+- `header_spans` is the table-level multirow header projection. It records displayable group and leaf spans with `header_level`, `row_idx`, `label`, `col_start`, `col_end`, `leaf_col_indices`, `source`, `source_id`, and `confidence`.
 - `group_count` records how many grouped data columns were inferred, separate from any overall or statistic columns
 
 ### `TableDefinition`
