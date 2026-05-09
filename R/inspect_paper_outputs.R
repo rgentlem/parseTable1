@@ -26,6 +26,7 @@ paper_output_paths <- function(paper_dir) {
   list(
     extracted = file.path(paper_dir, "extracted_tables.json"),
     normalized = file.path(paper_dir, "normalized_tables.json"),
+    column_header_schemas = file.path(paper_dir, "column_header_schemas.json"),
     table1_continuation_groups = file.path(paper_dir, "table1_continuation_groups.json"),
     table_continuation_column_checks = file.path(paper_dir, "table_continuation_column_checks.json"),
     merged_table1 = file.path(paper_dir, "merged_table1_tables.json"),
@@ -63,6 +64,39 @@ table_definition_columns <- function(definition) {
   column_definition$columns %||% definition$columns %||% list()
 }
 
+table_definition_header_spans <- function(definition) {
+  column_definition <- definition$column_definition %||% list()
+  column_definition$header_spans %||% list()
+}
+
+character_vector <- function(x) {
+  values <- as.character(unlist(x %||% list(), use.names = FALSE))
+  values[!is.na(values)]
+}
+
+column_header_path_text <- function(column) {
+  path <- character_vector(column$header_path)
+  path <- path[nzchar(path)]
+  if (length(path) > 0L) {
+    return(paste(path, collapse = " > "))
+  }
+  group_labels <- character_vector(column$header_group_labels)
+  group_labels <- group_labels[nzchar(group_labels)]
+  leaf_label <- as.character(column$header_leaf_label %||% column$column_label %||% column$column_name %||% "")
+  parts <- c(group_labels, leaf_label)
+  parts <- parts[nzchar(parts)]
+  paste(parts, collapse = " > ")
+}
+
+column_header_schema_by_index <- function(outputs, table_index = 0L) {
+  schemas <- outputs$column_header_schemas %||% list()
+  idx <- as.integer(table_index) + 1L
+  if (idx < 1L || idx > length(schemas)) {
+    return(NULL)
+  }
+  schemas[[idx]]
+}
+
 read_table_contexts <- function(context_dir) {
   if (!dir.exists(context_dir)) {
     return(list())
@@ -79,6 +113,7 @@ load_paper_outputs <- function(paper_dir) {
     paper_dir = normalizePath(paper_dir, winslash = "/", mustWork = TRUE),
     extracted_tables = read_json_file(paths$extracted),
     normalized_tables = read_json_file(paths$normalized),
+    column_header_schemas = read_optional_json(paths$column_header_schemas) %||% list(),
     table1_continuation_groups = read_optional_json(paths$table1_continuation_groups),
     table_continuation_column_checks = read_optional_json(paths$table_continuation_column_checks),
     merged_table1_tables = read_optional_json(paths$merged_table1),
@@ -350,11 +385,11 @@ table_definition_by_index <- function(outputs, table_index = 0L) {
 }
 
 show_column_header_tree <- function(paper_dir, table_index = 0L, table_number = NULL) {
+  outputs <- load_paper_outputs(paper_dir)
   if (!is.null(table_number)) {
-    table_index <- resolve_table_index(load_paper_outputs(paper_dir), table_number = table_number)
+    table_index <- resolve_table_index(outputs, table_number = table_number)
   }
-  schemas <- read_json_file(file.path(paper_dir, "column_header_schemas.json"))
-  schema <- schemas[[as.integer(table_index) + 1L]]
+  schema <- column_header_schema_by_index(outputs, table_index)
   if (is.null(schema)) {
     stop(sprintf("No column header schema found for table_index=%s.", table_index), call. = FALSE)
   }
@@ -367,14 +402,14 @@ show_column_header_tree <- function(paper_dir, table_index = 0L, table_number = 
   rows <- lapply(schema$leaves %||% list(), function(leaf) {
     parents <- rels[vapply(rels, function(r) identical(r$child_leaf_id, leaf$leaf_id), logical(1))]
     if (length(parents) > 1L) {
-      parents <- parents[order(vapply(parents, function(r) as.integer(r$row_idx %||% 0L), integer(1)), decreasing = TRUE)]
+      parents <- parents[order(vapply(parents, function(r) as.integer(r$row_idx %||% 0L), integer(1)))]
     }
     path <- vapply(parents, function(r) group_labels[[as.character(r$parent_group_id %||% "")]] %||% "", character(1))
     leaf_label <- as.character(leaf$leaf_label %||% "")
     data.frame(
       col_idx = as.integer(leaf$col_idx %||% NA_integer_),
       leaf_label = leaf_label,
-      header_path = paste(c(leaf_label, path[nzchar(path)]), collapse = " > "),
+      header_path = paste(c(path[nzchar(path)], leaf_label), collapse = " > "),
       stringsAsFactors = FALSE
     )
   })
@@ -385,7 +420,10 @@ show_column_header_tree <- function(paper_dir, table_index = 0L, table_number = 
 
 show_column_header_trees <- function(paper_dir, table_number = NULL) {
   outputs <- load_paper_outputs(paper_dir)
-  schemas <- read_json_file(file.path(paper_dir, "column_header_schemas.json"))
+  schemas <- outputs$column_header_schemas %||% list()
+  if (length(schemas) == 0L) {
+    stop("No column_header_schemas.json found for this paper.", call. = FALSE)
+  }
   table_indices <- seq_along(schemas) - 1L
   if (!is.null(table_number)) {
     wanted <- as.integer(table_number)
@@ -1175,12 +1213,19 @@ show_parse_quality <- function(paper_dir, table_number = 1L, table_index = NULL)
   invisible(report)
 }
 
-show_table_structure <- function(paper_dir, table_number = 1L, table_index = NULL, max_rows = NULL) {
+show_table_structure <- function(
+  paper_dir,
+  table_number = 1L,
+  table_index = NULL,
+  max_rows = NULL,
+  include_raw_header_rows = FALSE
+) {
   outputs <- load_paper_outputs(paper_dir)
   table_index <- resolve_table_index(outputs, table_number = table_number, table_index = table_index)
   resolved_table_number <- table_number_for_outputs(outputs, table_index)
   normalized <- normalized_table_by_index(outputs, table_index)
   definition <- table_definition_by_index(outputs, table_index)
+  column_header_schema <- column_header_schema_by_index(outputs, table_index)
   status_record <- table_processing_status_by_index(
     outputs,
     table_index = table_index,
@@ -1188,9 +1233,44 @@ show_table_structure <- function(paper_dir, table_number = 1L, table_index = NUL
   )
 
   cleaned_rows <- normalized$metadata$cleaned_rows %||% list()
+  variables <- table_definition_variables(definition)
+  defined_row_indices <- integer()
+  if (length(variables) > 0L) {
+    for (variable in variables) {
+      row_start <- as.integer(variable$row_start %||% NA_integer_)
+      row_end <- as.integer(variable$row_end %||% NA_integer_)
+      if (!is.na(row_start)) {
+        if (!is.na(row_end) && row_end >= row_start) {
+          defined_row_indices <- c(defined_row_indices, seq.int(row_start, row_end))
+        } else {
+          defined_row_indices <- c(defined_row_indices, row_start)
+        }
+      }
+      for (level in variable$levels %||% list()) {
+        level_row <- as.integer(level$row_idx %||% NA_integer_)
+        if (!is.na(level_row)) {
+          defined_row_indices <- c(defined_row_indices, level_row)
+        }
+      }
+    }
+  }
+  defined_row_indices <- sort(unique(defined_row_indices))
+  normalized_body_row_indices <- as.integer(character_vector(normalized$body_rows))
+  normalized_body_row_indices <- normalized_body_row_indices[!is.na(normalized_body_row_indices)]
+  if (length(defined_row_indices) > 0L) {
+    display_row_indices <- defined_row_indices
+    row_section_label <- "Rows (defined)"
+  } else {
+    display_row_indices <- normalized_body_row_indices
+    row_section_label <- "Rows (body)"
+  }
+  if (length(display_row_indices) == 0L && length(cleaned_rows) > 0L) {
+    display_row_indices <- seq_along(cleaned_rows) - 1L
+  }
+  display_row_indices <- display_row_indices[display_row_indices >= 0L & display_row_indices < length(cleaned_rows)]
   if (!is.null(max_rows)) {
     max_rows <- as.integer(max_rows)
-    cleaned_rows <- cleaned_rows[seq_len(min(length(cleaned_rows), max_rows))]
+    display_row_indices <- display_row_indices[seq_len(min(length(display_row_indices), max_rows))]
   }
 
   if (is.na(resolved_table_number)) {
@@ -1217,18 +1297,90 @@ show_table_structure <- function(paper_dir, table_number = 1L, table_index = NUL
     cat("\n")
   }
 
-  cat("Rows\n")
-  if (length(cleaned_rows) == 0) {
-    cat("[No cleaned rows]\n\n")
+  cat("Column Header\n")
+  header_spans <- table_definition_header_spans(definition)
+  if (length(header_spans) == 0L) {
+    cat("[No structured column header spans]\n\n")
   } else {
-    for (i in seq_along(cleaned_rows)) {
-      cat(sprintf("%2d | %s\n", i - 1L, paste(unlist(cleaned_rows[[i]], use.names = FALSE), collapse = " | ")))
+    cat("level | row | cols | source | label\n")
+    for (span in header_spans) {
+      leaf_cols <- as.integer(character_vector(span$leaf_col_indices))
+      leaf_cols <- leaf_cols[!is.na(leaf_cols)]
+      if (length(leaf_cols) > 0L) {
+        cols <- paste(leaf_cols, collapse = ",")
+      } else {
+        col_start <- as.integer(span$col_start %||% NA_integer_)
+        col_end <- as.integer(span$col_end %||% NA_integer_)
+        cols <- if (!is.na(col_start) && !is.na(col_end)) sprintf("%s-%s", col_start, col_end) else ""
+      }
+      cat(sprintf(
+        "%5d | %3d | %s | %s | %s\n",
+        as.integer(span$header_level %||% NA_integer_),
+        as.integer(span$row_idx %||% NA_integer_),
+        cols,
+        as.character(span$source %||% ""),
+        as.character(span$label %||% "")
+      ))
     }
     cat("\n")
   }
 
-  cat("Columns\n")
   columns <- table_definition_columns(definition)
+  cat("Column Header Paths\n")
+  if (length(columns) == 0L) {
+    cat("[No column definitions]\n\n")
+  } else {
+    for (column in columns) {
+      col_idx <- as.integer(column$col_idx %||% -1L)
+      path_text <- column_header_path_text(column)
+      label <- as.character(column$column_label %||% column$column_name %||% "")
+      if (!nzchar(path_text)) {
+        path_text <- label
+      }
+      cat(sprintf("%2d | %s\n", col_idx, path_text))
+    }
+    cat("\n")
+  }
+
+  cat(sprintf("%s\n", row_section_label))
+  if (length(cleaned_rows) == 0L || length(display_row_indices) == 0L) {
+    cat("[No displayed rows]\n\n")
+  } else {
+    for (row_idx in display_row_indices) {
+      row_position <- as.integer(row_idx) + 1L
+      if (row_position < 1L || row_position > length(cleaned_rows)) {
+        next
+      }
+      cat(sprintf(
+        "%2d | %s\n",
+        as.integer(row_idx),
+        paste(unlist(cleaned_rows[[row_position]], use.names = FALSE), collapse = " | ")
+      ))
+    }
+    cat("\n")
+  }
+
+  if (isTRUE(include_raw_header_rows)) {
+    raw_header_indices <- as.integer(character_vector(normalized$header_rows))
+    raw_header_indices <- raw_header_indices[!is.na(raw_header_indices)]
+    raw_header_indices <- raw_header_indices[raw_header_indices >= 0L & raw_header_indices < length(cleaned_rows)]
+    cat("Raw Header Rows\n")
+    if (length(cleaned_rows) == 0L || length(raw_header_indices) == 0L) {
+      cat("[No raw header rows]\n\n")
+    } else {
+      for (row_idx in raw_header_indices) {
+        row_position <- as.integer(row_idx) + 1L
+        cat(sprintf(
+          "%2d | %s\n",
+          as.integer(row_idx),
+          paste(unlist(cleaned_rows[[row_position]], use.names = FALSE), collapse = " | ")
+        ))
+      }
+      cat("\n")
+    }
+  }
+
+  cat("Columns\n")
   if (length(columns) == 0) {
     cat("[No column definitions]\n\n")
   } else {
@@ -1238,7 +1390,9 @@ show_table_structure <- function(paper_dir, table_number = 1L, table_index = NUL
       role <- as.character(column$inferred_role %||% "")
       group_level <- as.character(column$group_level_label %||% "")
       stat <- as.character(column$statistic_subtype %||% "")
+      path_text <- column_header_path_text(column)
       extras <- Filter(nzchar, c(
+        if (nzchar(path_text) && !identical(path_text, label)) paste0("path=", path_text) else "",
         if (nzchar(group_level)) paste0("group_level=", group_level) else "",
         if (nzchar(stat)) paste0("stat=", stat) else ""
       ))
@@ -1249,7 +1403,6 @@ show_table_structure <- function(paper_dir, table_number = 1L, table_index = NUL
   }
 
   cat("Variables\n")
-  variables <- table_definition_variables(definition)
   if (length(variables) == 0) {
     cat("[No variables]\n")
   } else {
@@ -1282,8 +1435,11 @@ show_table_structure <- function(paper_dir, table_number = 1L, table_index = NUL
   invisible(list(
     normalized_table = normalized,
     table_definition = definition,
+    column_header_schema = column_header_schema,
+    header_spans = header_spans,
     columns = columns,
-    variables = variables
+    variables = variables,
+    displayed_rows = display_row_indices
   ))
 }
 

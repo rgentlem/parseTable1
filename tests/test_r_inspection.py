@@ -324,8 +324,27 @@ def _write_sample_paper_outputs(
                     "evidence_ids": [],
                 },
             ],
-            "groups": [],
-            "relationships": [],
+            "groups": [
+                {
+                    "group_id": "tbl-1:column_header_schema:group:1",
+                    "table_id": "tbl-1",
+                    "header_level": 0,
+                    "row_idx": 0,
+                    "label": "DKD status",
+                    "normalized_label": "DKD status",
+                    "col_start": 2,
+                    "col_end": 2,
+                    "leaf_col_indices": [2],
+                    "evidence_ids": [],
+                }
+            ],
+            "relationships": [
+                {
+                    "parent_group_id": "tbl-1:column_header_schema:group:1",
+                    "child_leaf_id": "tbl-1:column_header_schema:leaf:2",
+                    "row_idx": 0,
+                }
+            ],
             "evidence": [],
             "diagnostics": [],
             "confidence": 0.9,
@@ -1035,6 +1054,7 @@ def test_r_inspection_shows_all_column_header_trees(tmp_path) -> None:
     assert "[1] 3" in result.stdout
     assert "Characteristic" in result.stdout
     assert "Overall" in result.stdout
+    assert "DKD status > DKD" in result.stdout
 
 
 def test_r_inspection_shows_failed_table_processing_and_structure_header(tmp_path) -> None:
@@ -1087,7 +1107,12 @@ def test_r_inspection_shows_failed_table_processing_and_structure_header(tmp_pat
     assert "failure_reason: no_values_after_parse" in result.stdout
     assert "Table processing for table_number=1" in result.stdout
     assert "table_number: 1" in result.stdout
-    assert "Rows" in result.stdout
+    assert "Column Header" in result.stdout
+    assert "Column Header Paths" in result.stdout
+    assert "Rows (defined)" in result.stdout
+    assert "DKD status" in result.stdout
+    assert "Raw Header Rows" not in result.stdout
+    assert " 0 | Characteristic | Overall | DKD" not in result.stdout
     assert "Variables" in result.stdout
     assert "Age, years" in result.stdout
 
@@ -1108,7 +1133,9 @@ def test_r_inspection_loads_without_processing_status(tmp_path) -> None:
                     f'source("{R_SCRIPT}"); '
                     f'x <- show_table_structure("{paper_dir}", table_number = 1L); '
                     'cat(length(x$columns), "\\n"); '
-                    'cat(length(x$variables), "\\n")'
+                    'cat(length(x$variables), "\\n"); '
+                    'cat(length(x$header_spans), "\\n"); '
+                    'cat(length(x$column_header_schema$leaves), "\\n")'
                 ),
         ],
         capture_output=True,
@@ -1121,6 +1148,8 @@ def test_r_inspection_loads_without_processing_status(tmp_path) -> None:
     assert "table_id: tbl-1" in result.stdout
     assert "Columns" in result.stdout
     assert "\n2 \n" in result.stdout
+    assert "\n1 \n" in result.stdout
+    assert "\n3 \n" in result.stdout
 
 
 def test_r_inspection_shows_variable_plausibility_review(tmp_path) -> None:

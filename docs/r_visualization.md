@@ -42,7 +42,7 @@ Public functions:
 - `show_paper_variable_candidates(paper_dir, min_priority = NULL)`
 - `show_paper_visuals(paper_dir, visual_kind = NULL)`
 - `show_paper_references(paper_dir, reference_kind = NULL, reference_label = NULL, resolution_status = NULL)`
-- `show_table_structure(paper_dir, table_number = 1L, max_rows = NULL)`
+- `show_table_structure(paper_dir, table_number = 1L, max_rows = NULL, include_raw_header_rows = FALSE)`
 - `llm_variable_plausibility_df(outputs, table_number = NULL)`
 - `show_llm_variable_plausibility(paper_dir, table_number = 1L)`
 - `list_llm_variable_plausibility_debug_runs(paper_dir)`
@@ -119,7 +119,7 @@ Filter(
 What these are for:
 
 - `show_table_structure(...)`
-  print one saved table's normalized rows, deterministic columns, and row-variable definitions together; invisibly returns the normalized table, table definition, canonical columns, and canonical variables
+  print one saved table's structured column header spans and header paths, deterministic row-variable rows, deterministic columns, and row-variable definitions together; invisibly returns the normalized table, column-header schema, table definition, header spans, canonical columns, and canonical variables. Raw normalized header rows are provenance/debug evidence and are shown only when `include_raw_header_rows = TRUE`.
 - `show_paper_table_inventory(...)`
   print one row per table taxonomy prediction, including table number, category, confidence, continuation parent, and evidence; when present, also prints compact continuation column-check statuses for possible demographic-description integrations
 - `paper_table_inventory_list(...)`
@@ -156,6 +156,7 @@ What these are for:
 - `parsed_tables`
 - `table_processing_status`
 - `parse_quality_reports`
+- `column_header_schemas`
 - `paper_table_inventory`
 - `table1_continuation_groups`
 - `continued_variable_integrations`
