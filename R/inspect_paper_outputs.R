@@ -97,6 +97,96 @@ column_header_schema_by_index <- function(outputs, table_index = 0L) {
   schemas[[idx]]
 }
 
+column_header_leaf_paths_df <- function(schema) {
+  if (is.null(schema)) {
+    return(data.frame(
+      col_idx = integer(),
+      leaf_label = character(),
+      header_path = character(),
+      is_row_label_column = logical(),
+      stringsAsFactors = FALSE
+    ))
+  }
+  groups <- schema$groups %||% list()
+  rels <- schema$relationships %||% list()
+  group_labels <- setNames(
+    vapply(groups, function(g) as.character(g$label %||% ""), character(1)),
+    vapply(groups, function(g) as.character(g$group_id %||% ""), character(1))
+  )
+  rows <- lapply(schema$leaves %||% list(), function(leaf) {
+    parents <- rels[vapply(rels, function(r) identical(r$child_leaf_id, leaf$leaf_id), logical(1))]
+    if (length(parents) > 1L) {
+      parents <- parents[order(vapply(parents, function(r) as.integer(r$row_idx %||% 0L), integer(1)))]
+    }
+    path <- vapply(parents, function(r) group_labels[[as.character(r$parent_group_id %||% "")]] %||% "", character(1))
+    leaf_label <- as.character(leaf$leaf_label %||% "")
+    data.frame(
+      col_idx = as.integer(leaf$col_idx %||% NA_integer_),
+      leaf_label = leaf_label,
+      header_path = paste(c(path[nzchar(path)], leaf_label), collapse = " > "),
+      is_row_label_column = isTRUE(as.logical(leaf$is_row_label_column %||% FALSE)),
+      stringsAsFactors = FALSE
+    )
+  })
+  out <- if (length(rows)) do.call(rbind, rows) else {
+    data.frame(col_idx = integer(), leaf_label = character(), header_path = character(), is_row_label_column = logical())
+  }
+  out[order(out$col_idx), , drop = FALSE]
+}
+
+table_structure_header_spans <- function(definition, column_header_schema = NULL) {
+  spans <- table_definition_header_spans(definition)
+  if (is.null(column_header_schema)) {
+    return(spans)
+  }
+  existing_cols <- unique(as.integer(unlist(lapply(spans, function(span) {
+    character_vector(span$leaf_col_indices)
+  }), use.names = FALSE)))
+  existing_cols <- existing_cols[!is.na(existing_cols)]
+  span_leaf_levels <- as.integer(unlist(lapply(spans, function(span) {
+    if (identical(as.character(span$source %||% ""), "leaf")) {
+      return(as.integer(span$header_level %||% NA_integer_))
+    }
+    NA_integer_
+  }), use.names = FALSE))
+  leaf_level <- if (any(!is.na(span_leaf_levels))) {
+    min(span_leaf_levels, na.rm = TRUE)
+  } else {
+    span_levels <- as.integer(unlist(lapply(spans, function(span) as.integer(span$header_level %||% NA_integer_)), use.names = FALSE))
+    span_levels <- span_levels[!is.na(span_levels)]
+    if (length(span_levels) > 0L) max(span_levels) + 1L else 0L
+  }
+  label_col_idx <- as.integer(column_header_schema$label_col_idx %||% NA_integer_)
+  for (leaf in column_header_schema$leaves %||% list()) {
+    col_idx <- as.integer(leaf$col_idx %||% NA_integer_)
+    if (is.na(col_idx) || col_idx %in% existing_cols) {
+      next
+    }
+    is_row_label <- isTRUE(as.logical(leaf$is_row_label_column %||% FALSE)) ||
+      (!is.na(label_col_idx) && identical(col_idx, label_col_idx))
+    if (!is_row_label) {
+      next
+    }
+    spans <- c(list(list(
+      header_level = leaf_level,
+      row_idx = as.integer(leaf$leaf_header_row_idx %||% NA_integer_),
+      label = as.character(leaf$leaf_label %||% ""),
+      col_start = col_idx,
+      col_end = col_idx,
+      leaf_col_indices = list(col_idx),
+      source = "leaf",
+      source_id = as.character(leaf$leaf_id %||% ""),
+      confidence = column_header_schema$confidence %||% NULL
+    )), spans)
+    existing_cols <- c(existing_cols, col_idx)
+  }
+  spans[order(
+    vapply(spans, function(span) as.integer(span$header_level %||% 0L), integer(1)),
+    vapply(spans, function(span) as.integer(span$row_idx %||% 0L), integer(1)),
+    vapply(spans, function(span) as.integer(span$col_start %||% 0L), integer(1))
+  )]
+}
+
 read_table_contexts <- function(context_dir) {
   if (!dir.exists(context_dir)) {
     return(list())
@@ -393,28 +483,8 @@ show_column_header_tree <- function(paper_dir, table_index = 0L, table_number = 
   if (is.null(schema)) {
     stop(sprintf("No column header schema found for table_index=%s.", table_index), call. = FALSE)
   }
-  groups <- schema$groups %||% list()
-  rels <- schema$relationships %||% list()
-  group_labels <- setNames(
-    vapply(groups, function(g) as.character(g$label %||% ""), character(1)),
-    vapply(groups, function(g) as.character(g$group_id %||% ""), character(1))
-  )
-  rows <- lapply(schema$leaves %||% list(), function(leaf) {
-    parents <- rels[vapply(rels, function(r) identical(r$child_leaf_id, leaf$leaf_id), logical(1))]
-    if (length(parents) > 1L) {
-      parents <- parents[order(vapply(parents, function(r) as.integer(r$row_idx %||% 0L), integer(1)))]
-    }
-    path <- vapply(parents, function(r) group_labels[[as.character(r$parent_group_id %||% "")]] %||% "", character(1))
-    leaf_label <- as.character(leaf$leaf_label %||% "")
-    data.frame(
-      col_idx = as.integer(leaf$col_idx %||% NA_integer_),
-      leaf_label = leaf_label,
-      header_path = paste(c(path[nzchar(path)], leaf_label), collapse = " > "),
-      stringsAsFactors = FALSE
-    )
-  })
-  out <- if (length(rows)) do.call(rbind, rows) else data.frame(col_idx = integer(), leaf_label = character(), header_path = character())
-  print(out, row.names = FALSE, right = FALSE)
+  out <- column_header_leaf_paths_df(schema)
+  print(out[, c("col_idx", "leaf_label", "header_path"), drop = FALSE], row.names = FALSE, right = FALSE)
   invisible(out)
 }
 
@@ -1298,7 +1368,7 @@ show_table_structure <- function(
   }
 
   cat("Column Header\n")
-  header_spans <- table_definition_header_spans(definition)
+  header_spans <- table_structure_header_spans(definition, column_header_schema)
   if (length(header_spans) == 0L) {
     cat("[No structured column header spans]\n\n")
   } else {
@@ -1326,9 +1396,16 @@ show_table_structure <- function(
   }
 
   columns <- table_definition_columns(definition)
+  leaf_paths <- column_header_leaf_paths_df(column_header_schema)
   cat("Column Header Paths\n")
-  if (length(columns) == 0L) {
-    cat("[No column definitions]\n\n")
+  if (nrow(leaf_paths) > 0L) {
+    for (i in seq_len(nrow(leaf_paths))) {
+      role_suffix <- if (isTRUE(leaf_paths$is_row_label_column[[i]])) " [row_label]" else ""
+      cat(sprintf("%2d | %s%s\n", leaf_paths$col_idx[[i]], leaf_paths$header_path[[i]], role_suffix))
+    }
+    cat("\n")
+  } else if (length(columns) == 0L) {
+    cat("[No column header paths]\n\n")
   } else {
     for (column in columns) {
       col_idx <- as.integer(column$col_idx %||% -1L)

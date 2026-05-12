@@ -100,7 +100,7 @@ Notes:
 
 - this allows the table to carry a table-level guess like `RA status` or `Diabetes status`
 - individual `DefinedColumn` records preserve per-column roles, leaf labels, and header paths
-- `header_spans` is the table-level multirow header projection. It records displayable group and leaf spans with `header_level`, `row_idx`, `label`, `col_start`, `col_end`, `leaf_col_indices`, `source`, `source_id`, and `confidence`.
+- `header_spans` is the table-level multirow header projection. It records displayable group and leaf spans with `header_level`, `row_idx`, `label`, `col_start`, `col_end`, `leaf_col_indices`, `source`, `source_id`, and `confidence`. Unlike `columns`, this display projection includes the row-label leaf span.
 - `group_count` records how many grouped data columns were inferred, separate from any overall or statistic columns
 
 ### `TableDefinition`

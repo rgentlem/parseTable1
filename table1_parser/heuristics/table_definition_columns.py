@@ -76,7 +76,7 @@ class HeaderProjection:
     spans: list[DefinedColumnHeaderSpan]
 
 
-def _project_column_headers(schema: ColumnHeaderSchema, label_col_idx: int) -> HeaderProjection:
+def _project_column_headers(schema: ColumnHeaderSchema) -> HeaderProjection:
     """Project physical header groups into per-column paths and table-level spans."""
     groups_by_id = {group.group_id: group for group in schema.groups}
     leaf_by_id = {leaf.leaf_id: leaf for leaf in schema.leaves}
@@ -93,12 +93,8 @@ def _project_column_headers(schema: ColumnHeaderSchema, label_col_idx: int) -> H
     group_labels_by_col_idx: dict[int, list[str]] = {}
     leaf_id_by_col_idx: dict[int, str] = {}
     leaf_label_by_col_idx: dict[int, str] = {}
-    value_leaf_col_indices = sorted(
-        leaf.col_idx
-        for leaf in schema.leaves
-        if leaf.col_idx != label_col_idx and leaf.is_value_column
-    )
-    value_leaf_col_set = set(value_leaf_col_indices)
+    display_leaf_col_indices = sorted(leaf.col_idx for leaf in schema.leaves)
+    display_leaf_col_set = set(display_leaf_col_indices)
     for leaf in schema.leaves:
         groups = sorted(
             group_items_by_leaf_id.get(leaf.leaf_id, []),
@@ -116,13 +112,13 @@ def _project_column_headers(schema: ColumnHeaderSchema, label_col_idx: int) -> H
         {
             group.row_idx
             for group in schema.groups
-            if value_leaf_col_set.intersection(group.leaf_col_indices)
+            if display_leaf_col_set.intersection(group.leaf_col_indices)
         }
     )
     header_level_by_row_idx = {row_idx: level for level, row_idx in enumerate(group_row_indices)}
     spans: list[DefinedColumnHeaderSpan] = []
     for group in sorted(schema.groups, key=lambda item: (item.row_idx, item.col_start, item.col_end, item.label)):
-        leaf_col_indices = sorted(value_leaf_col_set.intersection(group.leaf_col_indices))
+        leaf_col_indices = sorted(display_leaf_col_set.intersection(group.leaf_col_indices))
         if not leaf_col_indices:
             continue
         spans.append(
@@ -140,7 +136,7 @@ def _project_column_headers(schema: ColumnHeaderSchema, label_col_idx: int) -> H
         )
     leaf_level = len(group_row_indices)
     for leaf in sorted(schema.leaves, key=lambda item: item.col_idx):
-        if leaf.col_idx not in value_leaf_col_set:
+        if leaf.col_idx not in display_leaf_col_set:
             continue
         spans.append(
             DefinedColumnHeaderSpan(
@@ -298,7 +294,7 @@ def build_column_definition(
         column_schema = build_column_header_schema(table)
     descriptors = column_header_descriptors(column_schema)
     analysis = _build_grouping_analysis(table, descriptors, column_schema.label_col_idx)
-    header_projection = _project_column_headers(column_schema, analysis.label_col_idx)
+    header_projection = _project_column_headers(column_schema)
     columns: list[DefinedColumn] = []
     for descriptor in descriptors:
         if descriptor.col_idx == analysis.label_col_idx:

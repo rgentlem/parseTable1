@@ -119,7 +119,7 @@ Filter(
 What these are for:
 
 - `show_table_structure(...)`
-  print one saved table's structured column header spans and header paths, deterministic row-variable rows, deterministic columns, and row-variable definitions together; invisibly returns the normalized table, column-header schema, table definition, header spans, canonical columns, and canonical variables. Raw normalized header rows are provenance/debug evidence and are shown only when `include_raw_header_rows = TRUE`.
+  print one saved table's structured column header spans and header paths, including the row-label leaf, deterministic row-variable rows, deterministic value columns, and row-variable definitions together; invisibly returns the normalized table, column-header schema, table definition, header spans, canonical columns, and canonical variables. Raw normalized header rows are provenance/debug evidence and are shown only when `include_raw_header_rows = TRUE`.
 - `show_paper_table_inventory(...)`
   print one row per table taxonomy prediction, including table number, category, confidence, continuation parent, and evidence; when present, also prints compact continuation column-check statuses for possible demographic-description integrations
 - `paper_table_inventory_list(...)`

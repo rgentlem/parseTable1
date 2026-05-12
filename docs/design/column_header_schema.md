@@ -374,6 +374,8 @@ bad table should not crash the whole parse.
 - shared context comes from related `ColumnHeaderGroup` labels
 - per-column `header_path` comes from the schema's group path plus leaf label
 - table-level `header_spans` preserve displayable multirow group and leaf spans
+- `header_spans` include the row-label leaf, while semantic `DefinedColumn`
+  records remain limited to value/statistic columns
 - `column_label` in `TableDefinition` is the leaf label, not the flattened path
 - statistic columns and group columns are classified after the schema is built
 

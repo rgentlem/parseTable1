@@ -51,7 +51,7 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
 9. [ ] Improve R inspection workflow.
    Provide R-native review objects and display methods that make variables, levels, columns, parse notes, category/route decisions, and diagnostics easy to inspect during corpus review.
    Current direction: `ObservedTableOne` exposes tableone-style `ContTable`, `CatTable`, and `MetaData` fields as the early R surface, while preserving lower-case compatibility aliases. R helpers should access variables and columns through canonical table-definition accessors rather than repeated direct list traversal.
-   Recent update: `show_table_structure()` now treats structured header spans, per-column header paths, and deterministic variable row spans as the default structure view, while raw normalized header rows remain opt-in provenance/debug evidence through `include_raw_header_rows = TRUE`.
+   Recent update: `show_table_structure()` now treats structured header spans, per-column header paths, and deterministic variable row spans as the default structure view, including the row-label leaf column from `ColumnHeaderSchema`, while raw normalized header rows remain opt-in provenance/debug evidence through `include_raw_header_rows = TRUE`.
 
 ## Notes
 

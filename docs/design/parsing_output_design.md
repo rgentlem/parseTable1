@@ -481,6 +481,11 @@ artifact is available. It still owns semantic roles such as `overall`, `group`,
 `p_value`, and `smd`; it no longer needs to recover the header tree directly
 from normalized rows.
 
+`ColumnDefinition.columns` contains semantic value/statistic columns and omits
+the row-label column. `ColumnDefinition.header_spans` is a displayable header
+projection and includes the row-label leaf span, so the full table header axis
+can be rendered without reaching back into raw normalized header rows.
+
 `DefinedVariable` design components:
 
 - `variable_name`

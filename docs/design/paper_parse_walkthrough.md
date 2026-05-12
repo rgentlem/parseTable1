@@ -479,6 +479,9 @@ prevalence-estimate groups, and statistic/unit leaves separate.
 defined column stores a leaf `column_label`, a top-to-bottom `header_path`, the
 supporting header group IDs and labels, and table-level `header_spans` that can
 render multirow column headers without reconstructing them from flattened text.
+The semantic `columns` list remains value/statistic-column oriented, while
+`header_spans` also includes the row-label leaf so displays keep the full
+header axis, including labels such as `Characteristic` or `Variable`.
 
 The schema is deliberately not a tableone object and does not store summary
 values. It supplies the column axis that later semantic and stored-summary

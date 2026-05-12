@@ -1110,6 +1110,8 @@ def test_r_inspection_shows_failed_table_processing_and_structure_header(tmp_pat
     assert "Column Header" in result.stdout
     assert "Column Header Paths" in result.stdout
     assert "Rows (defined)" in result.stdout
+    assert "Characteristic" in result.stdout
+    assert "[row_label]" in result.stdout
     assert "DKD status" in result.stdout
     assert "Raw Header Rows" not in result.stdout
     assert " 0 | Characteristic | Overall | DKD" not in result.stdout
@@ -1148,7 +1150,6 @@ def test_r_inspection_loads_without_processing_status(tmp_path) -> None:
     assert "table_id: tbl-1" in result.stdout
     assert "Columns" in result.stdout
     assert "\n2 \n" in result.stdout
-    assert "\n1 \n" in result.stdout
     assert "\n3 \n" in result.stdout
 
 

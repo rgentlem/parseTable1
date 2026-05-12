@@ -355,6 +355,10 @@ def test_build_schema_preserves_eke_table1_multirow_header_bands() -> None:
         (2, 7, 8, "Total Periodontitis,", "group"),
         (2, 11, 12, "Total Periodontitis,", "group"),
     ]
+    assert any(
+        span.col_start == 0 and span.col_end == 0 and span.label == "Characteristics" and span.source == "leaf"
+        for span in definition.column_definition.header_spans
+    )
     assert [column.group_level_label for column in definition.column_definition.columns[:4]] == [
         "NHANES 2009 to 2010",
         "NHANES 2009 to 2010",
