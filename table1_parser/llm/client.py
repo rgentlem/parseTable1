@@ -114,12 +114,15 @@ class OpenAIClient(LLMClient):
         if response_model is None:
             raise LLMConfigurationError("OpenAIClient requires a Pydantic response_model for structured parsing.")
         try:
-            response = self._client.responses.parse(
-                model=self.model,
-                input=prompt,
-                temperature=self.temperature,
-                text_format=response_model,
-            )
+            request_kwargs: dict[str, Any] = {
+                "model": self.model,
+                "input": prompt,
+                "text_format": response_model,
+            }
+            model_name = self.model.lower()
+            if not (model_name.startswith("gpt-5") or re.match(r"^o\d", model_name)):
+                request_kwargs["temperature"] = self.temperature
+            response = self._client.responses.parse(**request_kwargs)
         except Exception as exc:
             raise LLMProviderError(f"OpenAI structured completion failed: {exc}") from exc
 

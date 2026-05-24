@@ -29,20 +29,20 @@ Public functions:
 - `load_paper_outputs(paper_dir)`
 - `summarize_table_processing(paper_dir)`
 - `show_paper_table_inventory(paper_dir)`
-- `show_table_processing(paper_dir, table_number = 1L)`
-- `show_parse_quality(paper_dir, table_number = 1L)`
+- `show_table_processing(paper_dir, table_index = 0L)` or `show_table_processing(paper_dir, table_number = 1L)`
+- `show_parse_quality(paper_dir, table_index = 0L)` or `show_parse_quality(paper_dir, table_number = 1L)`
 - `summarize_table1_continuations(paper_dir)`
 - `show_merged_table1(paper_dir, group_index = 0L, max_rows = 30L)`
 - `show_paper_variable_mentions(paper_dir, role_hint = NULL, source_type = NULL, mention_role = NULL)`
 - `show_paper_variable_candidates(paper_dir, min_priority = NULL)`
 - `show_paper_visuals(paper_dir, visual_kind = NULL)`
 - `show_paper_references(paper_dir, reference_kind = NULL, reference_label = NULL, resolution_status = NULL)`
-- `show_table_structure(paper_dir, table_number = 1L, max_rows = NULL)`
-- `llm_variable_plausibility_df(outputs, table_number = NULL)`
-- `show_llm_variable_plausibility(paper_dir, table_number = 1L)`
+- `show_table_structure(paper_dir, table_index = 0L, max_rows = NULL)` or `show_table_structure(paper_dir, table_number = 1L, max_rows = NULL)`
+- `llm_variable_plausibility_df(outputs, table_index = 0L)` or `llm_variable_plausibility_df(outputs, table_number = 1L)`
+- `show_llm_variable_plausibility(paper_dir, table_index = 0L)` or `show_llm_variable_plausibility(paper_dir, table_number = 1L)`
 - `list_llm_variable_plausibility_debug_runs(paper_dir)`
 - `summarize_llm_variable_plausibility_monitoring(paper_dir, run_id = NULL)`
-- `show_table_context(paper_dir, table_number = 1L, match_type = NULL)`
+- `show_table_context(paper_dir, table_index = 0L, match_type = NULL)` or `show_table_context(paper_dir, table_number = 1L, match_type = NULL)`
 
 These helpers use the same per-paper output directory written by `table1-parser parse` and, when run, `table1-parser review-variable-plausibility`.
 
@@ -54,21 +54,25 @@ source("R/inspect_paper_outputs.R")
 x <- load_paper_outputs("outputs/papers/cobaltpaper")
 summarize_table_processing("outputs/papers/cobaltpaper")
 show_paper_table_inventory("outputs/papers/cobaltpaper")
-show_table_processing("outputs/papers/cobaltpaper", table_number = 1L)
-show_parse_quality("outputs/papers/cobaltpaper", table_number = 1L)
+show_table_processing("outputs/papers/cobaltpaper", table_index = 0L)
+show_parse_quality("outputs/papers/cobaltpaper", table_index = 0L)
 summarize_table1_continuations("outputs/papers/cobaltpaper")
 show_merged_table1("outputs/papers/cobaltpaper", group_index = 0L, max_rows = 20L)
 show_paper_variable_candidates("outputs/papers/cobaltpaper")
 show_paper_variable_mentions("outputs/papers/cobaltpaper", source_type = "text_based", mention_role = "variable")
 show_paper_visuals("outputs/papers/cobaltpaper", visual_kind = "figure")
 show_paper_references("outputs/papers/cobaltpaper", resolution_status = "resolved")
-show_table_structure("outputs/papers/cobaltpaper", table_number = 1L)
-llm_variable_plausibility_df(x)
-show_llm_variable_plausibility("outputs/papers/cobaltpaper", table_number = 1L)
+show_table_structure("outputs/papers/cobaltpaper", table_index = 0L)
+llm_variable_plausibility_df(x, table_index = 0L)
+show_llm_variable_plausibility("outputs/papers/cobaltpaper", table_index = 0L)
 list_llm_variable_plausibility_debug_runs("outputs/papers/cobaltpaper")
 summarize_llm_variable_plausibility_monitoring("outputs/papers/cobaltpaper")
-show_table_context("outputs/papers/cobaltpaper", table_number = 1L, match_type = "table_reference")
+show_table_context("outputs/papers/cobaltpaper", table_index = 0L, match_type = "table_reference")
 ```
+
+`table_index` is the parser artifact position and is zero-based. It lines up with files and directories such as `table_0_context.json` and `llm_variable_plausibility_debug/<timestamp>/table_0/`.
+
+`table_number` is the number printed in the paper caption, such as `Table 1`. For many simple papers `table_index = 0L` and `table_number = 1L` select the same table, but they are not interchangeable. Do not use `table_number = 0L` to mean the first parser table.
 
 What these are for:
 
@@ -115,12 +119,13 @@ What these are for:
 table1-parser parse testpapers/OPEandRA.pdf
 ```
 
-Use `table_number` in public inspection helpers. The parser may keep extraction-order indices internally for provenance, but the paper's table number is the conceptual selector.
+Use `table_index` for parser-output debugging and batch evaluation. It is the safest selector when comparing R output with JSON arrays, table context files, and LLM debug directories. Use `table_number` only when you intentionally want the table labeled that way in the paper.
 
 ```r
 source("R/inspect_paper_outputs.R")
-show_table_structure("outputs/papers/OPEandRA", table_number = 1L)
-show_parse_quality("outputs/papers/OPEandRA", table_number = 1L)
+show_paper_table_inventory("outputs/papers/OPEandRA")
+show_table_structure("outputs/papers/OPEandRA", table_index = 0L)
+show_parse_quality("outputs/papers/OPEandRA", table_index = 0L)
 ```
 
 2. Run the optional variable-plausibility review with debug tracing enabled:
@@ -147,7 +152,7 @@ Rscript R/visualize_table_from_json.R outputs/papers/OPEandRA/llm_variable_plaus
 source("R/inspect_paper_outputs.R")
 options(width = 200)
 
-show_llm_variable_plausibility("outputs/papers/OPEandRA", table_number = 1L)
+show_llm_variable_plausibility("outputs/papers/OPEandRA", table_index = 0L)
 ```
 
 ## Notes

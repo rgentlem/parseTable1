@@ -208,22 +208,22 @@ For paper-level inspection there is also:
 source("R/inspect_paper_outputs.R")
 summarize_table_processing("outputs/papers/cobaltpaper")
 show_paper_table_inventory("outputs/papers/cobaltpaper")
-show_table_structure("outputs/papers/cobaltpaper", table_number = 1L)
-show_table_processing("outputs/papers/cobaltpaper", table_number = 1L)
+show_table_structure("outputs/papers/cobaltpaper", table_index = 0L)
+show_table_processing("outputs/papers/cobaltpaper", table_index = 0L)
 show_paper_variable_candidates("outputs/papers/cobaltpaper")
 show_paper_variable_mentions("outputs/papers/cobaltpaper", source_type = "text_based", mention_role = "variable")
-show_table_context("outputs/papers/cobaltpaper", table_number = 1L)
+show_table_context("outputs/papers/cobaltpaper", table_index = 0L)
 ```
 
-Use `table_number` for public inspection. Extraction-order indices are retained only as low-level provenance/debug handles.
+Use `table_index` for parser-output debugging and batch evaluation. It is zero-based and lines up with JSON array positions and debug artifacts such as `table_0/`. Use `table_number` only when you intentionally want the table labeled that way in the paper, such as `Table 1`.
 
 If `review-variable-plausibility` has been run:
 
 ```r
 source("R/inspect_paper_outputs.R")
 outputs <- load_paper_outputs("outputs/papers/cobaltpaper")
-llm_variable_plausibility_df(outputs, table_number = 1L)
-show_llm_variable_plausibility("outputs/papers/cobaltpaper", table_number = 1L)
+llm_variable_plausibility_df(outputs, table_index = 0L)
+show_llm_variable_plausibility("outputs/papers/cobaltpaper", table_index = 0L)
 list_llm_variable_plausibility_debug_runs("outputs/papers/cobaltpaper")
 summarize_llm_variable_plausibility_monitoring("outputs/papers/cobaltpaper")
 ```
@@ -382,13 +382,14 @@ Minimum OpenAI setup:
 ```bash
 export LLM_PROVIDER=openai
 export OPENAI_API_KEY=your_api_key_here
-export OPENAI_MODEL=gpt-4.1-mini
-export LLM_TEMPERATURE=0
+export OPENAI_MODEL=gpt-5.5
 export LLM_TIMEOUT_SECONDS=60
 export LLM_MAX_RETRIES=2
 export LLM_DEBUG=false
 export LLM_SDK_DEBUG=false
 ```
+
+The OpenAI client intentionally omits `temperature` for `gpt-5.5` and other reasoning-model IDs that reject custom sampling parameters.
 
 Minimum Qwen setup:
 
