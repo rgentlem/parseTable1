@@ -91,13 +91,14 @@ Qwen uses:
 ```bash
 export LLM_PROVIDER=openai
 export OPENAI_API_KEY=your_api_key_here
-export OPENAI_MODEL=gpt-4.1-mini
-export LLM_TEMPERATURE=0
+export OPENAI_MODEL=gpt-5.5
 export LLM_TIMEOUT_SECONDS=60
 export LLM_MAX_RETRIES=2
 export LLM_DEBUG=false
 export LLM_SDK_DEBUG=false
 ```
+
+For `gpt-5.5` and other OpenAI reasoning-model IDs that reject custom sampling parameters, the client omits `temperature` and uses provider defaults.
 
 Required for OpenAI:
 

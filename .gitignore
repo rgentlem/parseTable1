@@ -28,3 +28,4 @@ parseTable1.out/
 
 # Large or local-only PDF fixtures
 /testpapers/OPEandRA.pdf
+/papers/

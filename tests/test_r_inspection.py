@@ -592,7 +592,7 @@ def _write_sample_variable_plausibility_debug_run(
         {
             "report_timestamp": "2026-03-24T10:15:00Z",
             "provider": "openai",
-            "model": "gpt-4.1-mini",
+            "model": "gpt-5.5",
             "items": [
                 {
                     "table_id": "tbl-1",
@@ -929,6 +929,117 @@ def test_r_inspection_shows_variable_plausibility_review(tmp_path) -> None:
     assert "levels:" in result.stdout
     assert "row  3 | Male" in result.stdout
     assert "score=0.970" in result.stdout
+
+
+def test_r_inspection_matches_variable_plausibility_review_by_table_id(tmp_path) -> None:
+    """LLM review helpers should not treat a compact review list as table-index aligned."""
+    if not _r_dependencies_available():
+        return
+
+    paper_dir = tmp_path / "variable_review_sparse" / "papers" / "paper"
+    _write_sample_paper_outputs(paper_dir, include_variable_review=False, include_processing_status=True)
+
+    normalized_tables = json.loads((paper_dir / "normalized_tables.json").read_text(encoding="utf-8"))
+    table_definitions = json.loads((paper_dir / "table_definitions.json").read_text(encoding="utf-8"))
+    parsed_tables = json.loads((paper_dir / "parsed_tables.json").read_text(encoding="utf-8"))
+    table_profiles = json.loads((paper_dir / "table_profiles.json").read_text(encoding="utf-8"))
+
+    second_variable = _make_variable("BMI", "BMI", "continuous", 1, 1)
+    normalized_tables.append(
+        {
+            **normalized_tables[0],
+            "table_id": "tbl-2",
+            "title": "Table 2",
+            "caption": "Other characteristics",
+            "metadata": {
+                "cleaned_rows": [
+                    ["Characteristic", "Overall"],
+                    ["BMI", "28.1"],
+                ],
+                "table_number": 2,
+            },
+        }
+    )
+    table_definitions.append(
+        {
+            "table_id": "tbl-2",
+            "title": "Table 2",
+            "caption": "Other characteristics",
+            "variables": [second_variable],
+            "column_definition": {
+                "grouping_label": None,
+                "grouping_name": None,
+                "columns": [_make_column(1, "Overall", "Overall", "overall")],
+                "confidence": 0.9,
+            },
+            "notes": [],
+            "overall_confidence": 0.9,
+        }
+    )
+    parsed_tables.append(_make_parsed_table("tbl-2", "Table 2", "Other characteristics", variables=[second_variable]))
+    table_profiles.append({"table_id": "tbl-2", "table_family": "descriptive_characteristics", "confidence": 0.9})
+
+    _write_json(paper_dir / "normalized_tables.json", normalized_tables)
+    _write_json(paper_dir / "table_definitions.json", table_definitions)
+    _write_json(paper_dir / "parsed_tables.json", parsed_tables)
+    _write_json(paper_dir / "table_profiles.json", table_profiles)
+    _write_json(
+        paper_dir / "table_variable_plausibility_llm.json",
+        [
+            {
+                "table_id": "tbl-2",
+                "variables": [
+                    {
+                        "variable_name": "BMI",
+                        "variable_label": "BMI",
+                        "variable_type": "continuous",
+                        "row_start": 1,
+                        "row_end": 1,
+                        "levels": [],
+                        "plausibility_score": 0.99,
+                        "plausibility_note": "",
+                    }
+                ],
+                "notes": [],
+                "overall_plausibility": 0.99,
+            }
+        ],
+    )
+
+    missing_review_result = subprocess.run(
+        [
+            "Rscript",
+            "-e",
+            (
+                f'source("{R_SCRIPT}"); '
+                f'show_llm_variable_plausibility("{paper_dir}", table_index = 0L)'
+            ),
+        ],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+        check=False,
+    )
+    assert missing_review_result.returncode != 0
+    assert "No variable-plausibility review found for table_index=0" in missing_review_result.stderr
+
+    matched_review_result = subprocess.run(
+        [
+            "Rscript",
+            "-e",
+            (
+                f'source("{R_SCRIPT}"); '
+                f'show_llm_variable_plausibility("{paper_dir}", table_index = 1L)'
+            ),
+        ],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+        check=False,
+    )
+    assert matched_review_result.returncode == 0, matched_review_result.stderr
+    assert "table_index: 1" in matched_review_result.stdout
+    assert "BMI" in matched_review_result.stdout
 
 
 def test_r_compare_normalized_rows_to_definition_supports_table_number(tmp_path) -> None:
