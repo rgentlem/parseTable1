@@ -36,8 +36,7 @@ OpenAI:
 ```bash
 export LLM_PROVIDER=openai
 export OPENAI_API_KEY=your_api_key_here
-export OPENAI_MODEL=gpt-4.1-mini
-export LLM_TEMPERATURE=0
+export OPENAI_MODEL=gpt-5.5
 export LLM_TIMEOUT_SECONDS=60
 export LLM_MAX_RETRIES=2
 export LLM_DEBUG=false
@@ -64,8 +63,7 @@ OpenAI:
 ```powershell
 $env:LLM_PROVIDER = "openai"
 $env:OPENAI_API_KEY = "your_api_key_here"
-$env:OPENAI_MODEL = "gpt-4.1-mini"
-$env:LLM_TEMPERATURE = "0"
+$env:OPENAI_MODEL = "gpt-5.5"
 $env:LLM_TIMEOUT_SECONDS = "60"
 $env:LLM_MAX_RETRIES = "2"
 $env:LLM_DEBUG = "false"
@@ -91,6 +89,8 @@ Meaning of the two debug flags:
   write timestamped variable-plausibility debug JSON artifacts to disk during `review-variable-plausibility`
 - `LLM_SDK_DEBUG=true`
   enable verbose provider/SDK logging in the terminal
+- `LLM_TEMPERATURE`
+  used by Qwen and OpenAI model IDs that accept custom sampling; omitted automatically for `gpt-5.5` and other OpenAI reasoning-model IDs that reject custom sampling parameters
 
 ## Install Requirement
 

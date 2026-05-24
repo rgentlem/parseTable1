@@ -235,8 +235,9 @@ show_paper_variable_candidates <- function(paper_dir, min_priority = NULL) {
 
 paper_table_inventory_df <- function(outputs) {
   records <- outputs$paper_table_inventory$tables %||% list()
-  rows <- lapply(records, function(record) {
+  rows <- Map(function(record, record_position) {
     data.frame(
+      table_index = as.integer(record_position - 1L),
       table_number = as.integer(record$table_number %||% NA_integer_),
       table_id = as.character(record$table_id %||% ""),
       table_category = as.character(record$table_category %||% ""),
@@ -249,9 +250,10 @@ paper_table_inventory_df <- function(outputs) {
       evidence = paste(as.character(unlist(record$category_evidence %||% list(), use.names = FALSE)), collapse = " | "),
       stringsAsFactors = FALSE
     )
-  })
+  }, records, seq_along(records))
   if (length(rows) == 0) {
     data.frame(
+      table_index = integer(),
       table_number = integer(),
       table_id = character(),
       table_category = character(),
@@ -770,6 +772,7 @@ show_table_processing <- function(paper_dir, table_number = 1L, table_index = NU
   } else {
     cat(sprintf("Table processing for table_number=%s\n", as.integer(resolved_table_number)))
   }
+  cat(sprintf("table_index: %s\n", as.integer(table_index)))
   cat(sprintf("table_id: %s\n", definition$table_id %||% normalized$table_id %||% parsed$table_id %||% ""))
   if (!is.null(definition$title) && nzchar(definition$title)) {
     cat(sprintf("title: %s\n", definition$title))
@@ -848,6 +851,7 @@ show_parse_quality <- function(paper_dir, table_number = 1L, table_index = NULL)
   } else {
     cat(sprintf("Parse quality for table_number=%s\n", as.integer(resolved_table_number)))
   }
+  cat(sprintf("table_index: %s\n", as.integer(table_index)))
   cat(sprintf("table_id: %s\n", as.character(report$table_id %||% normalized$table_id %||% "")))
   cat(sprintf("total_body_rows: %s\n", as.integer(summary$total_body_rows %||% 0L)))
   cat(sprintf("unknown_row_count: %s\n", as.integer(summary$unknown_row_count %||% 0L)))
@@ -898,6 +902,7 @@ show_table_structure <- function(paper_dir, table_number = 1L, table_index = NUL
   } else {
     cat(sprintf("table_number: %s\n", as.integer(resolved_table_number)))
   }
+  cat(sprintf("table_index: %s\n", as.integer(table_index)))
   cat(sprintf("table_id: %s\n", definition$table_id %||% normalized$table_id %||% ""))
   if (!is.null(definition$title) && nzchar(definition$title)) {
     cat(sprintf("title: %s\n", definition$title))
@@ -990,20 +995,25 @@ llm_variable_plausibility_review_by_index <- function(outputs, table_index = 0L)
   if (length(reviews) == 0) {
     stop("No table_variable_plausibility_llm.json found for this paper.", call. = FALSE)
   }
+  definition <- table_definition_by_index(outputs, table_index)
+  target_table_id <- as.character(definition$table_id %||% "")
+  if (nzchar(target_table_id)) {
+    review_matches <- Filter(
+      function(x) identical(as.character(x$table_id %||% ""), target_table_id),
+      reviews
+    )
+    if (length(review_matches) > 0) {
+      return(review_matches[[1]])
+    }
+  }
+
   idx <- as.integer(table_index) + 1L
   review <- reviews[[idx]] %||% NULL
-  if (!is.null(review)) {
+  if (!is.null(review) && !nzchar(as.character(review$table_id %||% ""))) {
     return(review)
   }
-  definition <- table_definition_by_index(outputs, table_index)
-  review_matches <- Filter(
-    function(x) identical(as.character(x$table_id %||% ""), as.character(definition$table_id %||% "")),
-    reviews
-  )
-  if (length(review_matches) == 0) {
-    stop(sprintf("No variable-plausibility review found for table_index=%s.", table_index), call. = FALSE)
-  }
-  review_matches[[1]]
+
+  stop(sprintf("No variable-plausibility review found for table_index=%s.", table_index), call. = FALSE)
 }
 
 llm_variable_plausibility_df <- function(outputs, table_number = NULL, table_index = NULL) {
@@ -1064,10 +1074,13 @@ llm_variable_plausibility_df <- function(outputs, table_number = NULL, table_ind
   do.call(rbind, rows)
 }
 
-show_variable_plausibility_review <- function(review, normalized_table, table_definition) {
+show_variable_plausibility_review <- function(review, normalized_table, table_definition, table_index = NULL) {
   cleaned_rows <- normalized_table$metadata$cleaned_rows %||% list()
 
   cat(sprintf("Variable plausibility review for table_id=%s\n", review$table_id %||% table_definition$table_id %||% ""))
+  if (!is.null(table_index)) {
+    cat(sprintf("table_index: %s\n", as.integer(table_index)))
+  }
   if (!is.null(table_definition$title) && nzchar(table_definition$title)) {
     cat(sprintf("title: %s\n", table_definition$title))
   }
@@ -1162,7 +1175,7 @@ show_llm_variable_plausibility <- function(paper_dir, table_number = 1L, table_i
   review <- llm_variable_plausibility_review_by_index(outputs, table_index = table_index)
   normalized <- normalized_table_by_index(outputs, table_index = table_index)
   definition <- table_definition_by_index(outputs, table_index = table_index)
-  show_variable_plausibility_review(review, normalized, definition)
+  show_variable_plausibility_review(review, normalized, definition, table_index = table_index)
 }
 
 summarize_llm_variable_plausibility_monitoring <- function(paper_dir, run_id = NULL) {
@@ -1309,6 +1322,7 @@ show_table_context <- function(paper_dir, table_number = 1L, table_index = NULL,
   } else {
     cat(sprintf("Table context for table_number=%s\n", as.integer(resolved_table_number)))
   }
+  cat(sprintf("table_index: %s\n", as.integer(table_index)))
   if (!is.null(context$table_label)) {
     cat(sprintf("Label: %s\n", context$table_label))
   }

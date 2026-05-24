@@ -74,7 +74,7 @@ def test_settings_reads_llm_environment_variables(monkeypatch) -> None:
     """Settings should read the documented LLM environment variables directly."""
     monkeypatch.setenv("LLM_PROVIDER", "openai")
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
-    monkeypatch.setenv("OPENAI_MODEL", "gpt-4.1-mini")
+    monkeypatch.setenv("OPENAI_MODEL", "gpt-5.5")
     monkeypatch.setenv("LLM_TEMPERATURE", "0.1")
     monkeypatch.setenv("LLM_TIMEOUT_SECONDS", "30")
     monkeypatch.setenv("LLM_MAX_RETRIES", "4")
@@ -85,8 +85,8 @@ def test_settings_reads_llm_environment_variables(monkeypatch) -> None:
 
     assert settings.llm_provider == "openai"
     assert settings.openai_api_key == "test-key"
-    assert settings.openai_model == "gpt-4.1-mini"
-    assert settings.llm_model == "gpt-4.1-mini"
+    assert settings.openai_model == "gpt-5.5"
+    assert settings.llm_model == "gpt-5.5"
     assert settings.llm_temperature == 0.1
     assert settings.llm_timeout_seconds == 30
     assert settings.llm_max_retries == 4
@@ -116,7 +116,7 @@ def test_build_llm_client_requires_openai_configuration(monkeypatch) -> None:
     """Missing required OpenAI settings should fail with a clear configuration error."""
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.delenv("OPENAI_MODEL", raising=False)
-    settings = Settings(llm_provider="openai", openai_model="gpt-4.1-mini")
+    settings = Settings(llm_provider="openai", openai_model="gpt-5.5")
 
     with pytest.raises(LLMConfigurationError) as exc_info:
         build_llm_client(settings=settings)
@@ -141,7 +141,7 @@ def test_build_llm_client_returns_openai_client_with_fake_sdk(monkeypatch) -> No
     settings = Settings(
         llm_provider="openai",
         openai_api_key="test-key",
-        openai_model="gpt-4.1-mini",
+        openai_model="openai-chat-model",
         llm_temperature=0.2,
         llm_timeout_seconds=15,
         llm_max_retries=3,
@@ -159,9 +159,32 @@ def test_build_llm_client_returns_openai_client_with_fake_sdk(monkeypatch) -> No
     assert client._client.api_key == "test-key"  # type: ignore[attr-defined]
     assert client._client.timeout == 15  # type: ignore[attr-defined]
     assert client._client.max_retries == 3  # type: ignore[attr-defined]
-    assert client._client.responses.calls[0]["model"] == "gpt-4.1-mini"  # type: ignore[attr-defined]
+    assert client._client.responses.calls[0]["model"] == "openai-chat-model"  # type: ignore[attr-defined]
+    assert client._client.responses.calls[0]["temperature"] == 0.2  # type: ignore[attr-defined]
     assert client.sdk_debug is False
     assert client.embeds_output_schema_in_prompt is False
+
+
+def test_openai_client_omits_temperature_for_gpt_5_5(monkeypatch) -> None:
+    """GPT-5.5 rejects temperature, so the OpenAI request should use model defaults."""
+    monkeypatch.setitem(sys.modules, "openai", SimpleNamespace(OpenAI=_FakeOpenAI))
+    settings = Settings(
+        llm_provider="openai",
+        openai_api_key="test-key",
+        openai_model="gpt-5.5",
+        llm_temperature=0.2,
+    )
+
+    client = build_llm_client(settings=settings)
+    client.structured_completion(
+        "prompt text",
+        LLMVariablePlausibilityTableReview.model_json_schema(),
+        response_model=LLMVariablePlausibilityTableReview,
+    )
+
+    call = client._client.responses.calls[0]  # type: ignore[attr-defined]
+    assert call["model"] == "gpt-5.5"
+    assert "temperature" not in call
 
 
 def test_build_llm_client_returns_qwen_client_and_parses_json_response() -> None:
@@ -230,7 +253,7 @@ def test_build_llm_client_separates_sdk_debug_from_artifact_debug(monkeypatch) -
         settings=Settings(
             llm_provider="openai",
             openai_api_key="test-key",
-            openai_model="gpt-4.1-mini",
+            openai_model="gpt-5.5",
             llm_debug=True,
             llm_sdk_debug=False,
         )
@@ -243,7 +266,7 @@ def test_build_llm_client_separates_sdk_debug_from_artifact_debug(monkeypatch) -
         settings=Settings(
             llm_provider="openai",
             openai_api_key="test-key",
-            openai_model="gpt-4.1-mini",
+            openai_model="gpt-5.5",
             llm_debug=False,
             llm_sdk_debug=True,
         )
@@ -264,7 +287,7 @@ def test_openai_client_raises_provider_error_when_no_parsed_payload(monkeypatch)
         settings=Settings(
             llm_provider="openai",
             openai_api_key="test-key",
-            openai_model="gpt-4.1-mini",
+            openai_model="gpt-5.5",
         )
     )
 

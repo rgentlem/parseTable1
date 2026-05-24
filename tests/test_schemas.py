@@ -235,7 +235,7 @@ def test_llm_variable_plausibility_monitoring_creation_and_serialization() -> No
     report = LLMVariablePlausibilityMonitoringReport(
         report_timestamp="2026-03-24T10:15:00Z",
         provider="openai",
-        model="gpt-4.1-mini",
+        model="gpt-5.5",
         items=[
             LLMVariablePlausibilityCallRecord(
                 table_id="tbl-1",
