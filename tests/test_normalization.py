@@ -697,6 +697,64 @@ def test_normalization_merges_vertical_label_continuation_rows() -> None:
     assert repair["removed_continuation_row_indices"] == [2, 4, 6]
 
 
+def test_normalization_merges_leading_label_fragment_into_following_valued_row() -> None:
+    """A wrapped label line can appear immediately above the row containing its values."""
+    rows = [
+        ["Characteristics", "Overall", "Group 1", "Group 2"],
+        ["SI (31025 min21", "", "", ""],
+        ["per pmol/L)", "4.4 6 0.14", "7.1 6 0.11", "11.9 6 0.52"],
+        ["AIRg (pmol/L)", "997 6 36.2", "396 6 7.5", "265 6 13.7"],
+    ]
+    extracted = ExtractedTable(
+        table_id="tbl-leading-continuation",
+        source_pdf="paper.pdf",
+        page_num=1,
+        n_rows=len(rows),
+        n_cols=len(rows[0]),
+        cells=[
+            TableCell(row_idx=row_idx, col_idx=col_idx, text=value)
+            for row_idx, row in enumerate(rows)
+            for col_idx, value in enumerate(row)
+        ],
+        extraction_backend="pymupdf4llm",
+    )
+
+    normalized = normalize_extracted_table(extracted)
+
+    repair = normalized.metadata["column_repairs"]["vertical_label_continuations"]
+    assert normalized.metadata["cleaned_rows"][2][0] == "SI (31025 min21 per pmol/L)"
+    assert 1 not in normalized.body_rows
+    assert repair["merged_rows"] == [{"from_row_idx": 1, "to_row_idx": 2}]
+    assert repair["removed_continuation_row_indices"] == [1]
+
+
+def test_normalization_does_not_merge_header_leaf_into_n_row() -> None:
+    """Header labels above an n row are not row-label continuations."""
+    rows = [
+        ["", "African", "Caucasian", "East Asian"],
+        ["n", "688", "2,177", "205"],
+        ["Age (years)", "25.9 6 3.6", "31.2 6 2.7", "32.6 6 2.9"],
+    ]
+    extracted = ExtractedTable(
+        table_id="tbl-header-leaf-n-row",
+        source_pdf="paper.pdf",
+        page_num=1,
+        n_rows=len(rows),
+        n_cols=len(rows[0]),
+        cells=[
+            TableCell(row_idx=row_idx, col_idx=col_idx, text=value)
+            for row_idx, row in enumerate(rows)
+            for col_idx, value in enumerate(row)
+        ],
+        extraction_backend="pymupdf4llm",
+    )
+
+    normalized = normalize_extracted_table(extracted)
+
+    assert normalized.metadata["cleaned_rows"][1][0] == "n"
+    assert normalized.metadata["column_repairs"]["vertical_label_continuations"] is None
+
+
 def test_normalization_does_not_merge_na_value_cells_into_label_continuations() -> None:
     """N/A-like value cells should not be mistaken for second-column label fragments."""
     rows = [

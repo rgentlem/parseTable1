@@ -246,6 +246,33 @@ def test_mean_sd_row_without_children_stays_continuous() -> None:
     assert blocks[0].level_row_indices == []
 
 
+def test_pdf_plusminus_six_rows_classify_as_continuous() -> None:
+    """PDFs sometimes extract the plus/minus glyph as a numeric-looking 6."""
+    table = NormalizedTable(
+        table_id="tbl-pdf-six",
+        header_rows=[0, 1],
+        body_rows=[2, 3],
+        row_views=[
+            _build_row(2, "Age (years)", ["25.9 6 3.6", "31.2 6 2.7", "32.6 6 2.9"]),
+            _build_row(3, "BMI (kg/m2)", ["24.7 6 1.0", "24.6 6 0.7", "21.5 6 0.4†"]),
+        ],
+        n_rows=4,
+        n_cols=4,
+    )
+
+    classifications = classify_rows(table)
+    blocks = group_variable_blocks(table, classifications=classifications)
+
+    assert [item.classification for item in classifications] == [
+        "continuous_variable_row",
+        "continuous_variable_row",
+    ]
+    assert [(block.variable_label, block.variable_kind) for block in blocks] == [
+        ("Age (years)", "continuous"),
+        ("BMI (kg/m2)", "continuous"),
+    ]
+
+
 def test_adjacent_threshold_binary_rows_form_one_level_block() -> None:
     """Complementary threshold rows should group structurally without a special label list."""
     table = NormalizedTable(
@@ -1238,6 +1265,8 @@ def test_value_pattern_detector_handles_required_examples_and_negatives() -> Non
     assert detect_value_pattern("412 (48.2)").pattern == "count_pct"
     assert detect_value_pattern("5,490").pattern == "n_only"
     assert detect_value_pattern("52.3 (14.1)").pattern == "mean_sd"
+    assert detect_value_pattern("25.9 6 3.6").pattern == "mean_sd"
+    assert detect_value_pattern("21.5 6 0.4†").pattern == "mean_sd"
     assert detect_value_pattern("43.2 (35.0, 57.1)").pattern == "median_iqr"
     assert detect_value_pattern("<0.001").pattern == "p_value"
     assert detect_value_pattern("＜0.001").pattern == "p_value"

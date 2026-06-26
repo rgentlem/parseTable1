@@ -160,6 +160,9 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                     page_words = extract_page_words(page)
                     page_chars = extract_page_chars(page)
                     page_rule_segments = extract_page_rule_segments(page)
+                    extracted_page_text = extract_page_text(page)
+                    if extracted_page_text and extracted_page_text not in page_text:
+                        page_text = f"{page_text}\n{extracted_page_text}".strip()
                 page_candidates: list[DetectedTableCandidate] = []
                 table_boxes = [
                     box

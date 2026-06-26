@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 
 TABLE_CAPTION_LINE_PATTERN = re.compile(r"^\s*table\s*(\d+)\b(?:\s*[:.])?", re.IGNORECASE)
+TABLE_CAPTION_CORRUPT_DASH_PATTERN = re.compile(r"^\s*[Tt]able\s*(\d+)d(?=[A-Z])")
 TABLE_CONTINUATION_PATTERN = re.compile(r"^(?:\(\s*continued\s*\)|continued)(?:\s|\b|$)", re.IGNORECASE)
 TABLE_PROSE_REFERENCE_PATTERN = re.compile(
     r"^(?:displays?|shows?|presents?|describes?|illustrates?|reports?|lists?|contains?|"
@@ -63,14 +64,19 @@ def _table_caption_metadata(line: str) -> dict[str, Any] | None:
     stripped = line.strip()
     if not stripped:
         return None
+    corrupt_dash_caption = False
     match = TABLE_CAPTION_LINE_PATTERN.match(stripped)
     if match is None:
-        return None
+        match = TABLE_CAPTION_CORRUPT_DASH_PATTERN.match(stripped)
+        if match is None:
+            return None
+        corrupt_dash_caption = True
     table_number = int(match.group(1))
     remainder = stripped[match.end():].strip()
+    caption_prefix = f"Table {table_number}." if corrupt_dash_caption else stripped[:match.end()].strip()
     continuation_match = TABLE_CONTINUATION_PATTERN.match(remainder)
     if continuation_match is not None:
-        canonical_caption = f"{stripped[:match.end()].strip()} {remainder[:continuation_match.end()].strip()}".strip()
+        canonical_caption = f"{caption_prefix} {remainder[:continuation_match.end()].strip()}".strip()
         return {
             "caption": canonical_caption,
             "table_number": table_number,
@@ -79,6 +85,13 @@ def _table_caption_metadata(line: str) -> dict[str, Any] | None:
         }
     if remainder and TABLE_PROSE_REFERENCE_PATTERN.match(remainder):
         return None
+    if corrupt_dash_caption:
+        return {
+            "caption": f"{caption_prefix} {remainder}".strip(),
+            "table_number": table_number,
+            "is_continuation": False,
+            "continuation_of_table_number": None,
+        }
     return {
         "caption": stripped,
         "table_number": table_number,

@@ -298,6 +298,7 @@ Conservative repair rule:
 - when a single logical row-label field is split across the first two columns, normalization may shift second-column level labels left and merge first-plus-second label fragments before row signatures are built; this can be supported by shifted label rows or by many merged first-plus-second label fragments with values clearly starting to the right
 - when only the tail of a label is embedded in the first value cell, normalization may merge that label tail back into column 0 while leaving the count in the value column
 - when a label-only continuation row wraps below a valued row, normalization may append the continuation text to the preceding row label and suppress the continuation row from `body_rows`
+- when a label-only fragment row wraps above the row containing its values, normalization may prepend that fragment to the following row label only when the fragment itself has strong unfinished-label evidence, such as an unmatched parenthesis or phrase connector
 - repair diagnostics should live in `metadata` rather than replacing the canonical `NormalizedTable` fields
 
 ## 3. `column_header_schemas.json`
@@ -818,6 +819,7 @@ Design note for future value parsing:
 
 - parser-facing symbol canonicalization should be applied internally before regex matching and numeric parsing
 - canonicalization must not replace the stored `raw_value`
+- current parser-facing matching treats a spaced numeric `6` between two numeric tokens as a PDF-extracted plus/minus glyph for `mean_sd` cells, while preserving the original `raw_value`
 - for Table 1 categorical `n (%)` cells, the intended first interpretation is:
   - `parsed_numeric` = count
   - `parsed_secondary_numeric` = percent

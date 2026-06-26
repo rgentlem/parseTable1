@@ -339,16 +339,18 @@ Two recurring cases are:
 
 - a label tail is embedded in the first value cell with a count, for example `<100%` plus `FPL 625`
 - a row label wraps onto the next extracted row while the values stay on the first row, for example `All (NHANES` followed by `2009 to 2012)`
+- a row label starts on a label-only row and finishes on the following valued row, for example `SI (31025 min21` followed by `per pmol/L)`
 
 Normalization can repair these only when the row context is strong:
 
 - embedded label-tail repair requires a label-like first cell, a label-tail-plus-count pattern in the first value cell, and additional value-like cells to the right
 - vertical continuation repair requires a label-only row after a valued row plus punctuation, footnote, lowercase/digit-start, or phrase-continuation cues
+- leading label-fragment repair requires the label-only row itself to show unfinished-label evidence, such as an unmatched parenthesis or trailing phrase connector, before it can merge into the following valued row
 
 When these fire, normalization:
 
 - moves the embedded label tail back into the row-label cell while leaving the count in the value column
-- appends vertical continuation text to the preceding valued row's label
+- appends vertical continuation text to the preceding valued row's label, or prepends a leading label fragment to the following valued row's label
 - suppresses consumed continuation rows from `body_rows`
 - records repair evidence in `metadata.column_repairs.embedded_label_count_cells` and `metadata.column_repairs.vertical_label_continuations`
 
@@ -616,6 +618,7 @@ One implemented heuristic detail is worth calling out explicitly:
 
 - a row with empty group columns but populated test or statistic columns can still be a variable header
 - if that row is followed by plausible child levels such as `Yes` and `No`, it should be treated as a new variable, not as another level under the previous variable
+- continuous-summary rows can be recognized when a PDF extracts the plus/minus glyph as a spaced `6`, such as `25.9 6 3.6`; the raw cell text remains unchanged
 
 This matters for printed Table 1 layouts where the parent row carries only the p-value or trend-test result and the level rows carry the group counts.
 

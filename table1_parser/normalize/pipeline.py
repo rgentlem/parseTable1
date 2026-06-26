@@ -173,6 +173,34 @@ def _repair_vertical_label_continuations(
         current_label = clean_text(" ".join(cell for cell in cleaned_rows[row_idx][:2] if clean_text(cell)))
         if not current_label or _has_substantive_row_values(cleaned_rows[row_idx][1:]):
             continue
+        next_idx = row_idx + 1
+        while next_idx in suppressed_rows and next_idx + 1 < len(cleaned_rows):
+            next_idx += 1
+        if next_idx < len(cleaned_rows):
+            next_label = clean_text(repaired_cleaned_rows[next_idx][0])
+            next_starts_continuation = bool(
+                next_label
+                and (
+                    current_label.count("(") > current_label.count(")") and ")" in next_label
+                    or current_label.lower().endswith((" to", " and", " of", " for", "-"))
+                )
+            )
+            if (
+                next_starts_continuation
+                and _has_substantive_row_values(repaired_cleaned_rows[next_idx][1:])
+                and _is_label_continuation(
+                    current_label,
+                    next_label,
+                )
+            ):
+                current_raw_label = clean_text(" ".join(cell for cell in raw_rows[row_idx][:2] if clean_text(cell)))
+                repaired_raw_rows[next_idx][0] = clean_text(f"{current_raw_label} {repaired_raw_rows[next_idx][0]}")
+                repaired_cleaned_rows[next_idx][0] = clean_text(f"{current_label} {repaired_cleaned_rows[next_idx][0]}")
+                repaired_raw_rows[row_idx] = ["" for _ in repaired_raw_rows[row_idx]]
+                repaired_cleaned_rows[row_idx] = ["" for _ in repaired_cleaned_rows[row_idx]]
+                suppressed_rows.append(row_idx)
+                merged_rows.append({"from_row_idx": row_idx, "to_row_idx": next_idx})
+                continue
         target_idx = row_idx - 1
         while target_idx in suppressed_rows and target_idx > 0:
             target_idx -= 1

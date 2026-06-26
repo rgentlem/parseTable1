@@ -48,7 +48,12 @@ def _has_categorical_parent_cue(row_view: RowView) -> bool:
 
 def _summary_like_trailing_count(trailing_cells: Sequence[str]) -> int:
     """Count trailing cells that look like summary statistics rather than category counts."""
-    return sum("±" in cell or bool(DECIMAL_SUMMARY_PATTERN.match(cell)) for cell in trailing_cells)
+    return sum(
+        "±" in cell
+        or detect_value_pattern(cell).pattern in {"mean_sd", "median_iqr"}
+        or bool(DECIMAL_SUMMARY_PATTERN.match(cell))
+        for cell in trailing_cells
+    )
 
 
 def _has_strong_continuous_cue(row_view: RowView) -> bool:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from table1_parser.parse import build_parsed_table
+from table1_parser.parse.value_parser import parse_cell_value
 from table1_parser.schemas import (
     ColumnDefinition,
     DefinedColumn,
@@ -197,3 +198,12 @@ def test_build_parsed_table_parses_n_only_categorical_values_without_count_perce
     assert female_cases.value_type == "count"
     assert female_cases.parsed_numeric == 30.0
     assert parsed.notes == []
+
+
+def test_parse_cell_value_parses_pdf_plusminus_six_mean_sd() -> None:
+    """A numeric 6 between two values can be the extracted plus/minus glyph."""
+    parsed = parse_cell_value("25.9 6 3.6†", "group")
+
+    assert parsed.value_type == "mean_sd"
+    assert parsed.parsed_numeric == 25.9
+    assert parsed.parsed_secondary_numeric == 3.6

@@ -18,6 +18,7 @@ They do not change the rule that raw extracted text must be preserved.
 - preserve paper-facing raw text exactly as extracted
 - make parser behavior stable when visually equivalent symbols appear in different Unicode forms
 - parse common Table 1 `n (%)` cells into structured numeric fields
+- parse common continuous summary cells, including PDFs that extract a visual plus/minus as a spaced numeric `6`
 - add soft consistency checks that are useful for classic baseline-characteristics tables
 - avoid overfitting the parser to one paper or one journal style
 - allow row-label-derived expected value styles to support conservative structural repair of malformed normalized grids
@@ -88,6 +89,12 @@ The first implementation should normalize at least the following:
   collapse repeated whitespace to a single space
 
 The mapping should stay conservative. Only normalize symbols that are semantically equivalent for parser purposes.
+
+Some PDFs extract the visual plus/minus glyph in summary values as a spaced `6`,
+for example `25.9 6 3.6`. The current parser treats that shape as `mean_sd`
+only when it appears as two numeric tokens separated by a spaced `6`; unspaced
+integers such as `2603` remain plain counts. This is a parser-facing value
+pattern rule and does not rewrite `raw_value`.
 
 ### Where It Should Live
 
@@ -309,6 +316,7 @@ When implemented, tests should cover at least:
 - comparison symbol normalization for `<`, `>`, `<=`, `>=`
 - dash/minus normalization
 - preservation of raw source text after canonicalization
+- `mean_sd` parsing for both real plus/minus glyphs and spaced-`6` extraction artifacts
 - `count_pct` parsing with and without `%`
 - overall-column sibling percentages summing to about 100
 - subgroup-column sibling percentages summing to subgroup share of the total population

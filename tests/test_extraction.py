@@ -19,6 +19,7 @@ from table1_parser.extract.layout_fallback import (
 from table1_parser.extract.pymupdf4llm_extractor import PyMuPDF4LLMExtractor
 from table1_parser.extract.table_detector import (
     DetectedTableCandidate,
+    _table_caption_metadata,
     detect_table_candidates,
     score_candidate,
 )
@@ -246,6 +247,16 @@ def test_score_candidate_uses_embedded_caption_from_collapsed_first_cell() -> No
     assert scored.score >= 0.8
 
 
+def test_table_caption_metadata_accepts_pdf_dash_extracted_as_d() -> None:
+    """Some rotated captions extract an en dash after the number as a bare d."""
+    metadata = _table_caption_metadata("Table 1dCharacteristics of NGT, IGR, or T2D cohort subjects")
+
+    assert metadata is not None
+    assert metadata["caption"] == "Table 1. Characteristics of NGT, IGR, or T2D cohort subjects"
+    assert metadata["table_number"] == 1
+    assert _table_caption_metadata("Table 1 displays baseline values") is None
+
+
 def test_build_extractor_defaults_to_pymupdf4llm() -> None:
     extractor = build_extractor()
 
@@ -334,6 +345,56 @@ def test_pymupdf4llm_extractor_returns_structured_tables(tmp_path, monkeypatch) 
     assert cell_map[(2, 0)] == "Other race"
     assert cell_map[(3, 0)] == "Mexican American"
     assert tables[0].cells[0].bbox == (120.0, 124.0, 250.0, 135.0)
+
+
+def test_pymupdf4llm_extractor_uses_pymupdf_page_text_for_missing_caption(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    """Caption fallback should see PyMuPDF page text when JSON boxes omit it."""
+    pdf_path = tmp_path / "paper.pdf"
+    pdf_path.write_text("placeholder")
+    _install_fake_pymupdf4llm(
+        monkeypatch,
+        {
+            "pages": [
+                {
+                    "page_number": 1,
+                    "boxes": [
+                        {
+                            "bbox": [42, 56, 172, 730],
+                            "boxclass": "table",
+                            "table": {
+                                "bbox": [42, 56, 172, 730],
+                                "extract": [["Variable", "Overall"], ["Age", "25.9 6 3.6"]],
+                            },
+                        }
+                    ],
+                }
+            ]
+        },
+    )
+    monkeypatch.setattr(
+        pymupdf4llm_extractor_module,
+        "extract_clipped_line_directions",
+        lambda page, clip_bbox: [(0.0, 1.0), (0.0, 1.0)],
+    )
+    _install_fake_pymupdf_document(
+        monkeypatch,
+        [
+            FakePyMuPage(
+                text="Table 1dCharacteristics of NGT, IGR, or T2D cohort subjects",
+                words=[],
+            )
+        ],
+    )
+
+    tables = PyMuPDF4LLMExtractor(max_candidates=3, heuristic_confidence_threshold=0.0).extract(str(pdf_path))
+
+    assert len(tables) == 1
+    assert tables[0].caption == "Table 1. Characteristics of NGT, IGR, or T2D cohort subjects"
+    assert tables[0].metadata["caption_source"] == "page_text_fallback"
+    assert tables[0].metadata["table_number"] == 1
 
 
 def test_pymupdf4llm_extractor_trims_trailing_watermark_rows_from_explicit_table(
