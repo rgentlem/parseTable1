@@ -135,7 +135,7 @@ class LLMVariablePlausibilityTableReviewParser:
         try:
             result = LLMVariablePlausibilityTableReview.model_validate(raw_response)
             validated = validate_llm_variable_plausibility_review(result, payload)
-        except (ValidationError, ValueError) as exc:
+        except (ValidationError, ValueError):
             error = LLMVariablePlausibilityReviewError(
                 "Invalid structured LLM variable-plausibility review.",
                 payload=payload,

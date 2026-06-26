@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from html import escape
 
-from table1_parser.synthetic.spec_models import SyntheticDocumentSpec, SyntheticDisplayRow, expand_display_rows, spec_to_json
+from table1_parser.synthetic.spec_models import SyntheticDocumentSpec, expand_display_rows, spec_to_json
 
 
 def render_html_document(spec: SyntheticDocumentSpec) -> str:

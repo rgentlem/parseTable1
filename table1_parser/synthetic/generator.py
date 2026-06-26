@@ -7,7 +7,7 @@ from pathlib import Path
 
 from table1_parser.synthetic.html_renderer import render_html_document
 from table1_parser.synthetic.pdf_renderer import render_pdf_from_html
-from table1_parser.synthetic.spec_models import SyntheticDocumentSpec, load_table_spec
+from table1_parser.synthetic.spec_models import load_table_spec
 from table1_parser.synthetic.truth_writer import build_truth_json
 
 

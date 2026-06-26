@@ -6,7 +6,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from table1_parser.synthetic.spec_models import SyntheticDisplayRow, SyntheticDocumentSpec, expand_display_rows
+from table1_parser.synthetic.spec_models import SyntheticDocumentSpec, expand_display_rows
 
 
 _EMBEDDED_SPEC_PATTERN = re.compile(

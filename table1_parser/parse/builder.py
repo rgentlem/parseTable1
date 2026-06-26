@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from table1_parser.parse.value_parser import build_value_records
 from table1_parser.schemas import (
-    DefinedColumn,
-    DefinedVariable,
     NormalizedTable,
     ParsedColumn,
     ParsedLevel,

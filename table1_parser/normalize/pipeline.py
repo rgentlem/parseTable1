@@ -9,7 +9,6 @@ from table1_parser.heuristics.value_pattern_detector import detect_value_pattern
 from table1_parser.normalize.header_detector import detect_header_rows_with_metadata
 from table1_parser.normalize.row_signature import build_row_signature
 from table1_parser.schemas import ExtractedTable, NormalizedTable
-from table1_parser.schemas.normalized_table import RowView
 from table1_parser.text_cleaning import clean_text, summarize_text_cleaning_provenance
 
 
