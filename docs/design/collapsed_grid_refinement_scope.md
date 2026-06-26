@@ -46,10 +46,36 @@ Both branches currently:
 - treat rotated and upright refinement as one method with two geometry-preparation modes
 - keep estimate/model-specific refinement separate for now
 
+## Mixed-Orientation Pages
+
+Some two-column journal pages contain a rotated table in one column and upright
+article prose in the other. In that case a whole-page direction summary can
+lower the table's rotation confidence even when the candidate table region is
+visibly rotated. The extractor should therefore allow candidate-local rotated
+collapsed-grid refinement when all of these structural signals are present:
+
+- the candidate reports a vertical text direction with at least moderate
+  confidence
+- the explicit grid has few columns and several stacked or text-blob cells
+- positioned words inside the candidate provide enough evidence to rebuild a
+  wider grid
+
+For wide, short rotated candidates, PyMuPDF4LLM may report the table bbox in a
+visual/upright frame rather than the page-space region needed for word clipping.
+The extractor may try a transposed candidate clip before rotating into
+table-local coordinates, but it should accept that result only when the rebuilt
+grid gains clear columns and preserves enough rows. This is still a structural
+geometry repair, not a paper-specific continuation rule.
+
+Uncaptioned one-row, many-column prose shards from nearby article text should
+not be preserved as explicit table outputs when they have dense prose fragments
+and little value-cell evidence.
+
 ## Expected Result
 
 - less duplicated extractor code
-- unchanged extractor outputs
+- unchanged extractor outputs except where a collapsed rotated candidate is
+  structurally rebuilt or an uncaptioned prose shard is rejected
 - clearer rescue logic for collapsed explicit grids
 
 ## Estimated Impact
