@@ -21,6 +21,7 @@ SENTENCE_TERMINAL_PATTERN = re.compile(r"[.!?][\"')\]]*$")
 LINE_MERGE_TOLERANCE = 4.0
 COLUMN_CLUSTER_TOLERANCE = 18.0
 COLLAPSED_LABEL_PATTERN = re.compile(r"[a-z][A-Z]|[A-Za-z-]{8,}")
+P_VALUE_ANCHOR_PATTERN = re.compile(r"^(?:[<>]=?)?(?:0?\.\d+|\.\d+|1\.0+)(?:[*†‡§¶#{}|]+|[a-z])*$", re.IGNORECASE)
 TABLE_VALUE_TEXT_PATTERN = re.compile(r"^(?:[<>]=?\s*)?[\d.,/%()\-+±\s]+$")
 
 
@@ -321,7 +322,7 @@ def build_row_grid_from_lines(
             compact_text = re.sub(r"[\s,\u00a0\u2009\u202f]+", "", text)
             if not NUMERIC_TOKEN_PATTERN.search(compact_text):
                 continue
-            if ALPHA_TOKEN_PATTERN.search(compact_text):
+            if ALPHA_TOKEN_PATTERN.search(compact_text) and P_VALUE_ANCHOR_PATTERN.fullmatch(compact_text) is None:
                 continue
             numeric_position_items.append((float(word["x0"]), line_index))
     numeric_position_items = sorted(numeric_position_items)

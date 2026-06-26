@@ -18,7 +18,7 @@ MEAN_SD_PATTERN = re.compile(
 MEDIAN_IQR_PATTERN = re.compile(
     r"^-?\d+(?:\.\d+)?\s*\(\s*-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?\s*\)$"
 )
-P_VALUE_PATTERN = re.compile(r"^(?:[<>]=?\s*)?(?:0?\.\d+|\.\d+|1\.0+)$", re.IGNORECASE)
+P_VALUE_PATTERN = re.compile(rf"^(?:[<>]=?\s*)?(?:0?\.\d+|\.\d+|1\.0+){FOOTNOTE_SUFFIX_TOKEN}$", re.IGNORECASE)
 N_ONLY_PATTERN = re.compile(rf"^{INTEGER_TOKEN}$")
 
 

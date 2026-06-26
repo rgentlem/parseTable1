@@ -1269,6 +1269,8 @@ def test_value_pattern_detector_handles_required_examples_and_negatives() -> Non
     assert detect_value_pattern("21.5 6 0.4†").pattern == "mean_sd"
     assert detect_value_pattern("43.2 (35.0, 57.1)").pattern == "median_iqr"
     assert detect_value_pattern("<0.001").pattern == "p_value"
+    assert detect_value_pattern("<0.001b").pattern == "p_value"
+    assert detect_value_pattern("< 0.001a").pattern == "p_value"
     assert detect_value_pattern("＜0.001").pattern == "p_value"
     assert detect_value_pattern("412").pattern == "n_only"
 

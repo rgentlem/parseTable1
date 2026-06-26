@@ -20,7 +20,7 @@ MEAN_SD_EXTRACT_PATTERN = re.compile(
     rf"^(?P<mean>{DECIMAL_TOKEN})(?:\s*\(\s*(?P<sd_paren>{DECIMAL_TOKEN})\s*\)|\s*±\s*(?P<sd_pm>{DECIMAL_TOKEN})|\s+6\s+(?P<sd_six>{DECIMAL_TOKEN})){FOOTNOTE_SUFFIX_TOKEN}$"
 )
 N_ONLY_EXTRACT_PATTERN = re.compile(rf"^(?P<count>{INTEGER_TOKEN})$")
-P_VALUE_NUMERIC_PATTERN = re.compile(r"^(?:[<>]=?\s*)?(?P<value>0?\.\d+|\.\d+|1\.0+)$", re.IGNORECASE)
+P_VALUE_NUMERIC_PATTERN = re.compile(rf"^(?:[<>]=?\s*)?(?P<value>0?\.\d+|\.\d+|1\.0+){FOOTNOTE_SUFFIX_TOKEN}$", re.IGNORECASE)
 HEADER_N_PATTERN = re.compile(r"\bn\s*=\s*(?P<count>\d[\d,]*)\b", re.IGNORECASE)
 COUNT_ROW_LABELS = {"n", "number", "no"}
 

@@ -207,3 +207,11 @@ def test_parse_cell_value_parses_pdf_plusminus_six_mean_sd() -> None:
     assert parsed.value_type == "mean_sd"
     assert parsed.parsed_numeric == 25.9
     assert parsed.parsed_secondary_numeric == 3.6
+
+
+def test_parse_cell_value_parses_footnoted_p_value() -> None:
+    """P-value footnote markers should not block numeric p-value parsing."""
+    parsed = parse_cell_value("< 0.001b", "p_value")
+
+    assert parsed.value_type == "text"
+    assert parsed.parsed_numeric == 0.001

@@ -366,6 +366,7 @@ def _drop_trailing_nondata_column(
     last_col_idx = len(cleaned_rows[0]) - 1
     populated = 0
     data_like = 0
+    p_value_like = 0
     previous_data_like = 0
     for row_idx in body_rows:
         if row_idx >= len(cleaned_rows):
@@ -374,7 +375,10 @@ def _drop_trailing_nondata_column(
         previous = clean_text(cleaned_rows[row_idx][last_col_idx - 1])
         populated += int(bool(last))
         data_like += int(_looks_like_numeric_matrix_cell(last))
+        p_value_like += int(bool(last) and detect_value_pattern(last).pattern == "p_value")
         previous_data_like += int(_looks_like_numeric_matrix_cell(previous))
+    if populated and p_value_like >= max(2, populated // 2):
+        return raw_rows, cleaned_rows, None
     if (
         populated < max(3, len(body_rows) // 5)
         or data_like >= max(3, len(body_rows) // 4)
@@ -404,6 +408,7 @@ def _drop_sparse_nonmatrix_value_columns(
     for col_idx in range(1, len(cleaned_rows[0])):
         populated = 0
         numeric = 0
+        p_value_like = 0
         left_numeric = 0
         right_numeric = 0
         for row_idx in matrix_rows:
@@ -418,6 +423,10 @@ def _drop_sparse_nonmatrix_value_columns(
                 continue
             populated += 1
             numeric += int(_looks_like_numeric_matrix_cell(value))
+            p_value_like += int(detect_value_pattern(value).pattern == "p_value")
+        if populated and p_value_like >= max(2, populated // 2):
+            keep_indices.append(col_idx)
+            continue
         if (
             (populated and numeric == 0 and populated <= max(4, len(body_rows) // 4))
             or (

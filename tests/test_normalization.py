@@ -1019,6 +1019,44 @@ def test_count_percent_column_merge_preserves_raw_text_for_provenance() -> None:
     ]
 
 
+def test_normalization_keeps_sparse_footnoted_p_value_column() -> None:
+    """A sparse rightmost p-value column is data, not trailing page noise."""
+    rows = [
+        ["", "Lifestyle score", "", "", ""],
+        ["", "Low (n = 2561)", "Middle (n = 2076)", "High (n = 2297)", "p"],
+        ["Age, years", "36.0", "44.0", "45.0", "< 0.001b"],
+        ["< 65y", "2396 (93.6%)", "1772 (85.4%)", "1908 (83.1%)", ""],
+        [">= 65y", "165 (6.4%)", "304 (14.6%)", "389 (16.9%)", ""],
+        ["Gender", "", "", "", "< 0.001a"],
+        ["Men", "1450 (56.6%)", "987 (47.5%)", "1131 (49.2%)", ""],
+        ["Women", "1111 (43.4%)", "1089 (52.5%)", "1166 (50.8%)", ""],
+        ["Healthy diet", "172 (6.7%)", "1597 (76.9%)", "1540 (67.0%)", "< 0.001a"],
+    ]
+    extracted = ExtractedTable(
+        table_id="tbl-p-values",
+        source_pdf="paper.pdf",
+        page_num=1,
+        title="Table 1",
+        caption="Baseline characteristics",
+        n_rows=len(rows),
+        n_cols=len(rows[0]),
+        cells=[
+            TableCell(row_idx=row_idx, col_idx=col_idx, text=value)
+            for row_idx, row in enumerate(rows)
+            for col_idx, value in enumerate(row)
+        ],
+        extraction_backend="pymupdf4llm",
+    )
+
+    normalized = normalize_extracted_table(extracted)
+
+    assert normalized.n_cols == 5
+    assert normalized.metadata["cleaned_rows"][1] == ["", "Low (n = 2561)", "Middle (n = 2076)", "High (n = 2297)", "p"]
+    assert normalized.metadata["cleaned_rows"][2][4] == "< 0.001b"
+    assert normalized.metadata["cleaned_rows"][5][4] == "< 0.001a"
+    assert normalized.metadata["source_col_indices"] == [0, 1, 2, 3, 4]
+
+
 def test_normalized_table_round_trip_serialization(tmp_path: Path) -> None:
     """Normalized tables should round-trip cleanly through the persisted JSON artifact."""
     extracted = ExtractedTable(

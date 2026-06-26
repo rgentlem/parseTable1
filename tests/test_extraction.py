@@ -15,6 +15,7 @@ from table1_parser.extract.layout_fallback import (
     _build_rows_from_line_segment,
     build_row_grid_from_lines,
     build_text_layout_candidates,
+    build_word_lines,
 )
 from table1_parser.extract.pymupdf4llm_extractor import PyMuPDF4LLMExtractor
 from table1_parser.extract.table_detector import (
@@ -345,6 +346,28 @@ def test_pymupdf4llm_extractor_returns_structured_tables(tmp_path, monkeypatch) 
     assert cell_map[(2, 0)] == "Other race"
     assert cell_map[(3, 0)] == "Mexican American"
     assert tables[0].cells[0].bbox == (120.0, 124.0, 250.0, 135.0)
+
+
+def test_word_grid_uses_footnoted_p_values_as_column_anchors() -> None:
+    """Footnote letters on p-values should not hide a separate rightmost p column."""
+    words: list[dict[str, object]] = []
+    rows = [
+        [(216.0, "Low"), (311.0, "Middle"), (411.0, "High"), (506.0, "p")],
+        [(56.0, "Age"), (216.0, "36.0"), (311.0, "44.0"), (411.0, "45.0"), (506.0, "<0.001b")],
+        [(56.0, "<65y"), (216.0, "2396"), (311.0, "1772"), (411.0, "1908")],
+        [(56.0, "Gender"), (506.0, "<0.001a")],
+        [(56.0, "Healthy"), (216.0, "172"), (311.0, "1597"), (411.0, "1540"), (506.0, "<0.001a")],
+    ]
+    for row_idx, row in enumerate(rows):
+        top = 100.0 + row_idx * 14.0
+        for x0, text in row:
+            words.append({"text": text, "x0": x0, "x1": x0 + max(8.0, len(text) * 4.0), "top": top, "bottom": top + 8.0})
+
+    grid, _ = build_row_grid_from_lines(build_word_lines(words))
+
+    assert grid[0] == ["", "Low", "Middle", "High", "p"]
+    assert grid[1] == ["Age", "36.0", "44.0", "45.0", "<0.001b"]
+    assert grid[3] == ["Gender", "", "", "", "<0.001a"]
 
 
 def test_pymupdf4llm_extractor_uses_pymupdf_page_text_for_missing_caption(
