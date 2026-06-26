@@ -144,15 +144,25 @@ def normalize_positioned_geometry_for_rotation(
             _transform_point(x0, char_bottom),
             _transform_point(x1, char_bottom),
         ]
-        transformed_chars.append(
+        transformed_left = min(point[0] for point in transformed_corners)
+        transformed_right = max(point[0] for point in transformed_corners)
+        transformed_top = min(point[1] for point in transformed_corners)
+        transformed_bottom = max(point[1] for point in transformed_corners)
+        transformed_char = {
+            key: value
+            for key, value in char.items()
+            if key not in {"x0", "x1", "top", "bottom", "char_height"}
+        }
+        transformed_char.update(
             {
-                "text": char["text"],
-                "x0": min(point[0] for point in transformed_corners),
-                "x1": max(point[0] for point in transformed_corners),
-                "top": min(point[1] for point in transformed_corners),
-                "bottom": max(point[1] for point in transformed_corners),
+                "x0": transformed_left,
+                "x1": transformed_right,
+                "top": transformed_top,
+                "bottom": transformed_bottom,
+                "char_height": transformed_bottom - transformed_top,
             }
         )
+        transformed_chars.append(transformed_char)
 
     transformed_rule_segments: list[tuple[float, float, float, float]] = []
     for x0, y0, x1, y1 in rule_segments or []:

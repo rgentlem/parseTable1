@@ -150,6 +150,7 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     parsed_path = tmp_path / "outputs" / "papers" / "paper" / "parsed_tables.json"
     processing_status_path = tmp_path / "outputs" / "papers" / "paper" / "table_processing_status.json"
     parse_quality_reports_path = tmp_path / "outputs" / "papers" / "paper" / "parse_quality_reports.json"
+    cell_text_annotations_path = tmp_path / "outputs" / "papers" / "paper" / "cell_text_annotations.json"
     paper_markdown_path = tmp_path / "outputs" / "papers" / "paper" / "paper_markdown.md"
     paper_sections_path = tmp_path / "outputs" / "papers" / "paper" / "paper_sections.json"
     paper_visual_inventory_path = tmp_path / "outputs" / "papers" / "paper" / "paper_visual_inventory.json"
@@ -172,6 +173,7 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     assert parsed_path.exists()
     assert processing_status_path.exists()
     assert parse_quality_reports_path.exists()
+    assert cell_text_annotations_path.exists()
     assert paper_markdown_path.exists()
     assert paper_sections_path.exists()
     assert paper_visual_inventory_path.exists()
@@ -196,6 +198,10 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     assert parse_quality_payload[0]["table_id"] == "tbl-1"
     assert parse_quality_payload[0]["summary"]["total_body_rows"] == 2
     assert "column_diagnostics" in parse_quality_payload[0]
+    cell_annotation_payload = json.loads(cell_text_annotations_path.read_text(encoding="utf-8"))
+    assert cell_annotation_payload[0]["table_id"] == "tbl-1"
+    assert cell_annotation_payload[0]["annotations"] == []
+    assert "char_geometry_unavailable" in cell_annotation_payload[0]["metadata"]["diagnostics"]
     assert paper_markdown_path.read_text(encoding="utf-8") == "# Methods\nExample study population."
     assert json.loads(paper_sections_path.read_text(encoding="utf-8"))[0]["section_id"] == "section_0"
     visual_payload = json.loads(paper_visual_inventory_path.read_text(encoding="utf-8"))

@@ -6,6 +6,7 @@ from table1_parser.extract.layout_fallback import (
     _build_rows_from_line_segment,
     build_text_layout_candidates,
     detect_horizontal_rules,
+    normalize_positioned_geometry_for_rotation,
 )
 
 
@@ -32,6 +33,35 @@ def test_build_text_layout_candidates_detects_unruled_table() -> None:
     assert candidates[0].caption == "Table1\nBaselinecharacteristics"
     assert candidates[0].metadata["layout_source"] == "text_positions"
     assert candidates[0].raw_rows[0][2:4] == ["Q1", "Q2"]
+
+
+def test_rotated_geometry_preserves_character_evidence() -> None:
+    """Rotated table normalization should keep char metadata for later annotation detection."""
+    _words, chars, _rules, _bbox = normalize_positioned_geometry_for_rotation(
+        words=[],
+        chars=[
+            {
+                "text": "b",
+                "x0": 110.0,
+                "x1": 114.0,
+                "top": 220.0,
+                "bottom": 228.0,
+                "char_height": 8.0,
+                "page_num": 3,
+                "font_size": 6.0,
+                "font": "TimesNewRomanPSMT",
+            }
+        ],
+        rule_segments=[],
+        bbox=(100.0, 200.0, 140.0, 260.0),
+        rotation_direction="vertical_text_up",
+    )
+
+    assert chars[0]["text"] == "b"
+    assert chars[0]["page_num"] == 3
+    assert chars[0]["font_size"] == 6.0
+    assert chars[0]["font"] == "TimesNewRomanPSMT"
+    assert chars[0]["char_height"] == 4.0
 
 
 def test_build_text_layout_candidates_trims_footer_text_after_value_rows() -> None:

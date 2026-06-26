@@ -10,6 +10,10 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from table1_parser.cell_text_annotations import (
+    build_cell_text_annotation_tables_from_pdf,
+    cell_text_annotation_tables_to_payload,
+)
 from table1_parser.column_header_schema import build_column_header_schemas, column_header_schemas_to_payload
 from table1_parser.config import Settings
 from table1_parser.continued_variable_integration import (
@@ -41,8 +45,9 @@ from table1_parser.normalize import normalize_extracted_tables, normalized_table
 from table1_parser.parse import build_parsed_tables, parsed_tables_to_payload
 from table1_parser.processing_status import build_table_processing_statuses
 from table1_parser.schemas import (
-    ExtractedTable,
+    CellTextAnnotationTable,
     ColumnHeaderSchema,
+    ExtractedTable,
     LLMVariablePlausibilityCallRecord,
     LLMVariablePlausibilityMonitoringReport,
     NormalizedTable,
@@ -83,6 +88,7 @@ class PaperParseArtifacts:
     continued_variable_integrations: list[TableDefinition]
     parsed_tables: list[ParsedTable]
     parse_quality_reports: list[ParseQualityReport]
+    cell_text_annotations: list[CellTextAnnotationTable]
     paper_markdown: str
     paper_sections: list[PaperSection]
     paper_visual_inventory: list[PaperVisual]
@@ -381,6 +387,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     """Run the deterministic parse pipeline and build the paper-level context artifacts."""
     extractor = _build_default_extractor()
     extracted_tables = extractor.extract(pdf_path)
+    cell_text_annotations = build_cell_text_annotation_tables_from_pdf(pdf_path, extracted_tables)
     normalized_tables = normalize_extracted_tables(extracted_tables)
     column_header_schemas = build_column_header_schemas(normalized_tables, extracted_tables)
     table_profiles = build_table_profiles(normalized_tables)
@@ -430,6 +437,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         continued_variable_integrations=continued_variable_integrations,
         parsed_tables=parsed_tables,
         parse_quality_reports=parse_quality_reports,
+        cell_text_annotations=cell_text_annotations,
         paper_markdown=paper_markdown,
         paper_sections=paper_sections,
         paper_visual_inventory=paper_visual_inventory,
@@ -498,6 +506,7 @@ def _write_parse_outputs(
     parsed_output_path = paper_dir / "parsed_tables.json"
     processing_status_output_path = paper_dir / "table_processing_status.json"
     parse_quality_reports_output_path = paper_dir / "parse_quality_reports.json"
+    cell_text_annotations_output_path = paper_dir / "cell_text_annotations.json"
     paper_markdown_output_path = paper_dir / "paper_markdown.md"
     paper_sections_output_path = paper_dir / "paper_sections.json"
     paper_visual_inventory_output_path = paper_dir / "paper_visual_inventory.json"
@@ -578,6 +587,10 @@ def _write_parse_outputs(
     )
     parse_quality_reports_output_path.write_text(
         json.dumps([report.model_dump(mode="json") for report in artifacts.parse_quality_reports], indent=2) + "\n",
+        encoding="utf-8",
+    )
+    cell_text_annotations_output_path.write_text(
+        json.dumps(cell_text_annotation_tables_to_payload(artifacts.cell_text_annotations), indent=2) + "\n",
         encoding="utf-8",
     )
     paper_markdown_output_path.write_text(artifacts.paper_markdown, encoding="utf-8")

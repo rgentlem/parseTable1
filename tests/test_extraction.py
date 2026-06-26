@@ -838,11 +838,15 @@ def test_pymupdf4llm_extractor_refines_rotated_explicit_tables_from_words_and_ru
     assert tables[0].metadata["table_orientation"] == "rotated"
     assert tables[0].metadata["grid_refinement_source"] == "rotated_word_positions_with_rules"
     assert tables[0].metadata["geometry_coordinate_frame"] == "table_local_rotated_normalized"
+    assert tables[0].metadata["geometry_transform_source_bbox"] == tuple(table_bbox)
+    assert tables[0].metadata["geometry_transform_transposed"] is False
+    assert tables[0].metadata["geometry_transform_applied"] is True
     assert tables[0].metadata["explicit_grid_refined_from_words"] is True
     assert tables[0].n_rows >= 5
     assert tables[0].n_cols >= 4
     assert tables[0].metadata["refined_table_cells"] is not None
-    assert tables[0].cells[0].bbox is None
+    assert tables[0].metadata["table_cells"] == tables[0].metadata["refined_table_cells"]
+    assert tables[0].cells[0].bbox is not None
 
 
 def test_pymupdf4llm_extractor_replaces_collapsed_sideways_page_candidate(
@@ -958,6 +962,10 @@ def test_pymupdf4llm_extractor_replaces_collapsed_sideways_page_candidate(
     assert len(tables) == 1
     assert tables[0].metadata["orientation_strategy"] == "sideways_transformed"
     assert tables[0].metadata["caption_detection_space"] == "transformed_coordinates"
+    assert tables[0].metadata["geometry_coordinate_frame"] == "page_sideways_transformed"
+    assert tables[0].metadata["geometry_transform_source_bbox"] == (0.0, 0.0, 300.0, 500.0)
+    assert tables[0].metadata["geometry_transform_transposed"] is False
+    assert tables[0].metadata["geometry_transform_applied"] is True
     assert tables[0].metadata["table_number"] == 1
     assert tables[0].n_rows == 4
     assert tables[0].n_cols == 4

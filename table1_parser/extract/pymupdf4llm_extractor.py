@@ -158,7 +158,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                     page_rule_segments = []
                 else:
                     page_words = extract_page_words(page)
-                    page_chars = extract_page_chars(page)
+                    page_chars = _extract_page_chars_with_page_num(page, page_num)
                     page_rule_segments = extract_page_rule_segments(page)
                     extracted_page_text = extract_page_text(page)
                     if extracted_page_text and extracted_page_text not in page_text:
@@ -211,6 +211,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                     cell_bboxes = refinement["table_cells"]
                     row_bounds = refinement["row_bounds"]
                     horizontal_rules = refinement["horizontal_rules"]
+                    geometry_coordinate_frame = str(refinement["geometry_coordinate_frame"])
                     trimmed = trim_trailing_non_table_rows(
                         raw_rows,
                         cell_bboxes=cell_bboxes,
@@ -224,10 +225,14 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                         horizontal_rules = [
                             rule for rule in horizontal_rules if float(rule) <= table_bottom + 2.0
                         ]
-                    first_column_text_x0_by_row = _infer_first_column_text_x0_by_row(
-                        raw_rows=raw_rows,
-                        cell_bboxes=cell_bboxes,
-                        page_words=page_words,
+                    first_column_text_x0_by_row = (
+                        _infer_first_column_text_x0_by_row(
+                            raw_rows=raw_rows,
+                            cell_bboxes=cell_bboxes,
+                            page_words=page_words,
+                        )
+                        if geometry_coordinate_frame == "page"
+                        else {}
                     )
                     nearby_caption_candidates: list[tuple[float, str]] = []
                     table_top = bbox[1] if bbox else float("inf")
@@ -289,9 +294,16 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                                 "col_count": table.get("col_count"),
                                 "explicit_grid_refined_from_words": raw_rows != original_raw_rows,
                                 "grid_refinement_source": refinement["grid_refinement_source"],
-                                "geometry_coordinate_frame": refinement[
-                                    "geometry_coordinate_frame"
-                                ],
+                                "geometry_coordinate_frame": geometry_coordinate_frame,
+                                "geometry_transform_source_bbox": refinement.get(
+                                    "geometry_transform_source_bbox"
+                                ),
+                                "geometry_transform_transposed": refinement.get(
+                                    "geometry_transform_transposed"
+                                ),
+                                "geometry_transform_applied": refinement.get(
+                                    "geometry_transform_applied"
+                                ),
                                 "table_markdown": table.get("markdown"),
                                 "table_cells": cell_bboxes,
                                 "first_column_text_x0_by_row": first_column_text_x0_by_row,
@@ -483,6 +495,9 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                                         "rotation_direction": rotation_direction,
                                         "caption_detection_space": "transformed_coordinates",
                                         "geometry_coordinate_frame": "page_sideways_transformed",
+                                        "geometry_transform_source_bbox": page_bbox,
+                                        "geometry_transform_transposed": False,
+                                        "geometry_transform_applied": True,
                                         "grid_refinement_source": "sideways_text_positions",
                                         "table_orientation": "rotated",
                                         "rotation_source": "pymupdf_page_line_direction",
@@ -532,7 +547,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                     page_num=page_num,
                     page_text=page_text,
                     words=extract_page_words(page),
-                    chars=extract_page_chars(page),
+                    chars=_extract_page_chars_with_page_num(page, page_num),
                     rule_segments=extract_page_rule_segments(page),
                     layout_source="pymupdf_text_positions",
                 ):
@@ -632,7 +647,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
             page_num=page_num,
             page_text=page_text or extract_page_text(page),
             words=extract_page_words(page),
-            chars=extract_page_chars(page),
+            chars=_extract_page_chars_with_page_num(page, page_num),
             rule_segments=extract_page_rule_segments(page),
             layout_source="pymupdf_text_positions_rescue",
         )
@@ -826,6 +841,9 @@ def _refine_explicit_table_candidate_grid(
             "horizontal_rules": horizontal_rules,
             "grid_refinement_source": grid_refinement_source,
             "geometry_coordinate_frame": geometry_coordinate_frame,
+            "geometry_transform_source_bbox": None,
+            "geometry_transform_transposed": False,
+            "geometry_transform_applied": False,
         }
 
     clipped_words = [
@@ -845,6 +863,9 @@ def _refine_explicit_table_candidate_grid(
             "horizontal_rules": horizontal_rules,
             "grid_refinement_source": grid_refinement_source,
             "geometry_coordinate_frame": geometry_coordinate_frame,
+            "geometry_transform_source_bbox": None,
+            "geometry_transform_transposed": False,
+            "geometry_transform_applied": False,
         }
 
     clipped_chars = [
@@ -923,8 +944,10 @@ def _refine_explicit_table_candidate_grid(
                     ),
                     "refinement_source": "rotated_word_positions_with_rules",
                     "coordinate_frame": "table_local_rotated_normalized",
+                    "geometry_transform_source_bbox": bbox,
+                    "geometry_transform_transposed": False,
+                    "geometry_transform_applied": True,
                     "minimum_row_gain": 3,
-                    "use_empty_table_cells": True,
                 }
             )
 
@@ -986,8 +1009,10 @@ def _refine_explicit_table_candidate_grid(
                             ),
                             "refinement_source": "rotated_transposed_word_positions_with_rules",
                             "coordinate_frame": "table_local_rotated_transposed_normalized",
+                            "geometry_transform_source_bbox": transposed_bbox,
+                            "geometry_transform_transposed": True,
+                            "geometry_transform_applied": True,
                             "minimum_row_gain": 3,
-                            "use_empty_table_cells": True,
                         }
                     )
         else:
@@ -998,8 +1023,10 @@ def _refine_explicit_table_candidate_grid(
                     "horizontal_rules": horizontal_rules,
                     "refinement_source": "collapsed_explicit_grid_word_positions",
                     "coordinate_frame": "page",
+                    "geometry_transform_source_bbox": None,
+                    "geometry_transform_transposed": False,
+                    "geometry_transform_applied": False,
                     "minimum_row_gain": 4,
-                    "use_empty_table_cells": False,
                 }
             )
 
@@ -1051,11 +1078,7 @@ def _refine_explicit_table_candidate_grid(
                 if column_gain_ok and (row_gain_ok or stacked_column_gain_ok):
                     return {
                         "raw_rows": refined_rows,
-                        "table_cells": (
-                            []
-                            if bool(refinement_attempt["use_empty_table_cells"])
-                            else refined_cell_bboxes
-                        ),
+                        "table_cells": refined_cell_bboxes,
                         "refined_table_cells": refined_cell_bboxes,
                         "row_bounds": [
                             (float(line["top"]), float(line["bottom"]))
@@ -1064,6 +1087,15 @@ def _refine_explicit_table_candidate_grid(
                         "horizontal_rules": working_horizontal_rules,
                         "grid_refinement_source": str(refinement_attempt["refinement_source"]),
                         "geometry_coordinate_frame": str(refinement_attempt["coordinate_frame"]),
+                        "geometry_transform_source_bbox": refinement_attempt[
+                            "geometry_transform_source_bbox"
+                        ],
+                        "geometry_transform_transposed": bool(
+                            refinement_attempt["geometry_transform_transposed"]
+                        ),
+                        "geometry_transform_applied": bool(
+                            refinement_attempt["geometry_transform_applied"]
+                        ),
                     }
 
     header_text = " ".join(
@@ -1119,6 +1151,9 @@ def _refine_explicit_table_candidate_grid(
                         "horizontal_rules": horizontal_rules,
                         "grid_refinement_source": "word_positions_with_horizontal_rules",
                         "geometry_coordinate_frame": "page",
+                        "geometry_transform_source_bbox": None,
+                        "geometry_transform_transposed": False,
+                        "geometry_transform_applied": False,
                     }
 
     return {
@@ -1129,6 +1164,9 @@ def _refine_explicit_table_candidate_grid(
         "horizontal_rules": horizontal_rules,
         "grid_refinement_source": grid_refinement_source,
         "geometry_coordinate_frame": geometry_coordinate_frame,
+        "geometry_transform_source_bbox": None,
+        "geometry_transform_transposed": False,
+        "geometry_transform_applied": False,
     }
 
 
@@ -1170,6 +1208,14 @@ def _collect_page_text(page_boxes: list[dict[str, Any]]) -> str:
         if text:
             texts.append(text)
     return "\n".join(texts)
+
+
+def _extract_page_chars_with_page_num(page: Any, page_num: int) -> list[dict[str, object]]:
+    """Extract PyMuPDF chars and attach one-based page provenance."""
+    chars = extract_page_chars(page)
+    for char in chars:
+        char.setdefault("page_num", page_num)
+    return chars
 
 
 def _extract_box_text(box: dict[str, Any]) -> str:

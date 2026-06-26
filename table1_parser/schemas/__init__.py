@@ -8,6 +8,11 @@ from table1_parser.schemas.column_header_schema import (
     ColumnHeaderRelationship,
     ColumnHeaderSchema,
 )
+from table1_parser.schemas.cell_text_annotation import (
+    CellTextAnnotation,
+    CellTextAnnotationTable,
+    CellTextAnnotationType,
+)
 from table1_parser.schemas.document_context import PaperSection, RetrievedPassage, TableContext
 from table1_parser.schemas.extracted_table import ExtractedTable, TableCell
 from table1_parser.schemas.llm_variable_plausibility_monitoring import (
@@ -59,6 +64,9 @@ __all__ = [
     "ColumnHeaderLeaf",
     "ColumnHeaderRelationship",
     "ColumnHeaderSchema",
+    "CellTextAnnotation",
+    "CellTextAnnotationTable",
+    "CellTextAnnotationType",
     "DefinedColumn",
     "DefinedColumnHeaderSpan",
     "DefinedLevel",

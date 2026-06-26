@@ -26,6 +26,7 @@ paper_output_paths <- function(paper_dir) {
   list(
     extracted = file.path(paper_dir, "extracted_tables.json"),
     normalized = file.path(paper_dir, "normalized_tables.json"),
+    cell_text_annotations = file.path(paper_dir, "cell_text_annotations.json"),
     column_header_schemas = file.path(paper_dir, "column_header_schemas.json"),
     table1_continuation_groups = file.path(paper_dir, "table1_continuation_groups.json"),
     table_continuation_column_checks = file.path(paper_dir, "table_continuation_column_checks.json"),
@@ -203,6 +204,7 @@ load_paper_outputs <- function(paper_dir) {
     paper_dir = normalizePath(paper_dir, winslash = "/", mustWork = TRUE),
     extracted_tables = read_json_file(paths$extracted),
     normalized_tables = read_json_file(paths$normalized),
+    cell_text_annotations = read_json_file(paths$cell_text_annotations),
     column_header_schemas = read_optional_json(paths$column_header_schemas) %||% list(),
     table1_continuation_groups = read_optional_json(paths$table1_continuation_groups),
     table_continuation_column_checks = read_optional_json(paths$table_continuation_column_checks),
@@ -472,6 +474,109 @@ table_definition_by_index <- function(outputs, table_index = 0L) {
     stop(sprintf("No deterministic table definition found for table_index=%s.", table_index), call. = FALSE)
   }
   table
+}
+
+cell_text_annotation_table_by_index <- function(outputs, table_index = 0L) {
+  annotation_tables <- outputs$cell_text_annotations %||% list()
+  idx <- as.integer(table_index) + 1L
+  if (idx < 1L || idx > length(annotation_tables)) {
+    return(NULL)
+  }
+  annotation_tables[[idx]] %||% NULL
+}
+
+cell_text_annotations_df <- function(outputs, table_number = NULL, table_index = NULL) {
+  empty_df <- data.frame(
+    table_number = integer(),
+    table_index = integer(),
+    table_id = character(),
+    page_num = integer(),
+    n_rows = integer(),
+    n_cols = integer(),
+    row_idx = integer(),
+    col_idx = integer(),
+    text = character(),
+    annotation_type = character(),
+    text_latex = character(),
+    attached_to_text = character(),
+    confidence = numeric(),
+    bbox = character(),
+    coordinate_frame = character(),
+    diagnostics = character(),
+    stringsAsFactors = FALSE
+  )
+
+  selected_table_index <- NULL
+  annotation_tables <- outputs$cell_text_annotations %||% list()
+  annotation_indices <- seq_along(annotation_tables) - 1L
+  if (!is.null(table_number) || !is.null(table_index)) {
+    selected_table_index <- resolve_table_index(outputs, table_number = table_number, table_index = table_index)
+    annotation_table <- cell_text_annotation_table_by_index(outputs, table_index = selected_table_index)
+    if (is.null(annotation_table)) {
+      annotation_tables <- list()
+      annotation_indices <- integer()
+    } else {
+      annotation_tables <- list(annotation_table)
+      annotation_indices <- as.integer(selected_table_index)
+    }
+  }
+
+  table_count <- max(
+    length(outputs$extracted_tables %||% list()),
+    length(outputs$normalized_tables %||% list()),
+    length(outputs$table_definitions %||% list()),
+    length(outputs$parsed_tables %||% list())
+  )
+
+  rows <- list()
+  for (annotation_table_position in seq_along(annotation_tables)) {
+    annotation_table <- annotation_tables[[annotation_table_position]]
+    if (is.null(annotation_table)) {
+      next
+    }
+    table_id <- as.character(annotation_table$table_id %||% "")
+    table_index_value <- as.integer(annotation_indices[[annotation_table_position]])
+
+    table_number_value <- if (
+      !is.na(table_index_value) &&
+        table_index_value >= 0L &&
+        table_index_value < table_count
+    ) {
+      table_number_for_outputs(outputs, table_index_value)
+    } else {
+      NA_integer_
+    }
+    metadata <- annotation_table$metadata %||% list()
+    diagnostics <- paste(character_vector(metadata$diagnostics), collapse = " | ")
+    coordinate_frame <- as.character(metadata$coordinate_frame %||% "")
+    for (annotation in annotation_table$annotations %||% list()) {
+      bbox_values <- unlist(annotation$bbox %||% list(), use.names = FALSE)
+      rows[[length(rows) + 1L]] <- data.frame(
+        table_number = table_number_value,
+        table_index = as.integer(table_index_value),
+        table_id = table_id,
+        page_num = as.integer(annotation_table$page_num %||% NA_integer_),
+        n_rows = as.integer(annotation_table$n_rows %||% NA_integer_),
+        n_cols = as.integer(annotation_table$n_cols %||% NA_integer_),
+        row_idx = as.integer(annotation$row_idx %||% NA_integer_),
+        col_idx = as.integer(annotation$col_idx %||% NA_integer_),
+        text = as.character(annotation$text %||% ""),
+        annotation_type = as.character(annotation$annotation_type %||% ""),
+        text_latex = as.character(annotation$text_latex %||% ""),
+        attached_to_text = as.character(annotation$attached_to_text %||% ""),
+        confidence = as.numeric(annotation$confidence %||% NA_real_),
+        bbox = paste(as.character(bbox_values), collapse = ","),
+        coordinate_frame = coordinate_frame,
+        diagnostics = diagnostics,
+        stringsAsFactors = FALSE
+      )
+    }
+  }
+
+  if (length(rows) == 0L) {
+    return(empty_df)
+  }
+  do.call(rbind, rows)
 }
 
 show_column_header_tree <- function(paper_dir, table_index = 0L, table_number = NULL) {
@@ -1281,6 +1386,47 @@ show_parse_quality <- function(paper_dir, table_number = 1L, table_index = NULL)
     }
   }
   invisible(report)
+}
+
+show_cell_text_annotations <- function(paper_dir, table_number = 1L, table_index = NULL) {
+  outputs <- load_paper_outputs(paper_dir)
+  table_index <- resolve_table_index(outputs, table_number = table_number, table_index = table_index)
+  resolved_table_number <- table_number_for_outputs(outputs, table_index)
+  annotation_table <- cell_text_annotation_table_by_index(outputs, table_index = table_index)
+  if (is.null(annotation_table)) {
+    stop(sprintf("No cell_text_annotations.json record found for table_index=%s.", as.integer(table_index)), call. = FALSE)
+  }
+
+  annotations <- cell_text_annotations_df(outputs, table_index = table_index)
+  if (is.na(resolved_table_number)) {
+    cat("Cell text annotations for unnumbered table\n")
+  } else {
+    cat(sprintf("Cell text annotations for table_number=%s\n", as.integer(resolved_table_number)))
+  }
+  cat(sprintf("table_id: %s\n", as.character(annotation_table$table_id %||% "")))
+  cat(sprintf("page_num: %s\n", as.integer(annotation_table$page_num %||% NA_integer_)))
+  diagnostics <- character_vector(annotation_table$metadata$diagnostics)
+  if (length(diagnostics) > 0L) {
+    cat(sprintf("diagnostics: %s\n", paste(diagnostics, collapse = " | ")))
+  }
+  cat("\n")
+
+  if (nrow(annotations) == 0L) {
+    cat("[No cell text annotations]\n")
+    return(invisible(annotations))
+  }
+  display_columns <- c(
+    "row_idx",
+    "col_idx",
+    "text",
+    "annotation_type",
+    "text_latex",
+    "attached_to_text",
+    "confidence",
+    "bbox"
+  )
+  print(annotations[, display_columns, drop = FALSE], row.names = FALSE, right = FALSE)
+  invisible(annotations)
 }
 
 show_table_structure <- function(

@@ -26,6 +26,7 @@ outputs/papers/<paper_stem>/
 Today that directory may contain:
 
 - `extracted_tables.json`
+- `cell_text_annotations.json`
 - `normalized_tables.json`
 - `column_header_schemas.json`
 - `table1_continuation_groups.json`
@@ -48,6 +49,10 @@ Today that directory may contain:
 - `llm_variable_plausibility_debug/...` when variable-plausibility debug tracing is enabled
 
 Some of these are per-table artifacts. Others are paper-level context artifacts.
+
+`cell_text_annotations.json` records superscript, subscript, and small marker
+geometry by table cell when compatible PyMuPDF character geometry and extracted
+cell bboxes are available. It does not change the raw extracted grid.
 
 ## Why There Are Multiple Versions Of A Table
 
@@ -165,7 +170,7 @@ This is the parser's record of what came out of the PDF layer.
 
 That does not always mean “what one backend reported verbatim.” If the backend emits one fused model column but the table bbox, word positions, and wide horizontal rules clearly support a better grid, extraction may refine that grid before writing `ExtractedTable`.
 
-For rotated refinements, the recovered `row_bounds` and `horizontal_rules` may be expressed in a table-local normalized coordinate frame rather than the original page frame. That is intentional: later stages use those values as structural boundaries, not as page-annotation coordinates.
+For rotated refinements, the recovered `table_cells`, `row_bounds`, and `horizontal_rules` may be expressed in a table-local normalized coordinate frame rather than the original page frame. That is intentional: later stages use those values as structural boundaries. Extraction records `geometry_transform_source_bbox`, `geometry_transform_transposed`, and `geometry_transform_applied` so later annotation code can transform page characters into the same coordinate frame when needed.
 
 For explicit tables, extraction may also record the visible first-word x-position for each first-column row label. This exists because backend cell boxes often describe the full column boundary, while the actual text inside that cell may be indented. Normalization uses that compact word-position metadata for indentation inference while preserving the original cell boxes as grid geometry.
 

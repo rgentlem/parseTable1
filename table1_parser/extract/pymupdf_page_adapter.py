@@ -49,7 +49,7 @@ def extract_page_words(page: Any) -> list[dict[str, object]]:
     return words
 
 
-def extract_page_chars(page: Any) -> list[dict[str, object]]:
+def extract_page_chars(page: Any, page_num: int | None = None) -> list[dict[str, object]]:
     """Extract normalized positioned chars from a PyMuPDF page."""
     try:
         raw = page.get_text("rawdict") or {}
@@ -59,6 +59,9 @@ def extract_page_chars(page: Any) -> list[dict[str, object]]:
     for block in raw.get("blocks", []):
         for line in block.get("lines", []):
             for span in line.get("spans", []):
+                span_font_size = span.get("size")
+                span_font = span.get("font")
+                span_flags = span.get("flags")
                 for char in span.get("chars", []):
                     bbox_value = char.get("bbox")
                     if bbox_value is None:
@@ -71,15 +74,23 @@ def extract_page_chars(page: Any) -> list[dict[str, object]]:
                         bbox = None
                     if bbox is None:
                         continue
-                    chars.append(
-                        {
-                            "text": str(char.get("c", "")),
-                            "x0": bbox[0],
-                            "x1": bbox[2],
-                            "top": bbox[1],
-                            "bottom": bbox[3],
-                        }
-                    )
+                    char_record: dict[str, object] = {
+                        "text": str(char.get("c", "")),
+                        "x0": bbox[0],
+                        "x1": bbox[2],
+                        "top": bbox[1],
+                        "bottom": bbox[3],
+                        "char_height": bbox[3] - bbox[1],
+                    }
+                    if page_num is not None:
+                        char_record["page_num"] = page_num
+                    if isinstance(span_font_size, (int, float)):
+                        char_record["font_size"] = float(span_font_size)
+                    if isinstance(span_font, str):
+                        char_record["font"] = span_font
+                    if isinstance(span_flags, int):
+                        char_record["span_flags"] = span_flags
+                    chars.append(char_record)
     return chars
 
 

@@ -68,6 +68,9 @@ def test_extract_page_chars_normalizes_rawdict_chars() -> None:
                         {
                             "spans": [
                                 {
+                                    "size": 8.5,
+                                    "font": "TimesNewRomanPSMT",
+                                    "flags": 4,
                                     "chars": [
                                         {"c": "A", "bbox": (10.0, 20.0, 14.0, 28.0)},
                                         {"c": "g", "bbox": (14.0, 20.0, 18.0, 28.0)},
@@ -81,9 +84,20 @@ def test_extract_page_chars_normalizes_rawdict_chars() -> None:
         }
     )
 
-    chars = extract_page_chars(page)
+    chars = extract_page_chars(page, page_num=7)
 
-    assert chars[0] == {"text": "A", "x0": 10.0, "x1": 14.0, "top": 20.0, "bottom": 28.0}
+    assert chars[0] == {
+        "text": "A",
+        "x0": 10.0,
+        "x1": 14.0,
+        "top": 20.0,
+        "bottom": 28.0,
+        "char_height": 8.0,
+        "page_num": 7,
+        "font_size": 8.5,
+        "font": "TimesNewRomanPSMT",
+        "span_flags": 4,
+    }
     assert chars[1]["text"] == "g"
 
 

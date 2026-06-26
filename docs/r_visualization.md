@@ -22,7 +22,9 @@ It is intended only for human inspection.
 
 ## Paper Output Inspection Helper
 
-The paper-output inspection helper is for reading deterministic parse artifacts, paper-context artifacts, and the optional variable-plausibility review output.
+The paper-output inspection helper is for reading deterministic parse artifacts,
+paper-context artifacts, cell-text annotation sidecars, and the optional
+variable-plausibility review output.
 
 Public functions:
 
@@ -32,6 +34,8 @@ Public functions:
 - `show_paper_table_inventory(paper_dir)`
 - `show_table_processing(paper_dir, table_number = 1L)`
 - `show_parse_quality(paper_dir, table_number = 1L)`
+- `cell_text_annotations_df(outputs, table_number = NULL, table_index = NULL)`
+- `show_cell_text_annotations(paper_dir, table_number = 1L, table_index = NULL)`
 - `summarize_table1_continuations(paper_dir)`
 - `summarize_continued_variable_integrations(paper_dir)`
 - `summarize_table_continuation_column_checks(paper_dir)`
@@ -49,7 +53,9 @@ Public functions:
 - `summarize_llm_variable_plausibility_monitoring(paper_dir, run_id = NULL)`
 - `show_table_context(paper_dir, table_number = 1L, match_type = NULL)`
 
-These helpers use the same per-paper output directory written by `table1-parser parse` and, when run, `table1-parser review-variable-plausibility`.
+These helpers use the same per-paper output directory written by
+`table1-parser parse` and, when run, `table1-parser review-variable-plausibility`.
+`cell_text_annotations.json` is part of the current parse output contract.
 
 ## Observed TableOne Helper
 
@@ -69,6 +75,8 @@ summarize_table_processing("outputs/papers/cobaltpaper")
 show_paper_table_inventory("outputs/papers/cobaltpaper")
 show_table_processing("outputs/papers/cobaltpaper", table_number = 1L)
 show_parse_quality("outputs/papers/cobaltpaper", table_number = 1L)
+cell_text_annotations_df(x, table_number = 1L)
+show_cell_text_annotations("outputs/papers/cobaltpaper", table_number = 1L)
 summarize_table1_continuations("outputs/papers/cobaltpaper")
 summarize_continued_variable_integrations("outputs/papers/cobaltpaper")
 summarize_table_continuation_column_checks("outputs/papers/cobaltpaper")
@@ -136,6 +144,10 @@ What these are for:
   print one continuation column check in detail, including schema-derived column headers and diagnostics
 - `show_parse_quality(...)`
   print deterministic table, row, and column diagnostics, including column-role warnings such as weak p-value columns
+- `cell_text_annotations_df(...)`
+  return one row per persisted superscript, subscript, or marker annotation with table, row, column, bbox, LaTeX text, and diagnostics fields
+- `show_cell_text_annotations(...)`
+  print the persisted cell-text annotations for one table without inferring marker meaning
 - `show_merged_table1(...)`
   print the artifact-only merged Table 1 rows with source table and source row provenance
 - `show_paper_visuals(...)`
@@ -156,6 +168,7 @@ What these are for:
 - `parsed_tables`
 - `table_processing_status`
 - `parse_quality_reports`
+- `cell_text_annotations`
 - `column_header_schemas`
 - `paper_table_inventory`
 - `table1_continuation_groups`

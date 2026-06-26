@@ -350,6 +350,20 @@ def _write_sample_paper_outputs(
             "confidence": 0.9,
         }
     ]
+    cell_text_annotations = [
+        {
+            "table_id": "tbl-1",
+            "page_num": 5,
+            "n_rows": 5,
+            "n_cols": 3,
+            "annotations": [],
+            "metadata": {
+                "source": "pymupdf_char_geometry",
+                "coordinate_frame": "page",
+                "diagnostics": [],
+            },
+        }
+    ]
     table1_continuation_groups = [
         {
             "group_id": "table1_continuation_0",
@@ -633,6 +647,7 @@ def _write_sample_paper_outputs(
 
     _write_json(paper_dir / "extracted_tables.json", extracted_tables)
     _write_json(paper_dir / "normalized_tables.json", normalized_tables)
+    _write_json(paper_dir / "cell_text_annotations.json", cell_text_annotations)
     _write_json(paper_dir / "table1_continuation_groups.json", table1_continuation_groups)
     _write_json(paper_dir / "table_continuation_column_checks.json", table_continuation_column_checks)
     _write_json(paper_dir / "merged_table1_tables.json", merged_table1_tables)
@@ -1254,6 +1269,27 @@ def test_r_compare_normalized_rows_to_definition_supports_table_number(tmp_path)
                         ["Current", "12 (24%)"],
                     ]
                 },
+            },
+        ],
+    )
+    _write_json(
+        paper_dir / "cell_text_annotations.json",
+        [
+            {
+                "table_id": "tbl-1",
+                "page_num": 5,
+                "n_rows": 2,
+                "n_cols": 2,
+                "annotations": [],
+                "metadata": {"source": "pymupdf_char_geometry", "coordinate_frame": "page", "diagnostics": []},
+            },
+            {
+                "table_id": "tbl-2",
+                "page_num": 6,
+                "n_rows": 4,
+                "n_cols": 2,
+                "annotations": [],
+                "metadata": {"source": "pymupdf_char_geometry", "coordinate_frame": "page", "diagnostics": []},
             },
         ],
     )

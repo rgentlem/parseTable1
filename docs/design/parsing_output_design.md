@@ -71,6 +71,7 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Layer | Canonical type | Current file status | Main purpose |
 | --- | --- | --- | --- |
 | Extraction | `ExtractedTable` | Written now as `extracted_tables.json` by `extract` and `parse` | Preserve raw table grid and cell provenance |
+| Cell text annotations | `CellTextAnnotationTable` | Written now as `cell_text_annotations.json` by `parse` | Preserve superscript, subscript, and small marker geometry as extraction-side evidence without rewriting raw cell text |
 | Normalization | `NormalizedTable` | Written now as `normalized_tables.json` by `normalize` and `parse` | Clean rows, detect headers, derive row features |
 | Column header schema | `ColumnHeaderSchema` | Written now as `column_header_schemas.json` by `parse` | Persist parser-native leaf columns, spanning header groups, group-to-leaf relationships, raw cell evidence, and coordinates before semantic column projection |
 | Table 1 continuation inspection | `Table1ContinuationGroup`, `NormalizedTable` | Written now as `table1_continuation_groups.json` and `merged_table1_tables.json` by `parse` | Persist artifact-only grouping and merged normalized rows for explicit or strongly inferred Table 1 continuations without altering the main parse |
@@ -159,6 +160,9 @@ Important current `metadata` keys produced by extraction may include:
 - `explicit_grid_refined_from_words`
 - `grid_refinement_source`
 - `geometry_coordinate_frame`
+- `geometry_transform_source_bbox`
+- `geometry_transform_transposed`
+- `geometry_transform_applied`
 - `orientation_strategy`
 - `sideways_candidate`
 - `sideways_detection_signals`
@@ -186,7 +190,7 @@ Design intent:
 - numbering audits are for inspection only; they must not be used to silently drop extracted tables
 - extraction may refine a coarse explicit backend grid when word geometry inside the table bbox, together with strong horizontal boundaries, supports a better row/column structure
 - collapsed-grid word-position refinement chooses value-column anchors from repeated value-like numeric positions rather than one-off digit-bearing label tokens; when needed, it preserves a left label anchor and pulls nonnumeric label fragments back from value columns on rows whose only right-side value is a trailing statistic such as a p-value
-- rotated explicit tables may be refined in a table-local normalized coordinate frame; when that happens, `row_bounds` and `horizontal_rules` describe that local frame rather than raw page coordinates
+- rotated explicit tables may be refined in a table-local normalized coordinate frame; when that happens, `table_cells`, `row_bounds`, and `horizontal_rules` describe that local frame rather than raw page coordinates, while `geometry_transform_source_bbox`, `geometry_transform_transposed`, and `geometry_transform_applied` record the transform input needed to map page characters into the same frame
 - for explicit PyMuPDF4LLM tables, extraction may record `first_column_text_x0_by_row` so normalization can infer visible row-label indentation from word positions rather than full cell boundaries; this metadata supports row classification only and does not replace cell bboxes
 - text-position fallback candidates may preserve parser-facing cell text bounding boxes in `table_cells`; for these candidates, first-column cell boxes are based on the recovered text extents and can also support indentation-sensitive row classification
 - text-position fallback caption collection may keep a short following caption line with the table label, and may also keep an immediately following lowercase sentence fragment that completes the caption with terminal punctuation; this prevents wrapped caption tails from entering the table grid as row zero

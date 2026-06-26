@@ -21,6 +21,15 @@ Then use the documents below as needed.
 - `docs/design/parsing_output_design.md`
   Current JSON artifact design, canonical models, and output-file intent.
 
+- `docs/design/cell_text_annotations.md`
+  Extraction-side sidecar artifact for superscripts, subscripts, and small marker symbols attached to table cells.
+
+- `docs/implementation/cell_text_annotations_implementation_plan.md`
+  Short checklist for implementing the cell text annotation artifact, CLI output, R loading, and focused tests.
+
+- `docs/implementation/rotated_cell_text_annotations_implementation_plan.md`
+  Short checklist for supporting cell-text annotations on rotated or table-local geometry.
+
 - `docs/design/rescue_failure_logic.md`
   Structured rescue ordering, adequacy checks, and failure tracking for collapsed or empty table parses.
 
