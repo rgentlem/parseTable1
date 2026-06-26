@@ -54,6 +54,9 @@ Then use the documents below as needed.
 - `docs/design/value_parsing_spec.md`
   Planned symbol canonicalization and Table 1 `n (%)` parsing heuristics for the later value-parsing path.
 
+- `docs/design/parsed_value_components.md`
+  Design for an index-keyed parsed-cell-value artifact with typed value components, intended to parse cell contents before continuation fragments are semantically joined.
+
 - `docs/design/multitable_architecture_spec.md`
   Planned routing stage, descriptive-vs-estimate table families, and estimate-table schemas for mixed-table papers.
 

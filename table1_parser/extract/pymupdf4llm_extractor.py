@@ -786,13 +786,28 @@ def _refine_explicit_table_candidate_grid(
         orientation_metadata.get("table_orientation") == "rotated"
         and float(orientation_metadata.get("rotation_confidence") or 0.0) >= 0.8
     )
+    max_raw_cols = max((len(row) for row in raw_rows), default=0)
+    stacked_or_blob_cell_count = sum(
+        1
+        for row in raw_rows
+        for cell in row
+        if isinstance(cell, str) and (cell.count("\n") >= 2 or len(cell.split()) >= 12)
+    )
+    rotated_few_column_stacked_grid = (
+        is_rotated
+        and len(raw_rows) >= 4
+        and max_raw_cols <= 4
+        and len(clipped_words) >= 12
+        and stacked_or_blob_cell_count >= 2
+    )
     collapsed_explicit_grid = (
         len(raw_rows) <= 1
         or (
             len(raw_rows) <= 3
-            and max((len(row) for row in raw_rows), default=0) <= 4
+            and max_raw_cols <= 4
             and len(clipped_words) >= 12
         )
+        or rotated_few_column_stacked_grid
     )
 
     if collapsed_explicit_grid:
