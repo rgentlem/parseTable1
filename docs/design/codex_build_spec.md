@@ -127,7 +127,6 @@ table1_parser/
   __init__.py
   cli.py
   config.py
-  logging.py
 
   schemas/
     extracted_table.py
@@ -301,16 +300,6 @@ max_table_candidates
 heuristic_confidence_threshold
 
 Use a Pydantic settings class.
-
----
-
-# Logging
-
-Create a simple logging configuration in `logging.py`.
-
-Provide a function:
-
-get_logger(name)
 
 ---
 
