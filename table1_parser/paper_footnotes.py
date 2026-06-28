@@ -19,6 +19,7 @@ from table1_parser.schemas import (
     FootnoteGlyphKind,
     FootnoteLink,
     PaperFootnotes,
+    PaperPageFurniture,
 )
 from table1_parser.text_cleaning import clean_text
 
@@ -50,10 +51,13 @@ def build_paper_footnote_anchor_inventory(
     cell_text_annotations: Sequence[CellTextAnnotationTable],
     extracted_tables: Sequence[ExtractedTable] | None = None,
     column_header_schemas: Sequence[ColumnHeaderSchema] | None = None,
+    paper_page_furniture: PaperPageFurniture | None = None,
 ) -> PaperFootnotes:
     """Build a paper-level footnote artifact populated with anchor records only."""
     anchors: list[FootnoteAnchor] = []
     diagnostics: list[str] = []
+    suppressed_anchor_count = 0
+    suppressed_anchor_cluster_ids: set[str] = set()
     schemas_by_table_id = {schema.table_id: schema for schema in column_header_schemas or []}
     extracted_by_table_id = {table.table_id: table for table in extracted_tables or []}
     visual_id_by_table_id = _table_visual_ids(extracted_tables or [])
@@ -70,6 +74,21 @@ def build_paper_footnote_anchor_inventory(
             glyph_raw = annotation.text.strip()
             if not glyph_raw:
                 continue
+            page_num = annotation_table.page_num or (
+                extracted_by_table_id.get(annotation_table.table_id).page_num
+                if annotation_table.table_id in extracted_by_table_id
+                else 1
+            )
+            if str(annotation_table.metadata.get("coordinate_frame") or "page") == "page":
+                overlapping_cluster_ids = page_furniture_cluster_ids_for_bbox(
+                    paper_page_furniture,
+                    page_num,
+                    annotation.bbox,
+                )
+                if overlapping_cluster_ids:
+                    suppressed_anchor_count += 1
+                    suppressed_anchor_cluster_ids.update(overlapping_cluster_ids)
+                    continue
             glyph_kind, glyph_key, glyph_codepoints = glyph_fields(glyph_raw)
             source_role = None
             notes: list[str] = []
@@ -90,12 +109,7 @@ def build_paper_footnote_anchor_inventory(
                     glyph_codepoints=glyph_codepoints,
                     source_scope="table_cell",
                     source_id=f"{annotation_table.table_id}:r{annotation.row_idx}:c{annotation.col_idx}",
-                    page_num=annotation_table.page_num
-                    or (
-                        extracted_by_table_id.get(annotation_table.table_id).page_num
-                        if annotation_table.table_id in extracted_by_table_id
-                        else 1
-                    ),
+                    page_num=page_num,
                     confidence=annotation.confidence if annotation.confidence is not None else 0.5,
                     table_id=annotation_table.table_id,
                     visual_id=visual_id_by_table_id.get(annotation_table.table_id),
@@ -139,6 +153,9 @@ def build_paper_footnote_anchor_inventory(
                     )
                 )
 
+    source_artifacts = ["cell_text_annotations.json", "extracted_tables.json"]
+    if paper_page_furniture is not None:
+        source_artifacts.append("paper_page_furniture.json")
     return PaperFootnotes(
         paper_id=paper_id,
         source_pdf=Path(source_pdf).name,
@@ -146,9 +163,11 @@ def build_paper_footnote_anchor_inventory(
         definitions=[],
         links=[],
         metadata={
-            "source_artifacts": ["cell_text_annotations.json", "extracted_tables.json"],
+            "source_artifacts": source_artifacts,
             "diagnostics": diagnostics,
             "anchor_count": len(anchors),
+            "page_furniture_anchor_suppression_count": suppressed_anchor_count,
+            "page_furniture_suppressed_anchor_cluster_ids": sorted(suppressed_anchor_cluster_ids),
             "definitions_status": "not_built",
             "links_status": "not_built",
         },
@@ -229,6 +248,31 @@ def build_paper_footnote_definition_lines_from_pdf(pdf_path: str) -> list[Footno
         if callable(close):
             close()
     return lines
+
+
+def filter_footnote_definition_lines_for_page_furniture(
+    definition_lines: Sequence[FootnoteDefinitionCandidateLine],
+    paper_page_furniture: PaperPageFurniture | None,
+) -> tuple[list[FootnoteDefinitionCandidateLine], dict[str, object]]:
+    """Drop candidate definition lines that overlap repeated page furniture."""
+    filtered_lines: list[FootnoteDefinitionCandidateLine] = []
+    suppressed_cluster_ids: set[str] = set()
+    suppressed_count = 0
+    for line in definition_lines:
+        overlapping_cluster_ids = page_furniture_cluster_ids_for_bbox(
+            paper_page_furniture,
+            line.page_num,
+            line.bbox,
+        )
+        if overlapping_cluster_ids:
+            suppressed_count += 1
+            suppressed_cluster_ids.update(overlapping_cluster_ids)
+            continue
+        filtered_lines.append(line)
+    return filtered_lines, {
+        "page_furniture_definition_line_suppression_count": suppressed_count,
+        "page_furniture_suppressed_definition_cluster_ids": sorted(suppressed_cluster_ids),
+    }
 
 
 def build_paper_footnote_definition_candidates(
@@ -462,6 +506,27 @@ def link_paper_footnotes(footnotes: PaperFootnotes) -> PaperFootnotes:
 def paper_footnotes_to_payload(footnotes: PaperFootnotes) -> dict[str, object]:
     """Serialize paper footnotes as a JSON-friendly record."""
     return footnotes.model_dump(mode="json")
+
+
+def page_furniture_cluster_ids_for_bbox(
+    paper_page_furniture: PaperPageFurniture | None,
+    page_num: int | None,
+    bbox: tuple[float, float, float, float] | None,
+) -> list[str]:
+    """Return repeated page-furniture cluster IDs whose page bbox overlaps `bbox`."""
+    if paper_page_furniture is None or page_num is None or bbox is None:
+        return []
+    left, top, right, bottom = bbox
+    if right <= left or bottom <= top:
+        return []
+    cluster_ids: set[str] = set()
+    for region in paper_page_furniture.ignored_regions:
+        if region.page_num != page_num:
+            continue
+        region_left, region_top, region_right, region_bottom = region.bbox
+        if min(right, region_right) > max(left, region_left) and min(bottom, region_bottom) > max(top, region_top):
+            cluster_ids.add(region.cluster_id)
+    return sorted(cluster_ids)
 
 
 def glyph_fields(glyph_raw: str) -> tuple[FootnoteGlyphKind, str, list[str]]:

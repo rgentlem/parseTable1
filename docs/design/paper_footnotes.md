@@ -76,6 +76,8 @@ Allowed `source_scope` values:
 
 For table cells and headers, use `source_scope = "table_cell"` and distinguish
 `source_role` values such as `body_cell`, `row_label`, or `column_header`.
+Table-cell anchors whose page-coordinate bbox overlaps repeated page furniture
+are suppressed before linking and counted in metadata.
 
 ## Definition Record
 
@@ -111,6 +113,8 @@ optional bbox and page height, source scope, source ID, table ID, visual ID, and
 source artifact. These input lines are not a persisted top-level artifact.
 The parse command now builds these source lines from PyMuPDF page text geometry,
 then classifies local candidates as table notes or page-bottom notes.
+Before candidate promotion, lines overlapping `paper_page_furniture.json`
+ignored regions are suppressed and counted in metadata.
 
 `raw_text` preserves extracted text. `clean_text` is normalized only enough to
 support matching and review. `definition_text` may drop the leading glyph when
@@ -183,9 +187,17 @@ or column semantics yet.
 
 Real-paper review showed useful same-table resolved links, but also unresolved
 p-value markers, ambiguous repeated glyph definitions, and noisy page-note
-candidates from journal/download boilerplate and repeated marginal text. Treat
-all links as inspectable evidence until page-note pruning and repeated-text
-handling are stronger.
+candidates from journal/download boilerplate and repeated marginal text. The
+page-furniture artifact now suppresses repeated page-region noise before
+linking, but links remain inspectable evidence rather than downstream parse
+inputs.
+
+Metadata records the page-furniture filter:
+
+- `page_furniture_anchor_suppression_count`
+- `page_furniture_suppressed_anchor_cluster_ids`
+- `page_furniture_definition_line_suppression_count`
+- `page_furniture_suppressed_definition_cluster_ids`
 
 ## R Surface
 

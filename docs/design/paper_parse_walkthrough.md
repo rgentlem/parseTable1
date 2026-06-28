@@ -40,6 +40,7 @@ Today that directory may contain:
 - `table_processing_status.json`
 - `parse_quality_reports.json`
 - `paper_footnotes.json`
+- `paper_page_furniture.json`
 - `paper_markdown.md`
 - `paper_sections.json`
 - `paper_visual_inventory.json`
@@ -55,12 +56,18 @@ Some of these are per-table artifacts. Others are paper-level context artifacts.
 geometry by table cell when compatible PyMuPDF character geometry and extracted
 cell bboxes are available. It does not change the raw extracted grid.
 
+`paper_page_furniture.json` records repeated page text observations, recurrence
+clusters, and generic ignored regions for footnote suppression. It is written
+even when no repeated page furniture is found.
+
 `paper_footnotes.json` records detected footnote anchors, candidate definitions,
 and glyph-key links as a paper-level review artifact. It is written even when no
 anchors or definitions are found.
 Definition candidates are fed by PyMuPDF page text lines with bbox and page-height
 provenance so table-local notes and page-bottom notes can be classified
-deterministically before glyph-key linking.
+deterministically before glyph-key linking. Repeated page-furniture regions are
+used first to suppress overlapping table-cell anchors and definition candidate
+lines.
 
 ## Why There Are Multiple Versions Of A Table
 
@@ -91,6 +98,7 @@ PDF
   -> parsed tables
   -> table processing statuses
   -> parse quality reports
+  -> paper page furniture
   -> paper footnotes
 
 PDF
@@ -693,7 +701,16 @@ It is meant to answer questions like:
 This step does not change `table_definitions.json` or `parsed_tables.json`.
 It exists so column and row problems are visible even when the table technically parses.
 
-## Step 10: Build Paper-Level Document Context
+## Step 10: Build Paper Page Furniture
+
+The parser writes `paper_page_furniture.json`.
+
+This paper-level artifact collects PyMuPDF page text lines, normalizes text only
+for matching, clusters repeated text in stable page-relative positions, and emits
+generic ignored regions. The footnote stage uses those regions to suppress
+overlapping definition candidate lines and table-cell anchors before linking.
+
+## Step 11: Build Paper-Level Document Context
 
 The parser also builds a paper-level context representation from the whole document.
 
@@ -771,7 +788,7 @@ For each table, the parser builds a focused context bundle using:
 
 This produces per-table passages and term lists that can later support standalone review workflows or future semantic interpretation.
 
-## Step 11: Optional Variable-Plausibility LLM Review
+## Step 12: Optional Variable-Plausibility LLM Review
 
 The separate `review-variable-plausibility` command can run a narrow LLM review using:
 
@@ -797,7 +814,7 @@ Why this stage is optional:
 - LLM use should be focused on ambiguity, not raw PDF recovery
 - review calls should be inspectable and skippable
 
-## Step 12: Write Table Processing Status
+## Step 13: Write Table Processing Status
 
 After deterministic parsing, the parser writes `table_processing_status.json`.
 
@@ -849,10 +866,13 @@ When a parse looks wrong, inspect the outputs in this order.
 11. `paper_footnotes.json`
    If superscripts, subscripts, or note markers matter, inspect this artifact for anchors, candidate definitions, and resolved, ambiguous, or unresolved glyph-key links.
 
-12. `paper_markdown.md`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and `table_contexts/*.json`
+12. `paper_page_furniture.json`
+   If repeated page headers, footers, watermarks, or download notices may be contaminating note extraction, inspect this artifact for recurring clusters and ignored regions.
+
+13. `paper_markdown.md`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and `table_contexts/*.json`
    If semantic context retrieval is weak, inspect these next.
 
-13. `table_variable_plausibility_llm.json`
+14. `table_variable_plausibility_llm.json`
    If deterministic variables were reasonable but the plausibility review looks wrong, the issue is in prompting, provider behavior, or validation for the standalone review command.
 
 ## Why This Pipeline Shape Is Worth Keeping

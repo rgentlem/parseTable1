@@ -18,6 +18,7 @@ from table1_parser.schemas import (
     FootnoteDefinitionCandidateLine,
     NormalizedTable,
     PaperFootnotes,
+    PaperPageFurniture,
     PaperSection,
     ParsedTable,
     RowView,
@@ -170,6 +171,7 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     parse_quality_reports_path = tmp_path / "outputs" / "papers" / "paper" / "parse_quality_reports.json"
     cell_text_annotations_path = tmp_path / "outputs" / "papers" / "paper" / "cell_text_annotations.json"
     paper_footnotes_path = tmp_path / "outputs" / "papers" / "paper" / "paper_footnotes.json"
+    paper_page_furniture_path = tmp_path / "outputs" / "papers" / "paper" / "paper_page_furniture.json"
     paper_markdown_path = tmp_path / "outputs" / "papers" / "paper" / "paper_markdown.md"
     paper_sections_path = tmp_path / "outputs" / "papers" / "paper" / "paper_sections.json"
     paper_visual_inventory_path = tmp_path / "outputs" / "papers" / "paper" / "paper_visual_inventory.json"
@@ -194,6 +196,7 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     assert parse_quality_reports_path.exists()
     assert cell_text_annotations_path.exists()
     assert paper_footnotes_path.exists()
+    assert paper_page_furniture_path.exists()
     assert paper_markdown_path.exists()
     assert paper_sections_path.exists()
     assert paper_visual_inventory_path.exists()
@@ -230,8 +233,16 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     assert paper_footnotes_payload["definitions"][0]["definition_text"] == "Page-bottom note."
     assert paper_footnotes_payload["links"] == []
     assert paper_footnotes_payload["metadata"]["definition_line_count"] == 1
+    assert paper_footnotes_payload["metadata"]["definition_line_count_after_page_furniture"] == 1
     assert paper_footnotes_payload["metadata"]["definition_count"] == 1
+    assert paper_footnotes_payload["metadata"]["page_furniture_anchor_suppression_count"] == 0
+    assert paper_footnotes_payload["metadata"]["page_furniture_definition_line_suppression_count"] == 0
     assert paper_footnotes_payload["metadata"]["links_status"] == "built"
+    paper_page_furniture_payload = json.loads(paper_page_furniture_path.read_text(encoding="utf-8"))
+    assert PaperPageFurniture.model_validate(paper_page_furniture_payload).paper_id == "paper"
+    assert paper_page_furniture_payload["clusters"] == []
+    assert paper_page_furniture_payload["ignored_regions"] == []
+    assert "thresholds" in paper_page_furniture_payload["metadata"]
     assert paper_markdown_path.read_text(encoding="utf-8") == "# Methods\nExample study population."
     assert json.loads(paper_sections_path.read_text(encoding="utf-8"))[0]["section_id"] == "section_0"
     visual_payload = json.loads(paper_visual_inventory_path.read_text(encoding="utf-8"))

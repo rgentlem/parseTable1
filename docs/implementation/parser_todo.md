@@ -26,6 +26,8 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
 
 3. [ ] Add paper-level repeated marginal text and watermark detection.
    The current extraction-time trailing-row trim is a necessary local guard, but repeated download notices, watermarks, page furniture, and marginal text should also be assessed across the whole paper once. A future paper-level artifact should identify repeated non-table text signatures and/or page regions, then extraction can ignore those regions consistently while keeping the table-local boundary trim as a fallback for one-off spillover.
+   Implementation plan: `docs/implementation/paper_page_furniture_implementation_plan.md`.
+   Design contract, Pydantic schemas, positioned page-text collection, matching-text normalization, edge-band recurrence clustering, `paper_page_furniture.json` parse output, R inspection helpers, a 28-PDF real-paper review, and footnote anchor/definition-line suppression are in place.
 
 4. [ ] Align parser route with table taxonomy.
    `table_category` should drive routing once it is available. Current `table_family` is better understood as an early provisional parser-route signal; decide whether to rename, replace, or derive it from the paper table inventory.

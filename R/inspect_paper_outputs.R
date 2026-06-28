@@ -28,6 +28,7 @@ paper_output_paths <- function(paper_dir) {
     normalized = file.path(paper_dir, "normalized_tables.json"),
     cell_text_annotations = file.path(paper_dir, "cell_text_annotations.json"),
     paper_footnotes = file.path(paper_dir, "paper_footnotes.json"),
+    paper_page_furniture = file.path(paper_dir, "paper_page_furniture.json"),
     column_header_schemas = file.path(paper_dir, "column_header_schemas.json"),
     table1_continuation_groups = file.path(paper_dir, "table1_continuation_groups.json"),
     table_continuation_column_checks = file.path(paper_dir, "table_continuation_column_checks.json"),
@@ -207,6 +208,7 @@ load_paper_outputs <- function(paper_dir) {
     normalized_tables = read_json_file(paths$normalized),
     cell_text_annotations = read_json_file(paths$cell_text_annotations),
     paper_footnotes = read_optional_json(paths$paper_footnotes) %||% list(),
+    paper_page_furniture = read_optional_json(paths$paper_page_furniture) %||% list(),
     column_header_schemas = read_optional_json(paths$column_header_schemas) %||% list(),
     table1_continuation_groups = read_optional_json(paths$table1_continuation_groups),
     table_continuation_column_checks = read_optional_json(paths$table_continuation_column_checks),
@@ -872,6 +874,133 @@ show_paper_footnotes <- function(paper_dir, table_number = NULL, table_index = N
     }
   }
   invisible(list(anchors = anchors, definitions = definitions, links = links, metadata = metadata))
+}
+
+page_furniture_clusters_df <- function(outputs) {
+  empty_df <- data.frame(
+    cluster_id = character(),
+    normalized_text_key = character(),
+    representative_text = character(),
+    page_nums = character(),
+    occurrence_count = integer(),
+    page_fraction = numeric(),
+    recurrence_scope = character(),
+    scope_page_count = integer(),
+    scope_page_fraction = numeric(),
+    representative_bbox = character(),
+    representative_relative_bbox = character(),
+    recurrence_basis = character(),
+    confidence = numeric(),
+    notes = character(),
+    stringsAsFactors = FALSE
+  )
+
+  clusters <- outputs$paper_page_furniture$clusters %||% list()
+  rows <- lapply(clusters, function(cluster) {
+    data.frame(
+      cluster_id = as.character(cluster$cluster_id %||% ""),
+      normalized_text_key = as.character(cluster$normalized_text_key %||% ""),
+      representative_text = as.character(cluster$representative_text %||% ""),
+      page_nums = paste(character_vector(cluster$page_nums), collapse = ","),
+      occurrence_count = as.integer(cluster$occurrence_count %||% NA_integer_),
+      page_fraction = as.numeric(cluster$page_fraction %||% NA_real_),
+      recurrence_scope = as.character(cluster$recurrence_scope %||% ""),
+      scope_page_count = as.integer(cluster$scope_page_count %||% NA_integer_),
+      scope_page_fraction = as.numeric(cluster$scope_page_fraction %||% NA_real_),
+      representative_bbox = paste(character_vector(cluster$representative_bbox), collapse = ","),
+      representative_relative_bbox = paste(character_vector(cluster$representative_relative_bbox), collapse = ","),
+      recurrence_basis = paste(character_vector(cluster$recurrence_basis), collapse = " | "),
+      confidence = as.numeric(cluster$confidence %||% NA_real_),
+      notes = paste(character_vector(cluster$notes), collapse = " | "),
+      stringsAsFactors = FALSE
+    )
+  })
+
+  if (length(rows) == 0L) {
+    return(empty_df)
+  }
+  do.call(rbind, rows)
+}
+
+page_furniture_regions_df <- function(outputs) {
+  empty_df <- data.frame(
+    region_id = character(),
+    cluster_id = character(),
+    page_num = integer(),
+    bbox = character(),
+    relative_bbox = character(),
+    source_observation_ids = character(),
+    confidence = numeric(),
+    notes = character(),
+    stringsAsFactors = FALSE
+  )
+
+  regions <- outputs$paper_page_furniture$ignored_regions %||% list()
+  rows <- lapply(regions, function(region) {
+    data.frame(
+      region_id = as.character(region$region_id %||% ""),
+      cluster_id = as.character(region$cluster_id %||% ""),
+      page_num = as.integer(region$page_num %||% NA_integer_),
+      bbox = paste(character_vector(region$bbox), collapse = ","),
+      relative_bbox = paste(character_vector(region$relative_bbox), collapse = ","),
+      source_observation_ids = paste(character_vector(region$source_observation_ids), collapse = " | "),
+      confidence = as.numeric(region$confidence %||% NA_real_),
+      notes = paste(character_vector(region$notes), collapse = " | "),
+      stringsAsFactors = FALSE
+    )
+  })
+
+  if (length(rows) == 0L) {
+    return(empty_df)
+  }
+  do.call(rbind, rows)
+}
+
+show_paper_page_furniture <- function(paper_dir) {
+  outputs <- load_paper_outputs(paper_dir)
+  clusters <- page_furniture_clusters_df(outputs)
+  regions <- page_furniture_regions_df(outputs)
+  furniture <- outputs$paper_page_furniture %||% list()
+  metadata <- furniture$metadata %||% list()
+  observations <- furniture$observations %||% list()
+
+  cat("Paper page furniture\n")
+  cat(sprintf("paper_id: %s\n", as.character(furniture$paper_id %||% "")))
+  cat(sprintf("observation_count: %s\n", as.integer(metadata$observation_count %||% length(observations))))
+  cat(sprintf("cluster_count: %s\n", nrow(clusters)))
+  cat(sprintf("ignored_region_count: %s\n", nrow(regions)))
+  diagnostics <- character_vector(metadata$diagnostics)
+  if (length(diagnostics) > 0L) {
+    cat(sprintf("diagnostics: %s\n", paste(diagnostics, collapse = " | ")))
+  }
+
+  sections <- list(
+    Clusters = clusters[, c(
+      "cluster_id",
+      "recurrence_scope",
+      "page_nums",
+      "occurrence_count",
+      "normalized_text_key",
+      "confidence"
+    ), drop = FALSE],
+    "Ignored Regions" = regions[, c(
+      "region_id",
+      "cluster_id",
+      "page_num",
+      "relative_bbox",
+      "confidence"
+    ), drop = FALSE]
+  )
+  for (section_name in names(sections)) {
+    cat(sprintf("\n%s\n", section_name))
+    section_df <- sections[[section_name]]
+    if (nrow(section_df) == 0L) {
+      cat("[No rows]\n")
+    } else {
+      print(section_df, row.names = FALSE, right = FALSE)
+    }
+  }
+  invisible(list(clusters = clusters, regions = regions, metadata = metadata))
 }
 
 show_column_header_tree <- function(paper_dir, table_index = 0L, table_number = NULL) {

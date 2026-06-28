@@ -642,6 +642,70 @@ def _write_sample_paper_outputs(
             "source_artifacts": ["cell_text_annotations.json", "pymupdf_page_text_lines"],
         },
     }
+    paper_page_furniture = {
+        "paper_id": "paper",
+        "source_pdf": "paper.pdf",
+        "observations": [
+            {
+                "observation_id": "obs_1",
+                "page_num": 1,
+                "raw_text": "Journal Running Header",
+                "normalized_text": "Journal Running Header",
+                "bbox": [10.0, 20.0, 300.0, 30.0],
+                "relative_bbox": [0.02, 0.03, 0.50, 0.04],
+                "page_width": 600.0,
+                "page_height": 800.0,
+                "orientation": "1.000,0.000",
+                "block_index": 0,
+                "line_index": 0,
+                "source_artifact": "pymupdf_page_text_lines",
+            }
+        ],
+        "clusters": [
+            {
+                "cluster_id": "page-furniture-cluster-1",
+                "normalized_text_key": "Journal Running Header",
+                "representative_text": "Journal Running Header",
+                "observation_ids": ["obs_1"],
+                "page_nums": [1, 2, 3],
+                "occurrence_count": 3,
+                "page_fraction": 1.0,
+                "recurrence_scope": "all_pages",
+                "scope_page_count": 3,
+                "scope_page_fraction": 1.0,
+                "representative_bbox": [10.0, 20.0, 300.0, 30.0],
+                "representative_relative_bbox": [0.02, 0.03, 0.50, 0.04],
+                "recurrence_basis": ["normalized_text", "relative_position"],
+                "confidence": 0.95,
+                "notes": [],
+            }
+        ],
+        "ignored_regions": [
+            {
+                "region_id": "page-furniture-cluster-1-page-1",
+                "cluster_id": "page-furniture-cluster-1",
+                "page_num": 1,
+                "bbox": [10.0, 20.0, 300.0, 30.0],
+                "relative_bbox": [0.02, 0.03, 0.50, 0.04],
+                "source_observation_ids": ["obs_1"],
+                "confidence": 0.95,
+                "notes": [],
+            }
+        ],
+        "metadata": {
+            "source_artifacts": ["pymupdf_page_text_lines"],
+            "observation_count": 1,
+            "cluster_count": 1,
+            "ignored_region_count": 1,
+            "page_count": 3,
+            "thresholds": {
+                "min_pages": 3,
+                "min_page_fraction": 0.5,
+                "relative_position_tolerance": 0.02,
+            },
+            "diagnostics": [],
+        },
+    }
     table_context = {
         "table_id": "tbl-1",
         "table_index": 0,
@@ -736,6 +800,7 @@ def _write_sample_paper_outputs(
     _write_json(paper_dir / "paper_variable_inventory.json", paper_variable_inventory)
     _write_json(paper_dir / "paper_table_inventory.json", paper_table_inventory)
     _write_json(paper_dir / "paper_footnotes.json", paper_footnotes)
+    _write_json(paper_dir / "paper_page_furniture.json", paper_page_furniture)
     _write_json(context_dir / "table_0_context.json", table_context)
 
     if include_processing_status:
@@ -940,6 +1005,40 @@ def test_r_inspection_loads_and_shows_paper_footnotes(tmp_path) -> None:
     assert "definition:0" in result.stdout
     assert "Fasting sample." in result.stdout
     assert "resolved" in result.stdout
+
+
+def test_r_inspection_loads_and_shows_paper_page_furniture(tmp_path) -> None:
+    """The R helper should load repeated page-furniture clusters and regions."""
+    if not _r_dependencies_available():
+        return
+
+    paper_dir = tmp_path / "paper_page_furniture" / "papers" / "paper"
+    _write_sample_paper_outputs(paper_dir, include_variable_review=False, include_processing_status=True)
+
+    result = subprocess.run(
+        [
+            "Rscript",
+            "-e",
+            (
+                f'source("{R_SCRIPT}"); '
+                f'outputs <- load_paper_outputs("{paper_dir}"); '
+                "print(page_furniture_clusters_df(outputs)); "
+                "print(page_furniture_regions_df(outputs)); "
+                f'show_paper_page_furniture("{paper_dir}")'
+            ),
+        ],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "Paper page furniture" in result.stdout
+    assert "Journal Running Header" in result.stdout
+    assert "page-furniture-cluster-1" in result.stdout
+    assert "all_pages" in result.stdout
+    assert "ignored_region_count: 1" in result.stdout
 
 
 def test_r_inspection_builds_named_paper_table_inventory_list(tmp_path) -> None:

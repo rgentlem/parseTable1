@@ -40,6 +40,9 @@ Public functions:
 - `footnote_definitions_df(outputs, table_number = NULL, table_index = NULL)`
 - `footnote_links_df(outputs, table_number = NULL, table_index = NULL)`
 - `show_paper_footnotes(paper_dir, table_number = NULL, table_index = NULL)`
+- `page_furniture_clusters_df(outputs)`
+- `page_furniture_regions_df(outputs)`
+- `show_paper_page_furniture(paper_dir)`
 - `summarize_table1_continuations(paper_dir)`
 - `summarize_continued_variable_integrations(paper_dir)`
 - `summarize_table_continuation_column_checks(paper_dir)`
@@ -86,6 +89,9 @@ footnote_anchors_df(x, table_number = 1L)
 footnote_definitions_df(x, table_number = 1L)
 footnote_links_df(x, table_number = 1L)
 show_paper_footnotes("outputs/papers/cobaltpaper", table_number = 1L)
+page_furniture_clusters_df(x)
+page_furniture_regions_df(x)
+show_paper_page_furniture("outputs/papers/cobaltpaper")
 summarize_table1_continuations("outputs/papers/cobaltpaper")
 summarize_continued_variable_integrations("outputs/papers/cobaltpaper")
 summarize_table_continuation_column_checks("outputs/papers/cobaltpaper")
@@ -183,6 +189,7 @@ What these are for:
 - `parse_quality_reports`
 - `cell_text_annotations`
 - `paper_footnotes`
+- `paper_page_furniture`
 - `column_header_schemas`
 - `paper_table_inventory`
 - `table1_continuation_groups`

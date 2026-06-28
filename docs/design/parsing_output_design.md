@@ -88,7 +88,8 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Final parsed output | `ParsedTable` | Written now as `parsed_tables.json` by `parse` | Validated downstream structured table data |
 | Table processing status | `TableProcessingStatus`, `TableProcessingAttempt` | Written now as `table_processing_status.json` by `parse` | Persist rescue attempts, terminal failure stage, and failure reason without overloading semantic artifacts |
 | Parse quality diagnostics | `ParseQualityReport` | Written now as `parse_quality_reports.json` by `parse` | Persist deterministic row, column, and value-pattern diagnostics without changing parse behavior |
-| Paper footnotes | `PaperFootnotes` | Written now as `paper_footnotes.json` by `parse` | Persist footnote anchors, PyMuPDF page-line definition candidates, and glyph-key links as reviewable evidence without rewriting table text or parsed values |
+| Paper footnotes | `PaperFootnotes` | Written now as `paper_footnotes.json` by `parse` | Persist footnote anchors, PyMuPDF page-line definition candidates, page-furniture suppression metadata, and glyph-key links as reviewable evidence without rewriting table text or parsed values |
+| Paper page furniture | `PaperPageFurniture` | Written now as `paper_page_furniture.json` by `parse` | Persist repeated page text observations, clusters, and ignored regions for footnote suppression without changing table parsing |
 
 Design note for future multitable support:
 
@@ -969,6 +970,42 @@ Design intent:
 - recognize wide numeric matrices with threshold/statistic headers as `data_presentation`, especially when normalization has already expanded an extra-wide value column into visual value columns
 - treat `table_category` as the broader concept that should drive parser-route selection once it is available; current `table_family` output is an earlier provisional route signal, not an independent semantic category
 - keep this artifact deterministic and computable so R can expose it as a data frame or print method later
+
+## 12. `paper_page_furniture.json`
+
+Current status:
+
+- canonical paper-level page-furniture schema exists now
+- written by the `parse` CLI command as `paper_page_furniture.json`
+- support artifact only; it suppresses overlapping footnote candidate lines and table-cell anchors but does not alter table extraction, table definitions, or parsed tables
+
+Current CLI path:
+
+```text
+outputs/papers/<paper_stem>/paper_page_furniture.json
+```
+
+Canonical model:
+
+- `PaperPageFurniture`
+- child models: `PageFurnitureTextObservation`, `PageFurnitureCluster`, `PageFurnitureRegion`
+
+Top-level design components:
+
+- `paper_id`
+- `source_pdf`
+- `observations`
+- `clusters`
+- `ignored_regions`
+- `metadata`
+
+Design intent:
+
+- record repeated page text using normalized text plus stable page-relative position
+- preserve raw page text in observations
+- store generic ignored regions without classifying them as header, footer, watermark, or boilerplate
+- expose thresholds and diagnostics in `metadata`
+- provide footnote-harvesting code with page regions to suppress
 
 ## Trace Wrappers vs Canonical Payloads
 

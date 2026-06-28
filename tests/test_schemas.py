@@ -24,7 +24,11 @@ from table1_parser.schemas import (
     LLMVariablePlausibilityCallRecord,
     LLMVariablePlausibilityMonitoringReport,
     NormalizedTable,
+    PageFurnitureCluster,
+    PageFurnitureRegion,
+    PageFurnitureTextObservation,
     PaperFootnotes,
+    PaperPageFurniture,
     PaperSection,
     PaperVariableInventory,
     PaperVisual,
@@ -567,6 +571,68 @@ def test_paper_footnotes_schema_serializes_cleanly() -> None:
     assert dumped["links"][0]["link_status"] == "resolved"
     assert dumped_line["bbox"] == [10.0, 250.0, 300.0, 260.0]
     assert dumped_line["source_scope"] == "table_note"
+
+
+def test_paper_page_furniture_schema_serializes_cleanly() -> None:
+    """Paper page-furniture schemas should preserve recurrence evidence."""
+    furniture = PaperPageFurniture(
+        paper_id="paper",
+        source_pdf="paper.pdf",
+        observations=[
+            PageFurnitureTextObservation(
+                observation_id="obs_1",
+                page_num=3,
+                raw_text="Journal title",
+                normalized_text="journal title",
+                bbox=(10.0, 20.0, 200.0, 30.0),
+                relative_bbox=(0.02, 0.03, 0.35, 0.04),
+                page_width=600.0,
+                page_height=800.0,
+                orientation="horizontal",
+                block_index=0,
+                line_index=0,
+                source_artifact="pymupdf_page_text_lines",
+                confidence=0.9,
+            )
+        ],
+        clusters=[
+            PageFurnitureCluster(
+                cluster_id="cluster_1",
+                normalized_text_key="journal title",
+                representative_text="Journal title",
+                observation_ids=["obs_1"],
+                page_nums=[3, 5, 7],
+                occurrence_count=3,
+                page_fraction=0.3,
+                recurrence_scope="odd_pages",
+                scope_page_count=5,
+                scope_page_fraction=0.6,
+                representative_bbox=(10.0, 20.0, 200.0, 30.0),
+                representative_relative_bbox=(0.02, 0.03, 0.35, 0.04),
+                recurrence_basis=["stable_text", "stable_position", "odd_page_recurrence"],
+                confidence=0.85,
+            )
+        ],
+        ignored_regions=[
+            PageFurnitureRegion(
+                region_id="region_1",
+                cluster_id="cluster_1",
+                page_num=3,
+                bbox=(10.0, 20.0, 200.0, 30.0),
+                relative_bbox=(0.02, 0.03, 0.35, 0.04),
+                source_observation_ids=["obs_1"],
+                confidence=0.85,
+            )
+        ],
+        metadata={"source_artifacts": ["pymupdf_page_text_lines"]},
+    )
+
+    dumped = furniture.model_dump(mode="json")
+
+    assert dumped["observations"][0]["relative_bbox"] == [0.02, 0.03, 0.35, 0.04]
+    assert dumped["clusters"][0]["recurrence_scope"] == "odd_pages"
+    assert dumped["clusters"][0]["scope_page_fraction"] == 0.6
+    assert dumped["ignored_regions"][0]["cluster_id"] == "cluster_1"
 
 
 def test_schema_validation_rejects_invalid_confidence() -> None:

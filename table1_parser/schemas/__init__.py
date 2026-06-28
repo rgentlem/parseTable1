@@ -37,6 +37,13 @@ from table1_parser.schemas.paper_footnotes import (
     FootnoteSourceScope,
     PaperFootnotes,
 )
+from table1_parser.schemas.paper_page_furniture import (
+    PageFurnitureCluster,
+    PageFurnitureRecurrenceScope,
+    PageFurnitureRegion,
+    PageFurnitureTextObservation,
+    PaperPageFurniture,
+)
 from table1_parser.schemas.paper_visual_references import PaperVisual, PaperVisualReference
 from table1_parser.schemas.parsed_table import (
     ParsedColumn,
@@ -72,9 +79,14 @@ __all__ = [
     "NormalizedTable",
     "PaperSection",
     "PaperFootnotes",
+    "PaperPageFurniture",
     "PaperTableInventory",
     "PaperTableRecord",
     "PaperVariableInventory",
+    "PageFurnitureCluster",
+    "PageFurnitureRecurrenceScope",
+    "PageFurnitureRegion",
+    "PageFurnitureTextObservation",
     "ColumnDefinition",
     "ColumnHeaderCellEvidence",
     "ColumnHeaderDescriptor",

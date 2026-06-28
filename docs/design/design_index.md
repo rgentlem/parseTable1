@@ -27,6 +27,9 @@ Then use the documents below as needed.
 - `docs/design/paper_footnotes.md`
   Contract for `paper_footnotes.json`: anchors, definitions, glyph-key links, source scopes, and R surface.
 
+- `docs/design/paper_page_furniture.md`
+  Contract for `paper_page_furniture.json`: repeated page text observations, clusters, ignored regions, and structural recurrence evidence.
+
 - `docs/implementation/cell_text_annotations_implementation_plan.md`
   Short checklist for implementing the cell text annotation artifact, CLI output, R loading, and focused tests.
 
@@ -35,6 +38,9 @@ Then use the documents below as needed.
 
 - `docs/implementation/paper_footnotes_implementation_plan.md`
   Short checklist for paper-level footnote anchors, definitions, glyph-key links, and tableone-aligned R inspection objects.
+
+- `docs/implementation/paper_page_furniture_implementation_plan.md`
+  Short checklist for detecting repeated page furniture and using it to protect footnote harvesting from watermarks, repeated headers/footers, marginal text, and download boilerplate.
 
 - `docs/design/rescue_failure_logic.md`
   Structured rescue ordering, adequacy checks, and failure tracking for collapsed or empty table parses.

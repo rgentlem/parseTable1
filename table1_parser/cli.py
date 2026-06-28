@@ -47,9 +47,11 @@ from table1_parser.paper_footnotes import (
     build_paper_footnote_anchor_inventory,
     build_paper_footnote_definition_candidates,
     build_paper_footnote_definition_lines_from_pdf,
+    filter_footnote_definition_lines_for_page_furniture,
     link_paper_footnotes,
     paper_footnotes_to_payload,
 )
+from table1_parser.paper_page_furniture import build_paper_page_furniture, paper_page_furniture_to_payload
 from table1_parser.processing_status import build_table_processing_statuses
 from table1_parser.schemas import (
     CellTextAnnotationTable,
@@ -59,6 +61,7 @@ from table1_parser.schemas import (
     LLMVariablePlausibilityMonitoringReport,
     NormalizedTable,
     PaperFootnotes,
+    PaperPageFurniture,
     PaperSection,
     PaperVariableInventory,
     PaperVisual,
@@ -98,6 +101,7 @@ class PaperParseArtifacts:
     parse_quality_reports: list[ParseQualityReport]
     cell_text_annotations: list[CellTextAnnotationTable]
     paper_footnotes: PaperFootnotes
+    paper_page_furniture: PaperPageFurniture
     paper_markdown: str
     paper_sections: list[PaperSection]
     paper_visual_inventory: list[PaperVisual]
@@ -397,6 +401,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     extractor = _build_default_extractor()
     extracted_tables = extractor.extract(pdf_path)
     cell_text_annotations = build_cell_text_annotation_tables_from_pdf(pdf_path, extracted_tables)
+    paper_page_furniture = build_paper_page_furniture(pdf_path, paper_id=Path(pdf_path).stem)
     normalized_tables = normalize_extracted_tables(extracted_tables)
     column_header_schemas = build_column_header_schemas(normalized_tables, extracted_tables)
     paper_footnotes = build_paper_footnote_anchor_inventory(
@@ -405,10 +410,17 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         cell_text_annotations=cell_text_annotations,
         extracted_tables=extracted_tables,
         column_header_schemas=column_header_schemas,
+        paper_page_furniture=paper_page_furniture,
     )
     paper_footnote_definition_lines = build_paper_footnote_definition_lines_from_pdf(pdf_path)
+    filtered_footnote_definition_lines, footnote_page_furniture_metadata = (
+        filter_footnote_definition_lines_for_page_furniture(
+            paper_footnote_definition_lines,
+            paper_page_furniture,
+        )
+    )
     paper_footnote_definitions = build_paper_footnote_definition_candidates(
-        paper_footnote_definition_lines,
+        filtered_footnote_definition_lines,
         extracted_tables,
     )
     paper_footnotes = link_paper_footnotes(
@@ -421,9 +433,12 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
                         {
                             *paper_footnotes.metadata.get("source_artifacts", []),
                             "pymupdf_page_text_lines",
+                            "paper_page_furniture.json",
                         }
                     ),
+                    **footnote_page_furniture_metadata,
                     "definition_line_count": len(paper_footnote_definition_lines),
+                    "definition_line_count_after_page_furniture": len(filtered_footnote_definition_lines),
                     "definition_count": len(paper_footnote_definitions),
                     "definitions_status": "built",
                 },
@@ -479,6 +494,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         parse_quality_reports=parse_quality_reports,
         cell_text_annotations=cell_text_annotations,
         paper_footnotes=paper_footnotes,
+        paper_page_furniture=paper_page_furniture,
         paper_markdown=paper_markdown,
         paper_sections=paper_sections,
         paper_visual_inventory=paper_visual_inventory,
@@ -549,6 +565,7 @@ def _write_parse_outputs(
     parse_quality_reports_output_path = paper_dir / "parse_quality_reports.json"
     cell_text_annotations_output_path = paper_dir / "cell_text_annotations.json"
     paper_footnotes_output_path = paper_dir / "paper_footnotes.json"
+    paper_page_furniture_output_path = paper_dir / "paper_page_furniture.json"
     paper_markdown_output_path = paper_dir / "paper_markdown.md"
     paper_sections_output_path = paper_dir / "paper_sections.json"
     paper_visual_inventory_output_path = paper_dir / "paper_visual_inventory.json"
@@ -637,6 +654,10 @@ def _write_parse_outputs(
     )
     paper_footnotes_output_path.write_text(
         json.dumps(paper_footnotes_to_payload(artifacts.paper_footnotes), indent=2) + "\n",
+        encoding="utf-8",
+    )
+    paper_page_furniture_output_path.write_text(
+        json.dumps(paper_page_furniture_to_payload(artifacts.paper_page_furniture), indent=2) + "\n",
         encoding="utf-8",
     )
     paper_markdown_output_path.write_text(artifacts.paper_markdown, encoding="utf-8")
