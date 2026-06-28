@@ -39,6 +39,7 @@ Today that directory may contain:
 - `parsed_tables.json`
 - `table_processing_status.json`
 - `parse_quality_reports.json`
+- `paper_footnotes.json`
 - `paper_markdown.md`
 - `paper_sections.json`
 - `paper_visual_inventory.json`
@@ -53,6 +54,13 @@ Some of these are per-table artifacts. Others are paper-level context artifacts.
 `cell_text_annotations.json` records superscript, subscript, and small marker
 geometry by table cell when compatible PyMuPDF character geometry and extracted
 cell bboxes are available. It does not change the raw extracted grid.
+
+`paper_footnotes.json` records detected footnote anchors, candidate definitions,
+and glyph-key links as a paper-level review artifact. It is written even when no
+anchors or definitions are found.
+Definition candidates are fed by PyMuPDF page text lines with bbox and page-height
+provenance so table-local notes and page-bottom notes can be classified
+deterministically before glyph-key linking.
 
 ## Why There Are Multiple Versions Of A Table
 
@@ -83,6 +91,7 @@ PDF
   -> parsed tables
   -> table processing statuses
   -> parse quality reports
+  -> paper footnotes
 
 PDF
   -> paper markdown
@@ -837,10 +846,13 @@ When a parse looks wrong, inspect the outputs in this order.
 10. `parse_quality_reports.json`
    If the parse succeeded but the columns, p-values, headers, or row classifications look suspicious, inspect this artifact for deterministic quality warnings.
 
-11. `paper_markdown.md`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and `table_contexts/*.json`
+11. `paper_footnotes.json`
+   If superscripts, subscripts, or note markers matter, inspect this artifact for anchors, candidate definitions, and resolved, ambiguous, or unresolved glyph-key links.
+
+12. `paper_markdown.md`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and `table_contexts/*.json`
    If semantic context retrieval is weak, inspect these next.
 
-12. `table_variable_plausibility_llm.json`
+13. `table_variable_plausibility_llm.json`
    If deterministic variables were reasonable but the plausibility review looks wrong, the issue is in prompting, provider behavior, or validation for the standalone review command.
 
 ## Why This Pipeline Shape Is Worth Keeping

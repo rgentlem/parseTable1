@@ -24,11 +24,17 @@ Then use the documents below as needed.
 - `docs/design/cell_text_annotations.md`
   Extraction-side sidecar artifact for superscripts, subscripts, and small marker symbols attached to table cells.
 
+- `docs/design/paper_footnotes.md`
+  Contract for `paper_footnotes.json`: anchors, definitions, glyph-key links, source scopes, and R surface.
+
 - `docs/implementation/cell_text_annotations_implementation_plan.md`
   Short checklist for implementing the cell text annotation artifact, CLI output, R loading, and focused tests.
 
 - `docs/implementation/rotated_cell_text_annotations_implementation_plan.md`
   Short checklist for supporting cell-text annotations on rotated or table-local geometry.
+
+- `docs/implementation/paper_footnotes_implementation_plan.md`
+  Short checklist for paper-level footnote anchors, definitions, glyph-key links, and tableone-aligned R inspection objects.
 
 - `docs/design/rescue_failure_logic.md`
   Structured rescue ordering, adequacy checks, and failure tracking for collapsed or empty table parses.

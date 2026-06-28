@@ -124,20 +124,22 @@ Recommended top-level structure:
 - `caption`
 - `ContTable`
 - `CatTable`
+- `Footnotes`
 - `MetaData`
 - `metadata`
 - `columns`
 - `continuous`
 - `categorical`
+- `footnotes`
 - `statistics`
 - `provenance`
 - `notes`
 - `overall_confidence`
 
 This should be implemented as an S3 object backed by a named list.
-`ContTable`, `CatTable`, and `MetaData` should be the tableone-style access
-surface. The lower-case fields may remain as compatibility aliases while the
-object matures.
+`ContTable`, `CatTable`, `Footnotes`, and `MetaData` should be the
+tableone-style access surface. The lower-case fields may remain as
+compatibility aliases while the object matures.
 
 ## `metadata`
 
@@ -309,6 +311,19 @@ Each entry should preserve:
 - parsed numeric value when available
 - `confidence`
 
+## `footnotes`
+
+`Footnotes` should be an `ObservedFootnotes` S3 list filtered to the current
+table. It preserves:
+
+- `Anchors`
+- `Definitions`
+- `Links`
+- `MetaData`
+
+These records come from `paper_footnotes.json`. They are review evidence for
+glyph anchors and candidate definitions, not rewritten table text.
+
 ## `provenance`
 
 The component should record where its data came from.
@@ -337,6 +352,8 @@ Primary mapping:
   - printed values
   - long-format value records
   - parsed numeric slots
+- `paper_footnotes.json`
+  - table-specific footnote anchors, definitions, and links
 
 Optional support from `normalized_tables.json`:
 

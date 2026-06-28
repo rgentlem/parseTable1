@@ -88,6 +88,7 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Final parsed output | `ParsedTable` | Written now as `parsed_tables.json` by `parse` | Validated downstream structured table data |
 | Table processing status | `TableProcessingStatus`, `TableProcessingAttempt` | Written now as `table_processing_status.json` by `parse` | Persist rescue attempts, terminal failure stage, and failure reason without overloading semantic artifacts |
 | Parse quality diagnostics | `ParseQualityReport` | Written now as `parse_quality_reports.json` by `parse` | Persist deterministic row, column, and value-pattern diagnostics without changing parse behavior |
+| Paper footnotes | `PaperFootnotes` | Written now as `paper_footnotes.json` by `parse` | Persist footnote anchors, PyMuPDF page-line definition candidates, and glyph-key links as reviewable evidence without rewriting table text or parsed values |
 
 Design note for future multitable support:
 

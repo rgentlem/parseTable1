@@ -36,6 +36,10 @@ Public functions:
 - `show_parse_quality(paper_dir, table_number = 1L)`
 - `cell_text_annotations_df(outputs, table_number = NULL, table_index = NULL)`
 - `show_cell_text_annotations(paper_dir, table_number = 1L, table_index = NULL)`
+- `footnote_anchors_df(outputs, table_number = NULL, table_index = NULL)`
+- `footnote_definitions_df(outputs, table_number = NULL, table_index = NULL)`
+- `footnote_links_df(outputs, table_number = NULL, table_index = NULL)`
+- `show_paper_footnotes(paper_dir, table_number = NULL, table_index = NULL)`
 - `summarize_table1_continuations(paper_dir)`
 - `summarize_continued_variable_integrations(paper_dir)`
 - `summarize_table_continuation_column_checks(paper_dir)`
@@ -61,7 +65,8 @@ These helpers use the same per-paper output directory written by
 
 `R/observed_table_one.R` builds an `ObservedTableOne` object from parser JSON.
 The object exposes tableone-style `ContTable`, `CatTable`, and `MetaData`
-fields, while preserving lower-case compatibility aliases. Its columns come
+fields, plus table-specific `Footnotes`, while preserving lower-case
+compatibility aliases. Its columns come
 from `TableDefinition.column_definition`, which is built from
 `ColumnHeaderSchema`.
 
@@ -77,6 +82,10 @@ show_table_processing("outputs/papers/cobaltpaper", table_number = 1L)
 show_parse_quality("outputs/papers/cobaltpaper", table_number = 1L)
 cell_text_annotations_df(x, table_number = 1L)
 show_cell_text_annotations("outputs/papers/cobaltpaper", table_number = 1L)
+footnote_anchors_df(x, table_number = 1L)
+footnote_definitions_df(x, table_number = 1L)
+footnote_links_df(x, table_number = 1L)
+show_paper_footnotes("outputs/papers/cobaltpaper", table_number = 1L)
 summarize_table1_continuations("outputs/papers/cobaltpaper")
 summarize_continued_variable_integrations("outputs/papers/cobaltpaper")
 summarize_table_continuation_column_checks("outputs/papers/cobaltpaper")
@@ -148,6 +157,10 @@ What these are for:
   return one row per persisted superscript, subscript, or marker annotation with table, row, column, bbox, LaTeX text, and diagnostics fields
 - `show_cell_text_annotations(...)`
   print the persisted cell-text annotations for one table without inferring marker meaning
+- `footnote_anchors_df(...)`, `footnote_definitions_df(...)`, and `footnote_links_df(...)`
+  return paper-footnote anchors, candidate definitions, and glyph-key links as review data frames, optionally filtered to one table
+- `show_paper_footnotes(...)`
+  print a compact review of those footnote records for a paper or one table
 - `show_merged_table1(...)`
   print the artifact-only merged Table 1 rows with source table and source row provenance
 - `show_paper_visuals(...)`
@@ -169,6 +182,7 @@ What these are for:
 - `table_processing_status`
 - `parse_quality_reports`
 - `cell_text_annotations`
+- `paper_footnotes`
 - `column_header_schemas`
 - `paper_table_inventory`
 - `table1_continuation_groups`

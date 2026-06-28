@@ -17,9 +17,14 @@ from table1_parser.schemas import (
     DefinedLevel,
     DefinedVariable,
     ExtractedTable,
+    FootnoteAnchor,
+    FootnoteDefinition,
+    FootnoteDefinitionCandidateLine,
+    FootnoteLink,
     LLMVariablePlausibilityCallRecord,
     LLMVariablePlausibilityMonitoringReport,
     NormalizedTable,
+    PaperFootnotes,
     PaperSection,
     PaperVariableInventory,
     PaperVisual,
@@ -480,6 +485,88 @@ def test_paper_variable_inventory_schema_serializes_cleanly() -> None:
     assert dumped["mentions"][0]["source_type"] == "text_based"
     assert dumped["mentions"][0]["mention_role"] == "variable"
     assert dumped["candidates"][0]["preferred_label"] == "Age"
+
+
+def test_paper_footnotes_schema_serializes_cleanly() -> None:
+    """Paper footnote schemas should preserve anchors, definitions, and links."""
+    footnotes = PaperFootnotes(
+        paper_id="paper",
+        source_pdf="paper.pdf",
+        anchors=[
+            FootnoteAnchor(
+                anchor_id="anchor_0",
+                glyph_raw="a",
+                glyph_key="letter:a",
+                glyph_kind="letter",
+                glyph_codepoints=["U+0061"],
+                source_scope="table_cell",
+                source_id="tbl-1:r2:c4",
+                page_num=3,
+                confidence=0.9,
+                table_id="tbl-1",
+                row_idx=2,
+                col_idx=4,
+                source_role="body_cell",
+                attached_to_text="<0.001",
+                bbox=(10.0, 20.0, 14.0, 24.0),
+                coordinate_frame="page",
+                source_artifact="cell_text_annotations.json",
+            )
+        ],
+        definitions=[
+            FootnoteDefinition(
+                definition_id="definition_0",
+                glyph_raw="a",
+                glyph_key="letter:a",
+                glyph_kind="letter",
+                glyph_codepoints=["U+0061"],
+                source_scope="table_note",
+                source_id="tbl-1:note:0",
+                page_num=3,
+                raw_text="a Wilcoxon rank-sum test.",
+                clean_text="a Wilcoxon rank-sum test.",
+                definition_text="Wilcoxon rank-sum test.",
+                confidence=0.85,
+                table_id="tbl-1",
+                line_index=0,
+            )
+        ],
+        links=[
+            FootnoteLink(
+                link_id="link_0",
+                anchor_id="anchor_0",
+                glyph_key="letter:a",
+                link_status="resolved",
+                candidate_definition_ids=["definition_0"],
+                definition_id="definition_0",
+                link_basis=["same_table", "glyph_key_match"],
+                scope_distance="same_table",
+                confidence=0.88,
+            )
+        ],
+        metadata={"source_artifacts": ["cell_text_annotations.json"]},
+    )
+    line = FootnoteDefinitionCandidateLine(
+        line_id="line_0",
+        page_num=3,
+        raw_text="a Wilcoxon rank-sum test.",
+        source_scope="table_note",
+        source_id="tbl-1:note:0",
+        table_id="tbl-1",
+        bbox=(10.0, 250.0, 300.0, 260.0),
+        page_height=800.0,
+        confidence=0.8,
+    )
+
+    dumped = footnotes.model_dump(mode="json")
+    dumped_line = line.model_dump(mode="json")
+
+    assert dumped["anchors"][0]["source_scope"] == "table_cell"
+    assert dumped["anchors"][0]["bbox"] == [10.0, 20.0, 14.0, 24.0]
+    assert dumped["definitions"][0]["source_scope"] == "table_note"
+    assert dumped["links"][0]["link_status"] == "resolved"
+    assert dumped_line["bbox"] == [10.0, 250.0, 300.0, 260.0]
+    assert dumped_line["source_scope"] == "table_note"
 
 
 def test_schema_validation_rejects_invalid_confidence() -> None:

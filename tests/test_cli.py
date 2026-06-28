@@ -15,7 +15,9 @@ from table1_parser.schemas import (
     DefinedColumn,
     ExtractedTable,
     LLMVariablePlausibilityCallRecord,
+    FootnoteDefinitionCandidateLine,
     NormalizedTable,
+    PaperFootnotes,
     PaperSection,
     ParsedTable,
     RowView,
@@ -130,6 +132,22 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
 
     monkeypatch.setattr(cli, "build_extractor", lambda _: FakeExtractor())
     _patch_paper_context(monkeypatch)
+    monkeypatch.setattr(
+        cli,
+        "build_paper_footnote_definition_lines_from_pdf",
+        lambda _: [
+            FootnoteDefinitionCandidateLine(
+                line_id="page-1-line-99",
+                page_num=1,
+                raw_text="a Page-bottom note.",
+                source_scope="body_text",
+                bbox=(40.0, 730.0, 240.0, 742.0),
+                page_height=800.0,
+                line_index=99,
+                source_artifact="pymupdf_page_text_lines",
+            )
+        ],
+    )
 
     exit_code = cli.main(["parse", str(pdf_path)])
 
@@ -151,6 +169,7 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     processing_status_path = tmp_path / "outputs" / "papers" / "paper" / "table_processing_status.json"
     parse_quality_reports_path = tmp_path / "outputs" / "papers" / "paper" / "parse_quality_reports.json"
     cell_text_annotations_path = tmp_path / "outputs" / "papers" / "paper" / "cell_text_annotations.json"
+    paper_footnotes_path = tmp_path / "outputs" / "papers" / "paper" / "paper_footnotes.json"
     paper_markdown_path = tmp_path / "outputs" / "papers" / "paper" / "paper_markdown.md"
     paper_sections_path = tmp_path / "outputs" / "papers" / "paper" / "paper_sections.json"
     paper_visual_inventory_path = tmp_path / "outputs" / "papers" / "paper" / "paper_visual_inventory.json"
@@ -174,6 +193,7 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     assert processing_status_path.exists()
     assert parse_quality_reports_path.exists()
     assert cell_text_annotations_path.exists()
+    assert paper_footnotes_path.exists()
     assert paper_markdown_path.exists()
     assert paper_sections_path.exists()
     assert paper_visual_inventory_path.exists()
@@ -202,6 +222,16 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     assert cell_annotation_payload[0]["table_id"] == "tbl-1"
     assert cell_annotation_payload[0]["annotations"] == []
     assert "char_geometry_unavailable" in cell_annotation_payload[0]["metadata"]["diagnostics"]
+    paper_footnotes_payload = json.loads(paper_footnotes_path.read_text(encoding="utf-8"))
+    assert PaperFootnotes.model_validate(paper_footnotes_payload).paper_id == "paper"
+    assert paper_footnotes_payload["anchors"] == []
+    assert len(paper_footnotes_payload["definitions"]) == 1
+    assert paper_footnotes_payload["definitions"][0]["source_scope"] == "page_note"
+    assert paper_footnotes_payload["definitions"][0]["definition_text"] == "Page-bottom note."
+    assert paper_footnotes_payload["links"] == []
+    assert paper_footnotes_payload["metadata"]["definition_line_count"] == 1
+    assert paper_footnotes_payload["metadata"]["definition_count"] == 1
+    assert paper_footnotes_payload["metadata"]["links_status"] == "built"
     assert paper_markdown_path.read_text(encoding="utf-8") == "# Methods\nExample study population."
     assert json.loads(paper_sections_path.read_text(encoding="utf-8"))[0]["section_id"] == "section_0"
     visual_payload = json.loads(paper_visual_inventory_path.read_text(encoding="utf-8"))

@@ -128,6 +128,151 @@ pt1_variable_lookup <- function(table_definition) {
   pt1_null_coalesce(x, y)
 }
 
+new_observed_footnotes <- function(
+  anchors = list(),
+  definitions = list(),
+  links = list(),
+  metadata = list(),
+  printToggle = TRUE,
+  quote = FALSE,
+  noSpaces = FALSE
+) {
+  object <- list(
+    Anchors = anchors %||% list(),
+    Definitions = definitions %||% list(),
+    Links = links %||% list(),
+    MetaData = metadata %||% list(),
+    anchors = anchors %||% list(),
+    definitions = definitions %||% list(),
+    links = links %||% list(),
+    metadata = metadata %||% list(),
+    printToggle = as.logical(printToggle),
+    quote = as.logical(quote),
+    noSpaces = as.logical(noSpaces)
+  )
+  class(object) <- "ObservedFootnotes"
+  validate_observed_footnotes(object)
+}
+
+validate_observed_footnotes <- function(x) {
+  if (!inherits(x, "ObservedFootnotes")) {
+    stop("Object must inherit from 'ObservedFootnotes'.", call. = FALSE)
+  }
+  if (!is.list(x$Anchors) || !is.list(x$Definitions) || !is.list(x$Links)) {
+    stop("ObservedFootnotes must contain list fields Anchors, Definitions, and Links.", call. = FALSE)
+  }
+  if (!is.list(x$MetaData)) {
+    stop("ObservedFootnotes$MetaData must be a list.", call. = FALSE)
+  }
+  x
+}
+
+print.ObservedFootnotes <- function(x, printToggle = x$printToggle, quote = x$quote, noSpaces = x$noSpaces, ...) {
+  validate_observed_footnotes(x)
+  if (!isTRUE(printToggle)) {
+    return(invisible(x))
+  }
+  cat("<ObservedFootnotes>\n")
+  table_id <- pt1_character_or_null(x$MetaData$table_id)
+  table_number <- pt1_integer_or_null(x$MetaData$table_number)
+  if (!is.null(table_id) && nzchar(table_id)) {
+    cat(sprintf("table_id: %s\n", table_id))
+  }
+  if (!is.null(table_number) && !is.na(table_number)) {
+    cat(sprintf("table_number: %s\n", table_number))
+  }
+  cat(sprintf("anchors: %d\n", length(x$Anchors %||% list())))
+  cat(sprintf("definitions: %d\n", length(x$Definitions %||% list())))
+  cat(sprintf("links: %d\n", length(x$Links %||% list())))
+  link_statuses <- vapply(x$Links %||% list(), function(link) {
+    pt1_character_or_null(link$link_status) %||% "unknown"
+  }, character(1))
+  if (length(link_statuses) > 0L) {
+    status_counts <- table(link_statuses)
+    cat(sprintf("link_status: %s\n", paste(sprintf("%s=%s", names(status_counts), as.integer(status_counts)), collapse = ", ")))
+  }
+  anchors <- x$Anchors %||% list()
+  if (length(anchors) > 0L) {
+    first_anchor <- anchors[[1]]
+    first_anchor_glyph <- as.character(first_anchor$glyph_raw %||% "")
+    if (isTRUE(noSpaces)) {
+      first_anchor_glyph <- gsub("\\s+", "", first_anchor_glyph)
+    }
+    if (isTRUE(quote)) {
+      first_anchor_glyph <- shQuote(first_anchor_glyph)
+    }
+    cat(sprintf(
+      "first_anchor: %s %s %s\n",
+      pt1_character_or_null(first_anchor$anchor_id) %||% "",
+      first_anchor_glyph,
+      pt1_character_or_null(first_anchor$source_id) %||% ""
+    ))
+  }
+  invisible(x)
+}
+
+build_observed_footnotes <- function(
+  paper_footnotes = NULL,
+  table_id = NULL,
+  table_number = NULL,
+  printToggle = TRUE,
+  quote = FALSE,
+  noSpaces = FALSE
+) {
+  if (is.null(paper_footnotes) || length(paper_footnotes) == 0L) {
+    return(new_observed_footnotes(
+      metadata = list(table_id = table_id, table_number = table_number),
+      printToggle = printToggle,
+      quote = quote,
+      noSpaces = noSpaces
+    ))
+  }
+
+  resolved_table_id <- pt1_character_or_null(table_id) %||% ""
+  anchors <- paper_footnotes$anchors %||% list()
+  if (nzchar(resolved_table_id)) {
+    anchors <- Filter(function(anchor) identical(pt1_character_or_null(anchor$table_id) %||% "", resolved_table_id), anchors)
+  }
+  anchor_ids <- vapply(anchors, function(anchor) pt1_character_or_null(anchor$anchor_id) %||% "", character(1))
+  links <- Filter(function(link) {
+    (pt1_character_or_null(link$anchor_id) %||% "") %in% anchor_ids
+  }, paper_footnotes$links %||% list())
+  linked_definition_ids <- unique(unlist(lapply(links, function(link) {
+    c(pt1_character_or_null(link$definition_id) %||% "", pt1_character_vector(link$candidate_definition_ids))
+  }), use.names = FALSE))
+  linked_definition_ids <- linked_definition_ids[nzchar(linked_definition_ids)]
+  definitions <- Filter(function(definition) {
+    identical(pt1_character_or_null(definition$table_id) %||% "", resolved_table_id) ||
+      (pt1_character_or_null(definition$definition_id) %||% "") %in% linked_definition_ids
+  }, paper_footnotes$definitions %||% list())
+  link_statuses <- vapply(links, function(link) pt1_character_or_null(link$link_status) %||% "", character(1))
+  source_metadata <- paper_footnotes$metadata %||% list()
+  metadata <- modifyList(
+    source_metadata,
+    list(
+      paper_id = pt1_character_or_null(paper_footnotes$paper_id),
+      source_pdf = pt1_character_or_null(paper_footnotes$source_pdf),
+      table_id = table_id,
+      table_number = table_number,
+      anchor_count = length(anchors),
+      definition_count = length(definitions),
+      link_count = length(links),
+      resolved_link_count = sum(link_statuses == "resolved", na.rm = TRUE),
+      ambiguous_link_count = sum(link_statuses == "ambiguous", na.rm = TRUE),
+      unresolved_link_count = sum(link_statuses == "unresolved", na.rm = TRUE)
+    )
+  )
+  new_observed_footnotes(
+    anchors = anchors,
+    definitions = definitions,
+    links = links,
+    metadata = metadata,
+    printToggle = printToggle,
+    quote = quote,
+    noSpaces = noSpaces
+  )
+}
+
 new_observed_table_one <- function(
   table_id,
   title = NULL,
@@ -136,22 +281,26 @@ new_observed_table_one <- function(
   columns = list(),
   continuous = list(variables = list(), values = list()),
   categorical = list(variables = list(), values = list()),
+  footnotes = NULL,
   statistics = list(),
   provenance = list(),
   notes = character(),
   overall_confidence = NULL
 ) {
+  footnotes <- footnotes %||% new_observed_footnotes(metadata = list(table_id = table_id))
   object <- list(
     table_id = as.character(table_id),
     title = pt1_character_or_null(title),
     caption = pt1_character_or_null(caption),
     ContTable = continuous,
     CatTable = categorical,
+    Footnotes = footnotes,
     MetaData = metadata,
     metadata = metadata,
     columns = columns,
     continuous = continuous,
     categorical = categorical,
+    footnotes = footnotes,
     statistics = statistics,
     provenance = provenance,
     notes = pt1_character_vector(notes),
@@ -189,6 +338,9 @@ validate_observed_table_one <- function(x) {
   if (!is.list(x$categorical) || is.null(x$categorical$variables) || is.null(x$categorical$values)) {
     stop("ObservedTableOne$categorical must contain 'variables' and 'values' lists.", call. = FALSE)
   }
+  if (!inherits(x$Footnotes, "ObservedFootnotes")) {
+    stop("ObservedTableOne$Footnotes must inherit from 'ObservedFootnotes'.", call. = FALSE)
+  }
   if (!is.list(x$statistics)) {
     stop("ObservedTableOne$statistics must be a list.", call. = FALSE)
   }
@@ -210,6 +362,7 @@ print.ObservedTableOne <- function(x, ...) {
   cat(sprintf("categorical variables: %d\n", length(x$CatTable$variables %||% list())))
   cat(sprintf("columns: %d\n", length(x$columns %||% list())))
   cat(sprintf("statistics: %d\n", length(x$statistics %||% list())))
+  cat(sprintf("footnote links: %d\n", length(x$Footnotes$Links %||% list())))
   grouping_label <- pt1_character_or_null(x$MetaData$grouping_label %||% x$metadata$grouping_label)
   if (!is.null(grouping_label) && nzchar(grouping_label)) {
     cat(sprintf("grouping: %s\n", grouping_label))
@@ -450,7 +603,13 @@ build_observed_statistics <- function(parsed_table, columns) {
   )
 }
 
-build_observed_table_one <- function(table_definition, parsed_table, normalized_table = NULL, provenance = NULL) {
+build_observed_table_one <- function(
+  table_definition,
+  parsed_table,
+  normalized_table = NULL,
+  provenance = NULL,
+  footnotes = NULL
+) {
   table_definition_id <- pt1_character_or_null(table_definition$table_id)
   parsed_table_id <- pt1_character_or_null(parsed_table$table_id)
   if (!is.null(table_definition_id) && !is.null(parsed_table_id) && !identical(table_definition_id, parsed_table_id)) {
@@ -473,6 +632,7 @@ build_observed_table_one <- function(table_definition, parsed_table, normalized_
     columns = columns,
     continuous = continuous,
     categorical = categorical,
+    footnotes = footnotes,
     statistics = statistics,
     provenance = provenance %||% list(
       table_definition_table_id = table_definition_id,
@@ -490,11 +650,13 @@ build_observed_table_one_from_paper_dir <- function(paper_dir, table_number = 1L
   parsed_tables_path <- file.path(paper_dir, "parsed_tables.json")
   normalized_tables_path <- file.path(paper_dir, "normalized_tables.json")
   processing_status_path <- file.path(paper_dir, "table_processing_status.json")
+  paper_footnotes_path <- file.path(paper_dir, "paper_footnotes.json")
 
   table_definitions <- pt1_load_json_array(table_definitions_path)
   parsed_tables <- pt1_load_json_array(parsed_tables_path)
   normalized_tables <- pt1_read_optional_json(normalized_tables_path)
   processing_status_payload <- pt1_read_optional_json(processing_status_path)
+  paper_footnotes <- pt1_read_optional_json(paper_footnotes_path)
   normalized_table_list <- if (is.null(normalized_tables)) list() else pt1_unwrap_table_array(normalized_tables)
   processing_status_list <- if (is.null(processing_status_payload)) list() else pt1_unwrap_table_array(processing_status_payload)
   resolved_table_index <- if (!is.null(table_index)) {
@@ -536,11 +698,17 @@ build_observed_table_one_from_paper_dir <- function(paper_dir, table_number = 1L
       processing_status <- pt1_pick_table_by_index(processing_status_list, resolved_table_index)
     }
   }
+  footnotes <- build_observed_footnotes(
+    paper_footnotes = paper_footnotes,
+    table_id = pt1_character_or_null(table_definition$table_id) %||% pt1_character_or_null(parsed_table$table_id),
+    table_number = resolved_table_number
+  )
 
   build_observed_table_one(
     table_definition = table_definition,
     parsed_table = parsed_table,
     normalized_table = normalized_table,
+    footnotes = footnotes,
     provenance = list(
       paper_dir = paper_dir,
       table_number = resolved_table_number,
@@ -548,6 +716,7 @@ build_observed_table_one_from_paper_dir <- function(paper_dir, table_number = 1L
       parsed_table_source = parsed_tables_path,
       normalized_table_source = if (file.exists(normalized_tables_path)) normalized_tables_path else NULL,
       processing_status_source = if (file.exists(processing_status_path)) processing_status_path else NULL,
+      paper_footnotes_source = if (file.exists(paper_footnotes_path)) paper_footnotes_path else NULL,
       processing_status = pt1_character_or_null(processing_status$status),
       failure_stage = pt1_character_or_null(processing_status$failure_stage),
       failure_reason = pt1_character_or_null(processing_status$failure_reason),

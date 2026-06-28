@@ -27,6 +27,16 @@ from table1_parser.schemas.paper_variable_inventory import (
     VariableMentionRole,
 )
 from table1_parser.schemas.paper_table_inventory import PaperTableInventory, PaperTableRecord, TableCategory
+from table1_parser.schemas.paper_footnotes import (
+    FootnoteAnchor,
+    FootnoteDefinition,
+    FootnoteDefinitionCandidateLine,
+    FootnoteGlyphKind,
+    FootnoteLink,
+    FootnoteLinkStatus,
+    FootnoteSourceScope,
+    PaperFootnotes,
+)
 from table1_parser.schemas.paper_visual_references import PaperVisual, PaperVisualReference
 from table1_parser.schemas.parsed_table import (
     ParsedColumn,
@@ -50,10 +60,18 @@ from table1_parser.schemas.table_profile import TableProfile
 
 __all__ = [
     "ExtractedTable",
+    "FootnoteAnchor",
+    "FootnoteDefinition",
+    "FootnoteDefinitionCandidateLine",
+    "FootnoteGlyphKind",
+    "FootnoteLink",
+    "FootnoteLinkStatus",
+    "FootnoteSourceScope",
     "LLMVariablePlausibilityCallRecord",
     "LLMVariablePlausibilityMonitoringReport",
     "NormalizedTable",
     "PaperSection",
+    "PaperFootnotes",
     "PaperTableInventory",
     "PaperTableRecord",
     "PaperVariableInventory",

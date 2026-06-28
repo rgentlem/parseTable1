@@ -569,6 +569,79 @@ def _write_sample_paper_outputs(
             }
         ],
     }
+    paper_footnotes = {
+        "paper_id": "paper",
+        "source_pdf": "paper.pdf",
+        "anchors": [
+            {
+                "anchor_id": "anchor:cell:0:0",
+                "glyph_raw": "a",
+                "glyph_key": "letter:a",
+                "glyph_kind": "letter",
+                "glyph_codepoints": ["U+0061"],
+                "source_scope": "table_cell",
+                "source_id": "tbl-1:r0:c1",
+                "page_num": 5,
+                "confidence": 0.9,
+                "table_id": "tbl-1",
+                "visual_id": "paper_visual:table:1",
+                "row_idx": 0,
+                "col_idx": 1,
+                "source_role": "column_header",
+                "text_context": None,
+                "attached_to_text": "DKD",
+                "bbox": [10.0, 20.0, 12.0, 22.0],
+                "coordinate_frame": "page",
+                "source_artifact": "cell_text_annotations.json",
+                "notes": [],
+            }
+        ],
+        "definitions": [
+            {
+                "definition_id": "definition:0",
+                "glyph_raw": "a",
+                "glyph_key": "letter:a",
+                "glyph_kind": "letter",
+                "glyph_codepoints": ["U+0061"],
+                "source_scope": "table_note",
+                "source_id": "tbl-1:note:0",
+                "page_num": 5,
+                "raw_text": "a Fasting sample.",
+                "clean_text": "a Fasting sample.",
+                "definition_text": "Fasting sample.",
+                "confidence": 0.8,
+                "table_id": "tbl-1",
+                "visual_id": "paper_visual:table:1",
+                "bbox": [50.0, 700.0, 200.0, 712.0],
+                "line_index": 20,
+                "source_artifact": "pymupdf_page_text_lines",
+                "notes": [],
+            }
+        ],
+        "links": [
+            {
+                "link_id": "link:0",
+                "anchor_id": "anchor:cell:0:0",
+                "glyph_key": "letter:a",
+                "link_status": "resolved",
+                "candidate_definition_ids": ["definition:0"],
+                "link_basis": ["glyph_key_match", "same_table"],
+                "confidence": 0.8,
+                "definition_id": "definition:0",
+                "scope_distance": "same_table",
+                "notes": [],
+            }
+        ],
+        "metadata": {
+            "anchor_count": 1,
+            "definition_count": 1,
+            "link_count": 1,
+            "resolved_link_count": 1,
+            "ambiguous_link_count": 0,
+            "unresolved_link_count": 0,
+            "source_artifacts": ["cell_text_annotations.json", "pymupdf_page_text_lines"],
+        },
+    }
     table_context = {
         "table_id": "tbl-1",
         "table_index": 0,
@@ -662,6 +735,7 @@ def _write_sample_paper_outputs(
     _write_json(paper_dir / "paper_references.json", paper_references)
     _write_json(paper_dir / "paper_variable_inventory.json", paper_variable_inventory)
     _write_json(paper_dir / "paper_table_inventory.json", paper_table_inventory)
+    _write_json(paper_dir / "paper_footnotes.json", paper_footnotes)
     _write_json(context_dir / "table_0_context.json", table_context)
 
     if include_processing_status:
@@ -831,6 +905,41 @@ def test_r_inspection_loads_and_shows_paper_table_inventory(tmp_path) -> None:
     assert "non_table_artifact" in result.stdout
     assert "table_number" in result.stdout
     assert "NA" in result.stdout
+
+
+def test_r_inspection_loads_and_shows_paper_footnotes(tmp_path) -> None:
+    """The R helper should load paper footnote anchors, definitions, and links."""
+    if not _r_dependencies_available():
+        return
+
+    paper_dir = tmp_path / "paper_footnotes" / "papers" / "paper"
+    _write_sample_paper_outputs(paper_dir, include_variable_review=False, include_processing_status=True)
+
+    result = subprocess.run(
+        [
+            "Rscript",
+            "-e",
+            (
+                f'source("{R_SCRIPT}"); '
+                f'outputs <- load_paper_outputs("{paper_dir}"); '
+                "print(footnote_anchors_df(outputs, table_number = 1L)); "
+                "print(footnote_definitions_df(outputs, table_number = 1L)); "
+                "print(footnote_links_df(outputs, table_number = 1L)); "
+                f'show_paper_footnotes("{paper_dir}", table_number = 1L)'
+            ),
+        ],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "Paper footnotes for table_number=1" in result.stdout
+    assert "anchor:cell:0:0" in result.stdout
+    assert "definition:0" in result.stdout
+    assert "Fasting sample." in result.stdout
+    assert "resolved" in result.stdout
 
 
 def test_r_inspection_builds_named_paper_table_inventory_list(tmp_path) -> None:
@@ -1428,7 +1537,12 @@ def test_r_observed_table_one_from_paper_dir_includes_processing_status_provenan
                 'cat(x$provenance$failure_stage, "\\n"); '
                 'cat(x$provenance$failure_reason, "\\n"); '
                 'cat(paste(x$columns[[2]]$header_path, collapse = " > "), "\\n"); '
-                'cat(x$MetaData$column_header_spans[[1]]$label, "\\n")'
+                'cat(x$MetaData$column_header_spans[[1]]$label, "\\n"); '
+                'cat(inherits(x$Footnotes, "ObservedFootnotes"), "\\n"); '
+                'cat(length(x$Footnotes$Anchors), "\\n"); '
+                'cat(length(x$Footnotes$Links), "\\n"); '
+                'cat(x$Footnotes$Links[[1]]$link_status, "\\n"); '
+                'print(x$Footnotes)'
             ),
         ],
         capture_output=True,
@@ -1445,6 +1559,9 @@ def test_r_observed_table_one_from_paper_dir_includes_processing_status_provenan
     assert "failure_reason: no_values_after_parse" in result.stdout
     assert "DKD status > DKD" in result.stdout
     assert "DKD status" in result.stdout
+    assert "ObservedFootnotes" in result.stdout
+    assert "resolved" in result.stdout
+    assert "anchor:cell:0:0" in result.stdout
 
 
 def test_r_inspection_shows_continued_variable_integration(tmp_path) -> None:

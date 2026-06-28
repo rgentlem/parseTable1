@@ -27,6 +27,7 @@ paper_output_paths <- function(paper_dir) {
     extracted = file.path(paper_dir, "extracted_tables.json"),
     normalized = file.path(paper_dir, "normalized_tables.json"),
     cell_text_annotations = file.path(paper_dir, "cell_text_annotations.json"),
+    paper_footnotes = file.path(paper_dir, "paper_footnotes.json"),
     column_header_schemas = file.path(paper_dir, "column_header_schemas.json"),
     table1_continuation_groups = file.path(paper_dir, "table1_continuation_groups.json"),
     table_continuation_column_checks = file.path(paper_dir, "table_continuation_column_checks.json"),
@@ -205,6 +206,7 @@ load_paper_outputs <- function(paper_dir) {
     extracted_tables = read_json_file(paths$extracted),
     normalized_tables = read_json_file(paths$normalized),
     cell_text_annotations = read_json_file(paths$cell_text_annotations),
+    paper_footnotes = read_optional_json(paths$paper_footnotes) %||% list(),
     column_header_schemas = read_optional_json(paths$column_header_schemas) %||% list(),
     table1_continuation_groups = read_optional_json(paths$table1_continuation_groups),
     table_continuation_column_checks = read_optional_json(paths$table_continuation_column_checks),
@@ -579,6 +581,299 @@ cell_text_annotations_df <- function(outputs, table_number = NULL, table_index =
   do.call(rbind, rows)
 }
 
+paper_footnote_filter_context <- function(outputs, table_number = NULL, table_index = NULL) {
+  if (is.null(table_number) && is.null(table_index)) {
+    return(NULL)
+  }
+  resolved_table_index <- resolve_table_index(outputs, table_number = table_number, table_index = table_index)
+  list(
+    table_index = as.integer(resolved_table_index),
+    table_number = table_number_for_outputs(outputs, resolved_table_index),
+    table_id = table_id_for_outputs(outputs, resolved_table_index)
+  )
+}
+
+footnote_anchors_df <- function(outputs, table_number = NULL, table_index = NULL) {
+  empty_df <- data.frame(
+    table_number = integer(),
+    table_index = integer(),
+    table_id = character(),
+    anchor_id = character(),
+    glyph_raw = character(),
+    glyph_key = character(),
+    glyph_kind = character(),
+    source_scope = character(),
+    source_role = character(),
+    source_id = character(),
+    visual_id = character(),
+    page_num = integer(),
+    row_idx = integer(),
+    col_idx = integer(),
+    attached_to_text = character(),
+    text_context = character(),
+    confidence = numeric(),
+    bbox = character(),
+    coordinate_frame = character(),
+    source_artifact = character(),
+    notes = character(),
+    stringsAsFactors = FALSE
+  )
+
+  context <- paper_footnote_filter_context(outputs, table_number = table_number, table_index = table_index)
+  anchors <- outputs$paper_footnotes$anchors %||% list()
+  if (!is.null(context)) {
+    anchors <- Filter(function(anchor) identical(as.character(anchor$table_id %||% ""), context$table_id), anchors)
+  }
+
+  rows <- lapply(anchors, function(anchor) {
+    table_id <- as.character(anchor$table_id %||% "")
+    row_table_index <- table_index_for_table_id(outputs, table_id)
+    row_table_number <- if (is.na(row_table_index)) NA_integer_ else table_number_for_outputs(outputs, row_table_index)
+    bbox_values <- unlist(anchor$bbox %||% list(), use.names = FALSE)
+    data.frame(
+      table_number = row_table_number,
+      table_index = as.integer(row_table_index),
+      table_id = table_id,
+      anchor_id = as.character(anchor$anchor_id %||% ""),
+      glyph_raw = as.character(anchor$glyph_raw %||% ""),
+      glyph_key = as.character(anchor$glyph_key %||% ""),
+      glyph_kind = as.character(anchor$glyph_kind %||% ""),
+      source_scope = as.character(anchor$source_scope %||% ""),
+      source_role = as.character(anchor$source_role %||% ""),
+      source_id = as.character(anchor$source_id %||% ""),
+      visual_id = as.character(anchor$visual_id %||% ""),
+      page_num = as.integer(anchor$page_num %||% NA_integer_),
+      row_idx = as.integer(anchor$row_idx %||% NA_integer_),
+      col_idx = as.integer(anchor$col_idx %||% NA_integer_),
+      attached_to_text = as.character(anchor$attached_to_text %||% ""),
+      text_context = as.character(anchor$text_context %||% ""),
+      confidence = as.numeric(anchor$confidence %||% NA_real_),
+      bbox = paste(as.character(bbox_values), collapse = ","),
+      coordinate_frame = as.character(anchor$coordinate_frame %||% ""),
+      source_artifact = as.character(anchor$source_artifact %||% ""),
+      notes = paste(character_vector(anchor$notes), collapse = " | "),
+      stringsAsFactors = FALSE
+    )
+  })
+
+  if (length(rows) == 0L) {
+    return(empty_df)
+  }
+  do.call(rbind, rows)
+}
+
+footnote_definitions_df <- function(outputs, table_number = NULL, table_index = NULL) {
+  empty_df <- data.frame(
+    table_number = integer(),
+    table_index = integer(),
+    table_id = character(),
+    definition_id = character(),
+    glyph_raw = character(),
+    glyph_key = character(),
+    glyph_kind = character(),
+    source_scope = character(),
+    source_id = character(),
+    visual_id = character(),
+    page_num = integer(),
+    raw_text = character(),
+    clean_text = character(),
+    definition_text = character(),
+    confidence = numeric(),
+    bbox = character(),
+    line_index = integer(),
+    source_artifact = character(),
+    notes = character(),
+    stringsAsFactors = FALSE
+  )
+
+  context <- paper_footnote_filter_context(outputs, table_number = table_number, table_index = table_index)
+  definitions <- outputs$paper_footnotes$definitions %||% list()
+  if (!is.null(context)) {
+    anchor_ids <- vapply(
+      Filter(
+        function(anchor) identical(as.character(anchor$table_id %||% ""), context$table_id),
+        outputs$paper_footnotes$anchors %||% list()
+      ),
+      function(anchor) as.character(anchor$anchor_id %||% ""),
+      character(1)
+    )
+    linked_definition_ids <- unique(unlist(lapply(outputs$paper_footnotes$links %||% list(), function(link) {
+      if (!(as.character(link$anchor_id %||% "") %in% anchor_ids)) {
+        return(character())
+      }
+      c(as.character(link$definition_id %||% ""), character_vector(link$candidate_definition_ids))
+    }), use.names = FALSE))
+    linked_definition_ids <- linked_definition_ids[nzchar(linked_definition_ids)]
+    definitions <- Filter(function(definition) {
+      identical(as.character(definition$table_id %||% ""), context$table_id) ||
+        as.character(definition$definition_id %||% "") %in% linked_definition_ids
+    }, definitions)
+  }
+
+  rows <- lapply(definitions, function(definition) {
+    table_id <- as.character(definition$table_id %||% "")
+    row_table_index <- table_index_for_table_id(outputs, table_id)
+    row_table_number <- if (is.na(row_table_index)) NA_integer_ else table_number_for_outputs(outputs, row_table_index)
+    bbox_values <- unlist(definition$bbox %||% list(), use.names = FALSE)
+    data.frame(
+      table_number = row_table_number,
+      table_index = as.integer(row_table_index),
+      table_id = table_id,
+      definition_id = as.character(definition$definition_id %||% ""),
+      glyph_raw = as.character(definition$glyph_raw %||% ""),
+      glyph_key = as.character(definition$glyph_key %||% ""),
+      glyph_kind = as.character(definition$glyph_kind %||% ""),
+      source_scope = as.character(definition$source_scope %||% ""),
+      source_id = as.character(definition$source_id %||% ""),
+      visual_id = as.character(definition$visual_id %||% ""),
+      page_num = as.integer(definition$page_num %||% NA_integer_),
+      raw_text = as.character(definition$raw_text %||% ""),
+      clean_text = as.character(definition$clean_text %||% ""),
+      definition_text = as.character(definition$definition_text %||% ""),
+      confidence = as.numeric(definition$confidence %||% NA_real_),
+      bbox = paste(as.character(bbox_values), collapse = ","),
+      line_index = as.integer(definition$line_index %||% NA_integer_),
+      source_artifact = as.character(definition$source_artifact %||% ""),
+      notes = paste(character_vector(definition$notes), collapse = " | "),
+      stringsAsFactors = FALSE
+    )
+  })
+
+  if (length(rows) == 0L) {
+    return(empty_df)
+  }
+  do.call(rbind, rows)
+}
+
+footnote_links_df <- function(outputs, table_number = NULL, table_index = NULL) {
+  empty_df <- data.frame(
+    table_number = integer(),
+    table_index = integer(),
+    table_id = character(),
+    link_id = character(),
+    anchor_id = character(),
+    definition_id = character(),
+    glyph_key = character(),
+    link_status = character(),
+    candidate_definition_ids = character(),
+    link_basis = character(),
+    scope_distance = character(),
+    confidence = numeric(),
+    notes = character(),
+    stringsAsFactors = FALSE
+  )
+
+  context <- paper_footnote_filter_context(outputs, table_number = table_number, table_index = table_index)
+  anchors <- outputs$paper_footnotes$anchors %||% list()
+  anchor_table_ids <- setNames(
+    vapply(anchors, function(anchor) as.character(anchor$table_id %||% ""), character(1)),
+    vapply(anchors, function(anchor) as.character(anchor$anchor_id %||% ""), character(1))
+  )
+  links <- outputs$paper_footnotes$links %||% list()
+  if (!is.null(context)) {
+    links <- Filter(function(link) {
+      anchor_table_id <- anchor_table_ids[as.character(link$anchor_id %||% "")]
+      !is.na(anchor_table_id) && identical(unname(anchor_table_id), context$table_id)
+    }, links)
+  }
+
+  rows <- lapply(links, function(link) {
+    anchor_table_id <- anchor_table_ids[as.character(link$anchor_id %||% "")]
+    table_id <- if (is.na(anchor_table_id)) "" else as.character(unname(anchor_table_id))
+    row_table_index <- table_index_for_table_id(outputs, table_id)
+    row_table_number <- if (is.na(row_table_index)) NA_integer_ else table_number_for_outputs(outputs, row_table_index)
+    data.frame(
+      table_number = row_table_number,
+      table_index = as.integer(row_table_index),
+      table_id = table_id,
+      link_id = as.character(link$link_id %||% ""),
+      anchor_id = as.character(link$anchor_id %||% ""),
+      definition_id = as.character(link$definition_id %||% ""),
+      glyph_key = as.character(link$glyph_key %||% ""),
+      link_status = as.character(link$link_status %||% ""),
+      candidate_definition_ids = paste(character_vector(link$candidate_definition_ids), collapse = " | "),
+      link_basis = paste(character_vector(link$link_basis), collapse = " | "),
+      scope_distance = as.character(link$scope_distance %||% ""),
+      confidence = as.numeric(link$confidence %||% NA_real_),
+      notes = paste(character_vector(link$notes), collapse = " | "),
+      stringsAsFactors = FALSE
+    )
+  })
+
+  if (length(rows) == 0L) {
+    return(empty_df)
+  }
+  do.call(rbind, rows)
+}
+
+show_paper_footnotes <- function(paper_dir, table_number = NULL, table_index = NULL) {
+  outputs <- load_paper_outputs(paper_dir)
+  context <- paper_footnote_filter_context(outputs, table_number = table_number, table_index = table_index)
+  anchors <- footnote_anchors_df(outputs, table_number = table_number, table_index = table_index)
+  definitions <- footnote_definitions_df(outputs, table_number = table_number, table_index = table_index)
+  links <- footnote_links_df(outputs, table_number = table_number, table_index = table_index)
+  metadata <- outputs$paper_footnotes$metadata %||% list()
+
+  if (is.null(context)) {
+    cat("Paper footnotes\n")
+  } else if (is.na(context$table_number)) {
+    cat("Paper footnotes for unnumbered table\n")
+  } else {
+    cat(sprintf("Paper footnotes for table_number=%s\n", as.integer(context$table_number)))
+  }
+  cat(sprintf("paper_id: %s\n", as.character(outputs$paper_footnotes$paper_id %||% "")))
+  if (!is.null(context)) {
+    cat(sprintf("table_id: %s\n", context$table_id))
+  }
+  cat(sprintf("anchor_count: %s\n", nrow(anchors)))
+  cat(sprintf("definition_count: %s\n", nrow(definitions)))
+  cat(sprintf("link_count: %s\n", nrow(links)))
+  cat(sprintf("resolved_link_count: %s\n", sum(links$link_status == "resolved", na.rm = TRUE)))
+  cat(sprintf("ambiguous_link_count: %s\n", sum(links$link_status == "ambiguous", na.rm = TRUE)))
+  cat(sprintf("unresolved_link_count: %s\n", sum(links$link_status == "unresolved", na.rm = TRUE)))
+
+  sections <- list(
+    Anchors = anchors[, c(
+      "anchor_id",
+      "glyph_raw",
+      "glyph_key",
+      "source_scope",
+      "source_role",
+      "row_idx",
+      "col_idx",
+      "attached_to_text",
+      "confidence"
+    ), drop = FALSE],
+    Definitions = definitions[, c(
+      "definition_id",
+      "glyph_raw",
+      "glyph_key",
+      "source_scope",
+      "definition_text",
+      "confidence"
+    ), drop = FALSE],
+    Links = links[, c(
+      "link_id",
+      "anchor_id",
+      "definition_id",
+      "glyph_key",
+      "link_status",
+      "scope_distance",
+      "confidence"
+    ), drop = FALSE]
+  )
+  for (section_name in names(sections)) {
+    cat(sprintf("\n%s\n", section_name))
+    section_df <- sections[[section_name]]
+    if (nrow(section_df) == 0L) {
+      cat("[No rows]\n")
+    } else {
+      print(section_df, row.names = FALSE, right = FALSE)
+    }
+  }
+  invisible(list(anchors = anchors, definitions = definitions, links = links, metadata = metadata))
+}
+
 show_column_header_tree <- function(paper_dir, table_index = 0L, table_number = NULL) {
   outputs <- load_paper_outputs(paper_dir)
   if (!is.null(table_number)) {
@@ -654,6 +949,35 @@ table_number_for_outputs <- function(outputs, table_index) {
       (outputs$parsed_tables %||% list())[[idx]] %||%
       list()
   )
+}
+
+table_id_for_outputs <- function(outputs, table_index) {
+  idx <- as.integer(table_index) + 1L
+  table <- (outputs$normalized_tables %||% list())[[idx]] %||%
+    (outputs$extracted_tables %||% list())[[idx]] %||%
+    (outputs$table_definitions %||% list())[[idx]] %||%
+    (outputs$parsed_tables %||% list())[[idx]] %||%
+    list()
+  as.character(table$table_id %||% "")
+}
+
+table_index_for_table_id <- function(outputs, table_id) {
+  table_id <- as.character(table_id %||% "")
+  if (!nzchar(table_id)) {
+    return(NA_integer_)
+  }
+  table_count <- max(
+    length(outputs$normalized_tables %||% list()),
+    length(outputs$extracted_tables %||% list()),
+    length(outputs$table_definitions %||% list()),
+    length(outputs$parsed_tables %||% list())
+  )
+  for (table_index in seq_len(table_count) - 1L) {
+    if (identical(table_id_for_outputs(outputs, table_index), table_id)) {
+      return(as.integer(table_index))
+    }
+  }
+  NA_integer_
 }
 
 table_index_by_number <- function(outputs, table_number) {
