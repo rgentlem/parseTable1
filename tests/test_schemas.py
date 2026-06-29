@@ -33,6 +33,7 @@ from table1_parser.schemas import (
     PaperVariableInventory,
     PaperVisual,
     PaperVisualReference,
+    ParsedCellValue,
     ParsedColumn,
     ParsedLevel,
     ParsedTable,
@@ -47,6 +48,7 @@ from table1_parser.schemas import (
     TableProfile,
     VariableCandidate,
     VariableMention,
+    ValueComponent,
     ValueRecord,
 )
 
@@ -134,15 +136,21 @@ def test_parsed_table_creation_and_serialization() -> None:
         ],
         values=[
             ValueRecord(
+                source_table_index=0,
+                source_table_id="tbl-1",
                 row_idx=2,
                 col_idx=1,
                 variable_name="sex",
+                variable_label="Sex",
                 level_label="Male",
                 column_name="overall",
+                column_label="Overall",
                 raw_value="34 (45%)",
-                value_type="count",
-                parsed_numeric=34.0,
-                parsed_secondary_numeric=45.0,
+                parse_pattern="count_parenthesized_percent",
+                components=[
+                    ValueComponent(kind="count", value=34.0, raw_fragment="34", relation="=", confidence=0.96),
+                    ValueComponent(kind="percent", value=45.0, raw_fragment="45%", relation="=", confidence=0.96),
+                ],
                 confidence=0.92,
             )
         ],
@@ -154,7 +162,58 @@ def test_parsed_table_creation_and_serialization() -> None:
 
     assert dumped["variables"][0]["levels"][0]["label"] == "Male"
     assert dumped["columns"][0]["inferred_role"] == "overall"
-    assert dumped["values"][0]["parsed_secondary_numeric"] == 45.0
+    assert dumped["values"][0]["source_table_id"] == "tbl-1"
+    assert dumped["values"][0]["parse_pattern"] == "count_parenthesized_percent"
+    assert dumped["values"][0]["components"][0]["kind"] == "count"
+    assert dumped["values"][0]["components"][1]["kind"] == "percent"
+    assert "parsed_numeric" not in dumped["values"][0]
+    assert "parsed_secondary_numeric" not in dumped["values"][0]
+
+
+def test_parsed_cell_value_components_creation_and_serialization() -> None:
+    """Parsed cell value components should serialize without semantic labels."""
+    parsed_value = ParsedCellValue(
+        source_table_index=0,
+        source_table_id="tbl-1",
+        row_idx=3,
+        col_idx=2,
+        raw_value="34 (45%)",
+        parse_pattern="count_parenthesized_percent",
+        components=[
+            ValueComponent(kind="count", value=34.0, raw_fragment="34", relation="=", confidence=0.96),
+            ValueComponent(kind="percent", value=45.0, raw_fragment="45%", relation="=", confidence=0.96),
+        ],
+        confidence=0.95,
+        notes=["source_cell_value"],
+    )
+
+    dumped = parsed_value.model_dump(mode="json")
+
+    assert dumped["source_table_index"] == 0
+    assert dumped["source_table_id"] == "tbl-1"
+    assert dumped["row_idx"] == 3
+    assert dumped["col_idx"] == 2
+    assert dumped["raw_value"] == "34 (45%)"
+    assert dumped["components"][0]["kind"] == "count"
+    assert dumped["components"][1]["kind"] == "percent"
+    assert "variable_name" not in dumped
+    assert "column_name" not in dumped
+
+
+def test_parsed_cell_value_component_field_validation() -> None:
+    """Parsed cell value components should enforce controlled kinds and confidence bounds."""
+    with pytest.raises(ValidationError):
+        ValueComponent(kind="count_percent", value=34.0)
+
+    with pytest.raises(ValidationError):
+        ParsedCellValue(
+            source_table_index=-1,
+            source_table_id="tbl-1",
+            row_idx=0,
+            col_idx=0,
+            raw_value="34 (45%)",
+            components=[ValueComponent(kind="count", value=34.0)],
+        )
 
 
 def test_table_definition_creation_and_serialization() -> None:

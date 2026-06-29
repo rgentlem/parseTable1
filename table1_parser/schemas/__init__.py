@@ -45,6 +45,12 @@ from table1_parser.schemas.paper_page_furniture import (
     PaperPageFurniture,
 )
 from table1_parser.schemas.paper_visual_references import PaperVisual, PaperVisualReference
+from table1_parser.schemas.parsed_cell_value import (
+    ParsedCellValue,
+    ValueComponent,
+    ValueComponentKind,
+    ValueRelation,
+)
 from table1_parser.schemas.parsed_table import (
     ParsedColumn,
     ParsedLevel,
@@ -103,6 +109,7 @@ __all__ = [
     "DefinedVariable",
     "PaperVisual",
     "PaperVisualReference",
+    "ParsedCellValue",
     "ParsedColumn",
     "ParsedLevel",
     "ParsedTable",
@@ -121,6 +128,9 @@ __all__ = [
     "VariableCandidate",
     "VariableMention",
     "VariableMentionRole",
+    "ValueComponent",
+    "ValueComponentKind",
     "ValueRecord",
+    "ValueRelation",
     "TableProfile",
 ]

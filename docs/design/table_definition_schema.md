@@ -135,7 +135,7 @@ This shape supports the main downstream task:
 It also stays cleanly separate from `ParsedTable`, which should still own:
 
 - `ValueRecord`
-- parsed numeric values
+- semantic parsed value components
 - long-format cell-level output
 
 ## Suggested File Location

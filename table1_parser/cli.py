@@ -42,7 +42,12 @@ from table1_parser.heuristics.variable_grouper import group_variable_blocks
 from table1_parser.llm import LLMConfigurationError, build_llm_client
 from table1_parser.llm.variable_plausibility_parser import LLMVariablePlausibilityTableReviewParser
 from table1_parser.normalize import normalize_extracted_tables, normalized_tables_to_payload, write_normalized_tables
-from table1_parser.parse import build_parsed_tables, parsed_tables_to_payload
+from table1_parser.parse import (
+    build_parsed_cell_values,
+    build_parsed_tables,
+    parsed_cell_values_to_payload,
+    parsed_tables_to_payload,
+)
 from table1_parser.paper_footnotes import (
     build_paper_footnote_anchor_inventory,
     build_paper_footnote_definition_candidates,
@@ -66,6 +71,7 @@ from table1_parser.schemas import (
     PaperVariableInventory,
     PaperVisual,
     PaperVisualReference,
+    ParsedCellValue,
     ParsedTable,
     TableContext,
     TableDefinition,
@@ -97,6 +103,7 @@ class PaperParseArtifacts:
     table_profiles: list[TableProfile]
     table_definitions: list[TableDefinition]
     continued_variable_integrations: list[TableDefinition]
+    parsed_cell_values: list[ParsedCellValue]
     parsed_tables: list[ParsedTable]
     parse_quality_reports: list[ParseQualityReport]
     cell_text_annotations: list[CellTextAnnotationTable]
@@ -404,6 +411,18 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     paper_page_furniture = build_paper_page_furniture(pdf_path, paper_id=Path(pdf_path).stem)
     normalized_tables = normalize_extracted_tables(extracted_tables)
     column_header_schemas = build_column_header_schemas(normalized_tables, extracted_tables)
+    value_column_indices_by_table_id = {
+        schema.table_id: {
+            leaf.col_idx
+            for leaf in schema.leaves
+            if leaf.is_value_column and not leaf.is_row_label_column
+        }
+        for schema in column_header_schemas
+    }
+    parsed_cell_values = build_parsed_cell_values(
+        normalized_tables,
+        value_column_indices_by_table_id=value_column_indices_by_table_id,
+    )
     paper_footnotes = build_paper_footnote_anchor_inventory(
         paper_id=Path(pdf_path).stem,
         source_pdf=pdf_path,
@@ -471,7 +490,11 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         table_definitions,
         table1_continuation_groups,
     )
-    parsed_tables = build_parsed_tables(normalized_tables, table_definitions)
+    parsed_tables = build_parsed_tables(
+        normalized_tables,
+        table_definitions,
+        parsed_cell_values=parsed_cell_values,
+    )
     paper_markdown = extract_paper_markdown(pdf_path)
     paper_sections = parse_markdown_sections(paper_markdown)
     paper_stem = Path(pdf_path).stem
@@ -490,6 +513,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         table_profiles=table_profiles,
         table_definitions=table_definitions,
         continued_variable_integrations=continued_variable_integrations,
+        parsed_cell_values=parsed_cell_values,
         parsed_tables=parsed_tables,
         parse_quality_reports=parse_quality_reports,
         cell_text_annotations=cell_text_annotations,
@@ -560,6 +584,7 @@ def _write_parse_outputs(
     table_profile_output_path = paper_dir / "table_profiles.json"
     table_definition_output_path = paper_dir / "table_definitions.json"
     continued_variable_integration_output_path = paper_dir / "continued_variable_integrations.json"
+    parsed_cell_values_output_path = paper_dir / "parsed_cell_values.json"
     parsed_output_path = paper_dir / "parsed_tables.json"
     processing_status_output_path = paper_dir / "table_processing_status.json"
     parse_quality_reports_output_path = paper_dir / "parse_quality_reports.json"
@@ -630,6 +655,10 @@ def _write_parse_outputs(
             indent=2,
         )
         + "\n",
+        encoding="utf-8",
+    )
+    parsed_cell_values_output_path.write_text(
+        json.dumps(parsed_cell_values_to_payload(artifacts.parsed_cell_values), indent=2) + "\n",
         encoding="utf-8",
     )
     parsed_output_path.write_text(

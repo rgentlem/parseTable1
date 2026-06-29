@@ -138,8 +138,9 @@ Recommended top-level structure:
 
 This should be implemented as an S3 object backed by a named list.
 `ContTable`, `CatTable`, `Footnotes`, and `MetaData` should be the
-tableone-style access surface. The lower-case fields may remain as
-compatibility aliases while the object matures.
+tableone-style access surface if this object remains useful. Lower-case or
+scalar compatibility aliases should not be required; the object should consume
+canonical components directly.
 
 ## `metadata`
 
@@ -257,15 +258,13 @@ Each continuous value entry should preserve:
 - `col_idx`
 - `raw_value`
 - `summary_style_hint`
-- parsed numeric slots supported by the current JSON
+- typed `components` from the semantic value layer
 - `confidence`
 
-At present, the parser only guarantees two numeric slots:
-
-- `parsed_numeric`
-- `parsed_secondary_numeric`
-
-This is enough for `mean (SD)` and many `n (%)`-style cells, but not enough for full `median`, `p25`, `p75`, `min`, `max` recovery. The R component should preserve the raw value and tolerate incomplete numeric detail.
+R code should consume `components` directly so `mean/sd`, `estimate/se`,
+`median/q1/q3`, p-values with relations, missing values, and free text can all
+share one structured representation. It should not require scalar compatibility
+aliases from the parser.
 
 ## `categorical`
 
@@ -284,8 +283,8 @@ Each categorical value entry should preserve:
 - `column_name`
 - `col_idx`
 - `raw_value`
-- parsed count when available
-- parsed percent when available
+- `count` component when available
+- `percent` component when available
 - `confidence`
 
 No unprinted levels should be invented.

@@ -6,10 +6,11 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from table1_parser.schemas.parsed_cell_value import ValueComponent
+
 
 VariableType = Literal["continuous", "categorical", "binary", "unknown"]
 ColumnRole = Literal["group", "overall", "p_value", "statistic", "unknown"]
-ValueType = Literal["count", "percent", "mean_sd", "median_iqr", "text", "unknown"]
 
 
 class ParsedLevel(BaseModel):
@@ -47,18 +48,27 @@ class ParsedColumn(BaseModel):
 
 
 class ValueRecord(BaseModel):
-    """A normalized long-format value extracted from a table cell."""
+    """A semantic value record joined to row/column meaning and source components."""
 
+    source_table_index: int | None = Field(default=None, ge=0)
+    source_table_id: str | None = None
     row_idx: int = Field(ge=0)
     col_idx: int = Field(ge=0)
     variable_name: str
+    variable_label: str | None = None
     level_label: str | None = None
     column_name: str
+    column_label: str | None = None
+    header_leaf_id: str | None = None
+    header_leaf_label: str | None = None
+    header_group_ids: list[str] = Field(default_factory=list)
+    header_group_labels: list[str] = Field(default_factory=list)
+    header_path: list[str] = Field(default_factory=list)
     raw_value: str
-    value_type: ValueType = "unknown"
-    parsed_numeric: float | None = None
-    parsed_secondary_numeric: float | None = None
+    parse_pattern: str | None = None
+    components: list[ValueComponent] = Field(default_factory=list)
     confidence: float | None = Field(default=None, ge=0.0, le=1.0)
+    notes: list[str] = Field(default_factory=list)
 
 
 class ParsedTable(BaseModel):

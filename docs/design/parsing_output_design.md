@@ -80,6 +80,7 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Paper table inventory | `PaperTableInventory`, `PaperTableRecord` | Written now as `paper_table_inventory.json` by `parse` | Persist one deterministic taxonomy prediction per table-like object |
 | Table definition | `TableDefinition` | Written now as `table_definitions.json` by `parse` | Persist value-free row-variable, level, and column semantics |
 | Continued variable integration | `TableDefinition` | Written now as `continued_variable_integrations.json` by `parse` | Persist integrated variable definitions for compatible continued Table 1 fragments, using existing `DefinedVariable`/`DefinedLevel` records plus integration and tableone-style metadata |
+| Parsed source-cell values | `ParsedCellValue` | Written now as `parsed_cell_values.json` by `parse` | Persist source-grid cell value components keyed by table and row/column indices before semantic row/column value joins |
 | Paper context | `PaperSection`, `PaperVisual`, `PaperVisualReference`, `TableContext` | Written now as `paper_markdown.md`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, and `table_contexts/*.json` by `parse` | Persist markdown sections, actual in-paper visual objects, anchored table/figure references, and per-table retrieval bundles, with only conservative glyph repair in the markdown text |
 | Paper variable inventory | `PaperVariableInventory`, `VariableMention`, `VariableCandidate` | Written now as `paper_variable_inventory.json` by `parse` | Persist the paper-level candidate variable reference list with explicit text/table provenance |
 | Variable-plausibility LLM review | `LLMVariablePlausibilityTableReview` | Written now as `table_variable_plausibility_llm.json` by `review-variable-plausibility` when LLM config is available | Persist table-local QA scores for variable label/type/level plausibility without rewriting the deterministic definition |
@@ -753,7 +754,85 @@ Design intent:
 - preserve stable variable identity fields so disagreements can be audited safely
 - keep the prompt payload compact; the saved input wrapper currently uses short payload keys such as `table` and `vars`
 
-## 8. `ParsedTable` JSON
+## 8. `parsed_cell_values.json`
+
+Current status:
+
+- canonical component schema exists now
+- written by the `parse` CLI command as `parsed_cell_values.json`
+
+This artifact records parsed source-cell value components before row and column
+semantics are joined onto those values. It is intentionally index-keyed rather
+than semantic-label-keyed.
+
+Current CLI path:
+
+```text
+outputs/papers/<paper_stem>/parsed_cell_values.json
+```
+
+This file is written by:
+
+- `table1-parser parse`
+
+Top-level record design components:
+
+- `source_table_index`
+- `source_table_id`
+- `row_idx`
+- `col_idx`
+- `raw_value`
+- `parse_pattern`
+- `components`
+- `confidence`
+- `notes`
+
+`components` design components:
+
+- `kind`
+- `value`
+- `raw_fragment`
+- `relation`
+- `confidence`
+- `notes`
+
+Initial component kinds include:
+
+- `count`
+- `percent`
+- `mean`
+- `sd`
+- `median`
+- `q1`
+- `q3`
+- `min`
+- `max`
+- `estimate`
+- `se`
+- `p_value`
+- `missing`
+- `text`
+- `unknown`
+
+Design rules:
+
+- preserve `raw_value` exactly as the source normalized cell text
+- use parser-facing cleaned text only for matching and numeric extraction
+- do not duplicate variable names, level labels, column names, or header paths
+  in this artifact
+- select source cells from normalized body rows and schema-derived value columns
+  when `ColumnHeaderSchema` is available
+- keep ambiguous shapes such as `x (y)` conservative until later semantic
+  context can distinguish `mean` plus `sd` from `estimate` plus `se`
+- rely on the Pydantic schema for field shape and controlled component kinds;
+  do not introduce a separate validation-report artifact until known failure
+  modes justify it
+
+This artifact is a source component layer. `ParsedTable.values` is the joined
+semantic view over these components and continues to be written to
+`parsed_tables.json`.
+
+## 9. `ParsedTable` JSON
 
 Current status:
 
@@ -803,38 +882,60 @@ Top-level design components:
 
 `values` design components:
 
+- `source_table_index`
+- `source_table_id`
 - `row_idx`
 - `col_idx`
 - `variable_name`
+- `variable_label`
 - `level_label`
 - `column_name`
+- `column_label`
+- `header_leaf_id`
+- `header_leaf_label`
+- `header_group_ids`
+- `header_group_labels`
+- `header_path`
 - `raw_value`
-- `value_type`
-- `parsed_numeric`
-- `parsed_secondary_numeric`
+- `parse_pattern`
+- `components`
 - `confidence`
+- `notes`
+
+The canonical value payload is `components`. Each component preserves a typed
+piece of the printed value such as `count`, `percent`, `mean`, `sd`,
+`estimate`, `se`, `median`, `q1`, `q3`, `p_value`, `missing`, `text`, or
+`unknown`. The semantic value layer may refine ambiguous source components
+using `TableDefinition` context; for example, a source `estimate` plus
+ambiguous uncertainty component can become semantic `mean` plus `sd` when the
+variable has a `mean_sd` summary hint.
+
+No scalar compatibility aliases are included in the canonical value record.
+Consumers should read `components` directly rather than expecting fields such
+as `value_type`, `parsed_numeric`, or `parsed_secondary_numeric`.
 
 Why `values` are long-format:
 
 - one row per table cell is easier to validate
 - it supports downstream filtering and export
-- it separates semantic row/column interpretation from numeric parsing
+- it joins semantic row/column interpretation to source-cell component parsing
 - it preserves the original `raw_value`
 
 Design note for future value parsing:
 
 - parser-facing symbol canonicalization should be applied internally before regex matching and numeric parsing
 - canonicalization must not replace the stored `raw_value`
-- current parser-facing matching treats a spaced numeric `6` between two numeric tokens as a PDF-extracted plus/minus glyph for `mean_sd` cells, while preserving the original `raw_value`
+- current parser-facing matching treats a spaced numeric `6` between two numeric tokens as a PDF-extracted plus/minus glyph for uncertainty components, while preserving the original `raw_value`
 - for Table 1 categorical `n (%)` cells, the intended first interpretation is:
-  - `parsed_numeric` = count
-  - `parsed_secondary_numeric` = percent
+  - component `count` = count
+  - component `percent` = percent
 - count-percent consistency checks should be soft heuristics, not hard validity requirements
+- count-percent consistency checks should operate on `components`
 - the overall-column 100% rule should be limited to columns that are truly `overall` or clearly equivalent, while subgroup columns may legitimately sum to their share of the full study population instead of 100
 
 This is the richest JSON design in the repo because it joins variable semantics, column semantics, and cell-level values into one validated representation.
 
-## 9. `table_processing_status.json`
+## 11. `table_processing_status.json`
 
 Current status:
 
@@ -877,7 +978,7 @@ Design intent:
 - make empty descriptive-table parses explicit failures rather than silent success
 - treat broad newline-stacked value cells as rescued when `metadata.column_repairs.extra_wide_value_column` successfully expands them into visual value columns
 
-## 10. `parse_quality_reports.json`
+## 12. `parse_quality_reports.json`
 
 Current status:
 
@@ -914,7 +1015,7 @@ Design intent:
 - support R-side inspection and corpus review before making higher-risk changes such as consolidated Table 1 parsing
 - treat representative real-paper parsing checks as an important complement to unit tests, because deterministic table heuristics often fail on structural variants that synthetic tests do not cover
 
-## 11. `paper_table_inventory.json`
+## 13. `paper_table_inventory.json`
 
 Current status:
 
@@ -971,7 +1072,7 @@ Design intent:
 - treat `table_category` as the broader concept that should drive parser-route selection once it is available; current `table_family` output is an earlier provisional route signal, not an independent semantic category
 - keep this artifact deterministic and computable so R can expose it as a data frame or print method later
 
-## 12. `paper_page_furniture.json`
+## 14. `paper_page_furniture.json`
 
 Current status:
 
@@ -1040,7 +1141,6 @@ Current canonical examples:
 
 - `ParsedVariable.variable_type`: `continuous`, `categorical`, `binary`, `unknown`
 - `ParsedColumn.inferred_role`: `group`, `overall`, `p_value`, `statistic`, `unknown`
-- `ValueRecord.value_type`: `count`, `percent`, `mean_sd`, `median_iqr`, `text`, `unknown`
 - `RowView.likely_role`: `header`, `variable`, `level`, `statistic`, `note`, `unknown`
 
 There is one important stage-to-stage mismatch in the current repository:

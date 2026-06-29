@@ -227,9 +227,10 @@ joining:
 This avoids reparsing display strings and avoids forcing a continuation fragment
 to know its parent variable before the continuation boundary is interpreted.
 
-## TableOne-Style Projection
+## Possible TableOne-Style Projection
 
-A tableone-style R object should be a projection over:
+If later usage shows that an R inspection object is needed, it should be a
+projection over:
 
 - `ColumnHeaderSchema` / `TableDefinition.column_definition`
 - `TableDefinition.variables`
@@ -237,7 +238,9 @@ A tableone-style R object should be a projection over:
 - continuation row provenance when present
 
 The value artifact should not store display labels. R code can build labelled
-matrices or data frames by joining indices to the semantic artifacts:
+matrices or data frames by joining indices to the semantic artifacts, but helper
+functions should be added only for repeated review workflows rather than
+hypothetical display formats. Possible views include:
 
 - counts matrix from `kind == "count"`
 - percents matrix from `kind == "percent"`
@@ -245,38 +248,39 @@ matrices or data frames by joining indices to the semantic artifacts:
 - uncertainty matrix from `kind == "se"`, `kind == "sd"`, `q1`, `q3`
 - p-value/statistic columns from `kind == "p_value"` or other statistic kinds
 
-The display layer can then render cells such as `34 (45%)` or `47.2 (2.1)` from
+Any display layer can render cells such as `34 (45%)` or `47.2 (2.1)` from
 components and metadata without treating that rendered string as the stored
 truth.
 
-## Validation Rules
+## Later Review Hooks
 
-For each `ParsedCellValue`:
+The component layer is intended to support later paper-review diagnostics, such
+as column-level checks for suspicious mixtures, unknown components, missing
+values, or likely typographical errors. Those diagnostics should be added only
+when real review work identifies concrete failure modes. They should consume
+`parsed_cell_values.json`, `ColumnHeaderSchema`, and `ParsedTable.values`
+rather than introducing a separate profile artifact by default.
 
-- `source_table_index` must refer to an existing normalized source table
-- `source_table_id` must match that table
-- `row_idx` and `col_idx` must be in range for that source table
-- `raw_value` must equal the corresponding source cell text after the same
-  cleaning view used by the normalized table
-- non-empty parsed records should have at least one component
-- component `kind` must come from the controlled vocabulary
-- numeric component values must be numeric JSON values, not formatted strings
-- inequality components should store the comparator in `relation`, not in
-  `kind`
+For now, schema validation is limited to the Pydantic component models and the
+explicit source table, row, and column indices stored on each record. Do not add
+a separate validation-report artifact or strict validation class unless it is
+needed to catch a known parser failure.
 
-## Migration From Current `ParsedTable.values`
+## Semantic Join In `ParsedTable.values`
 
-Current `ParsedTable.values` stores row and column semantic labels plus
-`value_type`, `parsed_numeric`, and `parsed_secondary_numeric`. That shape is
-useful for simple long-format export, but it mixes cell parsing with semantic
-attachment.
+`ParsedTable.values` is the component-aware semantic value layer. It joins the
+source-grid component records to row-variable, level, column, and header-path
+semantics from `TableDefinition` and `ColumnHeaderSchema`.
 
-The new component artifact should be introduced alongside existing
-`parsed_tables.json` first. Later, `ParsedTable.values` can either:
+The canonical semantic payload is:
 
-- remain a semantic joined view derived from parsed components, or
-- be replaced by a component-based schema in a deliberate schema migration.
+- source provenance: `source_table_index`, `source_table_id`, `row_idx`,
+  `col_idx`
+- row and column semantics: variable, level, column label, leaf header, group
+  headers, and header path
+- source value evidence: `raw_value`, `parse_pattern`, `components`
+- review evidence: `confidence`, `notes`
 
-Until that migration, compatibility code may translate components into the old
-fields for existing tests and consumers, but the component artifact should be
-the source for continuation-aware tableone-style projection.
+No scalar compatibility aliases are part of the canonical semantic value
+record. New tableone-style projections, continuation work, and anomaly
+diagnostics should consume `components` directly.

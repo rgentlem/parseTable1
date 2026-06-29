@@ -20,6 +20,7 @@ from table1_parser.schemas import (
     PaperFootnotes,
     PaperPageFurniture,
     PaperSection,
+    ParsedCellValue,
     ParsedTable,
     RowView,
     TableCell,
@@ -166,6 +167,7 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     continued_variable_integrations_path = (
         tmp_path / "outputs" / "papers" / "paper" / "continued_variable_integrations.json"
     )
+    parsed_cell_values_path = tmp_path / "outputs" / "papers" / "paper" / "parsed_cell_values.json"
     parsed_path = tmp_path / "outputs" / "papers" / "paper" / "parsed_tables.json"
     processing_status_path = tmp_path / "outputs" / "papers" / "paper" / "table_processing_status.json"
     parse_quality_reports_path = tmp_path / "outputs" / "papers" / "paper" / "parse_quality_reports.json"
@@ -191,6 +193,7 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     assert table_profile_path.exists()
     assert table_definition_path.exists()
     assert continued_variable_integrations_path.exists()
+    assert parsed_cell_values_path.exists()
     assert parsed_path.exists()
     assert processing_status_path.exists()
     assert parse_quality_reports_path.exists()
@@ -215,7 +218,25 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     assert json.loads(table_profile_path.read_text(encoding="utf-8"))[0]["table_id"] == "tbl-1"
     assert json.loads(table_definition_path.read_text(encoding="utf-8"))[0]["table_id"] == "tbl-1"
     assert json.loads(continued_variable_integrations_path.read_text(encoding="utf-8")) == []
-    assert json.loads(parsed_path.read_text(encoding="utf-8"))[0]["table_id"] == "tbl-1"
+    parsed_cell_values_payload = json.loads(parsed_cell_values_path.read_text(encoding="utf-8"))
+    assert ParsedCellValue.model_validate(parsed_cell_values_payload[0]).source_table_id == "tbl-1"
+    assert [(value["row_idx"], value["col_idx"], value["raw_value"]) for value in parsed_cell_values_payload] == [
+        (1, 1, "52.1"),
+        (1, 2, "0.03"),
+        (2, 1, "34"),
+        (2, 2, "0.10"),
+    ]
+    assert parsed_cell_values_payload[0]["components"][0]["kind"] == "estimate"
+    assert "variable_name" not in parsed_cell_values_payload[0]
+    assert "column_name" not in parsed_cell_values_payload[0]
+    parsed_tables_payload = json.loads(parsed_path.read_text(encoding="utf-8"))
+    assert ParsedTable.model_validate(parsed_tables_payload[0]).table_id == "tbl-1"
+    age_value = next(value for value in parsed_tables_payload[0]["values"] if value["raw_value"] == "52.1")
+    assert age_value["source_table_id"] == "tbl-1"
+    assert age_value["parse_pattern"] == "numeric_scalar"
+    assert age_value["components"][0]["kind"] == "estimate"
+    assert "parsed_numeric" not in age_value
+    assert "parsed_secondary_numeric" not in age_value
     assert json.loads(processing_status_path.read_text(encoding="utf-8"))[0]["table_id"] == "tbl-1"
     parse_quality_payload = json.loads(parse_quality_reports_path.read_text(encoding="utf-8"))
     assert parse_quality_payload[0]["table_id"] == "tbl-1"
@@ -342,7 +363,7 @@ def test_cli_parse_marks_descriptive_tables_with_empty_definitions_as_failed(tmp
     monkeypatch.setattr(
         cli,
         "build_parsed_tables",
-        lambda tables, definitions: [
+        lambda tables, definitions, parsed_cell_values=None: [
             ParsedTable(
                 table_id="tbl-1",
                 title="Table 1",

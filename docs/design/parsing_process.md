@@ -83,7 +83,7 @@ This separation keeps the parser safer and easier to debug.
 
 If you are looking at parser outputs:
 
-- `table1-parser parse path/to/paper.pdf` is the main entry point and currently writes `extracted_tables.json`, `normalized_tables.json`, `column_header_schemas.json`, `table_profiles.json`, `paper_table_inventory.json`, `table_definitions.json`, `parsed_tables.json`, `paper_markdown.md`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and per-table context JSON files
+- `table1-parser parse path/to/paper.pdf` is the main entry point and currently writes `extracted_tables.json`, `normalized_tables.json`, `column_header_schemas.json`, `table_profiles.json`, `paper_table_inventory.json`, `table_definitions.json`, `parsed_cell_values.json`, `parsed_tables.json`, `paper_markdown.md`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and per-table context JSON files
 - `extract` and `normalize` remain useful for inspecting a single stage in isolation
 
 - raw extraction output answers: "What table did the PDF extractor recover?"

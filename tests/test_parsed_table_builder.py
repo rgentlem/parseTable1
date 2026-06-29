@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from table1_parser.parse import build_parsed_table
-from table1_parser.parse.value_parser import parse_cell_value
+from table1_parser.parse import build_parsed_cell_values, build_parsed_table
 from table1_parser.schemas import (
     ColumnDefinition,
     DefinedColumn,
@@ -12,7 +11,13 @@ from table1_parser.schemas import (
     NormalizedTable,
     RowView,
     TableDefinition,
+    ValueRecord,
 )
+
+
+def _component_value(value: ValueRecord, kind: str) -> float | str | None:
+    """Return one parsed component value by kind."""
+    return next(component.value for component in value.components if component.kind == kind)
 
 
 def _build_row(
@@ -138,10 +143,15 @@ def test_build_parsed_table_parses_count_percent_values_and_column_roles() -> No
         value for value in parsed.values if value.variable_name == "Sex" and value.level_label == "Male" and value.col_idx == 1
     )
     assert male_overall.raw_value == "40 (40)"
-    assert male_overall.value_type == "count"
-    assert male_overall.parsed_numeric == 40.0
-    assert male_overall.parsed_secondary_numeric == 40.0
-    assert male_overall.confidence == 0.98
+    assert male_overall.source_table_index == 0
+    assert male_overall.source_table_id == "tbl-parsed"
+    assert male_overall.variable_label == "Sex"
+    assert male_overall.column_label == "Overall (n=100)"
+    assert male_overall.parse_pattern == "count_parenthesized_percent"
+    assert [component.kind for component in male_overall.components] == ["count", "percent"]
+    assert _component_value(male_overall, "count") == 40.0
+    assert _component_value(male_overall, "percent") == 40.0
+    assert male_overall.confidence == 0.9867
 
 
 def test_build_parsed_table_uses_subgroup_share_heuristic_for_non_overall_columns() -> None:
@@ -155,8 +165,8 @@ def test_build_parsed_table_uses_subgroup_share_heuristic_for_non_overall_column
         value for value in parsed.values if value.variable_name == "Sex" and value.level_label == "Female" and value.col_idx == 3
     )
 
-    assert cases_male.confidence == 0.97
-    assert controls_female.confidence == 0.97
+    assert cases_male.confidence == 0.9767
+    assert controls_female.confidence == 0.9767
     assert parsed.notes == []
 
 
@@ -171,7 +181,7 @@ def test_build_parsed_table_adds_soft_note_when_group_share_does_not_match() -> 
     mismatched = next(
         value for value in parsed.values if value.variable_name == "Sex" and value.level_label == "Male" and value.col_idx == 2
     )
-    assert mismatched.confidence == 0.85
+    assert mismatched.confidence == 0.8567
     assert any(note.startswith("count_pct_group_share_mismatch: variable=Sex column=cases") for note in parsed.notes)
 
 
@@ -192,26 +202,65 @@ def test_build_parsed_table_parses_n_only_categorical_values_without_count_perce
         value for value in parsed.values if value.variable_name == "Sex" and value.level_label == "Female" and value.col_idx == 2
     )
 
-    assert male_overall.value_type == "count"
-    assert male_overall.parsed_numeric == 40.0
-    assert male_overall.parsed_secondary_numeric is None
-    assert female_cases.value_type == "count"
-    assert female_cases.parsed_numeric == 30.0
+    assert [component.kind for component in male_overall.components] == ["count"]
+    assert _component_value(male_overall, "count") == 40.0
+    assert [component.kind for component in female_cases.components] == ["count"]
+    assert _component_value(female_cases, "count") == 30.0
     assert parsed.notes == []
 
 
-def test_parse_cell_value_parses_pdf_plusminus_six_mean_sd() -> None:
-    """A numeric 6 between two values can be the extracted plus/minus glyph."""
-    parsed = parse_cell_value("25.9 6 3.6†", "group")
+def test_build_parsed_table_resolves_ambiguous_source_components_with_semantic_hint() -> None:
+    """Semantic assembly should refine source components with variable-level summary context."""
+    table = NormalizedTable(
+        table_id="tbl-age",
+        title="Table 1",
+        caption="Baseline characteristics",
+        header_rows=[0],
+        body_rows=[1],
+        row_views=[
+            _build_row(1, "Age", ["52.3 (14.1)"]),
+        ],
+        n_rows=2,
+        n_cols=2,
+        metadata={"cleaned_rows": [["Characteristic", "Overall"], ["Age", "52.3 (14.1)"]]},
+    )
+    definition = TableDefinition(
+        table_id="tbl-age",
+        title="Table 1",
+        caption="Baseline characteristics",
+        variables=[
+            DefinedVariable(
+                variable_name="age",
+                variable_label="Age",
+                variable_type="continuous",
+                row_start=1,
+                row_end=1,
+                summary_style_hint="mean_sd",
+                confidence=0.94,
+            )
+        ],
+        column_definition=ColumnDefinition(
+            columns=[
+                DefinedColumn(
+                    col_idx=1,
+                    column_name="overall",
+                    column_label="Overall",
+                    inferred_role="overall",
+                    confidence=0.95,
+                )
+            ]
+        ),
+    )
+    source_components = build_parsed_cell_values([table], {"tbl-age": {1}})
 
-    assert parsed.value_type == "mean_sd"
-    assert parsed.parsed_numeric == 25.9
-    assert parsed.parsed_secondary_numeric == 3.6
+    assert [component.kind for component in source_components[0].components] == ["estimate", "unknown"]
 
+    parsed = build_parsed_table(table, definition, parsed_cell_values=source_components)
+    age_overall = parsed.values[0]
 
-def test_parse_cell_value_parses_footnoted_p_value() -> None:
-    """P-value footnote markers should not block numeric p-value parsing."""
-    parsed = parse_cell_value("< 0.001b", "p_value")
-
-    assert parsed.value_type == "text"
-    assert parsed.parsed_numeric == 0.001
+    assert age_overall.source_table_id == "tbl-age"
+    assert age_overall.parse_pattern == "numeric_parenthesized_uncertainty"
+    assert [component.kind for component in age_overall.components] == ["mean", "sd"]
+    assert _component_value(age_overall, "mean") == 52.3
+    assert _component_value(age_overall, "sd") == 14.1
+    assert "semantic_uncertainty_resolved:mean_sd" in age_overall.notes

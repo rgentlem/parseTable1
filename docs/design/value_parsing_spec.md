@@ -142,9 +142,8 @@ The current repository already recognizes this shape as `count_pct`, but the nex
 
 For a cell recognized as `count_pct`:
 
-- `parsed_numeric` stores the count
-- `parsed_secondary_numeric` stores the percent
-- `ValueRecord.value_type` should remain the existing closest type until the schema is expanded deliberately
+- component `count` stores the count
+- component `percent` stores the percent
 
 The parser should accept both percent spellings:
 
@@ -293,21 +292,25 @@ Because of these cases, the heuristic should affect confidence and diagnostics, 
 
 ## 3. Intended Schema Consequences
 
-This spec does not require an immediate schema change.
-
-The existing future-facing `ParsedTable` fields are already sufficient for first implementation:
+`ParsedTable.values` is now a component-aware semantic value layer. The
+canonical fields for this spec are:
 
 - `ValueRecord.raw_value`
-- `ValueRecord.parsed_numeric`
-- `ValueRecord.parsed_secondary_numeric`
+- `ValueRecord.parse_pattern`
+- `ValueRecord.components`
+- `ValueRecord.confidence`
+- `ValueRecord.notes`
 
 Interpretation:
 
 - `raw_value` preserves the printed source text
-- `parsed_numeric` stores the parsed count
-- `parsed_secondary_numeric` stores the parsed percent
+- `components[*].kind == "count"` stores the parsed count
+- `components[*].kind == "percent"` stores the parsed percent
+- no scalar compatibility aliases should be added to the canonical value record
 
-If a later phase needs explicit denominator provenance or validation diagnostics per value, those should be added deliberately and documented across all affected schemas.
+If a later phase needs explicit denominator provenance or validation diagnostics
+per value, those should be added deliberately and documented across all affected
+schemas.
 
 ## 4. Tests
 

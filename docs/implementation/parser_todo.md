@@ -38,8 +38,12 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
 6. [ ] Model value semantics beyond count/percent.
    Add explicit handling for weighted population sizes, prevalence/percent estimates, age-standardized estimates, standard errors, and `N/A`/not-estimable values where appropriate.
    Design note: `docs/design/parsed_value_components.md`.
+   Implementation plan: `docs/implementation/parsed_value_components_implementation_plan.md`.
    Direction: parse source-table cells into index-keyed value-component records before continuation fragments are joined. Do not duplicate row/column labels or variable names in the cell-value artifact; attach semantics later by joining on source/integrated row and column provenance.
-   Recent update: deterministic value-pattern and value parsing now recognize `mean_sd` cells where the PDF extracted the plus/minus glyph as a spaced `6`, while preserving the original raw value text.
+   Add the component artifact early in the parse flow, after `ColumnHeaderSchema` and before semantic row/column value joins, so later paper-review diagnostics can assess value patterns without depending on a completed semantic parse.
+   Do not preserve the old two-slot `ValueRecord` shape as canonical if it blocks the right design. The semantic value layer should become a component-aware joined view over source cell components, row/level semantics, and column semantics.
+   Later paper typo/error review should consume the component layer, `ColumnHeaderSchema`, and `ParsedTable.values` once real review workflows identify concrete repeated checks. Do not add generic per-column profile artifacts or helper surfaces before those failure modes are known.
+   Recent update: `ParsedTable.values` now preserves source-table provenance, row/column semantics, header paths, parse patterns, and typed value components without scalar compatibility aliases. Count-percent checks now operate on components, and `parsed_cell_values.json` records source-grid components without duplicating semantic row or column labels. The earlier validation-report and parsed-value-column-profile sidecars were removed as over-scoped for the current data-structure goal.
 
 6. [ ] Strengthen parent/level reasoning.
    Use table-local evidence such as repeated level blocks, blank or sparse parent rows, indentation, header value roles, continuation boundaries, and value-region shape. Indentation should be one strong signal, not the only signal.
@@ -53,12 +57,12 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
    Footnote follow-up: `docs/design/paper_footnotes.md` defines the `paper_footnotes.json` artifact contract, and `docs/implementation/paper_footnotes_implementation_plan.md` tracks the staged work. Core Python schemas, anchor/definition inventories, PyMuPDF page-line definition sources, glyph canonicalization, deterministic links, parse output, R data-frame helpers, `ObservedFootnotes` attachment, and a 28-paper real-PDF smoke pass are in place. Review found resolved, unresolved, and ambiguous real examples; links remain review-only and should not be consumed downstream until page-note boilerplate and repeated marginal text pruning are stronger.
    Treat these as normalization follow-ups, not emergency parser changes. Preserve raw extraction, add focused repairs with provenance, and avoid broad rules that could merge real value columns into labels.
 
-8. [ ] Add golden-paper regression tests.
-   Create stable real-paper fixtures with expected table categories, parser routes, variables, levels, columns, and selected value records for Eke-like cases and other known structural variants.
+8. [ ] Add known-failure regression fixtures.
+   Create stable real-paper or minimal extracted-table fixtures for specific failures and structural variants that have actually mattered in parser review. Focus on cases that protect parser behavior from silent regressions, not broad unit testing for its own sake. For value components, cover only the patterns and artifact contracts that are tied to real failures or review workflows.
 
 9. [ ] Improve R inspection workflow.
    Provide R-native review objects and display methods that make variables, levels, columns, parse notes, category/route decisions, and diagnostics easy to inspect during corpus review.
-   Current direction: `ObservedTableOne` exposes tableone-style `ContTable`, `CatTable`, and `MetaData` fields as the early R surface, while preserving lower-case compatibility aliases. R helpers should access variables and columns through canonical table-definition accessors rather than repeated direct list traversal.
+   Current direction: defer new R helper work until real usage of the component-native artifacts shows which views are needed. Decide whether `ObservedTableOne` remains the right R inspection object before extending it. Any R surface should consume canonical components directly and should not require parser scalar compatibility aliases. Avoid many tiny specialized helpers unless repeated review workflows justify them.
    Recent update: `show_table_structure()` now treats structured header spans, per-column header paths, and deterministic variable row spans as the default structure view, including the row-label leaf column from `ColumnHeaderSchema`, while raw normalized header rows remain opt-in provenance/debug evidence through `include_raw_header_rows = TRUE`.
 
 ## Notes

@@ -68,10 +68,10 @@ These helpers use the same per-paper output directory written by
 
 `R/observed_table_one.R` builds an `ObservedTableOne` object from parser JSON.
 The object exposes tableone-style `ContTable`, `CatTable`, and `MetaData`
-fields, plus table-specific `Footnotes`, while preserving lower-case
-compatibility aliases. Its columns come
-from `TableDefinition.column_definition`, which is built from
-`ColumnHeaderSchema`.
+fields, plus table-specific `Footnotes`. This R helper predates the
+component-native value schema and should be migrated before it is treated as a
+canonical value inspection surface. Its columns come from
+`TableDefinition.column_definition`, which is built from `ColumnHeaderSchema`.
 
 ### Interactive usage
 

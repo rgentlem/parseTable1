@@ -231,10 +231,10 @@ confidence
 
 Fields:
 
-col_idx  
-column_name  
-column_label  
-inferred_role  
+col_idx
+column_name
+column_label
+inferred_role
 confidence
 
 ---
@@ -243,16 +243,29 @@ confidence
 
 Fields:
 
-row_idx  
-col_idx  
-variable_name  
-level_label  
-column_name  
-raw_value  
-value_type  
-parsed_numeric  
-parsed_secondary_numeric  
+source_table_index
+source_table_id
+row_idx
+col_idx
+variable_name
+variable_label
+level_label
+column_name
+column_label
+header_leaf_id
+header_leaf_label
+header_group_ids
+header_group_labels
+header_path
+raw_value
+parse_pattern
+components
 confidence
+notes
+
+`components` is the canonical value payload. Do not add scalar compatibility
+aliases such as `value_type`, `parsed_numeric`, or `parsed_secondary_numeric`
+to the canonical schema.
 
 ---
 

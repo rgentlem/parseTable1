@@ -5,6 +5,7 @@ from __future__ import annotations
 from table1_parser.parse.value_parser import build_value_records
 from table1_parser.schemas import (
     NormalizedTable,
+    ParsedCellValue,
     ParsedColumn,
     ParsedLevel,
     ParsedTable,
@@ -14,7 +15,12 @@ from table1_parser.schemas import (
 from table1_parser.validation.parsed_table import validate_parsed_table
 
 
-def build_parsed_table(table: NormalizedTable, definition: TableDefinition) -> ParsedTable:
+def build_parsed_table(
+    table: NormalizedTable,
+    definition: TableDefinition,
+    parsed_cell_values: list[ParsedCellValue] | None = None,
+    source_table_index: int | None = None,
+) -> ParsedTable:
     """Build one final parsed table from a normalized table and its semantic definition."""
     variables = [
         ParsedVariable(
@@ -47,7 +53,13 @@ def build_parsed_table(table: NormalizedTable, definition: TableDefinition) -> P
         )
         for column in definition.column_definition.columns
     ]
-    values, value_notes = build_value_records(table, definition.variables, columns)
+    values, value_notes = build_value_records(
+        table,
+        definition.variables,
+        columns,
+        parsed_cell_values=parsed_cell_values,
+        source_table_index=source_table_index,
+    )
     confidences = [item.confidence for item in [*variables, *columns, *values] if getattr(item, "confidence", None) is not None]
     parsed = ParsedTable(
         table_id=table.table_id,
@@ -62,11 +74,20 @@ def build_parsed_table(table: NormalizedTable, definition: TableDefinition) -> P
     return validate_parsed_table(parsed, table, definition)
 
 
-def build_parsed_tables(tables: list[NormalizedTable], definitions: list[TableDefinition]) -> list[ParsedTable]:
+def build_parsed_tables(
+    tables: list[NormalizedTable],
+    definitions: list[TableDefinition],
+    parsed_cell_values: list[ParsedCellValue] | None = None,
+) -> list[ParsedTable]:
     """Build final parsed tables while preserving input order."""
     return [
-        build_parsed_table(table, definition)
-        for table, definition in zip(tables, definitions, strict=True)
+        build_parsed_table(
+            table,
+            definition,
+            parsed_cell_values=parsed_cell_values,
+            source_table_index=table_index,
+        )
+        for table_index, (table, definition) in enumerate(zip(tables, definitions, strict=True))
     ]
 
 

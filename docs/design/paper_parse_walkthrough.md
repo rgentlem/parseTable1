@@ -36,6 +36,7 @@ Today that directory may contain:
 - `paper_table_inventory.json`
 - `table_definitions.json`
 - `continued_variable_integrations.json`
+- `parsed_cell_values.json`
 - `parsed_tables.json`
 - `table_processing_status.json`
 - `parse_quality_reports.json`
@@ -95,6 +96,7 @@ PDF
   -> Table 1 continuation inspection artifacts
   -> table profiles
   -> table definitions
+  -> parsed source-cell values
   -> parsed tables
   -> table processing statuses
   -> parse quality reports
@@ -656,7 +658,39 @@ This makes it easier to:
 - support downstream matching and R-side table objects
 - compare deterministic semantics with future LLM semantics
 
-## Step 8: Build `ParsedTable`
+## Step 8: Parse Source-Cell Value Components
+
+After `ColumnHeaderSchema` exists, the parser builds `parsed_cell_values.json`
+from normalized table body cells in schema-derived value columns.
+
+This is deliberately earlier than the final semantic value join. Each record is
+keyed by:
+
+- source table index
+- source table ID
+- row index
+- column index
+
+The record stores the original printed cell string plus typed components such as
+`count`, `percent`, `estimate`, `se`, `mean`, `sd`, `median`, `q1`, `q3`,
+`p_value`, `missing`, `text`, or `unknown`.
+
+It does not store variable names, level labels, column names, or header paths.
+Those semantics belong to `TableDefinition` and `ColumnHeaderSchema`.
+
+This early component layer is useful for two reasons:
+
+- continuation handling can later remap already-parsed source values by row and
+  column provenance instead of reparsing display strings after fragments are
+  joined
+- paper-review diagnostics can later assess per-column value-pattern anomalies,
+  possible typos, and suspicious inconsistencies without depending on a fully
+  successful semantic parse
+
+Ambiguous shapes such as `52.3 (14.1)` remain conservative until semantic
+context can distinguish `mean (SD)` from `estimate (SE)`.
+
+## Step 9: Build `ParsedTable`
 
 `ParsedTable` is the final deterministic structured table output.
 
@@ -664,21 +698,31 @@ This stage combines:
 
 - the normalized table grid
 - the table definition
-- value parsing heuristics
+- source-cell value components
 
 and produces normalized long-format value records.
 
 ### What Happens Here
 
-The parser walks the semantic row and column structure and tries to parse each relevant displayed cell into a structured value record.
+The parser walks the semantic row and column structure and joins each relevant
+displayed cell to its source `ParsedCellValue` record using table, row, and
+column provenance. It then attaches variable, level, column, and header-path
+semantics to the already parsed component payload.
 
 Examples include:
 
-- count and percent pairs
-- mean and standard deviation pairs
-- median and IQR style summaries
-- p-values
-- scalar counts
+- count and percent components
+- mean and standard deviation components
+- median, q1, and q3 components
+- p-value components with inequality relations
+- scalar count or estimate components
+
+Some source component shapes are deliberately conservative. For example,
+`52.3 (14.1)` is parsed in `parsed_cell_values.json` as an estimate plus an
+ambiguous uncertainty component unless source context already resolves it. In
+this semantic join stage, a variable-level summary hint such as `mean_sd` can
+refine those components into `mean` plus `sd` while preserving the source
+record provenance and raw printed value.
 
 ### Why `ParsedTable` Is Separate From `TableDefinition`
 
@@ -686,7 +730,14 @@ Because row and column semantics can be right even when value parsing is wrong, 
 
 Keeping these apart makes debugging much more honest.
 
-## Step 9: Build Parse Quality Reports
+`ParsedTable.values` is now the component-aware long-format semantic view.
+`components` is the canonical value payload. Scalar compatibility aliases such
+as `value_type`, `parsed_numeric`, and `parsed_secondary_numeric` are not part
+of the canonical value record.
+`parsed_tables.json` is not replaced by `parsed_cell_values.json`; it is the
+joined semantic view over source components.
+
+## Step 10: Build Parse Quality Reports
 
 The parser also writes `parse_quality_reports.json`.
 
@@ -701,7 +752,7 @@ It is meant to answer questions like:
 This step does not change `table_definitions.json` or `parsed_tables.json`.
 It exists so column and row problems are visible even when the table technically parses.
 
-## Step 10: Build Paper Page Furniture
+## Step 11: Build Paper Page Furniture
 
 The parser writes `paper_page_furniture.json`.
 
@@ -710,7 +761,7 @@ for matching, clusters repeated text in stable page-relative positions, and emit
 generic ignored regions. The footnote stage uses those regions to suppress
 overlapping definition candidate lines and table-cell anchors before linking.
 
-## Step 11: Build Paper-Level Document Context
+## Step 12: Build Paper-Level Document Context
 
 The parser also builds a paper-level context representation from the whole document.
 
@@ -788,7 +839,7 @@ For each table, the parser builds a focused context bundle using:
 
 This produces per-table passages and term lists that can later support standalone review workflows or future semantic interpretation.
 
-## Step 12: Optional Variable-Plausibility LLM Review
+## Step 13: Optional Variable-Plausibility LLM Review
 
 The separate `review-variable-plausibility` command can run a narrow LLM review using:
 
@@ -814,7 +865,7 @@ Why this stage is optional:
 - LLM use should be focused on ambiguity, not raw PDF recovery
 - review calls should be inspectable and skippable
 
-## Step 13: Write Table Processing Status
+## Step 14: Write Table Processing Status
 
 After deterministic parsing, the parser writes `table_processing_status.json`.
 
@@ -854,25 +905,28 @@ When a parse looks wrong, inspect the outputs in this order.
 7. `table_definitions.json`
    If row meanings or column meanings are wrong, the problem is in the semantic heuristics.
 
-8. `parsed_tables.json`
-   If row and column meanings are right but the final values are wrong, the problem is in value parsing.
+8. `parsed_cell_values.json`
+   If the printed cell components are wrong before semantic labels are attached, the problem is in source-cell value parsing.
 
-9. `table_processing_status.json`
+9. `parsed_tables.json`
+   If source-cell components and row/column meanings are right but the final values are wrong, the problem is in the semantic value join.
+
+10. `table_processing_status.json`
    If a table is empty or incomplete, inspect this next to see which rescue paths were attempted and where failure was recorded.
 
-10. `parse_quality_reports.json`
+11. `parse_quality_reports.json`
    If the parse succeeded but the columns, p-values, headers, or row classifications look suspicious, inspect this artifact for deterministic quality warnings.
 
-11. `paper_footnotes.json`
+12. `paper_footnotes.json`
    If superscripts, subscripts, or note markers matter, inspect this artifact for anchors, candidate definitions, and resolved, ambiguous, or unresolved glyph-key links.
 
-12. `paper_page_furniture.json`
+13. `paper_page_furniture.json`
    If repeated page headers, footers, watermarks, or download notices may be contaminating note extraction, inspect this artifact for recurring clusters and ignored regions.
 
-13. `paper_markdown.md`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and `table_contexts/*.json`
+14. `paper_markdown.md`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and `table_contexts/*.json`
    If semantic context retrieval is weak, inspect these next.
 
-14. `table_variable_plausibility_llm.json`
+15. `table_variable_plausibility_llm.json`
    If deterministic variables were reasonable but the plausibility review looks wrong, the issue is in prompting, provider behavior, or validation for the standalone review command.
 
 ## Why This Pipeline Shape Is Worth Keeping
