@@ -1,0 +1,4 @@
+interface:
+  display_name: "Epiconnector Parser Change"
+  short_description: "Parser change protocol for parseTable1"
+  default_prompt: "Use -parser-change to make a parser schema or pipeline change."

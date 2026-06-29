@@ -1,0 +1,4 @@
+interface:
+  display_name: "Known Failure Regression"
+  short_description: "Add targeted parser regression coverage"
+  default_prompt: "Use -failure-regression to add a regression for a known parser failure."

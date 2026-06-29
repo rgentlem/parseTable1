@@ -39,6 +39,98 @@ If you change paper-level variable search, section-priority logic, or any planne
 
 ---
 
+# Local Epiconnector Project Context
+
+This package lives inside the broader local project directory:
+
+- `/Users/robert/Projects/Epiconnector`
+
+Agents should treat that directory as local project context, not only the
+`parseTable1` repository. When making parser design decisions, look for relevant
+examples, prior work, or reference behavior in the broader Epiconnector
+directory.
+
+Important sibling paths:
+
+- `/Users/robert/Projects/Epiconnector/parseTable1`
+  - Python package repository for this parser.
+- `/Users/robert/Projects/Epiconnector/tableone`
+  - Local checkout/reference implementation for tableone-style data structures
+    and display separation.
+- `/Users/robert/Projects/Epiconnector/testpapers`
+  - Standard real-paper PDF corpus for parser testing and review.
+
+## Real-Paper Test Corpus
+
+When asked to run examples, real papers, all papers, or the corpus, use:
+
+```text
+/Users/robert/Projects/Epiconnector/testpapers
+```
+
+Find PDFs recursively under that directory. Do not assume only one
+subdirectory.
+
+For broad parser changes, prefer testing against this corpus when practical,
+especially before commits that change parse outputs, schemas, value parsing,
+normalization, or table semantics.
+
+## Parser Output Directory
+
+The parser writes generated outputs under:
+
+```text
+/Users/robert/Projects/Epiconnector/parseTable1/outputs
+```
+
+`outputs/` is generated program output and is gitignored. It should not be
+treated as source code or committed.
+
+When running batch tests on `testpapers`, write to a fresh ignored output
+subdirectory such as:
+
+```text
+outputs/testpapers_batch_<timestamp>
+```
+
+or another clearly named batch directory. Existing outputs may be from earlier
+runs and should not be assumed current unless just regenerated.
+
+## Commit Hygiene
+
+Do not stage or commit generated files under `outputs/`.
+
+Before committing parser changes, report:
+
+- which testpaper PDFs were run
+- which output directory was used
+- which papers failed, if any
+- whether `pytest` passed
+
+## Repo-Local Skills
+
+This repository includes shared Codex skills under:
+
+```text
+/Users/robert/Projects/Epiconnector/parseTable1/skills
+```
+
+These skills are committed with the repository so collaborators can use the
+same workflows. When a request matches one of these skills, read that skill's
+`SKILL.md` before acting:
+
+- `skills/epiconnector-parser-change/SKILL.md`
+  - Use for parser code, schema, CLI output, pipeline, design-doc, or commit
+    work.
+- `skills/testpapers-batch-review/SKILL.md`
+  - Use for running or summarizing the real-paper corpus under
+    `/Users/robert/Projects/Epiconnector/testpapers`.
+- `skills/known-failure-regression/SKILL.md`
+  - Use when adding or changing parser tests for known failures or important
+    artifact contracts.
+
+---
+
 # Project Goals
 
 The package should:
