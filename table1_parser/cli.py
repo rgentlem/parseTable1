@@ -14,7 +14,11 @@ from table1_parser.cell_text_annotations import (
     build_cell_text_annotation_tables_from_pdf,
     cell_text_annotation_tables_to_payload,
 )
-from table1_parser.column_header_schema import build_column_header_schemas, column_header_schemas_to_payload
+from table1_parser.column_header_schema import (
+    build_column_header_schema,
+    build_column_header_schemas,
+    column_header_schemas_to_payload,
+)
 from table1_parser.config import Settings
 from table1_parser.continued_variable_integration import (
     build_continued_variable_integrations,
@@ -58,6 +62,7 @@ from table1_parser.paper_footnotes import (
 )
 from table1_parser.paper_page_furniture import build_paper_page_furniture, paper_page_furniture_to_payload
 from table1_parser.processing_status import build_table_processing_statuses
+from table1_parser.resolved_tables import build_resolved_table_set
 from table1_parser.schemas import (
     CellTextAnnotationTable,
     ColumnHeaderSchema,
@@ -73,6 +78,7 @@ from table1_parser.schemas import (
     PaperVisualReference,
     ParsedCellValue,
     ParsedTable,
+    ResolvedTableSet,
     TableContext,
     TableDefinition,
     Table1ContinuationGroup,
@@ -98,14 +104,20 @@ class PaperParseArtifacts:
     extracted_tables: list[ExtractedTable]
     normalized_tables: list[NormalizedTable]
     column_header_schemas: list[ColumnHeaderSchema]
+    resolved_table_set: ResolvedTableSet
+    resolved_tables: list[NormalizedTable]
+    resolved_column_header_schemas: list[ColumnHeaderSchema]
+    resolved_source_extracted_tables: list[ExtractedTable]
     table1_continuation_groups: list[Table1ContinuationGroup]
     merged_table1_tables: list[NormalizedTable]
     table_profiles: list[TableProfile]
+    source_table_definitions: list[TableDefinition]
     table_definitions: list[TableDefinition]
     continued_variable_integrations: list[TableDefinition]
     parsed_cell_values: list[ParsedCellValue]
     parsed_tables: list[ParsedTable]
     parse_quality_reports: list[ParseQualityReport]
+    resolved_parse_quality_reports: list[ParseQualityReport]
     cell_text_annotations: list[CellTextAnnotationTable]
     paper_footnotes: PaperFootnotes
     paper_page_furniture: PaperPageFurniture
@@ -263,12 +275,14 @@ def _handle_parse(args: argparse.Namespace) -> int:
         return 1
 
     table_processing_statuses = build_table_processing_statuses(
-        artifacts.extracted_tables,
-        artifacts.normalized_tables,
+        artifacts.resolved_source_extracted_tables,
+        artifacts.resolved_tables,
         artifacts.table_profiles,
         artifacts.table_definitions,
         artifacts.parsed_tables,
-        artifacts.parse_quality_reports,
+        artifacts.resolved_parse_quality_reports,
+        resolved_table_set=artifacts.resolved_table_set,
+        source_parse_quality_reports=artifacts.parse_quality_reports,
     )
     table_definitions, parsed_tables = _annotate_parse_failures(
         artifacts.table_definitions,
@@ -298,12 +312,14 @@ def _handle_review_variable_plausibility(args: argparse.Namespace) -> int:
         return 1
 
     table_processing_statuses = build_table_processing_statuses(
-        artifacts.extracted_tables,
-        artifacts.normalized_tables,
+        artifacts.resolved_source_extracted_tables,
+        artifacts.resolved_tables,
         artifacts.table_profiles,
         artifacts.table_definitions,
         artifacts.parsed_tables,
-        artifacts.parse_quality_reports,
+        artifacts.resolved_parse_quality_reports,
+        resolved_table_set=artifacts.resolved_table_set,
+        source_parse_quality_reports=artifacts.parse_quality_reports,
     )
     table_definitions, parsed_tables = _annotate_parse_failures(
         artifacts.table_definitions,
@@ -411,6 +427,55 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     paper_page_furniture = build_paper_page_furniture(pdf_path, paper_id=Path(pdf_path).stem)
     normalized_tables = normalize_extracted_tables(extracted_tables)
     column_header_schemas = build_column_header_schemas(normalized_tables, extracted_tables)
+    resolved_table_set = build_resolved_table_set(normalized_tables, column_header_schemas)
+    resolved_tables = [resolved_table.table for resolved_table in resolved_table_set.resolved_tables]
+    source_schema_by_table_id = {schema.table_id: schema for schema in column_header_schemas}
+    resolved_column_header_schemas: list[ColumnHeaderSchema] = []
+    for resolved_table in resolved_table_set.resolved_tables:
+        resolved_table_id = resolved_table.table.table_id
+        source_schema = (
+            source_schema_by_table_id.get(resolved_table.source_table_ids[0])
+            if resolved_table.source_table_ids
+            else None
+        )
+        if source_schema is None:
+            resolved_column_header_schemas.append(build_column_header_schema(resolved_table.table))
+            continue
+        resolved_column_header_schemas.append(
+            source_schema.model_copy(
+                update={
+                    "schema_id": f"{resolved_table_id}:column_header_schema",
+                    "table_id": resolved_table_id,
+                    "header_rows_considered": list(resolved_table.table.header_rows),
+                    "body_rows_considered": list(resolved_table.table.body_rows),
+                    "leaves": [
+                        leaf.model_copy(update={"table_id": resolved_table_id})
+                        for leaf in source_schema.leaves
+                    ],
+                    "groups": [
+                        group.model_copy(update={"table_id": resolved_table_id})
+                        for group in source_schema.groups
+                    ],
+                    "relationships": [
+                        relationship.model_copy(update={"table_id": resolved_table_id})
+                        for relationship in source_schema.relationships
+                    ],
+                    "evidence": [
+                        evidence.model_copy(update={"table_id": resolved_table_id})
+                        for evidence in source_schema.evidence
+                    ],
+                }
+            )
+        )
+    extracted_table_by_id = {table.table_id: table for table in extracted_tables}
+    resolved_source_extracted_tables: list[ExtractedTable] = []
+    for resolved_index, resolved_table in enumerate(resolved_table_set.resolved_tables):
+        source_table_id = resolved_table.source_table_ids[0] if resolved_table.source_table_ids else None
+        source_extracted_table = extracted_table_by_id.get(source_table_id) if source_table_id is not None else None
+        if source_extracted_table is None and resolved_index < len(extracted_tables):
+            source_extracted_table = extracted_tables[resolved_index]
+        if source_extracted_table is not None:
+            resolved_source_extracted_tables.append(source_extracted_table)
     value_column_indices_by_table_id = {
         schema.table_id: {
             leaf.col_idx
@@ -464,7 +529,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
             }
         )
     )
-    table_profiles = build_table_profiles(normalized_tables)
+    table_profiles = build_table_profiles(resolved_tables)
     table1_continuation_groups, merged_table1_tables = build_table1_continuation_artifacts(
         normalized_tables,
         column_header_schemas,
@@ -484,16 +549,32 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
                 source_identifier=pdf_path,
             )
         )
-    table_definitions = build_table_definitions(normalized_tables, column_header_schemas)
+    parse_quality_report_by_table_id = {
+        report.table_id: report
+        for report in parse_quality_reports
+    }
+    resolved_parse_quality_reports = [
+        parse_quality_report_by_table_id[resolved_table.source_table_ids[0]]
+        for resolved_table in resolved_table_set.resolved_tables
+        if resolved_table.source_table_ids
+        and resolved_table.source_table_ids[0] in parse_quality_report_by_table_id
+    ]
+    source_table_definitions = build_table_definitions(normalized_tables, column_header_schemas)
+    table_definitions = build_table_definitions(resolved_tables, resolved_column_header_schemas)
     continued_variable_integrations = build_continued_variable_integrations(
         normalized_tables,
-        table_definitions,
+        source_table_definitions,
         table1_continuation_groups,
     )
+    row_provenance_by_table_id = {
+        resolved_table.table_id: resolved_table.row_provenance
+        for resolved_table in resolved_table_set.resolved_tables
+    }
     parsed_tables = build_parsed_tables(
-        normalized_tables,
+        resolved_tables,
         table_definitions,
         parsed_cell_values=parsed_cell_values,
+        row_provenance_by_table_id=row_provenance_by_table_id,
     )
     paper_markdown = extract_paper_markdown(pdf_path)
     paper_sections = parse_markdown_sections(paper_markdown)
@@ -508,14 +589,20 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         extracted_tables=extracted_tables,
         normalized_tables=normalized_tables,
         column_header_schemas=column_header_schemas,
+        resolved_table_set=resolved_table_set,
+        resolved_tables=resolved_tables,
+        resolved_column_header_schemas=resolved_column_header_schemas,
+        resolved_source_extracted_tables=resolved_source_extracted_tables,
         table1_continuation_groups=table1_continuation_groups,
         merged_table1_tables=merged_table1_tables,
         table_profiles=table_profiles,
+        source_table_definitions=source_table_definitions,
         table_definitions=table_definitions,
         continued_variable_integrations=continued_variable_integrations,
         parsed_cell_values=parsed_cell_values,
         parsed_tables=parsed_tables,
         parse_quality_reports=parse_quality_reports,
+        resolved_parse_quality_reports=resolved_parse_quality_reports,
         cell_text_annotations=cell_text_annotations,
         paper_footnotes=paper_footnotes,
         paper_page_furniture=paper_page_furniture,
@@ -578,6 +665,7 @@ def _write_parse_outputs(
     extract_output_path = paper_dir / "extracted_tables.json"
     normalize_output_path = paper_dir / "normalized_tables.json"
     column_header_schema_output_path = paper_dir / "column_header_schemas.json"
+    resolved_table_output_path = paper_dir / "resolved_tables.json"
     table1_continuation_groups_output_path = paper_dir / "table1_continuation_groups.json"
     table_continuation_column_checks_output_path = paper_dir / "table_continuation_column_checks.json"
     merged_table1_output_path = paper_dir / "merged_table1_tables.json"
@@ -603,19 +691,20 @@ def _write_parse_outputs(
     table_context_output_dir.mkdir(parents=True, exist_ok=True)
     paper_table_inventory = build_paper_table_inventory(
         artifacts.paper_stem,
-        artifacts.extracted_tables,
-        artifacts.normalized_tables,
+        artifacts.resolved_source_extracted_tables,
+        artifacts.resolved_tables,
         artifacts.table_profiles,
         table_definitions,
         parsed_tables,
-        artifacts.parse_quality_reports,
+        artifacts.resolved_parse_quality_reports,
         table_processing_statuses,
     )
+    source_table_profiles = build_table_profiles(artifacts.normalized_tables)
     table_continuation_column_checks = build_table_continuation_column_checks(
         artifacts.normalized_tables,
         artifacts.extracted_tables,
-        artifacts.table_profiles,
-        [record.table_category for record in paper_table_inventory.tables],
+        source_table_profiles,
+        None,
         artifacts.column_header_schemas,
     )
 
@@ -626,6 +715,10 @@ def _write_parse_outputs(
     write_normalized_tables(normalize_output_path, artifacts.normalized_tables)
     column_header_schema_output_path.write_text(
         json.dumps(column_header_schemas_to_payload(artifacts.column_header_schemas), indent=2) + "\n",
+        encoding="utf-8",
+    )
+    resolved_table_output_path.write_text(
+        json.dumps(artifacts.resolved_table_set.model_dump(mode="json"), indent=2) + "\n",
         encoding="utf-8",
     )
     table1_continuation_groups_output_path.write_text(

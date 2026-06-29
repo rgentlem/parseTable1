@@ -10,6 +10,7 @@ from table1_parser.schemas import (
     ParsedLevel,
     ParsedTable,
     ParsedVariable,
+    ResolvedRowProvenance,
     TableDefinition,
 )
 from table1_parser.validation.parsed_table import validate_parsed_table
@@ -20,6 +21,7 @@ def build_parsed_table(
     definition: TableDefinition,
     parsed_cell_values: list[ParsedCellValue] | None = None,
     source_table_index: int | None = None,
+    row_provenance: list[ResolvedRowProvenance] | None = None,
 ) -> ParsedTable:
     """Build one final parsed table from a normalized table and its semantic definition."""
     variables = [
@@ -59,6 +61,7 @@ def build_parsed_table(
         columns,
         parsed_cell_values=parsed_cell_values,
         source_table_index=source_table_index,
+        row_provenance=row_provenance,
     )
     confidences = [item.confidence for item in [*variables, *columns, *values] if getattr(item, "confidence", None) is not None]
     parsed = ParsedTable(
@@ -78,6 +81,7 @@ def build_parsed_tables(
     tables: list[NormalizedTable],
     definitions: list[TableDefinition],
     parsed_cell_values: list[ParsedCellValue] | None = None,
+    row_provenance_by_table_id: dict[str, list[ResolvedRowProvenance]] | None = None,
 ) -> list[ParsedTable]:
     """Build final parsed tables while preserving input order."""
     return [
@@ -86,6 +90,11 @@ def build_parsed_tables(
             definition,
             parsed_cell_values=parsed_cell_values,
             source_table_index=table_index,
+            row_provenance=(
+                row_provenance_by_table_id.get(table.table_id)
+                if row_provenance_by_table_id is not None
+                else None
+            ),
         )
         for table_index, (table, definition) in enumerate(zip(tables, definitions, strict=True))
     ]

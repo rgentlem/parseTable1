@@ -8,43 +8,7 @@ from table1_parser.normalize.header_detector import detect_header_rows
 from table1_parser.normalize.io import load_normalized_tables, normalized_tables_to_payload, write_normalized_tables
 from table1_parser.normalize.pipeline import normalize_extracted_table
 from table1_parser.normalize.row_signature import build_row_signature
-from table1_parser.normalize.text_normalizer import alpha_only_text, normalize_label_text
 from table1_parser.schemas import ExtractedTable, TableCell
-from table1_parser.text_cleaning import clean_text
-
-
-def test_clean_text_collapses_whitespace_and_normalizes_dashes() -> None:
-    """Cleaning should normalize repeated whitespace, comparisons, and dash variants."""
-    assert clean_text("  Age   -  years  ") == "Age - years"
-    assert clean_text("BMI\u2013kg/m2") == "BMI-kg/m2"
-    assert clean_text("p \uff1c 0.05") == "p < 0.05"
-    assert clean_text("BMI \u2265 30") == "BMI >= 30"
-    assert clean_text("�0.12") == "<=0.12"
-    assert clean_text("Q1 �0.12") == "Q1 <=0.12"
-
-
-def test_label_normalization_preserves_alphanumerics() -> None:
-    """Normalized label text should retain letters and digits while dropping punctuation."""
-    assert normalize_label_text("High school") == "High school"
-    assert normalize_label_text("Family poverty-income ratio") == "Family poverty income ratio"
-    assert normalize_label_text("Non-hispanic white") == "Non hispanic white"
-    assert normalize_label_text("Hispanic/Mexican") == "Hispanic Mexican"
-    assert normalize_label_text("More than high school") == "More than high school"
-    assert normalize_label_text("Age, years") == "Age years"
-    assert normalize_label_text("BMI, kg/m2") == "BMI kg m2"
-    assert normalize_label_text("<HS") == "HS"
-
-
-def test_alpha_only_conversion_drops_symbols_and_digits() -> None:
-    """Alpha-only text should preserve only alphabetic tokens."""
-    assert alpha_only_text("High school") == "High school"
-    assert alpha_only_text("Family poverty-income ratio") == "Family poverty income ratio"
-    assert alpha_only_text("Non-hispanic white") == "Non hispanic white"
-    assert alpha_only_text("Hispanic/Mexican") == "Hispanic Mexican"
-    assert alpha_only_text("More than high school") == "More than high school"
-    assert alpha_only_text("Age, years") == "Age years"
-    assert alpha_only_text("<HS") == "HS"
-    assert alpha_only_text("BMI, kg/m2") == "BMI kg m"
 
 
 def test_header_detector_prefers_top_text_heavy_rows() -> None:

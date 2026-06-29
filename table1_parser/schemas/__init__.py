@@ -58,6 +58,22 @@ from table1_parser.schemas.parsed_table import (
     ParsedVariable,
     ValueRecord,
 )
+from table1_parser.schemas.resolved_table import (
+    ColumnSchemaCompatibilityDecision,
+    ColumnSchemaCompatibilityStatus,
+    DroppedSourceRow,
+    IntegrationBoundary,
+    ResolvedRowProvenance,
+    ResolvedRowSourceRole,
+    ResolvedTable,
+    ResolvedTableSet,
+    ResolvedTableType,
+    ResolutionDecisionStatus,
+    ResolutionDecisionType,
+    SourceTableResolution,
+    SourceTableResolutionRole,
+    TableResolutionDecision,
+)
 from table1_parser.schemas.table_definition import (
     ColumnDefinition,
     DefinedColumn,
@@ -68,7 +84,11 @@ from table1_parser.schemas.table_definition import (
 )
 from table1_parser.schemas.table_continuation_column_check import TableContinuationColumnCheck
 from table1_parser.schemas.table1_continuation import Table1ContinuationGroup, Table1ContinuationMember
-from table1_parser.schemas.table_processing_status import TableProcessingAttempt, TableProcessingStatus
+from table1_parser.schemas.table_processing_status import (
+    SourceFragmentDiagnostic,
+    TableProcessingAttempt,
+    TableProcessingStatus,
+)
 from table1_parser.schemas.table_profile import TableProfile
 
 __all__ = [
@@ -103,10 +123,14 @@ __all__ = [
     "CellTextAnnotation",
     "CellTextAnnotationTable",
     "CellTextAnnotationType",
+    "ColumnSchemaCompatibilityDecision",
+    "ColumnSchemaCompatibilityStatus",
     "DefinedColumn",
     "DefinedColumnHeaderSpan",
     "DefinedLevel",
     "DefinedVariable",
+    "DroppedSourceRow",
+    "IntegrationBoundary",
     "PaperVisual",
     "PaperVisualReference",
     "ParsedCellValue",
@@ -115,10 +139,21 @@ __all__ = [
     "ParsedTable",
     "ParsedVariable",
     "RetrievedPassage",
+    "ResolvedRowProvenance",
+    "ResolvedRowSourceRole",
+    "ResolvedTable",
+    "ResolvedTableSet",
+    "ResolvedTableType",
+    "ResolutionDecisionStatus",
+    "ResolutionDecisionType",
     "RowView",
+    "SourceTableResolution",
+    "SourceTableResolutionRole",
+    "SourceFragmentDiagnostic",
     "TableContext",
     "TableContinuationColumnCheck",
     "TableDefinition",
+    "TableResolutionDecision",
     "Table1ContinuationGroup",
     "Table1ContinuationMember",
     "TableCell",

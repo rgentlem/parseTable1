@@ -8,6 +8,8 @@ from table1_parser.schemas import (
     ExtractedTable,
     NormalizedTable,
     ParsedTable,
+    ResolvedTableSet,
+    SourceFragmentDiagnostic,
     TableDefinition,
     TableProcessingAttempt,
     TableProcessingStatus,
@@ -22,9 +24,27 @@ def build_table_processing_statuses(
     table_definitions: Sequence[TableDefinition],
     parsed_tables: Sequence[ParsedTable],
     parse_quality_reports: Sequence[object] | None = None,
+    *,
+    resolved_table_set: ResolvedTableSet | None = None,
+    source_parse_quality_reports: Sequence[object] | None = None,
 ) -> list[TableProcessingStatus]:
     """Build per-table rescue and failure status records using current pipeline outputs."""
     statuses: list[TableProcessingStatus] = []
+    resolved_by_table_id = (
+        {resolved_table.table_id: resolved_table for resolved_table in resolved_table_set.resolved_tables}
+        if resolved_table_set is not None
+        else {}
+    )
+    source_resolution_by_table_id = (
+        {source_table.source_table_id: source_table for source_table in resolved_table_set.source_tables}
+        if resolved_table_set is not None
+        else {}
+    )
+    source_quality_by_table_id = {
+        str(report.table_id): report
+        for report in source_parse_quality_reports or []
+        if getattr(report, "table_id", None) is not None
+    }
     for table_index, (extracted_table, normalized_table, table_profile, table_definition, parsed_table) in enumerate(zip(
         extracted_tables,
         normalized_tables,
@@ -44,11 +64,76 @@ def build_table_processing_statuses(
             if parse_quality_reports is not None and table_index < len(parse_quality_reports)
             else None
         )
+        resolved_table = resolved_by_table_id.get(table_definition.table_id)
+        source_table_ids = (
+            list(resolved_table.source_table_ids)
+            if resolved_table is not None and resolved_table.source_table_ids
+            else [normalized_table.table_id]
+        )
+        quality_reports_for_status = (
+            [
+                source_quality_by_table_id[source_table_id]
+                for source_table_id in source_table_ids
+                if source_table_id in source_quality_by_table_id
+            ]
+            if source_quality_by_table_id
+            else [quality_report] if quality_report is not None else []
+        )
         quality_error_codes = {
             str(item.code)
-            for item in getattr(quality_report, "table_diagnostics", [])
+            for report in quality_reports_for_status
+            for item in getattr(report, "table_diagnostics", [])
             if getattr(item, "severity", None) == "error"
         }
+        source_fragment_diagnostics: list[SourceFragmentDiagnostic] = []
+        for source_table_id in source_table_ids:
+            source_resolution = source_resolution_by_table_id.get(source_table_id)
+            source_report = source_quality_by_table_id.get(source_table_id)
+            if source_report is not None:
+                for diagnostic_group in (
+                    getattr(source_report, "table_diagnostics", []),
+                    getattr(source_report, "row_diagnostics", []),
+                    getattr(source_report, "column_diagnostics", []),
+                ):
+                    for diagnostic in diagnostic_group:
+                        source_fragment_diagnostics.append(
+                            SourceFragmentDiagnostic(
+                                source_table_id=source_table_id,
+                                source_table_index=(
+                                    source_resolution.source_table_index
+                                    if source_resolution is not None
+                                    else None
+                                ),
+                                source_role=source_resolution.role if source_resolution is not None else None,
+                                stage="parse_quality",
+                                code=str(getattr(diagnostic, "code", "")),
+                                severity=getattr(diagnostic, "severity", None),
+                                row_idx=getattr(diagnostic, "row_idx", None),
+                                col_idx=getattr(diagnostic, "col_idx", None),
+                            )
+                        )
+        if resolved_table is not None:
+            for decision in resolved_table.column_schema_decisions:
+                for diagnostic in decision.diagnostics:
+                    source_table_id = (
+                        decision.continuation_table_id
+                        if decision.continuation_table_id in source_table_ids
+                        else decision.base_table_id
+                    )
+                    source_resolution = source_resolution_by_table_id.get(source_table_id)
+                    source_fragment_diagnostics.append(
+                        SourceFragmentDiagnostic(
+                            source_table_id=source_table_id,
+                            source_table_index=(
+                                source_resolution.source_table_index
+                                if source_resolution is not None
+                                else None
+                            ),
+                            source_role=source_resolution.role if source_resolution is not None else None,
+                            stage="resolution",
+                            code=diagnostic,
+                        )
+                    )
         has_table_signal = bool(
             extracted_table.title
             or extracted_table.caption
@@ -269,10 +354,12 @@ def build_table_processing_statuses(
         statuses.append(
             TableProcessingStatus(
                 table_id=table_definition.table_id,
+                source_table_ids=source_table_ids,
                 status=status,
                 failure_stage=failure_stage,
                 failure_reason=failure_reason,
                 attempts=attempts,
+                source_fragment_diagnostics=source_fragment_diagnostics,
                 notes=notes,
             )
         )

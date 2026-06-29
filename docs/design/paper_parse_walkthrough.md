@@ -29,6 +29,7 @@ Today that directory may contain:
 - `cell_text_annotations.json`
 - `normalized_tables.json`
 - `column_header_schemas.json`
+- `resolved_tables.json`
 - `table1_continuation_groups.json`
 - `table_continuation_column_checks.json`
 - `merged_table1_tables.json`
@@ -77,6 +78,7 @@ The parser deliberately keeps several versions of the same table because each st
 - `ExtractedTable` answers: what did the PDF extractor recover?
 - `NormalizedTable` answers: what cleaned table structure should downstream logic reason over?
 - `ColumnHeaderSchema` answers: how do normalized columns, leaf headers, and higher spanning header groups relate?
+- `ResolvedTableSet` answers: which normalized fragments form the semantic working table list?
 - `TableProfile` answers: what kind of table does this appear to be?
 - `PaperTableInventory` answers: what broad paper-level category was assigned to each table number?
 - `TableDefinition` answers: what do the rows and columns mean, before we parse values?
@@ -93,13 +95,14 @@ PDF
   -> extracted tables
   -> normalized tables
   -> column header schemas
-  -> Table 1 continuation inspection artifacts
-  -> table profiles
-  -> table definitions
+  -> resolved tables
   -> parsed source-cell values
+  -> table profiles over resolved tables
+  -> table definitions over resolved tables
   -> parsed tables
-  -> table processing statuses
+  -> table processing statuses over resolved tables
   -> parse quality reports
+  -> Table 1 continuation inspection artifacts over source fragments
   -> paper page furniture
   -> paper footnotes
 
@@ -521,18 +524,49 @@ Why this exists:
 - later tableone-style rendering needs a stored summary object before printing,
   and that object will need a stable column axis
 
-## Step 5: Build Continuation Inspection Artifacts
+## Step 5: Resolve Continuation Fragments
 
-When parse outputs are written and the paper-level table inventory is
-available, the parser checks whether explicit or narrow inferred
-`demographic_description` table continuations have compatible columns.
+After normalization and column-schema construction, the parser builds
+`resolved_tables.json`.
 
-This is a diagnostic-only stage. It does not try random integrations. A
+This artifact is the semantic working table set. It starts from every
+normalized source table and promotes either:
+
+- singleton resolved tables for ordinary source tables
+- integrated resolved tables when a continuation candidate has clear identity
+  evidence, an unambiguous parent fragment, and matching `ColumnHeaderSchema`
+  columns
+- rejected continuation singletons when a candidate fails closed
+
+The resolver preserves `normalized_tables.json` unchanged as the complete
+source record. Every retained resolved row maps back to source table ID, source
+table index, source row index, source role, and page evidence when available.
+
+`TableProfile`, `TableDefinition`, and `ParsedTable` consume this resolved
+working list. For an integrated continuation, the parent headers are carried
+forward only after the schema compatibility decision is accepted, continuation
+body rows are appended in source order, and dropped continuation header or
+non-body rows are recorded in the integration boundary.
+
+The parser still writes the older continuation inspection artifacts for review.
+Those artifacts remain useful for checking source-fragment continuation
+evidence, but they are no longer the canonical semantic table list.
+
+From this point forward, the semantic table count is the length of
+`resolved_tables[*]`, not the length of `normalized_tables.json`. That means
+`table_profiles.json`, `table_definitions.json`, `parsed_tables.json`,
+`paper_table_inventory.json`, and `table_processing_status.json` use resolved
+table IDs. Source-fragment artifacts still use original normalized table IDs
+and are joined back through `resolved_tables.json` provenance when needed.
+
+When parse outputs are written, the parser also checks whether explicit or
+narrow inferred source-fragment continuations have compatible columns.
+
+This inspection path does not try random integrations. A
 continuation fragment must already have clear continuation evidence for a
 specific table number, or be an uncaptained, unnumbered adjacent-page fragment
-after a demographic table, before the parser compares it to the closest prior
-fragment for that table number. The demographic-description gate comes from
-the same paper-level table taxonomy written to `paper_table_inventory.json`.
+after a likely descriptive table, before the parser compares it to the closest
+prior fragment for that table number.
 
 The parser writes:
 
@@ -561,17 +595,12 @@ When the evidence is compatible, the parser writes two inspection artifacts:
 The merged artifact preserves source-row provenance in `metadata.table1_continuation_merge`.
 That lets a human inspect a single logical Table 1 view while still tracing every merged row back to the original normalized table and row index.
 
-For compatible continuation groups, the parser also writes
-`continued_variable_integrations.json`. This artifact concatenates the
-per-fragment `TableDefinition.variables` and reassesses only the fragment
-boundary. At that boundary, the parser may use normalized leading body rows
-before the first standalone continuation variable as level candidates, so a
-row that was ambiguous in the continuation fragment alone can still attach to
-the last open variable from the prior fragment.
-
-This stage does not currently feed the merged rows into `TableDefinition` or `ParsedTable`.
-The default parser still defines and parses the original normalized tables separately.
-That constraint keeps this change useful for inspection without silently changing downstream table semantics.
+For compatible continuation groups, the parser may also write
+`continued_variable_integrations.json`. This older artifact is retained as a
+review view over source fragments while `resolved_tables.json` is the semantic
+input to table definitions and parsed values. It is built from source-fragment
+table definitions, not from the resolved semantic definitions, so it remains an
+auditable old-view artifact rather than a second semantic parse path.
 
 Continuation header comparison is schema-only: the continuation artifacts use
 `ColumnHeaderSchema` through the parser's column-header tooling and do not
@@ -583,7 +612,8 @@ counts.
 
 ## Step 6: Provisional Table Routing With `TableProfile`
 
-Once a table has been normalized, the parser builds a `TableProfile`.
+Once the resolved working table list exists, the parser builds a `TableProfile`
+for each resolved table.
 
 This is an early routing stage. It asks questions like:
 
@@ -603,7 +633,8 @@ Why this stage exists:
 
 ## Step 7: Build `TableDefinition`
 
-`TableDefinition` is the value-free semantic interpretation of the normalized table.
+`TableDefinition` is the value-free semantic interpretation of each resolved
+table.
 
 This means it tries to answer:
 
@@ -661,7 +692,7 @@ This makes it easier to:
 ## Step 8: Parse Source-Cell Value Components
 
 After `ColumnHeaderSchema` exists, the parser builds `parsed_cell_values.json`
-from normalized table body cells in schema-derived value columns.
+from source normalized table body cells in schema-derived value columns.
 
 This is deliberately earlier than the final semantic value join. Each record is
 keyed by:
@@ -680,9 +711,8 @@ Those semantics belong to `TableDefinition` and `ColumnHeaderSchema`.
 
 This early component layer is useful for two reasons:
 
-- continuation handling can later remap already-parsed source values by row and
-  column provenance instead of reparsing display strings after fragments are
-  joined
+- continuation handling remaps already-parsed source values by row and column
+  provenance instead of reparsing display strings after fragments are joined
 - paper-review diagnostics can later assess per-column value-pattern anomalies,
   possible typos, and suspicious inconsistencies without depending on a fully
   successful semantic parse
@@ -696,7 +726,7 @@ context can distinguish `mean (SD)` from `estimate (SE)`.
 
 This stage combines:
 
-- the normalized table grid
+- the resolved normalized table grid
 - the table definition
 - source-cell value components
 
@@ -705,9 +735,12 @@ and produces normalized long-format value records.
 ### What Happens Here
 
 The parser walks the semantic row and column structure and joins each relevant
-displayed cell to its source `ParsedCellValue` record using table, row, and
-column provenance. It then attaches variable, level, column, and header-path
-semantics to the already parsed component payload.
+displayed cell to its source `ParsedCellValue` record. For singleton resolved
+tables this is usually the same row index. For integrated continuations, the
+join uses `ResolvedRowProvenance` so a resolved row can still point back to
+the original source table fragment and source row. It then attaches variable,
+level, column, and header-path semantics to the already parsed component
+payload.
 
 Examples include:
 
@@ -871,12 +904,20 @@ After deterministic parsing, the parser writes `table_processing_status.json`.
 
 This artifact records:
 
+- the resolved semantic table ID
+- the normalized source table IDs that contributed to that status record
 - which existing rescue or repair paths were considered
 - which ones ran
+- source-fragment diagnostics carried forward from parse-quality and resolution artifacts
 - whether the table ended as `ok`, `rescued`, or `failed`
 - the terminal failure stage and failure reason when rescue was exhausted
 
 If a broad extracted value cell was expanded into visual value columns during normalization, that repair is recorded as an `extra_wide_value_column_repair` attempt rather than treating the original newline-stacked extraction as an unrecovered collapsed grid.
+
+For integrated continuations, status is resolved-table keyed. Source-fragment
+warnings remain inspectable through `source_table_ids` and
+`source_fragment_diagnostics` rather than becoming separate semantic table
+statuses.
 
 ## What A Human Should Inspect First
 
@@ -888,45 +929,46 @@ When a parse looks wrong, inspect the outputs in this order.
 2. `normalized_tables.json`
    If the raw grid was usable but header rows, edge trimming, split-value repair, or cleaned text are wrong, the problem is normalization.
 
-3. `table1_continuation_groups.json`, `merged_table1_tables.json`, and `continued_variable_integrations.json`
-   If one logical Table 1 spans pages, inspect these to see whether the continuation was detected, whether the schema-derived column headers matched, and how merged rows map back to source rows.
-   The continued-variable artifact concatenates per-fragment `TableDefinition.variables`, reassesses only the continuation boundary, can reinterpret unclaimed leading continuation body rows as levels, and records row evidence/provenance plus tableone-style metadata.
-   Public R inspection should use the paper's `table_number` as the conceptual selector; extraction-order indices are retained only for low-level provenance/debug mapping.
+3. `resolved_tables.json`
+   If one logical table spans pages, inspect this to see whether fragments were integrated, rejected, or left as singletons, and how resolved rows map back to source table rows.
 
 4. `table_continuation_column_checks.json`
-   If a demographic-description table has an explicit continuation, inspect this to see whether the normalized column count and schema-derived column headers are compatible before any future integration work.
+   If a source fragment has explicit or narrow inferred continuation evidence, inspect this to see whether the normalized column count and schema-derived column headers are compatible.
 
-5. `table_profiles.json`
+5. `table1_continuation_groups.json`, `merged_table1_tables.json`, and `continued_variable_integrations.json`
+   Inspect these older review artifacts when you need a source-fragment view of continuation candidates, merged rows, or boundary reinterpretation evidence.
+
+6. `table_profiles.json`
    If the table was routed to the wrong family, the problem is in routing.
 
-6. `paper_table_inventory.json`
+7. `paper_table_inventory.json`
    If a table is assigned to the wrong broad category, inspect this artifact's chosen category, confidence, and evidence.
 
-7. `table_definitions.json`
+8. `table_definitions.json`
    If row meanings or column meanings are wrong, the problem is in the semantic heuristics.
 
-8. `parsed_cell_values.json`
+9. `parsed_cell_values.json`
    If the printed cell components are wrong before semantic labels are attached, the problem is in source-cell value parsing.
 
-9. `parsed_tables.json`
+10. `parsed_tables.json`
    If source-cell components and row/column meanings are right but the final values are wrong, the problem is in the semantic value join.
 
-10. `table_processing_status.json`
+11. `table_processing_status.json`
    If a table is empty or incomplete, inspect this next to see which rescue paths were attempted and where failure was recorded.
 
-11. `parse_quality_reports.json`
+12. `parse_quality_reports.json`
    If the parse succeeded but the columns, p-values, headers, or row classifications look suspicious, inspect this artifact for deterministic quality warnings.
 
-12. `paper_footnotes.json`
+13. `paper_footnotes.json`
    If superscripts, subscripts, or note markers matter, inspect this artifact for anchors, candidate definitions, and resolved, ambiguous, or unresolved glyph-key links.
 
-13. `paper_page_furniture.json`
+14. `paper_page_furniture.json`
    If repeated page headers, footers, watermarks, or download notices may be contaminating note extraction, inspect this artifact for recurring clusters and ignored regions.
 
-14. `paper_markdown.md`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and `table_contexts/*.json`
+15. `paper_markdown.md`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and `table_contexts/*.json`
    If semantic context retrieval is weak, inspect these next.
 
-15. `table_variable_plausibility_llm.json`
+16. `table_variable_plausibility_llm.json`
    If deterministic variables were reasonable but the plausibility review looks wrong, the issue is in prompting, provider behavior, or validation for the standalone review command.
 
 ## Why This Pipeline Shape Is Worth Keeping
@@ -939,7 +981,7 @@ This separation gives the project:
 
 - raw extraction provenance
 - parser-facing structural cleanup
-- artifact-only Table 1 continuation inspection
+- resolved continuation provenance plus source-fragment continuation inspection
 - explicit routing for mixed-table papers
 - value-free semantics before value parsing
 - optional standalone variable plausibility review

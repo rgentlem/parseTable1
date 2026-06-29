@@ -15,6 +15,7 @@ PDF
 -> ExtractedTable
 -> NormalizedTable
 -> ColumnHeaderSchema
+-> ResolvedTableSet
 -> TableDefinition
 -> ParsedTable
 ```
@@ -30,11 +31,30 @@ The stages must remain separate:
   columns, row-label columns, spanning header groups, group-to-leaf
   relationships, raw header evidence, source row/column evidence, and
   coordinates where available.
+- `ResolvedTableSet` is the paper-level semantic working set. It preserves
+  singleton tables, integrates accepted continuation fragments, rejects weak
+  continuation candidates as inspectable singletons, and records source-row
+  provenance.
 - `TableDefinition` interprets row variables, categorical levels, and semantic
-  column roles from `NormalizedTable` plus `ColumnHeaderSchema`, without
-  extracting values.
+  column roles from resolved `NormalizedTable` objects plus
+  `ColumnHeaderSchema`, without extracting values.
 - `ParsedTable` combines the normalized grid, table definition, and value
   parsing into final structured value records.
+
+For continued-table work, the confirmed semantic working path is:
+
+```text
+NormalizedTable + ColumnHeaderSchema
+-> ResolvedTableSet
+-> TableProfile/TableDefinition
+-> ParsedTable
+```
+
+`ResolvedTableSet` is the paper-level working set that promotes singleton
+normalized tables or accepted integrated continuations before semantic parsing.
+`table1-parser parse` writes this working set to `resolved_tables.json` and
+feeds resolved tables into table profiles, table definitions, and parsed table
+assembly. Existing continuation outputs remain review/provenance artifacts.
 
 ## Mandatory Column-Header Rule
 

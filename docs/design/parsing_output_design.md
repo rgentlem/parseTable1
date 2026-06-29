@@ -23,7 +23,7 @@ Before changing JSON outputs or schemas, always read:
 Those files define the main development criteria:
 
 - keep extraction, normalization, heuristics, LLM interpretation, and validation as separate modules
-- preserve the pipeline shape `PDF -> ExtractedTable -> NormalizedTable -> TableDefinition -> ParsedTable`
+- preserve the pipeline shape `PDF -> ExtractedTable -> NormalizedTable -> ColumnHeaderSchema -> ResolvedTableSet -> TableDefinition -> ParsedTable`
 - keep tables in structured JSON rather than switching to Markdown-first representations
 - preserve raw extracted data and original text
 - use deterministic parsing first and LLM refinement only for semantic disambiguation
@@ -74,12 +74,13 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Cell text annotations | `CellTextAnnotationTable` | Written now as `cell_text_annotations.json` by `parse` | Preserve superscript, subscript, and small marker geometry as extraction-side evidence without rewriting raw cell text |
 | Normalization | `NormalizedTable` | Written now as `normalized_tables.json` by `normalize` and `parse` | Clean rows, detect headers, derive row features |
 | Column header schema | `ColumnHeaderSchema` | Written now as `column_header_schemas.json` by `parse` | Persist parser-native leaf columns, spanning header groups, group-to-leaf relationships, raw cell evidence, and coordinates before semantic column projection |
-| Table 1 continuation inspection | `Table1ContinuationGroup`, `NormalizedTable` | Written now as `table1_continuation_groups.json` and `merged_table1_tables.json` by `parse` | Persist artifact-only grouping and merged normalized rows for explicit or strongly inferred Table 1 continuations without altering the main parse |
-| Continuation column compatibility | `TableContinuationColumnCheck` | Written now as `table_continuation_column_checks.json` by `parse` | Persist schema-derived column-header compatibility checks for explicit or strongly inferred `demographic_description` continuations without altering the main parse |
+| Resolved table set | `ResolvedTableSet` | Written now as `resolved_tables.json` by `parse` | Persist the semantic working table list after continuation resolution while preserving `normalized_tables.json` as full source evidence |
+| Table 1 continuation inspection | `Table1ContinuationGroup`, `NormalizedTable` | Written now as `table1_continuation_groups.json` and `merged_table1_tables.json` by `parse` | Persist source-fragment grouping and merged normalized-row review views for explicit or strongly inferred Table 1 continuations |
+| Continuation column compatibility | `TableContinuationColumnCheck` | Written now as `table_continuation_column_checks.json` by `parse` | Persist schema-derived source-fragment column-header compatibility checks for explicit or strongly inferred descriptive continuations |
 | Table routing | `TableProfile` | Written now as `table_profiles.json` by `parse` | Persist provisional deterministic parser-route decisions |
-| Paper table inventory | `PaperTableInventory`, `PaperTableRecord` | Written now as `paper_table_inventory.json` by `parse` | Persist one deterministic taxonomy prediction per table-like object |
+| Paper table inventory | `PaperTableInventory`, `PaperTableRecord` | Written now as `paper_table_inventory.json` by `parse` | Persist deterministic taxonomy predictions for the resolved semantic table list |
 | Table definition | `TableDefinition` | Written now as `table_definitions.json` by `parse` | Persist value-free row-variable, level, and column semantics |
-| Continued variable integration | `TableDefinition` | Written now as `continued_variable_integrations.json` by `parse` | Persist integrated variable definitions for compatible continued Table 1 fragments, using existing `DefinedVariable`/`DefinedLevel` records plus integration and tableone-style metadata |
+| Continued variable integration | `TableDefinition` | Written now as `continued_variable_integrations.json` by `parse` | Persist a source-fragment review view for compatible continued Table 1 fragments; this is not consumed by canonical semantic parsing now that `resolved_tables.json` feeds `TableDefinition` and `ParsedTable` |
 | Parsed source-cell values | `ParsedCellValue` | Written now as `parsed_cell_values.json` by `parse` | Persist source-grid cell value components keyed by table and row/column indices before semantic row/column value joins |
 | Paper context | `PaperSection`, `PaperVisual`, `PaperVisualReference`, `TableContext` | Written now as `paper_markdown.md`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, and `table_contexts/*.json` by `parse` | Persist markdown sections, actual in-paper visual objects, anchored table/figure references, and per-table retrieval bundles, with only conservative glyph repair in the markdown text |
 | Paper variable inventory | `PaperVariableInventory`, `VariableMention`, `VariableCandidate` | Written now as `paper_variable_inventory.json` by `parse` | Persist the paper-level candidate variable reference list with explicit text/table provenance |
@@ -87,14 +88,14 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Variable-plausibility debug monitoring | `LLMVariablePlausibilityMonitoringReport`, `LLMVariablePlausibilityCallRecord` | Written only when `LLM_DEBUG=true` as `llm_variable_plausibility_debug/<timestamp>/llm_variable_plausibility_monitoring.json` plus per-table trace files | Persist per-table timing, payload-size, status, and raw-response debug evidence for the standalone review command |
 | Variable-plausibility per-table trace files | wrapper JSON files | Written only when `LLM_DEBUG=true` as `variable_plausibility_llm_input.json`, `variable_plausibility_llm_metrics.json`, `variable_plausibility_llm_output.json`, and `variable_plausibility_llm_review.json` | Preserve prompt payloads, metrics, raw provider responses, and validated plausibility reviews for inspection |
 | Final parsed output | `ParsedTable` | Written now as `parsed_tables.json` by `parse` | Validated downstream structured table data |
-| Table processing status | `TableProcessingStatus`, `TableProcessingAttempt` | Written now as `table_processing_status.json` by `parse` | Persist rescue attempts, terminal failure stage, and failure reason without overloading semantic artifacts |
+| Table processing status | `TableProcessingStatus`, `TableProcessingAttempt` | Written now as `table_processing_status.json` by `parse` | Persist resolved-table rescue attempts, source fragment IDs and diagnostics, terminal failure stage, and failure reason without overloading semantic artifacts |
 | Parse quality diagnostics | `ParseQualityReport` | Written now as `parse_quality_reports.json` by `parse` | Persist deterministic row, column, and value-pattern diagnostics without changing parse behavior |
 | Paper footnotes | `PaperFootnotes` | Written now as `paper_footnotes.json` by `parse` | Persist footnote anchors, PyMuPDF page-line definition candidates, page-furniture suppression metadata, and glyph-key links as reviewable evidence without rewriting table text or parsed values |
 | Paper page furniture | `PaperPageFurniture` | Written now as `paper_page_furniture.json` by `parse` | Persist repeated page text observations, clusters, and ignored regions for footnote suppression without changing table parsing |
 
 Design note for future multitable support:
 
-- after `NormalizedTable`, mixed papers may route through a provisional `TableProfile` stage before final semantics are chosen
+- after `ResolvedTableSet`, mixed papers may route through a provisional `TableProfile` stage before final semantics are chosen
 - long term, parser route should be derived from or explicitly consistent with the broader `paper_table_inventory.json` table category; it should not become an unrelated second taxonomy
 - descriptive characteristic tables may continue using `TableDefinition` and `ParsedTable`
 - estimate-result tables may later use sibling artifacts such as `EstimateTableDefinition` and `ParsedEstimateTable`
@@ -380,7 +381,107 @@ Design intent:
 - the schema can later support stored summary/tableone-style projection by
   providing a stable column axis before any print method renders a table
 
-## 4. Table 1 Continuation Inspection Artifacts
+## 4. `resolved_tables.json`
+
+Current status:
+
+- canonical schema models exist now
+- in-memory singleton/continuation-candidate resolver and column-gated
+  integration exists now
+- written by the `parse` CLI command
+- consumed by `TableProfile`, `TableDefinition`, and `ParsedTable`
+- `parsed_cell_values.json` remains source-fragment keyed and is joined to
+  resolved parsed rows through `ResolvedRowProvenance`
+
+Current CLI path:
+
+```text
+outputs/papers/<paper_stem>/resolved_tables.json
+```
+
+Top-level shape:
+
+```json
+{
+  "source_artifact": "normalized_tables.json",
+  "working_artifact": "resolved_tables.json",
+  "resolved_tables": [],
+  "decisions": [],
+  "source_tables": [],
+  "notes": []
+}
+```
+
+Canonical model:
+
+- `ResolvedTableSet`
+- child models: `ResolvedTable`, `SourceTableResolution`,
+  `TableResolutionDecision`, `ResolvedRowProvenance`, `IntegrationBoundary`,
+  `DroppedSourceRow`, `ColumnSchemaCompatibilityDecision`
+
+Design components:
+
+- `source_artifact`
+  records that `normalized_tables.json` remains the complete normalized source
+  record
+- `working_artifact`
+  records the persisted resolved-table artifact name
+- `resolved_tables`
+  records the shorter semantic working set, including unchanged singleton
+  tables and accepted integrated continuations
+- `decisions`
+  records why fragments were accepted, rejected, or passed through unchanged
+- `source_tables`
+  records one index entry per normalized source table, including whether a
+  fragment became a singleton, base fragment, continuation fragment, or rejected
+  continuation, with source page evidence when available
+- `row_provenance`
+  maps every retained resolved row back to source table ID, source table index,
+  source row index, and source page when available
+- `column_schema_decisions`
+  records continuation compatibility decisions derived from
+  `ColumnHeaderSchema`
+
+Each `ResolvedTable` embeds one parser-facing `NormalizedTable` under its
+`table` field. For a singleton, that embedded table is the source normalized
+table. For an accepted continuation, the embedded table keeps the parent header
+rows, appends accepted continuation body rows, records dropped continuation
+header/non-body rows in `integration_boundaries`, and records every retained
+row in `row_provenance`.
+
+Artifact relationships:
+
+- `normalized_tables.json` remains the full ordered source-fragment record.
+- `column_header_schemas.json` remains source-fragment keyed. When semantic
+  parsing consumes an integrated resolved table, the parser carries forward the
+  accepted parent schema as the resolved column schema in memory.
+- `parsed_cell_values.json` remains source-fragment keyed, because values are
+  parsed from original normalized cells before semantic row joins.
+- `parse_quality_reports.json` remains source-fragment keyed, because it
+  diagnoses each normalized extraction/normalization result.
+- `table_profiles.json`, `paper_table_inventory.json`,
+  `table_definitions.json`, `parsed_tables.json`, and
+  `table_processing_status.json` are resolved-table keyed.
+- `table1_continuation_groups.json`, `merged_table1_tables.json`,
+  `table_continuation_column_checks.json`, and
+  `continued_variable_integrations.json` are source-fragment review artifacts.
+  They do not feed canonical semantic parsing.
+
+Design intent:
+
+- insert a canonical working table set between normalization and semantic
+  parsing for continued tables
+- preserve `normalized_tables.json` unchanged as source evidence
+- keep `parsed_cell_values.json` keyed to source normalized table fragments
+  while joining semantic parsed values through resolved-row provenance
+- require `ColumnHeaderSchema` as the column compatibility model
+- treat existing continuation artifacts as review/provenance inputs or derived
+  views, not as alternate semantic table lists
+- fail closed by keeping rejected continuation fragments inspectable as
+  singleton resolved tables with diagnostics
+- avoid making R-side inspection objects the canonical continuation resolver
+
+## 5. Table 1 Continuation Inspection Artifacts
 
 Current status:
 
@@ -410,7 +511,7 @@ Design components:
 - `merged_table1_tables.json`
   records one merged `NormalizedTable` per accepted group, preserving normalized cleaned rows and source-row provenance in `metadata.table1_continuation_merge`
 - `continued_variable_integrations.json`
-  records one integrated `TableDefinition` per compatible continuation group, preserving integrated variables, boundary decisions, row provenance, and tableone-style metadata in `metadata`; boundary decisions may reinterpret leading continuation body rows that were not standalone `DefinedVariable` records
+  records one source-fragment review `TableDefinition` per compatible continuation group, preserving integrated variables, boundary decisions, row provenance, and tableone-style metadata in `metadata`; boundary decisions may reinterpret leading continuation body rows that were not standalone `DefinedVariable` records; this artifact is not a canonical semantic input
 
 Design intent:
 
@@ -419,17 +520,16 @@ Design intent:
 - require compatible schema-derived column headers before writing a merged table artifact
 - ignore non-Table 1 continuations, including later result tables that happen to span pages
 - preserve source table IDs and row indices so the merged view is auditable from the original `normalized_tables.json`
-- keep the merged-row and integrated-variable artifacts inspection-only until a later change deliberately wires them into value parsing
-- avoid changing existing `table_definitions.json`, `parsed_tables.json`, or `table_processing_status.json` behavior as a side effect
+- keep the merged-row and integrated-variable artifacts as source-fragment review views now that `resolved_tables.json` is the semantic working set
+- build `continued_variable_integrations.json` from source-fragment table definitions, not from resolved semantic table definitions, so it remains an auditable old-view artifact rather than a second semantic parse path
 
 The merged normalized table keeps the base table rows and appends continuation body rows after dropping continuation-only header/title rows. Its row indices are local to the merged artifact, while provenance records map each merged row back to the original table ID and original row index.
 
 ### Demographic Continuation Column Checks
 
 `table_continuation_column_checks.json` records explicit continuation fragments
-whose parent or continuation has the paper-table taxonomy category
-`demographic_description`, including tables whose logical Table 1-style content
-is not numbered as Table 1.
+whose parent or continuation has a descriptive source-table profile, including
+tables whose logical Table 1-style content is not numbered as Table 1.
 It also records uncaptained, unnumbered adjacent fragments when the closest
 prior numbered fragment is demographic and the page order supports a
 continuation candidate.
@@ -443,11 +543,12 @@ This artifact:
 - fails compatibility with a structured diagnostic when a usable column-header schema is missing, rather than reconstructing column meaning from normalized rows
 - does not merge tables or change `TableDefinition`, `ParsedTable`, or processing-status behavior
 
-The public helper can fall back to the provisional `TableProfile` family
-`descriptive_characteristics` when no paper-table taxonomy is available, but
-the `parse` CLI artifact uses `paper_table_inventory.json` categories.
+The public helper can also consume paper-table taxonomy categories when they
+are supplied, but the current `parse` CLI writes this source-fragment review
+artifact using source-table profiles so it stays indexed to
+`normalized_tables.json`.
 
-## 5. `table_definitions.json`
+## 6. `table_definitions.json`
 
 Current status:
 
@@ -551,7 +652,7 @@ Design intent:
 - preserve grouped-column level labels and left-to-right order so downstream matching can reconstruct the table's column grouping structure
 - keep multirow column headers structural: parent groups are stored in `header_spans`, per-column paths are stored in `header_path`, and `column_label` remains the leaf label instead of a fragile flattened header string
 
-## 5. Paper Context Artifacts
+## 7. Paper Context Artifacts
 
 Current status:
 
@@ -633,7 +734,7 @@ Variation note:
 - that variation should be handled in section parsing and retrieval, not by redefining the meaning of `paper_markdown.md` beyond conservative glyph repair
 - `docs/design/paper_markdown_spec.md` is the design reference for this artifact
 
-## 6. `table_variable_plausibility_llm.json`
+## 8. `table_variable_plausibility_llm.json`
 
 Current status:
 
@@ -693,7 +794,7 @@ outputs/papers/<paper_stem>/llm_variable_plausibility_debug/<timestamp>/
 - `llm_variable_plausibility_monitoring.json` summarizes every table's review status, including skipped-not-eligible tables
 - per-table trace files are written only for tables that actually reached the provider call path
 
-## 7. Variable-Plausibility Debug Trace Files
+## 9. Variable-Plausibility Debug Trace Files
 
 Current status:
 
@@ -754,7 +855,7 @@ Design intent:
 - preserve stable variable identity fields so disagreements can be audited safely
 - keep the prompt payload compact; the saved input wrapper currently uses short payload keys such as `table` and `vars`
 
-## 8. `parsed_cell_values.json`
+## 10. `parsed_cell_values.json`
 
 Current status:
 
@@ -832,7 +933,7 @@ This artifact is a source component layer. `ParsedTable.values` is the joined
 semantic view over these components and continues to be written to
 `parsed_tables.json`.
 
-## 9. `ParsedTable` JSON
+## 11. `ParsedTable` JSON
 
 Current status:
 
@@ -935,7 +1036,7 @@ Design note for future value parsing:
 
 This is the richest JSON design in the repo because it joins variable semantics, column semantics, and cell-level values into one validated representation.
 
-## 11. `table_processing_status.json`
+## 12. `table_processing_status.json`
 
 Current status:
 
@@ -955,10 +1056,12 @@ This file is written by:
 Top-level design components:
 
 - `table_id`
+- `source_table_ids`
 - `status`
 - `failure_stage`
 - `failure_reason`
 - `attempts`
+- `source_fragment_diagnostics`
 - `notes`
 
 `attempts` design components:
@@ -972,13 +1075,15 @@ Top-level design components:
 
 Design intent:
 
+- key status records to the resolved semantic table IDs written in `table_definitions.json` and `parsed_tables.json`
+- preserve source-fragment IDs and source-fragment diagnostics so integrated continuations remain auditable against `normalized_tables.json` and `parse_quality_reports.json`
 - record which existing rescue and repair paths were considered
 - record which ones actually ran
 - record whether a table ended as `ok`, `rescued`, or `failed`
 - make empty descriptive-table parses explicit failures rather than silent success
 - treat broad newline-stacked value cells as rescued when `metadata.column_repairs.extra_wide_value_column` successfully expands them into visual value columns
 
-## 12. `parse_quality_reports.json`
+## 13. `parse_quality_reports.json`
 
 Current status:
 
@@ -1015,7 +1120,7 @@ Design intent:
 - support R-side inspection and corpus review before making higher-risk changes such as consolidated Table 1 parsing
 - treat representative real-paper parsing checks as an important complement to unit tests, because deterministic table heuristics often fail on structural variants that synthetic tests do not cover
 
-## 13. `paper_table_inventory.json`
+## 14. `paper_table_inventory.json`
 
 Current status:
 
@@ -1072,7 +1177,7 @@ Design intent:
 - treat `table_category` as the broader concept that should drive parser-route selection once it is available; current `table_family` output is an earlier provisional route signal, not an independent semantic category
 - keep this artifact deterministic and computable so R can expose it as a data frame or print method later
 
-## 14. `paper_page_furniture.json`
+## 15. `paper_page_furniture.json`
 
 Current status:
 

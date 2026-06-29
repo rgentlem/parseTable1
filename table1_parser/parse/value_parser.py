@@ -3,9 +3,18 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 
 from table1_parser.parse.cell_value_components import build_parsed_cell_values, parse_cell_value_components
-from table1_parser.schemas import DefinedVariable, NormalizedTable, ParsedCellValue, ParsedColumn, ValueComponent, ValueRecord
+from table1_parser.schemas import (
+    DefinedVariable,
+    NormalizedTable,
+    ParsedCellValue,
+    ParsedColumn,
+    ResolvedRowProvenance,
+    ValueComponent,
+    ValueRecord,
+)
 from table1_parser.text_cleaning import clean_text
 
 
@@ -19,9 +28,15 @@ def build_value_records(
     columns: list[ParsedColumn],
     parsed_cell_values: list[ParsedCellValue] | None = None,
     source_table_index: int | None = None,
+    row_provenance: Sequence[ResolvedRowProvenance] | None = None,
 ) -> tuple[list[ValueRecord], list[str]]:
     """Build semantic value records and attach soft count-percent notes."""
     row_views_by_idx = {row_view.row_idx: row_view for row_view in table.row_views}
+    provenance_by_row_idx = (
+        {provenance.resolved_row_idx: provenance for provenance in row_provenance}
+        if row_provenance is not None
+        else {}
+    )
     if parsed_cell_values is None:
         parsed_cell_values = build_parsed_cell_values(
             [table],
@@ -30,7 +45,6 @@ def build_value_records(
     component_values_by_key = {
         (value.source_table_id, value.row_idx, value.col_idx): value
         for value in parsed_cell_values
-        if value.source_table_id == table.table_id
     }
     values: list[ValueRecord] = []
 
@@ -44,19 +58,29 @@ def build_value_records(
             row_view = row_views_by_idx.get(row_idx)
             if row_view is None:
                 continue
+            source_row = provenance_by_row_idx.get(row_idx)
+            source_table_id = source_row.source_table_id if source_row is not None else table.table_id
+            source_row_idx = source_row.source_row_idx if source_row is not None else row_idx
+            source_index = (
+                source_row.source_table_index
+                if source_row is not None
+                else source_table_index
+                if source_table_index is not None
+                else 0
+            )
             for column in columns:
                 if column.col_idx >= len(row_view.raw_cells):
                     continue
                 raw_value = row_view.raw_cells[column.col_idx]
                 if not clean_text(raw_value):
                     continue
-                component_value = component_values_by_key.get((table.table_id, row_idx, column.col_idx))
+                component_value = component_values_by_key.get((source_table_id, source_row_idx, column.col_idx))
                 if component_value is None:
                     parsed_component = parse_cell_value_components(raw_value, summary_style_hint=variable.summary_style_hint)
                     component_value = ParsedCellValue(
-                        source_table_index=source_table_index if source_table_index is not None else 0,
-                        source_table_id=table.table_id,
-                        row_idx=row_idx,
+                        source_table_index=source_index,
+                        source_table_id=source_table_id,
+                        row_idx=source_row_idx,
                         col_idx=column.col_idx,
                         raw_value=raw_value,
                         parse_pattern=parsed_component.parse_pattern,

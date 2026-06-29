@@ -11,7 +11,10 @@ This design promotes continuation handling from an inspection-only merged view
 to a deterministic table-set refinement stage:
 
 ```text
-ExtractedTable -> NormalizedTable -> ResolvedTableSet -> TableDefinition -> ParsedTable
+NormalizedTable + ColumnHeaderSchema
+-> ResolvedTableSet
+-> TableProfile/TableDefinition
+-> ParsedTable
 ```
 
 The goal is not to merge arbitrary similar-looking tables. Resolution is only
@@ -19,9 +22,13 @@ attempted when the second fragment is already identified as a continuation of a
 specific table, and when its columns are identical to or safely alignable with
 the parent fragment.
 
-## Current Problem
+## Current State
 
-The parser already writes Table 1 continuation inspection artifacts:
+The parser writes a canonical resolved working set:
+
+- `resolved_tables.json`
+
+It also writes Table 1 continuation inspection artifacts:
 
 - `table1_continuation_groups.json`
 - `merged_table1_tables.json`
@@ -32,10 +39,11 @@ explicit `demographic_description` continuations:
 - `table_continuation_column_checks.json`
 
 These artifacts are useful for review, but they are not consumed by
-`TableDefinition` or `ParsedTable`. As a result, the parser may still interpret
-the base fragment and continuation fragment independently.
+`TableDefinition` or `ParsedTable`. The semantic parser consumes
+`resolved_tables.json` instead.
 
-That is insufficient when:
+The resolved stage exists because interpreting every extracted fragment
+separately is insufficient when:
 
 - the base fragment contains a categorical parent row
 - the continuation fragment contains levels for that parent
@@ -64,14 +72,13 @@ the same table set.
 
 ## Core Model
 
-The new paper-level artifact should be a single resolved table-set artifact,
-for example:
+The paper-level resolved table-set artifact is:
 
 ```text
 outputs/papers/<paper_stem>/resolved_tables.json
 ```
 
-`resolved_tables.json` should contain:
+`resolved_tables.json` contains:
 
 - all promoted semantic tables used by downstream parsing
 - continuation-resolution decisions
@@ -87,9 +94,11 @@ Conceptually:
 ```python
 class ResolvedTableSet(BaseModel):
     source_artifact: str
+    working_artifact: str
     resolved_tables: list[ResolvedTable]
     decisions: list[TableResolutionDecision]
     source_tables: list[SourceTableResolution]
+    notes: list[str]
 
 
 class ResolvedTable(BaseModel):
@@ -106,6 +115,30 @@ class ResolvedTable(BaseModel):
     confidence: float
     notes: list[str]
 ```
+
+The implemented schema contract lives in:
+
+- `table1_parser/schemas/resolved_table.py`
+
+The initial in-memory resolver lives in:
+
+- `table1_parser/resolved_tables.py`
+
+It creates singleton resolved-table records in source order, records
+continuation identity evidence, records closest-parent selection decisions,
+applies `ColumnHeaderSchema` compatibility, and creates integrated
+resolved tables when column count and schema-derived comparison labels match.
+It also records retained-row provenance, source-table index entries for
+singletons/consumed fragments/rejected continuations, and keeps rejected
+continuation candidates inspectable as singleton resolved tables with
+diagnostics.
+`table1-parser parse` writes this artifact and feeds resolved tables into
+`TableProfile`, `TableDefinition`, and `ParsedTable` assembly.
+Categorical levels that begin on an accepted continuation fragment are handled
+by ordinary resolved-table row/level parsing: once the continuation body rows
+are appended after a schema match, `TableDefinition` sees one row sequence and
+can attach count/percent level rows to an open parent variable from the base
+fragment.
 
 The embedded `table` should preserve the parser-facing `NormalizedTable` shape
 so existing semantic builders can migrate with limited disruption:
@@ -274,6 +307,7 @@ Each source normalized table should have one source-index entry:
 class SourceTableResolution(BaseModel):
     source_table_id: str
     source_table_index: int
+    source_page_num: int | None
     role: Literal[
         "singleton",
         "base_fragment",
@@ -354,8 +388,9 @@ Rejected candidates should still be recorded in `resolved_tables.json`.
 4. Initially require exact or conservative alignable column compatibility.
 5. Make `TableProfile`, `TableDefinition`, and `ParsedTable` consume the
    resolved working table list.
-6. Preserve compatibility inspection outputs temporarily if useful, but treat
-   them as views derived from `resolved_tables.json`.
+6. Preserve compatibility inspection outputs temporarily if useful, but keep
+   them as source-fragment review views. They must not become alternate inputs
+   to `TableDefinition` or `ParsedTable`.
 7. Add R inspection helpers for resolved tables and column alignment decisions.
 
 When this flow becomes implemented behavior, update:

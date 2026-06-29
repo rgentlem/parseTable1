@@ -128,6 +128,9 @@ same workflows. When a request matches one of these skills, read that skill's
 - `skills/known-failure-regression/SKILL.md`
   - Use when adding or changing parser tests for known failures or important
     artifact contracts.
+- `skills/implementation-goal-checklist/SKILL.md`
+  - Use when turning parser goals, completion priorities, design notes, TODOs,
+    or phases into checkbox implementation plans.
 
 ---
 

@@ -22,6 +22,7 @@ from table1_parser.schemas import (
     PaperSection,
     ParsedCellValue,
     ParsedTable,
+    ResolvedTableSet,
     RowView,
     TableCell,
     TableContext,
@@ -157,6 +158,7 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     extracted_path = tmp_path / "outputs" / "papers" / "paper" / "extracted_tables.json"
     normalized_path = tmp_path / "outputs" / "papers" / "paper" / "normalized_tables.json"
     column_header_schema_path = tmp_path / "outputs" / "papers" / "paper" / "column_header_schemas.json"
+    resolved_tables_path = tmp_path / "outputs" / "papers" / "paper" / "resolved_tables.json"
     table1_continuation_groups_path = tmp_path / "outputs" / "papers" / "paper" / "table1_continuation_groups.json"
     table_continuation_column_checks_path = (
         tmp_path / "outputs" / "papers" / "paper" / "table_continuation_column_checks.json"
@@ -187,6 +189,7 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     assert extracted_path.exists()
     assert normalized_path.exists()
     assert column_header_schema_path.exists()
+    assert resolved_tables_path.exists()
     assert table1_continuation_groups_path.exists()
     assert table_continuation_column_checks_path.exists()
     assert merged_table1_path.exists()
@@ -212,6 +215,8 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     column_schema_payload = json.loads(column_header_schema_path.read_text(encoding="utf-8"))
     assert ColumnHeaderSchema.model_validate(column_schema_payload[0]).table_id == "tbl-1"
     assert column_schema_payload[0]["leaves"][1]["leaf_label"] == "Overall"
+    resolved_tables_payload = json.loads(resolved_tables_path.read_text(encoding="utf-8"))
+    assert ResolvedTableSet.model_validate(resolved_tables_payload).resolved_tables[0].table_id == "tbl-1"
     assert json.loads(table1_continuation_groups_path.read_text(encoding="utf-8")) == []
     assert json.loads(table_continuation_column_checks_path.read_text(encoding="utf-8")) == []
     assert json.loads(merged_table1_path.read_text(encoding="utf-8")) == []
@@ -363,7 +368,7 @@ def test_cli_parse_marks_descriptive_tables_with_empty_definitions_as_failed(tmp
     monkeypatch.setattr(
         cli,
         "build_parsed_tables",
-        lambda tables, definitions, parsed_cell_values=None: [
+        lambda tables, definitions, parsed_cell_values=None, row_provenance_by_table_id=None: [
             ParsedTable(
                 table_id="tbl-1",
                 title="Table 1",
