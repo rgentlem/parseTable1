@@ -557,3 +557,52 @@ def test_link_paper_footnotes_preserves_unresolved_anchors() -> None:
     assert linked.links[0].candidate_definition_ids == []
     assert linked.links[0].link_basis == ["no_matching_glyph_key"]
     assert linked.metadata["unresolved_link_count"] == 1
+
+
+def test_link_paper_footnotes_does_not_paper_level_link_numeric_row_label_citation() -> None:
+    """Numeric row-label citations should not resolve to unrelated table values."""
+    footnotes = PaperFootnotes(
+        paper_id="paper",
+        source_pdf="paper.pdf",
+        anchors=[
+            FootnoteAnchor(
+                anchor_id="anchor:citation",
+                glyph_raw="65",
+                glyph_key="number:65",
+                glyph_kind="number",
+                glyph_codepoints=["U+0036", "U+0035"],
+                source_scope="table_cell",
+                source_id="tbl-1:r10:c0",
+                page_num=5,
+                confidence=0.9,
+                table_id="tbl-1",
+                source_role="row_label",
+                attached_to_text="NHANES",
+            )
+        ],
+        definitions=[
+            FootnoteDefinition(
+                definition_id="definition:unrelated-value",
+                glyph_raw="65",
+                glyph_key="number:65",
+                glyph_kind="number",
+                glyph_codepoints=["U+0036", "U+0035"],
+                source_scope="table_note",
+                source_id="tbl-2:note:0",
+                page_num=7,
+                raw_text="65 (49 - 79)",
+                clean_text="65 (49 - 79)",
+                definition_text="(49 - 79)",
+                confidence=0.75,
+                table_id="tbl-2",
+            )
+        ],
+    )
+
+    linked = link_paper_footnotes(footnotes)
+
+    assert linked.links[0].link_status == "unresolved"
+    assert linked.links[0].candidate_definition_ids == []
+    assert linked.links[0].link_basis == ["numeric_row_label_anchor_requires_local_definition"]
+    assert linked.links[0].notes == ["possible_bibliographic_reference"]
+    assert linked.metadata["unresolved_link_count"] == 1

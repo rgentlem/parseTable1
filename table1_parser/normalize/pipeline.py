@@ -855,12 +855,20 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
         row_bounds = None
     raw_rules = table.metadata.get("horizontal_rules")
     horizontal_rules = [float(value) for value in raw_rules] if isinstance(raw_rules, list) else None
+    raw_separator_rules = table.metadata.get("full_width_horizontal_rules")
+    separator_horizontal_rules = (
+        [float(value) for value in raw_separator_rules]
+        if isinstance(raw_separator_rules, list)
+        else horizontal_rules
+    )
     header_row_bounds = None if extra_wide_value_column_repair is not None else row_bounds
     header_horizontal_rules = None if extra_wide_value_column_repair is not None else horizontal_rules
+    header_separator_rules = None if extra_wide_value_column_repair is not None else separator_horizontal_rules
     header_rows, body_rows, header_detection = detect_header_rows_with_metadata(
         cleaned_rows,
         row_bounds=header_row_bounds,
         horizontal_rules=header_horizontal_rules,
+        separator_horizontal_rules=header_separator_rules,
     )
     if extra_wide_value_column_repair is not None:
         repaired_header_rows = [
@@ -930,6 +938,7 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
             cleaned_rows,
             row_bounds=header_row_bounds,
             horizontal_rules=header_horizontal_rules,
+            separator_horizontal_rules=header_separator_rules,
         )
         body_rows = [row_idx for row_idx in body_rows if row_idx not in suppressed_row_indices]
     first_column_bboxes: dict[int, tuple[float, float, float, float]] = {}
@@ -1035,6 +1044,7 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
                 cleaned_rows,
                 row_bounds=header_row_bounds,
                 horizontal_rules=header_horizontal_rules,
+                separator_horizontal_rules=header_separator_rules,
             )
             body_rows = [row_idx for row_idx in body_rows if row_idx not in suppressed_row_indices]
             row_views = [
@@ -1061,6 +1071,7 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
             cleaned_rows,
             row_bounds=header_row_bounds,
             horizontal_rules=header_horizontal_rules,
+            separator_horizontal_rules=header_separator_rules,
         )
         body_rows = [row_idx for row_idx in body_rows if row_idx not in suppressed_row_indices]
         row_views = [
@@ -1087,6 +1098,7 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
             cleaned_rows,
             row_bounds=header_row_bounds,
             horizontal_rules=header_horizontal_rules,
+            separator_horizontal_rules=header_separator_rules,
         )
         body_rows = [row_idx for row_idx in body_rows if row_idx not in suppressed_row_indices]
         row_views = [
@@ -1112,6 +1124,7 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
                 cleaned_rows,
                 row_bounds=header_row_bounds,
                 horizontal_rules=header_horizontal_rules,
+                separator_horizontal_rules=header_separator_rules,
             )
             body_rows = [row_idx for row_idx in body_rows if row_idx not in suppressed_row_indices]
             row_views = [

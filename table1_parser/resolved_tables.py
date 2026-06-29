@@ -23,6 +23,33 @@ TABLE_NUMBER_PATTERN = re.compile(r"\btable\s*(\d+)\b", re.IGNORECASE)
 CONTINUATION_PATTERN = re.compile(r"\bcont(?:inued)?\.?\b|\(\s*continued\s*\)", re.IGNORECASE)
 
 
+def _trailing_continuation_table_number(table: NormalizedTable) -> int | None:
+    trailing_rows = table.metadata.get("trailing_non_table_rows")
+    if not isinstance(trailing_rows, dict):
+        return None
+    reasons = trailing_rows.get("reasons")
+    if not isinstance(reasons, list) or "trailing_continuation_note" not in {str(reason) for reason in reasons}:
+        return None
+    table_number = trailing_rows.get("continuation_table_number")
+    if isinstance(table_number, int) and not isinstance(table_number, bool) and table_number >= 1:
+        return table_number
+    return None
+
+
+def _has_trailing_continuation_note(table: NormalizedTable) -> bool:
+    trailing_rows = table.metadata.get("trailing_non_table_rows")
+    if not isinstance(trailing_rows, dict):
+        return False
+    reasons = trailing_rows.get("reasons")
+    return isinstance(reasons, list) and "trailing_continuation_note" in {str(reason) for reason in reasons}
+
+
+def _has_post_header_continuation_note(table: NormalizedTable) -> bool:
+    header_detection = table.metadata.get("header_detection")
+    note_rows = header_detection.get("continuation_note_rows") if isinstance(header_detection, dict) else None
+    return isinstance(note_rows, list) and bool(note_rows)
+
+
 def build_resolved_table_set(
     normalized_tables: list[NormalizedTable],
     column_header_schemas: list[ColumnHeaderSchema] | None = None,
@@ -69,6 +96,7 @@ def build_resolved_table_set(
             or logical_table_number < 1
         ):
             logical_table_number = None
+        trailing_continuation_number = _trailing_continuation_table_number(table)
 
         title_caption_text = " ".join(part for part in [table.title, table.caption] if part)
         if logical_table_number is None:
@@ -122,6 +150,38 @@ def build_resolved_table_set(
                 continuation_number = int(match.group(1))
                 continuation_identity_evidence.append(f"first_rows_table_continued:{continuation_number}")
 
+        boundary_parent_index: int | None = None
+        if (
+            continuation_number is None
+            and not title_caption_text
+            and logical_table_number is None
+            and not metadata_is_continuation
+            and source_index > 0
+            and isinstance(source_page_num, int)
+            and not isinstance(source_page_num, bool)
+        ):
+            prior_table = normalized_tables[source_index - 1]
+            prior_page = prior_table.metadata.get("source_page_num")
+            prior_trailing_number = _trailing_continuation_table_number(prior_table)
+            if (
+                isinstance(prior_page, int)
+                and not isinstance(prior_page, bool)
+                and source_page_num == prior_page + 1
+                and _has_post_header_continuation_note(table)
+                and _has_trailing_continuation_note(prior_table)
+            ):
+                boundary_parent_index = source_index - 1
+                continuation_number = prior_trailing_number
+                continuation_identity_evidence.extend(
+                    [
+                        "adjacent_page_boundary_continuation_notes",
+                        f"prior_trailing_continuation_note:{prior_table.table_id}",
+                        f"current_post_header_continuation_note:{table.table_id}",
+                    ]
+                )
+                if prior_trailing_number is not None:
+                    continuation_identity_evidence.append(f"prior_trailing_continuation_table_number:{prior_trailing_number}")
+
         if (
             continuation_number is None
             and not title_caption_text
@@ -147,11 +207,19 @@ def build_resolved_table_set(
                     )
                     break
 
-        is_continuation_candidate = continuation_number is not None and bool(continuation_identity_evidence)
+        is_continuation_candidate = bool(continuation_identity_evidence) and (
+            continuation_number is not None or boundary_parent_index is not None
+        )
         parent_index: int | None = None
         parent_id: str | None = None
         parent_diagnostics: list[str] = []
-        if is_continuation_candidate and continuation_number is not None:
+        if is_continuation_candidate and boundary_parent_index is not None:
+            parent_index = boundary_parent_index
+            parent_id = normalized_tables[parent_index].table_id
+            continuation_identity_evidence.append(f"parent_selected:{parent_id}")
+            parent_diagnostics.append(f"parent_table_index:{parent_index}")
+            parent_diagnostics.append("parent_selected_from_adjacent_boundary_continuation_notes")
+        elif is_continuation_candidate and continuation_number is not None:
             parent_candidates = [
                 index
                 for index in parent_indices_by_number.get(continuation_number, [])
@@ -225,6 +293,27 @@ def build_resolved_table_set(
             continuation_headers = (
                 column_header_comparison_labels(continuation_schema) if continuation_schema_usable else []
             )
+            base_headers_for_match = base_headers
+            continuation_headers_for_match = continuation_headers
+            if (
+                boundary_parent_index is not None
+                and base_schema_usable
+                and continuation_schema_usable
+            ):
+                row_label_columns = {
+                    leaf.col_idx
+                    for leaf in [*base_schema.leaves, *continuation_schema.leaves]
+                    if leaf.is_row_label_column
+                }
+                if row_label_columns:
+                    base_headers_for_match = [
+                        header for col_idx, header in enumerate(base_headers) if col_idx not in row_label_columns
+                    ]
+                    continuation_headers_for_match = [
+                        header
+                        for col_idx, header in enumerate(continuation_headers)
+                        if col_idx not in row_label_columns
+                    ]
             normalized_column_count_match = base_table.n_cols == table.n_cols
             column_diagnostics: list[str] = []
 
@@ -236,10 +325,20 @@ def build_resolved_table_set(
                 column_diagnostics.append(
                     f"normalized_column_count_mismatch:base={base_table.n_cols}:continuation={table.n_cols}"
                 )
-            if base_schema_usable and continuation_schema_usable and base_headers != continuation_headers:
+            if (
+                base_schema_usable
+                and continuation_schema_usable
+                and base_headers_for_match != continuation_headers_for_match
+            ):
                 column_diagnostics.append(
                     f"column_header_mismatch:base={base_headers}:continuation={continuation_headers}"
                 )
+            elif (
+                base_schema_usable
+                and continuation_schema_usable
+                and base_headers != continuation_headers
+            ):
+                column_diagnostics.append("row_label_column_header_mismatch_ignored_for_boundary_continuation")
 
             if not base_schema_usable or not continuation_schema_usable:
                 column_schema_decision = ColumnSchemaCompatibilityDecision(
@@ -254,7 +353,7 @@ def build_resolved_table_set(
                     diagnostics=column_diagnostics,
                     confidence=0.0,
                 )
-            elif normalized_column_count_match and base_headers == continuation_headers:
+            elif normalized_column_count_match and base_headers_for_match == continuation_headers_for_match:
                 column_schema_decision = ColumnSchemaCompatibilityDecision(
                     decision_id=f"column_schema_decision_{parent_index}_{source_index}",
                     base_table_id=base_table.table_id,
@@ -421,9 +520,14 @@ def build_resolved_table_set(
                     )
                 )
                 if parent_index < len(source_tables):
+                    parent_source_role = source_tables[parent_index].role
                     source_tables[parent_index] = source_tables[parent_index].model_copy(
                         update={
-                            "role": "base_fragment",
+                            "role": (
+                                "base_fragment"
+                                if parent_source_role != "continuation_fragment"
+                                else parent_source_role
+                            ),
                             "resolved_table_id": integrated_table_id,
                             "consumed_by": integrated_table_id,
                             "decision_id": decision_id,
@@ -481,9 +585,14 @@ def build_resolved_table_set(
         ]
         resolved_notes = ["singleton_source_table"]
         if is_continuation_candidate:
+            continuation_label = (
+                f"table_number={continuation_number}"
+                if continuation_number is not None
+                else "table_number=unknown_boundary_note"
+            )
             resolved_notes.extend(
                 [
-                    f"continuation_identity_gate_passed:table_number={continuation_number}",
+                    f"continuation_identity_gate_passed:{continuation_label}",
                     (
                         f"parent_fragment_selected:{parent_id}"
                         if parent_id is not None
@@ -584,9 +693,11 @@ def build_resolved_table_set(
 
         if is_continuation_candidate and continuation_number is not None:
             latest_fragment_by_number[continuation_number] = source_index
-        elif logical_table_number is not None:
-            latest_fragment_by_number[logical_table_number] = source_index
-            parent_indices_by_number.setdefault(logical_table_number, []).append(source_index)
+        else:
+            parent_number = logical_table_number or trailing_continuation_number
+            if parent_number is not None:
+                latest_fragment_by_number[parent_number] = source_index
+                parent_indices_by_number.setdefault(parent_number, []).append(source_index)
 
     return ResolvedTableSet(
         resolved_tables=resolved_tables,

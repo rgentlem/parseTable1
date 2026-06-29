@@ -6,6 +6,11 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
 
 ## Current Priorities
 
+Current corpus-driven hardening guide:
+`docs/implementation/real_paper_testing_guide.md`. Use it for the ordered
+real-paper review loop across extraction, normalization, continuation handling,
+table semantics, and mixed-family routing.
+
 1. [x] Add a parser-native column header schema artifact.
    Build `ColumnHeaderSchema` between `NormalizedTable` and `TableDefinition` so leaf columns, higher spanning header groups, group-to-leaf relationships, raw cell evidence, and coordinates are explicit before any tableone-style projection.
    Design note: `docs/design/column_header_schema.md`.
@@ -66,6 +71,7 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
    Recent update: footnote-suffixed p-values such as `<0.001a` now count as p-value tokens for word-position column anchoring and value parsing, so a far-right p-value cluster is not collapsed into the last data column.
    Sidecar: `docs/design/cell_text_annotations.md` defines `cell_text_annotations.json` for superscript, subscript, and small-marker geometry; parse now populates page-coordinate cell-bbox annotations when PyMuPDF char geometry is available, and R inspection loads and displays the sidecar. Implementation checklist is in `docs/implementation/cell_text_annotations_implementation_plan.md`. Keep this separate from symbol canonicalization and value parsing.
    Footnote follow-up: `docs/design/paper_footnotes.md` defines the `paper_footnotes.json` artifact contract, and `docs/implementation/paper_footnotes_implementation_plan.md` tracks the staged work. Core Python schemas, anchor/definition inventories, PyMuPDF page-line definition sources, glyph canonicalization, deterministic links, parse output, R data-frame helpers, `ObservedFootnotes` attachment, and a 28-paper real-PDF smoke pass are in place. Review found resolved, unresolved, and ambiguous real examples; links remain review-only and should not be consumed downstream until page-note boilerplate and repeated marginal text pruning are stronger.
+   Bibliographic citation follow-up: numeric superscripts attached to row-label study/source names are preserved in `cell_text_annotations.json` and `paper_footnotes.json`, but the parser does not yet match them to bibliography entries. The footnote linker now avoids paper-level fallback for numeric row-label anchors so citation-like markers do not resolve to unrelated table values. A future bibliography/citation artifact should parse reference-list entries and link citation anchors to those entries explicitly.
    Treat these as normalization follow-ups, not emergency parser changes. Preserve raw extraction, add focused repairs with provenance, and avoid broad rules that could merge real value columns into labels.
 
 8. [ ] Add known-failure regression fixtures.
@@ -82,3 +88,5 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
 - Do not mark a task complete just because one narrow case has been patched. Mark it complete only when the repo has a general implementation and tests for the intended scope.
 - If a task expands into multiple concrete implementation steps, add subitems or link to a dedicated implementation note.
 - Recent extraction guardrail: explicit and text-position candidates now trim structurally trailing non-table rows after the final numeric value-matrix row when footer/watermark evidence is present, recording `metadata.trailing_non_table_rows`. Keep future footer handling structural and page-geometry driven rather than source- or publisher-specific.
+- Recent extraction guardrail: reference/bibliography section detection now combines backend payload text with PyMuPDF page text before table detection and carries the section stop into fallback extraction, so bibliography pages cannot enter the table pipeline just because the primary JSON payload missed the section heading.
+- Recent extraction guardrail: sparse trailing table-continuation notes such as `(Table 1 continues on next page)` are trimmed as page furniture and recorded in `metadata.trailing_non_table_rows`; post-header notes such as `(Continued from previous page)` remain provenance rows but are excluded from normalized `body_rows`.

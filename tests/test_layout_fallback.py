@@ -7,6 +7,7 @@ from table1_parser.extract.layout_fallback import (
     build_text_layout_candidates,
     detect_horizontal_rules,
     normalize_positioned_geometry_for_rotation,
+    trim_trailing_non_table_rows,
 )
 
 
@@ -101,6 +102,31 @@ def test_build_text_layout_candidates_trims_footer_text_after_value_rows() -> No
     assert candidates[0].metadata["trailing_non_table_rows"]["reasons"] == [
         "large_gap_after_last_value_row"
     ]
+
+
+def test_trims_sparse_trailing_table_continuation_note() -> None:
+    """A trailing continued-table note is page furniture, not a data row."""
+    rows = [
+        ["Study", "N", "Group A", "Group B"],
+        ["A", "10", "12%", "18%"],
+        ["B", "20", "22%", "28%"],
+        ["C", "30", "32%", "38%"],
+        ["label continuation", "", "", ""],
+        ["", "", "(Table 1 continues", "on next page)"],
+    ]
+
+    trimmed = trim_trailing_non_table_rows(rows)
+
+    assert trimmed.raw_rows == rows[:5]
+    assert trimmed.metadata == {
+        "start_row_idx": 5,
+        "removed_row_count": 1,
+        "last_value_row_idx": 3,
+        "reasons": ["trailing_continuation_note"],
+        "gap_after_last_value_row": None,
+        "continuation_note_texts": ["(Table 1 continues on next page)"],
+        "continuation_table_number": 1,
+    }
 
 
 def test_text_layout_fallback_ignores_repeated_numeric_label_tokens_as_value_anchors() -> None:

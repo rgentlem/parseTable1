@@ -540,7 +540,7 @@ def test_pymupdf4llm_extractor_skips_tables_after_references_heading(tmp_path, m
                         {
                             "bbox": [100, 70, 220, 90],
                             "boxclass": "text",
-                            "textlines": [{"spans": [{"text": "References"}]}],
+                            "textlines": [{"spans": [{"text": "Funding"}]}],
                         },
                         {
                             "bbox": [200, 120, 580, 220],
@@ -559,6 +559,24 @@ def test_pymupdf4llm_extractor_skips_tables_after_references_heading(tmp_path, m
                         },
                     ],
                 },
+                {
+                    "page_number": 3,
+                    "boxes": [
+                        {
+                            "bbox": [200, 120, 580, 220],
+                            "boxclass": "table",
+                            "table": {
+                                "bbox": [200, 120, 580, 220],
+                                "extract": [
+                                    ["3.", "Third Author. Article title. Journal. 2022; 3:5-6. PMID: 3."],
+                                ],
+                                "cells": [
+                                    [[200, 120, 220, 140], [220, 120, 580, 140]],
+                                ],
+                            },
+                        },
+                    ],
+                },
             ]
         },
     )
@@ -569,7 +587,11 @@ def test_pymupdf4llm_extractor_skips_tables_after_references_heading(tmp_path, m
     )
     _install_fake_pymupdf_document(
         monkeypatch,
-        [FakePyMuPage(text="", words=[]), FakePyMuPage(text="", words=[])],
+        [
+            FakePyMuPage(text="", words=[]),
+            FakePyMuPage(text="References", words=[]),
+            FakePyMuPage(text="", words=[]),
+        ],
     )
 
     tables = PyMuPDF4LLMExtractor(max_candidates=3, heuristic_confidence_threshold=0.0).extract(str(pdf_path))

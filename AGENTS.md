@@ -131,6 +131,9 @@ same workflows. When a request matches one of these skills, read that skill's
 - `skills/implementation-goal-checklist/SKILL.md`
   - Use when turning parser goals, completion priorities, design notes, TODOs,
     or phases into checkbox implementation plans.
+- `skills/single-paper-review-commands/SKILL.md`
+  - Use when giving one-paper parse commands and interactive R inspection code
+    for papers in the local testpaper corpus.
 
 ---
 

@@ -41,7 +41,7 @@ from table1_parser.schemas import ExtractedTable, TableCell
 MODEL_HEADER_PATTERN = re.compile(r"\bmodel[_\s]*\d+\b", re.IGNORECASE)
 ESTIMATE_HEADER_PATTERN = re.compile(r"\b(?:or\b|95%\s*ci|p(?:-value)?\b)\b", re.IGNORECASE)
 REFERENCES_HEADING_PATTERN = re.compile(
-    r"(?m)^\s*(?:#{1,6}\s*)?(?:[*_`]+)?references(?:[*_`]+)?\s*$",
+    r"(?m)^\s*(?:#{1,6}\s*)?(?:[*_`]+)?(?:references|bibliography)(?:[*_`]+)?\s*$",
     re.IGNORECASE,
 )
 
@@ -142,14 +142,22 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
             document = None
         try:
             in_references_section = False
+            references_start_page_num: int | None = None
             for page_num, payload_page in sorted(pages.items()):
                 page = None
                 if document is not None and 0 <= page_num - 1 < getattr(document, "page_count", 0):
                     page = document.load_page(page_num - 1)
                 page_boxes = payload_page.get("boxes", []) or []
                 page_text = _collect_page_text(page_boxes)
+                extracted_page_text = ""
+                if page is not None:
+                    extracted_page_text = extract_page_text(page)
+                    if extracted_page_text and extracted_page_text not in page_text:
+                        page_text = f"{page_text}\n{extracted_page_text}".strip()
                 if REFERENCES_HEADING_PATTERN.search(page_text):
                     in_references_section = True
+                    if references_start_page_num is None:
+                        references_start_page_num = page_num
                 if in_references_section:
                     continue
                 if page is None:
@@ -160,9 +168,6 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                     page_words = extract_page_words(page)
                     page_chars = _extract_page_chars_with_page_num(page, page_num)
                     page_rule_segments = extract_page_rule_segments(page)
-                    extracted_page_text = extract_page_text(page)
-                    if extracted_page_text and extracted_page_text not in page_text:
-                        page_text = f"{page_text}\n{extracted_page_text}".strip()
                 page_candidates: list[DetectedTableCandidate] = []
                 table_boxes = [
                     box
@@ -211,6 +216,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                     cell_bboxes = refinement["table_cells"]
                     row_bounds = refinement["row_bounds"]
                     horizontal_rules = refinement["horizontal_rules"]
+                    full_width_horizontal_rules = refinement["full_width_horizontal_rules"]
                     geometry_coordinate_frame = str(refinement["geometry_coordinate_frame"])
                     trimmed = trim_trailing_non_table_rows(
                         raw_rows,
@@ -224,6 +230,9 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                         table_bottom = row_bounds[-1][1]
                         horizontal_rules = [
                             rule for rule in horizontal_rules if float(rule) <= table_bottom + 2.0
+                        ]
+                        full_width_horizontal_rules = [
+                            rule for rule in full_width_horizontal_rules if float(rule) <= table_bottom + 2.0
                         ]
                     first_column_text_x0_by_row = (
                         _infer_first_column_text_x0_by_row(
@@ -320,6 +329,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                                 ),
                                 "row_bounds": row_bounds,
                                 "horizontal_rules": horizontal_rules,
+                                "full_width_horizontal_rules": full_width_horizontal_rules,
                                 "trailing_non_table_rows": trimmed.metadata,
                                 **orientation_metadata,
                             },
@@ -542,7 +552,15 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                 page = document.load_page(page_index)
                 payload_page = pages.get(page_num, {})
                 page_boxes = payload_page.get("boxes", []) or []
-                page_text = _collect_page_text(page_boxes) or extract_page_text(page)
+                page_text = _collect_page_text(page_boxes)
+                extracted_page_text = extract_page_text(page)
+                if extracted_page_text and extracted_page_text not in page_text:
+                    page_text = f"{page_text}\n{extracted_page_text}".strip()
+                if references_start_page_num is not None and page_num >= references_start_page_num:
+                    continue
+                if REFERENCES_HEADING_PATTERN.search(page_text):
+                    references_start_page_num = page_num
+                    continue
                 for candidate in build_text_layout_candidates(
                     page_num=page_num,
                     page_text=page_text,
@@ -839,6 +857,7 @@ def _refine_explicit_table_candidate_grid(
             "refined_table_cells": refined_table_cells,
             "row_bounds": row_bounds,
             "horizontal_rules": horizontal_rules,
+            "full_width_horizontal_rules": full_width_rules,
             "grid_refinement_source": grid_refinement_source,
             "geometry_coordinate_frame": geometry_coordinate_frame,
             "geometry_transform_source_bbox": None,
@@ -861,6 +880,7 @@ def _refine_explicit_table_candidate_grid(
             "refined_table_cells": refined_table_cells,
             "row_bounds": row_bounds,
             "horizontal_rules": horizontal_rules,
+            "full_width_horizontal_rules": full_width_rules,
             "grid_refinement_source": grid_refinement_source,
             "geometry_coordinate_frame": geometry_coordinate_frame,
             "geometry_transform_source_bbox": None,
@@ -914,13 +934,54 @@ def _refine_explicit_table_candidate_grid(
         refinement_attempts: list[dict[str, object]] = []
 
         if should_rotate_refinement:
+            rotated_refinement_bbox = bbox
+            overlapping_rule_boxes: list[tuple[float, float, float, float]] = []
+            for segment in page_rule_segments:
+                segment_left = min(float(segment[0]), float(segment[2]))
+                segment_right = max(float(segment[0]), float(segment[2]))
+                segment_top = min(float(segment[1]), float(segment[3]))
+                segment_bottom = max(float(segment[1]), float(segment[3]))
+                if segment_right < bbox[0] - 12.0 or segment_left > bbox[2] + 12.0:
+                    continue
+                if segment_bottom < bbox[1] - 2.0:
+                    continue
+                overlapping_rule_boxes.append(
+                    (segment_left, segment_top, segment_right, segment_bottom)
+                )
+            if overlapping_rule_boxes:
+                rule_left = min(rule_box[0] for rule_box in overlapping_rule_boxes)
+                rule_right = max(rule_box[2] for rule_box in overlapping_rule_boxes)
+                rule_bottom = max(rule_box[3] for rule_box in overlapping_rule_boxes)
+                if rule_bottom > bbox[3] + 20.0 or rule_left < bbox[0] - 2.0:
+                    rotated_refinement_bbox = (
+                        min(float(bbox[0]), rule_left),
+                        float(bbox[1]),
+                        max(float(bbox[2]), rule_right),
+                        max(float(bbox[3]), rule_bottom),
+                    )
+            rotated_words = [
+                word
+                for word in page_words
+                if float(word["x0"]) >= rotated_refinement_bbox[0] - 2.0
+                and float(word["x1"]) <= rotated_refinement_bbox[2] + 2.0
+                and float(word["top"]) >= rotated_refinement_bbox[1] - 2.0
+                and float(word["bottom"]) <= rotated_refinement_bbox[3] + 2.0
+            ]
+            rotated_chars = [
+                char
+                for char in page_chars
+                if float(char["x0"]) >= rotated_refinement_bbox[0] - 2.0
+                and float(char["x1"]) <= rotated_refinement_bbox[2] + 2.0
+                and float(char["top"]) >= rotated_refinement_bbox[1] - 2.0
+                and float(char["bottom"]) <= rotated_refinement_bbox[3] + 2.0
+            ]
             clipped_rule_segments = [
                 segment
                 for segment in page_rule_segments
-                if max(float(segment[0]), float(segment[2])) >= bbox[0] - 2.0
-                and min(float(segment[0]), float(segment[2])) <= bbox[2] + 2.0
-                and max(float(segment[1]), float(segment[3])) >= bbox[1] - 2.0
-                and min(float(segment[1]), float(segment[3])) <= bbox[3] + 2.0
+                if max(float(segment[0]), float(segment[2])) >= rotated_refinement_bbox[0] - 2.0
+                and min(float(segment[0]), float(segment[2])) <= rotated_refinement_bbox[2] + 2.0
+                and max(float(segment[1]), float(segment[3])) >= rotated_refinement_bbox[1] - 2.0
+                and min(float(segment[1]), float(segment[3])) <= rotated_refinement_bbox[3] + 2.0
             ]
             (
                 working_words,
@@ -928,10 +989,10 @@ def _refine_explicit_table_candidate_grid(
                 transformed_rule_segments,
                 transformed_bbox,
             ) = normalize_positioned_geometry_for_rotation(
-                words=clipped_words,
-                chars=clipped_chars,
+                words=rotated_words or clipped_words,
+                chars=rotated_chars or clipped_chars,
                 rule_segments=clipped_rule_segments,
-                bbox=bbox,
+                bbox=rotated_refinement_bbox,
                 rotation_direction=rotation_direction,
             )
             refinement_attempts.append(
@@ -942,9 +1003,13 @@ def _refine_explicit_table_candidate_grid(
                         transformed_rule_segments,
                         transformed_bbox,
                     ),
+                    "full_width_horizontal_rules": detect_horizontal_rules(
+                        transformed_rule_segments,
+                        transformed_bbox,
+                    ),
                     "refinement_source": "rotated_word_positions_with_rules",
                     "coordinate_frame": "table_local_rotated_normalized",
-                    "geometry_transform_source_bbox": bbox,
+                    "geometry_transform_source_bbox": rotated_refinement_bbox,
                     "geometry_transform_transposed": False,
                     "geometry_transform_applied": True,
                     "minimum_row_gain": 3,
@@ -1007,6 +1072,10 @@ def _refine_explicit_table_candidate_grid(
                                 transposed_transformed_rule_segments,
                                 transposed_transformed_bbox,
                             ),
+                            "full_width_horizontal_rules": detect_horizontal_rules(
+                                transposed_transformed_rule_segments,
+                                transposed_transformed_bbox,
+                            ),
                             "refinement_source": "rotated_transposed_word_positions_with_rules",
                             "coordinate_frame": "table_local_rotated_transposed_normalized",
                             "geometry_transform_source_bbox": transposed_bbox,
@@ -1021,6 +1090,7 @@ def _refine_explicit_table_candidate_grid(
                     "words": clipped_words,
                     "chars": clipped_chars,
                     "horizontal_rules": horizontal_rules,
+                    "full_width_horizontal_rules": full_width_rules,
                     "refinement_source": "collapsed_explicit_grid_word_positions",
                     "coordinate_frame": "page",
                     "geometry_transform_source_bbox": None,
@@ -1034,21 +1104,56 @@ def _refine_explicit_table_candidate_grid(
             working_words = refinement_attempt["words"]
             working_chars = refinement_attempt["chars"]
             working_horizontal_rules = refinement_attempt["horizontal_rules"]
+            working_full_width_rules = refinement_attempt.get("full_width_horizontal_rules")
             if not isinstance(working_words, list) or not isinstance(working_chars, list):
                 continue
             if not isinstance(working_horizontal_rules, list):
                 working_horizontal_rules = []
+            if not isinstance(working_full_width_rules, list):
+                working_full_width_rules = []
             refined_lines = build_word_lines(working_words)
-            if len(working_horizontal_rules) >= 3:
-                footer_boundary = sorted(working_horizontal_rules)[-1]
-                refined_lines = [
-                    line
-                    for line in refined_lines
-                    if float(line["bottom"]) <= footer_boundary + 1.5
+            column_start_boundaries: list[float] | None = None
+            if (
+                bool(refinement_attempt["geometry_transform_applied"])
+                and len(working_horizontal_rules) >= 3
+            ):
+                sorted_rules = sorted(float(rule) for rule in working_horizontal_rules)
+                internal_rules = [
+                    rule
+                    for rule in sorted_rules[1:-1]
+                    if rule > sorted_rules[0] + 3.0 and rule < sorted_rules[-1] - 3.0
                 ]
+                if internal_rules:
+                    separator_rule = internal_rules[0]
+                    header_lines = [
+                        line
+                        for line in refined_lines
+                        if float(line["bottom"]) <= separator_rule + 1.5
+                    ]
+                    header_starts: list[float] = []
+                    for line in header_lines:
+                        previous_x1: float | None = None
+                        for word in sorted(line["words"], key=lambda item: float(item["x0"])):
+                            text = str(word["text"]).strip()
+                            if not text:
+                                continue
+                            word_x0 = float(word["x0"])
+                            word_x1 = float(word["x1"])
+                            if previous_x1 is None or word_x0 - previous_x1 > 10.0:
+                                header_starts.append(word_x0)
+                            previous_x1 = word_x1
+                    clustered_starts: list[float] = []
+                    for start in sorted(header_starts):
+                        if not clustered_starts or abs(start - clustered_starts[-1]) > 8.0:
+                            clustered_starts.append(start)
+                        else:
+                            clustered_starts[-1] = (clustered_starts[-1] + start) / 2.0
+                    if len(clustered_starts) >= max_raw_cols + 4:
+                        column_start_boundaries = clustered_starts[1:]
             refined_rows, refined_cell_bboxes = build_row_grid_from_lines(
                 refined_lines,
                 page_chars=working_chars,
+                column_start_boundaries=column_start_boundaries,
             )
             if refined_rows:
                 keep_indices = [
@@ -1085,6 +1190,7 @@ def _refine_explicit_table_candidate_grid(
                             for line in refined_lines
                         ],
                         "horizontal_rules": working_horizontal_rules,
+                        "full_width_horizontal_rules": working_full_width_rules,
                         "grid_refinement_source": str(refinement_attempt["refinement_source"]),
                         "geometry_coordinate_frame": str(refinement_attempt["coordinate_frame"]),
                         "geometry_transform_source_bbox": refinement_attempt[
@@ -1149,6 +1255,7 @@ def _refine_explicit_table_candidate_grid(
                             for line in refined_lines
                         ],
                         "horizontal_rules": horizontal_rules,
+                        "full_width_horizontal_rules": full_width_rules,
                         "grid_refinement_source": "word_positions_with_horizontal_rules",
                         "geometry_coordinate_frame": "page",
                         "geometry_transform_source_bbox": None,
@@ -1162,6 +1269,7 @@ def _refine_explicit_table_candidate_grid(
         "refined_table_cells": refined_table_cells,
         "row_bounds": row_bounds,
         "horizontal_rules": horizontal_rules,
+        "full_width_horizontal_rules": full_width_rules,
         "grid_refinement_source": grid_refinement_source,
         "geometry_coordinate_frame": geometry_coordinate_frame,
         "geometry_transform_source_bbox": None,

@@ -135,6 +135,30 @@ build_normalized_display <- function(payload) {
   display
 }
 
+build_extracted_display <- function(payload, logical_col_offset = NULL) {
+  n_rows <- as.integer(payload$n_rows %||% 0L)
+  n_cols <- as.integer(payload$n_cols %||% 0L)
+  if (is.na(n_rows) || is.na(n_cols) || n_rows <= 0L || n_cols <= 0L) {
+    return(data.frame())
+  }
+  grid <- matrix("", nrow = n_rows, ncol = n_cols)
+  for (cell in payload$cells %||% list()) {
+    row_idx <- as.integer(cell$row_idx %||% NA_integer_) + 1L
+    col_idx <- as.integer(cell$col_idx %||% NA_integer_) + 1L
+    if (is.na(row_idx) || is.na(col_idx) || row_idx < 1L || col_idx < 1L || row_idx > n_rows || col_idx > n_cols) {
+      next
+    }
+    grid[row_idx, col_idx] <- as.character(cell$text %||% "")
+  }
+  display <- as.data.frame(grid, stringsAsFactors = FALSE, check.names = FALSE)
+  names(display) <- if (is.null(logical_col_offset)) {
+    paste0("extract_col_", seq_len(n_cols) - 1L)
+  } else {
+    paste0("logical_col_", as.integer(logical_col_offset) + seq_len(n_cols))
+  }
+  data.frame(row_idx = seq_len(n_rows) - 1L, display, check.names = FALSE)
+}
+
 build_parsed_display <- function(payload) {
   columns <- payload$columns %||% list()
   ordered_columns <- columns[order(vapply(columns, function(col) col$col_idx %||% 0L, integer(1)))]
@@ -198,11 +222,17 @@ looks_like_normalized_table <- function(payload) {
     !is.null(payload$body_rows)
 }
 
+looks_like_extracted_table <- function(payload) {
+  !is.null(payload$cells) &&
+    !is.null(payload$n_rows) &&
+    !is.null(payload$n_cols)
+}
+
 `%||%` <- function(x, y) {
   if (is.null(x) || length(x) == 0) y else x
 }
 
-visualize_table_from_json <- function(json_path) {
+visualize_table_from_json <- function(json_path, logical_col_offset = NULL) {
   payload <- unwrap_table_array(unwrap_trace_payload(read_json_file(json_path)))
   title <- payload$title %||% NULL
   caption <- payload$caption %||% NULL
@@ -222,12 +252,14 @@ visualize_table_from_json <- function(json_path) {
 
   display <- if (looks_like_normalized_table(payload)) {
     build_normalized_display(payload)
+  } else if (looks_like_extracted_table(payload)) {
+    build_extracted_display(payload, logical_col_offset = logical_col_offset)
   } else if (!is.null(payload$body_rows) || !is.null(payload$rows)) {
     build_payload_display(payload)
   } else if (!is.null(payload$variables) && !is.null(payload$columns)) {
     build_parsed_display(payload)
   } else {
-    stop("Unsupported JSON structure. Expected normalized rows, compact payload rows, or parsed variables/columns.", call. = FALSE)
+    stop("Unsupported JSON structure. Expected extracted cells, normalized rows, compact payload rows, or parsed variables/columns.", call. = FALSE)
   }
 
   if (nrow(display) == 0) {

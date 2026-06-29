@@ -180,6 +180,106 @@ def test_unrelated_tables_with_similar_columns_are_not_integrated() -> None:
     assert [source.role for source in resolved_set.source_tables] == ["singleton", "singleton"]
 
 
+def test_boundary_continuation_notes_integrate_uncaptioned_fragments() -> None:
+    """Adjacent uncaptioned fragments with numbered boundary notes and matching columns form one table."""
+    base_rows = [
+        ["Study", "N", "H pylori"],
+        ["Study A", "10", "20%"],
+        ["Study B", "20", "30%"],
+    ]
+    continuation_rows = [
+        ["Study", "N", "H pylori"],
+        ["(Continued from", "previous", "page)"],
+        ["Study C", "30", "40%"],
+    ]
+    final_rows = [
+        ["Study", "N", "H pylori"],
+        ["(Continued from", "previous", "page)"],
+        ["Study D", "40", "50%"],
+    ]
+    base = NormalizedTable(
+        table_id="paper-p5-t0",
+        title=None,
+        caption=None,
+        header_rows=[0],
+        body_rows=[1, 2],
+        row_views=[_row_view(row_idx, base_rows[row_idx]) for row_idx in [1, 2]],
+        n_rows=3,
+        n_cols=3,
+        metadata={
+            "cleaned_rows": base_rows,
+            "source_page_num": 5,
+            "trailing_non_table_rows": {
+                "reasons": ["trailing_continuation_note"],
+                "continuation_table_number": 1,
+            },
+        },
+    )
+    continuation = NormalizedTable(
+        table_id="paper-p6-t0",
+        title=None,
+        caption=None,
+        header_rows=[0],
+        body_rows=[2],
+        row_views=[_row_view(2, continuation_rows[2])],
+        n_rows=3,
+        n_cols=3,
+        metadata={
+            "cleaned_rows": continuation_rows,
+            "source_page_num": 6,
+            "header_detection": {"continuation_note_rows": [1]},
+            "trailing_non_table_rows": {
+                "reasons": ["trailing_continuation_note"],
+                "continuation_table_number": 1,
+            },
+        },
+    )
+    final = NormalizedTable(
+        table_id="paper-p7-t0",
+        title=None,
+        caption=None,
+        header_rows=[0],
+        body_rows=[2],
+        row_views=[_row_view(2, final_rows[2])],
+        n_rows=3,
+        n_cols=3,
+        metadata={
+            "cleaned_rows": final_rows,
+            "source_page_num": 7,
+            "header_detection": {"continuation_note_rows": [1]},
+        },
+    )
+
+    resolved_set = build_resolved_table_set(
+        [base, continuation, final],
+        [
+            _schema(base, ["", "N", "H pylori"]),
+            _schema(continuation, ["Characteristics", "N", "H pylori"]),
+            _schema(final, ["", "N", "H pylori"]),
+        ],
+    )
+
+    assert len(resolved_set.resolved_tables) == 1
+    resolved = resolved_set.resolved_tables[0]
+    assert resolved.resolution_type == "integrated_continuation"
+    assert resolved.logical_table_number == 1
+    assert resolved.source_table_ids == ["paper-p5-t0", "paper-p6-t0", "paper-p7-t0"]
+    assert resolved.table.body_rows == [1, 2, 3, 4]
+    assert resolved.table.metadata["cleaned_rows"][3] == ["Study C", "30", "40%"]
+    assert resolved.table.metadata["cleaned_rows"][4] == ["Study D", "40", "50%"]
+    assert [source.role for source in resolved_set.source_tables] == [
+        "base_fragment",
+        "continuation_fragment",
+        "continuation_fragment",
+    ]
+    assert all(decision.status == "accepted" for decision in resolved_set.decisions)
+    assert any(
+        "prior_trailing_continuation_table_number:1" in decision.identity_evidence
+        for decision in resolved_set.decisions
+        if decision.decision_type == "integrated_continuation"
+    )
+
+
 def _extracted_table(table_id: str) -> ExtractedTable:
     return ExtractedTable(
         table_id=table_id,

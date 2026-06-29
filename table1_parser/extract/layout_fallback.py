@@ -17,12 +17,18 @@ from table1_parser.extract.table_detector import (
 ALPHA_TOKEN_PATTERN = re.compile(r"[A-Za-z]")
 NUMERIC_TOKEN_PATTERN = re.compile(r"\d")
 TABLE_CAPTION_PATTERN = re.compile(r"^\s*table\s*\d+\b(?:\s*[:.])?", re.IGNORECASE)
+TABLE_NUMBER_PATTERN = re.compile(r"\btable\s*(\d+)\b", re.IGNORECASE)
 SENTENCE_TERMINAL_PATTERN = re.compile(r"[.!?][\"')\]]*$")
 LINE_MERGE_TOLERANCE = 4.0
 COLUMN_CLUSTER_TOLERANCE = 18.0
 COLLAPSED_LABEL_PATTERN = re.compile(r"[a-z][A-Z]|[A-Za-z-]{8,}")
 P_VALUE_ANCHOR_PATTERN = re.compile(r"^(?:[<>]=?)?(?:0?\.\d+|\.\d+|1\.0+)(?:[*†‡§¶#{}|]+|[a-z])*$", re.IGNORECASE)
 TABLE_VALUE_TEXT_PATTERN = re.compile(r"^(?:[<>]=?\s*)?[\d.,/%()\-+±\s]+$")
+CONTINUATION_PAGE_NOTE_PATTERN = re.compile(
+    r"\b(?:cont\.?|continued|continues?)\b.*\b(?:previous|next)\s+page\b|"
+    r"\b(?:previous|next)\s+page\b.*\b(?:cont\.?|continued|continues?)\b",
+    re.IGNORECASE,
+)
 
 
 class TrimmedTableRows(NamedTuple):
@@ -204,6 +210,51 @@ def trim_trailing_non_table_rows(
     rows = _normalize_rows(raw_rows)
     bboxes = cell_bboxes or []
     bounds = row_bounds or []
+    suffix_start = len(rows)
+    removed_continuation_note = False
+    continuation_note_texts: list[str] = []
+    continuation_table_number: int | None = None
+    while suffix_start > 0:
+        suffix_row = rows[suffix_start - 1]
+        populated = [cell.strip() for cell in suffix_row if cell.strip()]
+        if not populated:
+            if removed_continuation_note:
+                suffix_start -= 1
+            break
+        suffix_text = " ".join(populated)
+        if (
+            len(populated) <= 3
+            and _table_value_cell_count(suffix_row) == 0
+            and CONTINUATION_PAGE_NOTE_PATTERN.search(suffix_text)
+        ):
+            removed_continuation_note = True
+            continuation_note_texts.insert(0, suffix_text)
+            table_number_match = TABLE_NUMBER_PATTERN.search(suffix_text)
+            if table_number_match is not None:
+                continuation_table_number = int(table_number_match.group(1))
+            suffix_start -= 1
+            continue
+        break
+    if removed_continuation_note:
+        data_row_indices = [
+            row_idx
+            for row_idx, row in enumerate(rows[:suffix_start])
+            if _table_value_cell_count(row) >= (2 if len(row) >= 4 else 1)
+        ]
+        return TrimmedTableRows(
+            rows[:suffix_start],
+            bboxes[:suffix_start] if bboxes else bboxes,
+            bounds[:suffix_start] if bounds else bounds,
+            {
+                "start_row_idx": suffix_start,
+                "removed_row_count": len(rows) - suffix_start,
+                "last_value_row_idx": data_row_indices[-1] if data_row_indices else None,
+                "reasons": ["trailing_continuation_note"],
+                "gap_after_last_value_row": None,
+                "continuation_note_texts": continuation_note_texts,
+                "continuation_table_number": continuation_table_number,
+            },
+        )
     if len(rows) < 5:
         return TrimmedTableRows(rows, bboxes, bounds, None)
 
@@ -317,94 +368,106 @@ def build_word_lines(words: list[dict[str, object]]) -> list[dict[str, object]]:
 def build_row_grid_from_lines(
     lines: list[dict[str, object]],
     page_chars: list[dict[str, object]] | None = None,
+    column_start_boundaries: list[float] | None = None,
 ) -> tuple[list[list[str]], list[list[tuple[float, float, float, float] | None]]]:
     """Convert text lines into a row-major grid and cell bounding boxes."""
-    broad_numeric_positions = sorted(
-        float(word["x0"])
-        for line in lines
-        for word in line["words"]
-        if _is_numeric_like(str(word["text"]))
+    explicit_boundaries = sorted(
+        {
+            round(float(boundary), 4)
+            for boundary in (column_start_boundaries or [])
+        }
     )
-    numeric_position_items: list[tuple[float, int]] = []
-    for line_index, line in enumerate(lines):
-        for word in line["words"]:
-            text = str(word["text"]).strip()
-            compact_text = re.sub(r"[\s,\u00a0\u2009\u202f]+", "", text)
-            if not NUMERIC_TOKEN_PATTERN.search(compact_text):
-                continue
-            if ALPHA_TOKEN_PATTERN.search(compact_text) and P_VALUE_ANCHOR_PATTERN.fullmatch(compact_text) is None:
-                continue
-            numeric_position_items.append((float(word["x0"]), line_index))
-    numeric_position_items = sorted(numeric_position_items)
-    has_left_label_anchor = False
-    if not numeric_position_items:
-        numeric_anchors = []
+    has_left_label_anchor = bool(explicit_boundaries)
+    if explicit_boundaries:
+        boundaries = explicit_boundaries
+        row_width = len(boundaries) + 1
     else:
-        clusters: list[list[tuple[float, int]]] = [[numeric_position_items[0]]]
-        for position_item in numeric_position_items[1:]:
-            if abs(position_item[0] - clusters[-1][-1][0]) <= COLUMN_CLUSTER_TOLERANCE:
-                clusters[-1].append(position_item)
-            else:
-                clusters.append([position_item])
-        line_count = len(lines)
-        if line_count <= 4:
-            minimum_anchor_lines = 1
-        elif line_count <= 12:
-            minimum_anchor_lines = 2
-        else:
-            minimum_anchor_lines = max(3, min(5, line_count // 8))
-        value_anchors = [
-            sum(position for position, _line_index in cluster) / len(cluster)
-            for cluster in clusters
-            if len({_line_index for _position, _line_index in cluster}) >= minimum_anchor_lines
-        ]
-        if line_count > 20:
-            for prefix_limit in (4, 8, 12, 16, 20):
-                prefix_items = [(position, line_index) for position, line_index in numeric_position_items if line_index < prefix_limit]
-                prefix_clusters: list[list[tuple[float, int]]] = [[prefix_items[0]]] if prefix_items else []
-                for position_item in prefix_items[1:]:
-                    if abs(position_item[0] - prefix_clusters[-1][-1][0]) <= COLUMN_CLUSTER_TOLERANCE:
-                        prefix_clusters[-1].append(position_item)
-                    else:
-                        prefix_clusters.append([position_item])
-                prefix_anchors = [
-                    sum(position for position, _line_index in cluster) / len(cluster)
-                    for cluster in prefix_clusters
-                    if len({_line_index for _position, _line_index in cluster}) >= 3
-                ]
-                if len(prefix_anchors) >= 4 and len(prefix_anchors) > len(value_anchors):
-                    value_anchors = prefix_anchors
-        if len(value_anchors) < 3 and broad_numeric_positions:
-            broad_clusters: list[list[float]] = [[broad_numeric_positions[0]]]
-            for position in broad_numeric_positions[1:]:
-                if abs(position - broad_clusters[-1][-1]) <= COLUMN_CLUSTER_TOLERANCE:
-                    broad_clusters[-1].append(position)
-                else:
-                    broad_clusters.append([position])
-            numeric_anchors = [sum(cluster) / len(cluster) for cluster in broad_clusters]
-        elif value_anchors:
-            leftmost_word_x0 = min(
-                float(word["x0"])
-                for line in lines
-                for word in line["words"]
-            )
-            if value_anchors[0] - leftmost_word_x0 > COLUMN_CLUSTER_TOLERANCE:
-                numeric_anchors = [leftmost_word_x0, *value_anchors]
-                has_left_label_anchor = True
-            else:
-                numeric_anchors = value_anchors
-        else:
+        broad_numeric_positions = sorted(
+            float(word["x0"])
+            for line in lines
+            for word in line["words"]
+            if _is_numeric_like(str(word["text"]))
+        )
+        numeric_position_items: list[tuple[float, int]] = []
+        for line_index, line in enumerate(lines):
+            for word in line["words"]:
+                text = str(word["text"]).strip()
+                compact_text = re.sub(r"[\s,\u00a0\u2009\u202f]+", "", text)
+                if not NUMERIC_TOKEN_PATTERN.search(compact_text):
+                    continue
+                if ALPHA_TOKEN_PATTERN.search(compact_text) and P_VALUE_ANCHOR_PATTERN.fullmatch(compact_text) is None:
+                    continue
+                numeric_position_items.append((float(word["x0"]), line_index))
+        numeric_position_items = sorted(numeric_position_items)
+        if not numeric_position_items:
             numeric_anchors = []
-    if not numeric_anchors:
+        else:
+            clusters: list[list[tuple[float, int]]] = [[numeric_position_items[0]]]
+            for position_item in numeric_position_items[1:]:
+                if abs(position_item[0] - clusters[-1][-1][0]) <= COLUMN_CLUSTER_TOLERANCE:
+                    clusters[-1].append(position_item)
+                else:
+                    clusters.append([position_item])
+            line_count = len(lines)
+            if line_count <= 4:
+                minimum_anchor_lines = 1
+            elif line_count <= 12:
+                minimum_anchor_lines = 2
+            else:
+                minimum_anchor_lines = max(3, min(5, line_count // 8))
+            value_anchors = [
+                sum(position for position, _line_index in cluster) / len(cluster)
+                for cluster in clusters
+                if len({_line_index for _position, _line_index in cluster}) >= minimum_anchor_lines
+            ]
+            if line_count > 20:
+                for prefix_limit in (4, 8, 12, 16, 20):
+                    prefix_items = [(position, line_index) for position, line_index in numeric_position_items if line_index < prefix_limit]
+                    prefix_clusters: list[list[tuple[float, int]]] = [[prefix_items[0]]] if prefix_items else []
+                    for position_item in prefix_items[1:]:
+                        if abs(position_item[0] - prefix_clusters[-1][-1][0]) <= COLUMN_CLUSTER_TOLERANCE:
+                            prefix_clusters[-1].append(position_item)
+                        else:
+                            prefix_clusters.append([position_item])
+                    prefix_anchors = [
+                        sum(position for position, _line_index in cluster) / len(cluster)
+                        for cluster in prefix_clusters
+                        if len({_line_index for _position, _line_index in cluster}) >= 3
+                    ]
+                    if len(prefix_anchors) >= 4 and len(prefix_anchors) > len(value_anchors):
+                        value_anchors = prefix_anchors
+            if len(value_anchors) < 3 and broad_numeric_positions:
+                broad_clusters: list[list[float]] = [[broad_numeric_positions[0]]]
+                for position in broad_numeric_positions[1:]:
+                    if abs(position - broad_clusters[-1][-1]) <= COLUMN_CLUSTER_TOLERANCE:
+                        broad_clusters[-1].append(position)
+                    else:
+                        broad_clusters.append([position])
+                numeric_anchors = [sum(cluster) / len(cluster) for cluster in broad_clusters]
+            elif value_anchors:
+                leftmost_word_x0 = min(
+                    float(word["x0"])
+                    for line in lines
+                    for word in line["words"]
+                )
+                if value_anchors[0] - leftmost_word_x0 > COLUMN_CLUSTER_TOLERANCE:
+                    numeric_anchors = [leftmost_word_x0, *value_anchors]
+                    has_left_label_anchor = True
+                else:
+                    numeric_anchors = value_anchors
+            else:
+                numeric_anchors = []
+        if not numeric_anchors:
+            return ([], [])
+        boundaries = [
+            (numeric_anchors[index] + numeric_anchors[index + 1]) / 2.0
+            for index in range(len(numeric_anchors) - 1)
+        ]
+        row_width = len(numeric_anchors) if has_left_label_anchor else len(numeric_anchors) + 1
+    if not boundaries and row_width <= 1:
         return ([], [])
-
-    boundaries = [
-        (numeric_anchors[index] + numeric_anchors[index + 1]) / 2.0
-        for index in range(len(numeric_anchors) - 1)
-    ]
     rows: list[list[str]] = []
     bbox_rows: list[list[tuple[float, float, float, float] | None]] = []
-    row_width = len(numeric_anchors) if has_left_label_anchor else len(numeric_anchors) + 1
     for line in lines:
         row_cells = [""] * row_width
         row_bboxes: list[tuple[float, float, float, float] | None] = [None] * row_width
@@ -415,7 +478,7 @@ def build_row_grid_from_lines(
             if text.isdigit() and len(text) >= 4 and word_width <= max(6.0, word_height * 0.5):
                 continue
             column_index = 0
-            while column_index < len(boundaries) and float(word["x0"]) >= boundaries[column_index]:
+            while column_index < len(boundaries) and float(word["x0"]) >= boundaries[column_index] - 1.0:
                 column_index += 1
             column_index = min(column_index, row_width - 1)
             if (

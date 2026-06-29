@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from table1_parser.normalize.header_detector import detect_header_rows
+from table1_parser.normalize.header_detector import detect_header_rows, detect_header_rows_with_metadata
 from table1_parser.normalize.io import load_normalized_tables, normalized_tables_to_payload, write_normalized_tables
 from table1_parser.normalize.pipeline import normalize_extracted_table
 from table1_parser.normalize.row_signature import build_row_signature
@@ -174,6 +174,80 @@ def test_fragmented_horizontal_rules_do_not_override_content_fallback() -> None:
 
     assert header_rows == [0]
     assert body_rows == [1, 2]
+
+
+def test_header_detector_does_not_treat_row_boundaries_as_separator_rules() -> None:
+    """Overloaded row-boundary rules should not trigger the visual hline separator path."""
+    rows = [
+        ["", "The AUC of the optimal", "", "The AUC of the", ""],
+        ["", "parameter combination", "", "optimal parameter", ""],
+        ["", "in the training cohort", "", "combination", ""],
+        ["", "", "", "in the testing cohort", ""],
+        ["", "All-cause", "Cardio-", "All-cause", "Cardio-"],
+        ["", "mortality", "vascular", "mortality", "vascular"],
+        ["", "", "mortality", "", "mortality"],
+        ["Logistic", "0.860", "0.831", "0.852", "0.829"],
+        ["Regression", "", "", "", ""],
+    ]
+    row_bounds = [(float(idx * 10), float(idx * 10 + 8)) for idx in range(len(rows))]
+    row_boundary_rules = sorted({value for bounds in row_bounds for value in bounds})
+
+    header_rows, body_rows, metadata = detect_header_rows_with_metadata(
+        rows,
+        row_bounds=row_bounds,
+        horizontal_rules=row_boundary_rules,
+    )
+
+    assert metadata["source"] != "horizontal_rule_separator"
+    assert header_rows != list(range(7))
+    assert body_rows[0] < 7
+
+
+def test_normalization_keeps_separator_header_when_first_body_row_is_dash_heavy() -> None:
+    """A later value-matrix row should not pull the first hline-separated body row into headers."""
+    rows = [
+        ["Test", "Mean", "Date of", "Percent", "H pylori seroprevalence", "", "", "", ""],
+        ["", "age", "data", "foreign-", "", "", "", "", "Asian/Pacific"],
+        ["", "", "", "", "Hispanic", "White", "Black", "American", ""],
+        ["", "(Min-Max)", "collection", "born", "", "", "", "", ""],
+        ["", "", "", "", "", "", "", "Indian/Alaska", "Islander"],
+        ["", "", "", "", "", "", "", "native", ""],
+        ["ELISA", "27.1", "-", "-", "79% (67%-88%)", "-", "-", "-", "-"],
+        ["ELISA", "", "1991, 2000", "-", "43% (42%-45%)", "16% (15%-17%)", "43% (42%-45%)", "-", "-"],
+    ]
+    cells = [
+        TableCell(row_idx=row_idx, col_idx=col_idx, text=value)
+        for row_idx, row in enumerate(rows)
+        for col_idx, value in enumerate(row)
+    ]
+    extracted = ExtractedTable(
+        table_id="tbl-separator-before-dash-body-row",
+        source_pdf="paper.pdf",
+        page_num=1,
+        n_rows=len(rows),
+        n_cols=len(rows[0]),
+        cells=cells,
+        extraction_backend="pymupdf4llm",
+        metadata={
+            "row_bounds": [
+                (0.3, 7.6),
+                (9.4, 20.4),
+                (13.8, 20.4),
+                (17.9, 24.5),
+                (22.3, 28.9),
+                (30.7, 37.3),
+                (42.8, 50.1),
+                (70.3, 77.5),
+            ],
+            "horizontal_rules": [39.9],
+        },
+    )
+
+    normalized = normalize_extracted_table(extracted)
+
+    assert normalized.header_rows == [0, 1, 2, 3, 4, 5]
+    assert normalized.body_rows[:2] == [6, 7]
+    assert normalized.metadata["header_detection"]["source"] == "horizontal_rule_separator"
 
 
 def test_row_signature_generation_keeps_raw_and_normalized_forms() -> None:

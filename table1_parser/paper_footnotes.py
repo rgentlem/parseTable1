@@ -408,6 +408,32 @@ def link_paper_footnotes(footnotes: PaperFootnotes) -> PaperFootnotes:
     links: list[FootnoteLink] = []
     for anchor_index, anchor in enumerate(footnotes.anchors):
         candidates = definitions_by_glyph.get(anchor.glyph_key, [])
+        if (
+            candidates
+            and anchor.glyph_kind == "number"
+            and anchor.source_scope == "table_cell"
+            and anchor.source_role == "row_label"
+        ):
+            candidates = [
+                definition
+                for definition in candidates
+                if (anchor.table_id is not None and anchor.table_id == definition.table_id)
+                or (anchor.visual_id is not None and anchor.visual_id == definition.visual_id)
+            ]
+            if not candidates:
+                links.append(
+                    FootnoteLink(
+                        link_id=f"link:{anchor_index}",
+                        anchor_id=anchor.anchor_id,
+                        glyph_key=anchor.glyph_key,
+                        link_status="unresolved",
+                        candidate_definition_ids=[],
+                        link_basis=["numeric_row_label_anchor_requires_local_definition"],
+                        confidence=0.0,
+                        notes=["possible_bibliographic_reference"],
+                    )
+                )
+                continue
         if not candidates:
             links.append(
                 FootnoteLink(

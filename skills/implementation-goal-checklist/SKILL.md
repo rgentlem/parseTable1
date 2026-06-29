@@ -30,7 +30,7 @@ Write a compact implementation plan with:
 - stable goal-scoped IDs on every checkbox item, such as `G1.1`, `G1.2`, or
   `P2.1`, so the user can refer to individual steps unambiguously
 - acceptance criteria when the goal is large enough to need them
-- a short "Do Not Do" section when scope control matters
+- a short "Scope Guardrails" section with plain bullets when scope control matters
 
 Prefer broad parser-stage tasks over tiny helper-level tasks. Defer R helpers,
 diagnostics, and convenience APIs unless real usage or observed failures justify
@@ -75,7 +75,7 @@ failures or stable artifact contracts.
 
 - [ ] **G1.5** ...
 
-## Do Not Do
+## Scope Guardrails
 
-- [ ] **G1.6** ...
+- ...
 ```

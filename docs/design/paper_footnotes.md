@@ -179,6 +179,13 @@ Initial linking should prefer matches in this order:
 Record the chosen evidence in `link_basis`. Do not drop lower-confidence or
 ambiguous evidence when it is useful for review.
 
+Numeric superscripts attached to row-label cells are often bibliographic
+citations, especially in study/source tables. Do not resolve these through
+paper-level footnote fallback. They should link only to a local table/visual
+definition; otherwise leave them unresolved with a note that they may be
+bibliographic references. Bibliography matching should be handled by a separate
+citation/reference artifact, not by the footnote linker.
+
 ## Current Consumption Status
 
 `paper_footnotes.json` is review evidence only. Downstream parser stages should

@@ -103,6 +103,22 @@ def test_build_schema_for_simple_one_row_table() -> None:
     assert schema.evidence[0].raw_text == "Characteristic"
 
 
+def test_build_schema_does_not_invent_blank_row_label_header() -> None:
+    """A blank row-label header should stay blank unless source text supplies it."""
+    rows = [
+        ["", "N", "H pylori"],
+        ["Dehesa M. et al., 1991", "56", "79%"],
+    ]
+    table = _normalized_table("tbl-blank-row-label-header", rows, header_rows=[0])
+    schema = build_column_header_schema(table, _extracted_table("tbl-blank-row-label-header", rows))
+
+    assert schema.leaves[0].is_row_label_column is True
+    assert schema.leaves[0].leaf_label == ""
+    assert schema.leaves[0].leaf_name == "column_0"
+    assert "blank_leaf_header:col=0" in schema.diagnostics
+    assert not any("inferred_row_label_leaf_header" in diagnostic for diagnostic in schema.diagnostics)
+
+
 def test_build_schema_collapses_multirow_group_headers() -> None:
     """Repeated higher labels should become one spanning group over leaf columns."""
     rows = [
@@ -181,6 +197,53 @@ def test_build_schema_uses_internal_header_rule_for_wrapped_leaf_stack() -> None
         ("Group B", 3, 4),
     ]
     assert "split_wrapped_leaf_header_rows_by_rule:rows=1,2,3" in schema.diagnostics
+
+
+def test_build_schema_trusts_separator_header_stack_over_body_geometry() -> None:
+    """A horizontal-rule separator from normalization should keep body rows out of leaf labels."""
+    rows = [
+        ["Test", "Mean", "Date of", "Percent", "H pylori seroprevalence", "", "", "", ""],
+        ["", "age", "data", "foreign-", "", "", "", "", "Asian/Pacific"],
+        ["", "", "", "", "Hispanic", "White", "Black", "American", ""],
+        ["", "(Min-Max)", "collection", "born", "", "", "", "", ""],
+        ["", "", "", "", "", "", "", "Indian/Alaska", "Islander"],
+        ["", "", "", "", "", "", "", "native", ""],
+        ["ELISA", "27.1", "-", "-", "79% (67%-88%)", "-", "-", "-", "-"],
+    ]
+    table = _normalized_table("tbl-separator-stack", rows, header_rows=[0, 1, 2, 3, 4, 5], body_rows=[6])
+    table.metadata["row_bounds"] = [
+        (0.3, 7.6),
+        (9.4, 20.4),
+        (13.8, 20.4),
+        (17.9, 24.5),
+        (22.3, 28.9),
+        (30.7, 37.3),
+        (42.8, 50.1),
+    ]
+    table.metadata["horizontal_rules"] = [39.9]
+    table.metadata["header_detection"] = {
+        "source": "horizontal_rule_separator",
+        "separator_rule_y": 39.9,
+        "separator_header_rows": [0, 1, 2, 3, 4, 5],
+        "separator_first_body_row_idx": 6,
+    }
+
+    schema = build_column_header_schema(table, _extracted_table("tbl-separator-stack", rows))
+
+    assert schema.leaf_header_row_idx == 5
+    assert [leaf.leaf_label for leaf in schema.leaves] == [
+        "Test",
+        "Mean age (Min-Max)",
+        "Date of data collection",
+        "Percent foreign- born",
+        "H pylori seroprevalence Hispanic",
+        "White",
+        "Black",
+        "American Indian/Alaska native",
+        "Asian/Pacific Islander",
+    ]
+    assert "ELISA" not in [leaf.leaf_label for leaf in schema.leaves]
+    assert "merged_separator_wrapped_leaf_header_rows:rows=0,1,2,3,4,5" in schema.diagnostics
 
 
 def test_build_schema_splits_value_region_group_headers_by_geometry_gap() -> None:

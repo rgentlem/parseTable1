@@ -5,8 +5,9 @@ move `parseTable1` toward completion. It is based on the current parser TODOs,
 design documents, and the latest real-paper corpus run.
 
 This is primarily a review document for discussion and revision. Priority 1
-also includes a checkbox implementation outline because it is the next chosen
-work item.
+keeps the completed continuation implementation outline. Priority 3 is now the
+next active work area and should proceed through real-paper review before
+larger parser changes are designed.
 
 ## Evidence Used
 
@@ -15,9 +16,10 @@ work item.
 - `docs/implementation/continued_variable_integration_implementation_spec.md`
 - `docs/design/multitable_architecture_spec.md`
 - `docs/implementation/multitable_implementation_plan.md`
+- `docs/implementation/real_paper_testing_guide.md`
 - Testpaper batch run:
   - corpus: `/Users/robert/Projects/Epiconnector/testpapers`
-  - output: `outputs/testpapers_batch_20260629_140704`
+  - output: `outputs/testpapers_batch_20260629_152920`
   - PDFs: 27
   - command-level failures: 0
 
@@ -26,18 +28,18 @@ completion is still mixed:
 
 ```text
 table_processing_status:
-  ok: 39
-  rescued: 36
+  ok: 35
+  rescued: 35
   failed: 12
 
 table_profiles:
-  descriptive_characteristics: 33
-  estimate_results: 20
+  descriptive_characteristics: 29
+  estimate_results: 19
   unknown: 34
 
 paper_table_categories:
-  demographic_description: 33
-  analysis_outputs: 28
+  demographic_description: 29
+  analysis_outputs: 27
   data_presentation: 9
   non_table_artifact: 8
   general: 2
@@ -344,6 +346,43 @@ The hard areas are:
 This is completion-scale because parser reliability depends on many structural
 failure modes interacting across extraction, normalization, column schema, row
 semantics, and value parsing.
+
+This phase should stay review-driven. The ordered paper list and working
+checklist are in `docs/implementation/real_paper_testing_guide.md`; that guide
+is intentionally a starting point, not a final taxonomy of failures.
+
+### Next Active Checklist
+
+- [ ] **C1** Work through failed table statuses first. Classify each current
+  failure as a correct non-table rejection, extraction failure, normalization
+  failure, column-header failure, row-semantics failure, unsupported table
+  family, or ambiguous pending review.
+- [ ] **C2** Work through rescued structural cases. Confirm the visible grid is
+  correct before changing semantic logic, and decide which active rescue paths
+  deserve focused known-failure regressions.
+- [ ] **C3** Work through accepted and rejected continuation decisions after the
+  resolved-table stage. Explain each decision from source evidence and
+  `ColumnHeaderSchema`, not plausible labels alone.
+- [ ] **C4** Work through mixed-family and unsupported tables. Record which
+  outputs need future estimate-table or data-matrix semantics, without forcing
+  them through descriptive Table 1 parsing.
+- [ ] **C5** Re-run representative successful papers and then the full 27-PDF
+  corpus after each substantial change set. Compare table-level status,
+  failure reasons, continuation decisions, and value counts, not only command
+  success.
+
+### Review Discipline
+
+- Treat the papers as the evidence source; revise the checklist as review
+  reveals better ordering or different failure groupings.
+- Define a realistic first success criterion for each paper before fixing code;
+  for unusual table families this may be correct table-fragment extraction and
+  compatible headers rather than full descriptive Table 1 semantics.
+- Fix the earliest parser stage that owns the problem.
+- Add focused regressions only for observed failure modes or stable artifact
+  contracts.
+- Defer R helpers, broad diagnostics, and convenience APIs until repeated
+  review work shows a concrete need.
 
 ## Important Work Not In The Top Three
 

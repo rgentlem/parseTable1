@@ -60,6 +60,11 @@ def build_column_header_schema(
         diagnostics.append("some_header_rows_out_of_grid_bounds")
     if len(body_rows) != len(table.body_rows):
         diagnostics.append("some_body_rows_out_of_grid_bounds")
+    header_detection = table.metadata.get("header_detection")
+    trusted_separator_header_rows = (
+        isinstance(header_detection, dict)
+        and header_detection.get("source") == "horizontal_rule_separator"
+    )
 
     first_declared_body_row = min(body_rows) if body_rows else None
     declared_leaf_header_candidates = [
@@ -80,7 +85,12 @@ def build_column_header_schema(
 
     inferred_header_rows_used = False
     geometry_header_rows, geometry_body_start = _infer_header_rows_from_geometry(grid, table.n_cols, table.metadata)
-    if usable_header_rows and geometry_header_rows and _header_rows_before_first_rule(usable_header_rows, table.metadata):
+    if (
+        usable_header_rows
+        and geometry_header_rows
+        and _header_rows_before_first_rule(usable_header_rows, table.metadata)
+        and not trusted_separator_header_rows
+    ):
         usable_header_rows = geometry_header_rows
         header_rows = geometry_header_rows
         inferred_header_rows_used = True
@@ -122,7 +132,13 @@ def build_column_header_schema(
     leaf_header_row_indices = [leaf_header_row_idx] if leaf_header_row_idx is not None else []
     if leaf_header_row_idx is not None:
         prior_rows = [row_idx for row_idx in usable_header_rows if row_idx < leaf_header_row_idx]
-        if prior_rows:
+        if trusted_separator_header_rows and len(usable_header_rows) > 3:
+            leaf_header_row_indices = sorted(usable_header_rows)
+            diagnostics.append(
+                "merged_separator_wrapped_leaf_header_rows:"
+                f"rows={','.join(map(str, leaf_header_row_indices))}"
+            )
+        elif prior_rows:
             bounded_header_rows = sorted(row_idx for row_idx in usable_header_rows if row_idx <= leaf_header_row_idx)
             row_bounds = table.metadata.get("row_bounds")
             rules = table.metadata.get("horizontal_rules")
@@ -241,10 +257,7 @@ def build_column_header_schema(
         leaf_label = ""
         if leaf_header_row_idx is not None:
             leaf_label = clean_text(" ".join(_grid_cell(grid, row_idx, col_idx) for row_idx in leaf_header_row_indices))
-            if not leaf_label and col_idx == 0 and _looks_like_row_label_column(grid, body_rows, col_idx):
-                leaf_label = "Characteristics"
-                diagnostics.append(f"inferred_row_label_leaf_header:col={col_idx}")
-            elif not leaf_label and col_idx == 0:
+            if not leaf_label and col_idx == 0:
                 upper_label = next(
                     (
                         _grid_cell(grid, row_idx, col_idx)
@@ -809,6 +822,13 @@ def _repair_leading_leaf_fragments_by_geometry(
             previous = _grid_cell(repaired, row_idx, col_idx - 1)
             parts = current.split(maxsplit=1)
             if not previous or len(parts) != 2 or len(parts[0]) > 2 or not any(char.isalnum() for char in parts[0]):
+                continue
+            if (
+                len(parts[0]) == 1
+                and parts[0].isalpha()
+                and parts[0].isupper()
+                and parts[1][:1].islower()
+            ):
                 continue
             should_move = False
             previous_source_col = original_col_indices[col_idx - 1] if col_idx - 1 < len(original_col_indices) else None
