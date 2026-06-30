@@ -3,58 +3,13 @@
 Use this guide for the next hardening phase:
 
 ```text
-Corpus-Driven Hardening Of Extraction, Normalization, And Semantics
+Corpus-Driven Hardening Of Extraction, Normalization, Semantics, Footnotes, And References
 ```
 
 The goal is to work through real papers in a reproducible order, identify the
 first artifact where structure goes wrong, and fix the earliest parser stage
-that owns the problem. The current emphasis is the new structural header/body
-model:
-
-- `selective_hline_prefix`: a validated full-width horizontal-rule separator,
-  using stroked rule geometry rather than filled highlighting or background
-  shading
-- `first_value_region_data_row`: the first stable row-label plus value-region
-  anchor
-- content scoring only after those structural candidates are unavailable
-
-`normalized_tables.json` stores the selected split in
-`metadata.header_detection` and stores both structural candidates in
-`metadata.header_body_split_rule_comparison`.
-
-`parse_quality_reports.json` reports
-`header_body_split_rule_disagreement` when both structural candidates exist and
-choose different body starts. Cases where only one candidate exists remain
-inspectable in normalized metadata but are not reported as disagreements.
-
-## Current Baseline
-
-Latest structural baseline:
-
-```text
-outputs/testpapers_structural_header_body_20260630_recomputed
-```
-
-Corpus summary:
-
-```text
-PDFs: 27
-extracted tables: 85
-normalized tables: 85
-parse command failures: 0
-table_processing_status:
-  ok: 35
-  rescued: 34
-  failed: 8
-failure_reasons:
-  non_table_layout_candidate: 5
-  insufficient_table_structure_after_extraction: 2
-  collapsed_grid_unrecovered: 1
-resolved semantic tables: 77
-integrated continuations: 7
-header/body structural disagreements: 12
-missing core artifacts: 0
-```
+that owns the problem. The current priority is to review footnote/reference
+artifacts before making larger extraction changes.
 
 All paper paths below are relative to:
 
@@ -62,195 +17,283 @@ All paper paths below are relative to:
 /Users/robert/Projects/Epiconnector/testpapers
 ```
 
+## Current Reference Baseline
+
+Latest reference run:
+
+```text
+outputs/testpapers_reference_20260630_153142
+```
+
+Corpus summary:
+
+```text
+PDFs: 27
+parse command failures: 0
+missing core artifacts: 0
+extracted tables: 85
+normalized tables: 85
+resolved semantic tables: 77
+integrated continuation resolved tables: 7
+
+table_processing_status:
+  ok: 34
+  rescued: 35
+  failed: 8
+
+failure_reasons:
+  non_table_layout_candidate: 5
+  insufficient_table_structure_after_extraction: 2
+  collapsed_grid_unrecovered: 1
+
+continuation decisions:
+  singleton: 72
+  integrated_continuation: 8
+  rejected_continuation: 5
+
+paper_footnotes:
+  anchors: 1216
+  definitions: 276
+  resolved links: 370
+  ambiguous links: 47
+  unresolved links: 799
+
+paper_references:
+  total references: 466
+  resolved references: 88
+  unresolved references: 378
+  unresolved table references: 97
+  unresolved figure references: 281
+
+parse_quality warning codes:
+  unknown_row: 474
+  missing_label_with_values: 97
+  continuous_without_pattern: 22
+  suspicious_header_row_count: 20
+  multiple_quality_warnings: 12
+  header_body_split_rule_disagreement: 11
+  unknown_row_fraction_warning: 10
+  weak_value_pattern_recognition: 9
+  mostly_empty_column: 7
+  unknown_row_fraction_suspicious: 2
+  non_numeric_statistical_column: 1
+```
+
 ## Review Loop
 
 For each checklist item:
 
-1. Run the listed papers into a fresh ignored output directory under `outputs/`.
-2. Inspect artifacts in parser order:
+1. Inspect the current artifacts under the reference baseline first.
+2. Identify the first bad artifact in parser order:
    `extracted_tables.json`, `normalized_tables.json`,
    `column_header_schemas.json`, `resolved_tables.json`,
-   `table_definitions.json`, `parsed_cell_values.json`, `parsed_tables.json`.
-3. For header/body issues, inspect:
-   `metadata.header_detection` and
-   `metadata.header_body_split_rule_comparison`.
-4. Use `table_processing_status.json` and `parse_quality_reports.json` to find
-   failures and warnings, not as substitutes for looking at the source
-   artifacts.
-5. Record the first bad artifact and the earliest responsible stage.
-6. Fix extraction if the visual grid, table boundary, orientation, or hline
-   evidence is wrong; fix normalization if the grid is correct but the
-   header/body split or row/column repair is wrong.
-7. Add a focused regression only when it protects a known failure or a stable
-   artifact contract.
-8. Re-run the reviewed chunk, then re-run the full corpus after parser behavior
+   `table_definitions.json`, `parsed_cell_values.json`,
+   `parsed_tables.json`, `paper_footnotes.json`, `paper_references.json`.
+3. Record whether the issue belongs to extraction, normalization, continuation,
+   table semantics, footnote detection/linking, or visual-reference resolution.
+4. Fix only the earliest responsible stage.
+5. Add focused regression coverage only for a known failure or stable artifact
+   contract.
+6. Re-run the reviewed chunk, then re-run the full corpus after parser behavior
    changes.
 
 ## Ordered Review Checklist
 
-### C1. Structural Header/Body Disagreements
+### C0. Footnotes And References First
 
-- [ ] **C1.1** Review non-Eke hline-selected disagreements. Confirm that the
-  selected full-width separator is the true header/body boundary and that the
-  value-anchor candidate is later only because it misses sparse or categorical
-  body starters:
-  1. `papers_from_laha/Association between anthropometric indices and chronic kidney disease- Insights from NHANES 2009–2018.pdf`
-     - `Association between anthropometric indices and chronic kidney disease- Insights from NHANES 2009–2018-p12-t0`: hline body start 3, value-anchor body start 2, selected 3
-  2. `papers_from_laha/Association between metabolic score for insulin resistance (METS-IR) and hypertension- a cross-sectional study based on NHANES 2007–2018.pdf`
-     - `Association between metabolic score for insulin resistance (METS-IR) and hypertension- a cross-sectional study based on NHANES 2007–2018-p6-t0`: hline body start 2, value-anchor body start 3, selected 2
+- [ ] **C0.1** Review false-positive footnote marker detection in Eke.
+  - PDF path: `papers_from_laha/Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009.pdf`
+  - Current artifact issue: `paper_footnotes.json` has 529 unresolved links and
+    12 ambiguous links.
+  - Strong signal: many unresolved anchors are small-letter glyphs such as
+    `letter:t`, `letter:r`, and `letter:l`; these are likely not table footnote
+    markers. Review whether small-letter geometry is being over-detected.
 
-  METS-IR is currently the expected pattern: the header is bounded by full-width
-  hlines, row 2 is the first body row, and `ColumnHeaderSchema` recovers
-  `Model 1`, `Model 2`, and `Model 3` as grouped headers.
+- [ ] **C0.2** Review bibliographic superscripts versus table footnotes.
+  - PDF path: `papers_from_laha/Helicobacter pylori infection in the United States beyond NHANES- a scoping review of seroprevalence estimates by racial and ethnic groups.pdf`
+  - Current artifact issue: 33 unresolved links and 1 ambiguous link.
+  - Strong signal: the study-name superscripts in the leftmost column are mostly
+    numeric citation markers. They should not be treated as unresolved table
+    footnotes unless a real local table-note definition exists.
 
-- [ ] **C1.2** Review value-anchor-selected disagreements. These are the cases
-  where the first value-region anchor currently selects a later body start than
-  an earlier hline candidate, or where the hline candidate is only a weak first
-  selective boundary:
-  1. **GOLD BioAge and depression: Associations with mortality among depressed NHANES participants (2005–2018)**
-     - PDF path: `papers_from_laha/GOLD BioAge and depression- Associations with mortality among depressed NHANES participants (2005–2018).pdf`
-     - `GOLD BioAge and depression- Associations with mortality among depressed NHANES participants (2005–2018)-p4-t1`: hline body start 2, value-anchor body start 4, selected 4 in the recomputed baseline; current parser should select body start 2 after accepting label-only parent body starters.
-  2. [x] **Role of Estimated Glucose Disposal Rate in Staging and Death Risk of Cardiovascular-Kidney-Metabolic Syndrome: Insights from NHANES 1999-2018**
-     - PDF path: `papers_from_laha/Role of Estimated Glucose Disposal Rate in Staging and Death Risk of Cardiovascular-Kidney-Metabolic Syndrome- Insights from NHANES 1999-2018.pdf`
-     - `Role of Estimated Glucose Disposal Rate in Staging and Death Risk of Cardiovascular-Kidney-Metabolic Syndrome- Insights from NHANES 1999-2018-p4-t0`: hline body start 1, value-anchor body start 3, selected 3
-     - Reviewed on 2026-06-30: selected body start 3 is acceptable. Row 0 is preamble/title, rows 1-2 are column headers, and row 3 (`Age, years`) starts the data body. The `(N = ...)` row is a column-header row, not a data row.
-  3. `papers_from_johnny/Sarcopenia.pdf`
-     - `Sarcopenia-p7-t0` and `Sarcopenia-p8-t0`: hline body start 1, value-anchor body start 2, selected 2
-  4. `papers_from_laha/Science-Advanaced-Planetary Health Diet and risk of mortality and chronic diseases- Results from US NHANES, UK Biobank, and a meta-analysis.pdf`
-     - `Science-Advanaced-Planetary Health Diet and risk of mortality and chronic diseases- Results from US NHANES, UK Biobank, and a meta-analysis-p2-t0`: hline body start 1, value-anchor body start 4, selected 4
-     - `Science-Advanaced-Planetary Health Diet and risk of mortality and chronic diseases- Results from US NHANES, UK Biobank, and a meta-analysis-p5-t0`: hline body start 2, value-anchor body start 0, selected 0
-  5. `papers_from_johnny/cardiovascular.pdf`
-     - `cardiovascular-p5-t0`: hline body start 4, value-anchor body start 7, selected 7
+- [ ] **C0.3** Review collapsed/rotated extraction causing bogus footnote
+  anchors.
+  - PDF path: `papers_from_laha/Ethnic Differences in the Relationship Between Insulin Sensitivity and Insulin Response.pdf`
+  - Current artifact issue: 69 unresolved links.
+  - Strong signal: anchors come from one collapsed table cell with fragments such
+    as `letter:t`, `letter:r`, `letter:fri`, and symbol fragments. This may be an
+    extraction-grid failure creating false footnote anchors.
 
-  For `cardiovascular-p5-t0`, the selected body start 7 is currently expected:
-  the hline at row 4 is internal to the header band, separating upper spanning
-  headers from wrapped leaf headers. `ColumnHeaderSchema` should use rows 4-6
-  as leaf labels and rows 0-3 as training/testing cohort groups.
+- [ ] **C0.4** Review statistical-significance stars with missing definitions.
+  - PDF path: `papers_from_johnny/stroke.pdf`
+  - Current artifact issue: 65 unresolved links.
+  - Strong signal: 58 unresolved anchors are `asterisk:1`, often attached to
+    p-values such as `<0.001**`. Decide whether the definition is missing from
+    extraction, outside the table, or legitimately absent.
 
-- [ ] **C1.3** Review Eke disagreement tables as data/result-table examples.
-  Do not force these into ordinary descriptive Table 1 semantics unless the
-  visible table supports that:
-  1. `papers_from_laha/Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009.pdf`
-     - `Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009-p4-t0`: hline body start 2, value-anchor body start 8, selected 2
-     - `Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009-p5-t0`: hline body start 3, value-anchor body start 10, selected 10
-     - `Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009-p7-t0`: hline body start 3, value-anchor body start 5, selected 5
+- [ ] **C0.5** Review ambiguous footnote linking where definitions exist but are
+  not unique.
+  - PDF paths:
+    1. `papers_from_laha/Association between anthropometric indices and chronic kidney disease- Insights from NHANES 2009–2018.pdf`
+    2. `papers_from_laha/mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017.pdf`
+  - Current artifact issue: anthropometric CKD has 29 ambiguous links; MDPI
+    Mediterranean has 5 ambiguous links.
+  - Decide whether ambiguity comes from duplicate definitions, repeated page
+    furniture, or too-broad matching scope.
 
-Acceptance for C1: each disagreement is classified as correct hline split,
-correct value-anchor split, extraction hline defect, normalization candidate
-defect, or unsupported/misrouted table family.
+- [ ] **C0.6** Review unresolved table-reference resolution before worrying
+  about figures.
+  - Highest unresolved table-reference counts:
+    1. `papers_from_laha/An atlas of exposome–phenome associations in health and disease risk.pdf` - 21 unresolved table references.
+    2. `papers_from_laha/Science-Advanaced-Planetary Health Diet and risk of mortality and chronic diseases- Results from US NHANES, UK Biobank, and a meta-analysis.pdf` - 10 unresolved table references, mostly supplement tables.
+    3. `papers_from_laha/An environment-wide association study (EWAS) on type 2 diabetes mellitus.pdf` - 9 unresolved supplement table references.
+    4. `papers_from_laha/Uses of NHANES Biomarker Data for Chemical Risk Assessment- Trends, Challenges, and Opportunities.pdf` - 9 unresolved table references.
+  - Treat unresolved figure references separately; the table parser is not yet a
+    figure extractor.
 
-### C2. Failed Table Statuses
+Acceptance for C0: footnote anchors are separated into true table-note markers,
+bibliographic citations, statistical-significance markers, and false positives.
+Reference resolution should clearly distinguish unresolved in-paper tables from
+supplement-only or out-of-scope references.
 
-- [ ] **C2.1** Review `insufficient_table_structure_after_extraction`
-  failures. Decide whether extraction missed the visible table structure or
-  whether the page fragment is correctly rejected:
+### C1. Actual Failed Table Statuses
+
+- [ ] **C1.1** Review failed statuses that may be correct non-target tables.
   1. `papers_from_laha/An environment-wide association study (EWAS) on type 2 diabetes mellitus.pdf`
      - `An environment-wide association study (EWAS) on type 2 diabetes mellitus-p6-t0`
+     - Status: `failed`, reason: `insufficient_table_structure_after_extraction`.
+     - Prior review: structurally plausible ENWAS data table with sparse left
+       descriptor columns; likely unsupported table family rather than missing
+       extraction.
   2. `papers_from_laha/mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017.pdf`
      - `mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017-p3-t0`
+     - Status: `failed`, reason: `insufficient_table_structure_after_extraction`.
+     - Prior review: text/reference table comparing frailty definitions; likely
+       not a Table 1-style data table.
 
-- [ ] **C2.2** Review the rotated collapsed-grid failure:
-  1. `papers_from_laha/Ethnic Differences in the Relationship Between Insulin Sensitivity and Insulin Response.pdf`
-     - `Ethnic Differences in the Relationship Between Insulin Sensitivity and Insulin Response-p5-t0`, `collapsed_grid_unrecovered`
-
-  Current expectation: fail closed is better than recovering an implausible
-  50-plus-column rotated grid. The next improvement should recover the true
-  visible grid, not loosen the guardrail.
-
-- [ ] **C2.3** Review `non_table_layout_candidate` failures and decide which
-  are correct non-table rejections versus missed real tables:
+- [ ] **C1.2** Review `non_table_layout_candidate` failures.
   1. `papers_from_laha/Asthma prevalence among United States population insights from NHANES data analysis.pdf`
      - `Asthma prevalence among United States population insights from NHANES data analysis-p6-t0`
   2. `papers_from_laha/GOLD BioAge and depression- Associations with mortality among depressed NHANES participants (2005–2018).pdf`
      - `GOLD BioAge and depression- Associations with mortality among depressed NHANES participants (2005–2018)-p1-t0`
   3. `papers_from_laha/Helicobacter pylori infection in the United States beyond NHANES- a scoping review of seroprevalence estimates by racial and ethnic groups.pdf`
-     - resolved continuation over pages 5, 6, and 7
+     - `Helicobacter pylori infection in the United States beyond NHANES- a scoping review of seroprevalence estimates by racial and ethnic groups-p5-t0-resolved-continuation`
   4. `papers_from_laha/periodontis2.pdf`
      - `periodontis2-p6-t0`
   5. `papers_from_johnny/periodontitis.pdf`
      - `periodontitis-p11-t0`
 
-Acceptance for C2: every failed table is classified as correct non-table
-rejection, extraction failure, normalization failure, unsupported table family,
-or ambiguous pending review.
+- [ ] **C1.3** Review the collapsed-grid failure.
+  - PDF path: `papers_from_laha/Ethnic Differences in the Relationship Between Insulin Sensitivity and Insulin Response.pdf`
+  - Table: `Ethnic Differences in the Relationship Between Insulin Sensitivity and Insulin Response-p5-t0`
+  - Status: `failed`, reason: `collapsed_grid_unrecovered`.
+  - Current expectation: fail closed is better than recovering an implausible
+    50-plus-column rotated grid. Any fix should recover the true visible grid,
+    probably in extraction using raw PyMuPDF geometry.
 
-### C3. Extraction Rescue And Hline Quality
+Acceptance for C1: every failed table is classified as correct non-target table,
+extraction failure, normalization failure, unsupported table family, or ambiguous
+pending review.
 
-- [ ] **C3.1** Review explicit hline and preamble behavior in papers with
-  title/preamble rows above true column headers. Confirm real stroked hlines are
-  used and filled row highlighting is ignored:
+### C2. Continuation Decisions
+
+- [ ] **C2.1** Review accepted continuations and confirm one visual continued
+  table becomes one semantic resolved table.
+  1. `papers_from_laha/Association between anthropometric indices and chronic kidney disease- Insights from NHANES 2009–2018.pdf`
+     - p7 -> p8 and p11 -> p12 accepted.
+  2. `papers_from_laha/Helicobacter pylori infection in the United States beyond NHANES- a scoping review of seroprevalence estimates by racial and ethnic groups.pdf`
+     - p5 -> p6 and p6 -> p7 accepted.
+  3. `papers_from_laha/Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009.pdf`
+     - p6 -> p7 accepted.
+  4. `papers_from_laha/Systemic inflammation markers and the prevalence of hypertension- A NHANES cross-sectional study.pdf`
+     - p5 -> p6 accepted.
+  5. `papers_from_johnny/gallstones.pdf`
+     - p5 -> p6 accepted.
+  6. `papers_from_laha/mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017.pdf`
+     - p5 -> p6 accepted.
+
+- [ ] **C2.2** Review rejected continuation candidates that may expose header or
+  column-schema defects.
+  1. `papers_from_laha/Asthma prevalence among United States population insights from NHANES data analysis.pdf`
+     - p4 -> p5 rejected; p5 -> p6 rejected.
+  2. `papers_from_laha/Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009.pdf`
+     - p4 -> p5 rejected.
+  3. `papers_from_laha/Science-Advanaced-Planetary Health Diet and risk of mortality and chronic diseases- Results from US NHANES, UK Biobank, and a meta-analysis.pdf`
+     - p2 -> p3 rejected.
+  4. `papers_from_laha/periodontis2.pdf`
+     - p5 -> p6 rejected.
+
+Acceptance for C2: continuation decisions are explainable from
+`resolved_tables.json`, source table IDs, row provenance, and
+`column_header_schemas.json`.
+
+### C3. Header/Body And Extraction Geometry
+
+- [ ] **C3.1** Review current header/body split disagreements.
+  1. `papers_from_laha/Association between metabolic score for insulin resistance (METS-IR) and hypertension- a cross-sectional study based on NHANES 2007–2018.pdf`
+     - p6-t0: hline body start 2, value-anchor body start 3, selected 2.
+  2. `papers_from_laha/Asthma prevalence among United States population insights from NHANES data analysis.pdf`
+     - p5-t0 and p6-t0.
+  3. `papers_from_laha/GOLD BioAge and depression- Associations with mortality among depressed NHANES participants (2005–2018).pdf`
+     - p4-t1: hline body start 2, value-anchor body start 4, selected 2.
+  4. `papers_from_laha/Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009.pdf`
+     - p4-t0 and p5-t0: hline body start 3, value-anchor body start 10,
+       selected 10.
+  5. `papers_from_johnny/Sarcopenia.pdf`
+     - p7-t0 and p8-t0.
+  6. `papers_from_laha/Science-Advanaced-Planetary Health Diet and risk of mortality and chronic diseases- Results from US NHANES, UK Biobank, and a meta-analysis.pdf`
+     - p2-t0.
+  7. `papers_from_johnny/cardiovascular.pdf`
+     - p5-t0.
+  8. `papers_from_laha/mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017.pdf`
+     - p7-t0.
+
+- [ ] **C3.2** Review explicit hline and preamble behavior in papers with
+  title/preamble rows above true column headers.
   1. `papers_from_johnny/fld.pdf`
   2. `papers_from_johnny/pad.pdf`
   3. `papers_from_laha/cobaltpaper.pdf`
   4. `papers_from_johnny/cardiovascular.pdf`
+  5. `papers_from_laha/Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009.pdf`
 
-- [ ] **C3.2** Review rescued or fallback grids where extraction is doing
-  important structural work before normalization:
-  1. `papers_from_laha/Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009.pdf`
-  2. `papers_from_laha/periodontis2.pdf`
-  3. `papers_from_laha/Science-Advanaced-Planetary Health Diet and risk of mortality and chronic diseases- Results from US NHANES, UK Biobank, and a meta-analysis.pdf`
-  4. `papers_from_johnny/gallstones.pdf`
-  5. `papers_from_johnny/hypertension.pdf`
-  6. `papers_from_johnny/metabolic.pdf`
+- [ ] **C3.3** Decide whether raw PyMuPDF geometry should replace
+  PyMuPDF4LLM-derived grids for specific failure classes.
+  - Start only with ruled or rotated cases where words, rules, and table bbox
+    provide strong structural evidence.
+  - Do not add downstream continuation/schema hacks to compensate for bad
+    extraction geometry.
 
-Acceptance for C3: each active rescue path has at least one reviewed real-paper
-case with the expected grid, hline metadata, and first bad artifact recorded.
+Acceptance for C3: each disagreement is classified as correct hline split,
+correct value-anchor split, extraction hline defect, normalization candidate
+defect, or unsupported/misrouted table family.
 
-### C4. Continuations After Resolved Tables
+### C4. Mixed Table Families And Regression Baseline
 
-- [ ] **C4.1** Review accepted continuations and confirm one visual continued
-  table becomes one semantic resolved table:
-  1. `papers_from_laha/Association between anthropometric indices and chronic kidney disease- Insights from NHANES 2009–2018.pdf`
-  2. `papers_from_laha/Asthma prevalence among United States population insights from NHANES data analysis.pdf`
-  3. `papers_from_laha/Helicobacter pylori infection in the United States beyond NHANES- a scoping review of seroprevalence estimates by racial and ethnic groups.pdf`
-  4. `papers_from_laha/Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009.pdf`
-  5. `papers_from_laha/Systemic inflammation markers and the prevalence of hypertension- A NHANES cross-sectional study.pdf`
-  6. `papers_from_johnny/gallstones.pdf`
-  7. `papers_from_laha/mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017.pdf`
-
-- [ ] **C4.2** Review accepted but difficult continuations. Confirm that
-  integration is structurally justified and that any remaining `failed` status
-  belongs to later semantics, not to continuation resolution:
-  1. `papers_from_laha/Helicobacter pylori infection in the United States beyond NHANES- a scoping review of seroprevalence estimates by racial and ethnic groups.pdf`
-     - integrated pages 5, 6, and 7, but semantic status remains `non_table_layout_candidate`
-  2. `papers_from_laha/Asthma prevalence among United States population insights from NHANES data analysis.pdf`
-     - integrated pages 4 and 5; page 6 remains a separate `non_table_layout_candidate`
-  3. `papers_from_laha/Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009.pdf`
-     - integrated pages 6 and 7; treat as data/result-table review before forcing descriptive semantics
-  4. `papers_from_laha/periodontis2.pdf`
-     - no accepted continuation in the current baseline; page 6 remains `non_table_layout_candidate`
-
-Acceptance for C4: continuation decisions are explainable from
-`resolved_tables.json`, source table IDs, row provenance, and
-`ColumnHeaderSchema`.
-
-### C5. Mixed Table Families And Regression Baseline
-
-- [ ] **C5.1** Review estimate-result and data-presentation tables without
-  forcing them into descriptive Table 1 semantics:
+- [ ] **C4.1** Review estimate-result and data-presentation tables without
+  forcing them into descriptive Table 1 semantics.
   1. `papers_from_johnny/cardiovascular.pdf`
   2. `papers_from_johnny/stroke.pdf`
   3. `papers_from_laha/cobaltpaper.pdf`
-  4. `papers_from_laha/Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009.pdf`
-  5. `papers_from_laha/An atlas of exposome–phenome associations in health and disease risk.pdf`
+  4. `papers_from_laha/An atlas of exposome–phenome associations in health and disease risk.pdf`
+  5. `papers_from_laha/An environment-wide association study (EWAS) on type 2 diabetes mellitus.pdf`
 
-- [ ] **C5.2** Re-run representative mostly-successful descriptive papers after
-  fixes from C1-C5.1:
+- [ ] **C4.2** Re-run representative mostly-successful descriptive papers after
+  fixes from C0-C4.1.
   1. `papers_from_laha/Systemic inflammation markers and the prevalence of hypertension- A NHANES cross-sectional study.pdf`
   2. `papers_from_laha/Lead exposure as a contributor to the Black–White racial disparity in blood pressure- evidence from NHANES 1988–1994 and 2017–2020.pdf`
   3. `papers_from_johnny/hypertension.pdf`
   4. `papers_from_johnny/pad.pdf`
   5. `papers_from_johnny/fld.pdf`
 
-- [ ] **C5.3** Run the complete 27-PDF corpus after each substantial parser
+- [ ] **C4.3** Run the complete 27-PDF corpus after each substantial parser
   change set and compare against the latest accepted baseline. Report command
   failures, missing artifacts, table status counts, failure reasons, resolved
-  continuation counts, parsed cell-value counts, shape/status changes, and
-  header/body split disagreements.
+  continuation counts, footnote link statuses, reference resolution statuses,
+  parsed cell-value counts, and header/body split disagreements.
 
-Acceptance for C5: corpus comparison explains any movement in table-level
-status, artifact counts, or structural split disagreements. Command success
-alone is not sufficient.
+Acceptance for C4: corpus comparison explains any movement in table-level
+status, artifact counts, footnote/reference counts, or structural split
+disagreements. Command success alone is not sufficient.
 
 ## Issue Note Template
 
@@ -262,14 +305,10 @@ PDF path:
 output directory:
 table_id/table_index:
 current status:
-selected header/body source:
-hline candidate:
-value-anchor candidate:
-rules agree:
-expected behavior:
 first bad artifact:
 earliest responsible stage:
 observed evidence:
+expected behavior:
 fix decision:
 regression decision:
 ```

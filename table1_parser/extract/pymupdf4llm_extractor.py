@@ -203,12 +203,52 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                         if table_index < len(table_box_bboxes)
                         else None
                     )
+                    nearby_caption_candidates: list[tuple[float, tuple[float, float, float, float], str]] = []
+                    table_top = bbox[1] if bbox else float("inf")
+                    for candidate_bbox, caption_line in caption_boxes:
+                        if candidate_bbox[3] > table_top + 2.0:
+                            continue
+                        intervening_table = any(
+                            other_index != table_index
+                            and other_bbox is not None
+                            and other_bbox[1] > candidate_bbox[3] + 2.0
+                            and other_bbox[1] < table_top - 2.0
+                            for other_index, other_bbox in enumerate(table_box_bboxes)
+                        )
+                        if intervening_table:
+                            continue
+                        nearby_caption_candidates.append(
+                            (table_top - candidate_bbox[3], candidate_bbox, caption_line)
+                        )
+                    if nearby_caption_candidates:
+                        _, nearby_caption_bbox, nearby_caption = min(
+                            nearby_caption_candidates,
+                            key=lambda item: item[0],
+                        )
+                        caption_lines = [nearby_caption]
+                        for text_box in page_boxes:
+                            if text_box.get("boxclass") in {"table", "page-header", "page-footer"}:
+                                continue
+                            text_bbox = _box_bbox(text_box)
+                            if text_bbox is None:
+                                continue
+                            if text_bbox[1] < nearby_caption_bbox[3] - 2.0 or text_bbox[3] > table_top + 2.0:
+                                continue
+                            text = _extract_box_text(text_box)
+                            if not text or _find_table_caption_lines(text):
+                                continue
+                            caption_lines.append(text)
+                        nearby_caption = "\n".join(caption_lines)
+                    else:
+                        nearby_caption_bbox = None
+                        nearby_caption = None
                     cell_bboxes = _coerce_cell_bboxes(table.get("cells") or [])
                     orientation_metadata = _infer_table_orientation_metadata(page, bbox)
                     refinement = _refine_explicit_table_candidate_grid(
                         raw_rows=raw_rows,
                         cell_bboxes=cell_bboxes,
                         bbox=bbox,
+                        caption_bbox=nearby_caption_bbox,
                         page_words=page_words,
                         page_chars=page_chars,
                         page_rule_segments=page_rule_segments,
@@ -245,28 +285,6 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                         )
                         if geometry_coordinate_frame == "page"
                         else {}
-                    )
-                    nearby_caption_candidates: list[tuple[float, str]] = []
-                    table_top = bbox[1] if bbox else float("inf")
-                    for candidate_bbox, caption_line in caption_boxes:
-                        if candidate_bbox[3] > table_top + 2.0:
-                            continue
-                        intervening_table = any(
-                            other_index != table_index
-                            and other_bbox is not None
-                            and other_bbox[1] > candidate_bbox[3] + 2.0
-                            and other_bbox[1] < table_top - 2.0
-                            for other_index, other_bbox in enumerate(table_box_bboxes)
-                        )
-                        if intervening_table:
-                            continue
-                        nearby_caption_candidates.append(
-                            (table_top - candidate_bbox[3], caption_line)
-                        )
-                    nearby_caption = (
-                        min(nearby_caption_candidates, key=lambda item: item[0])[1]
-                        if nearby_caption_candidates
-                        else None
                     )
                     if nearby_caption is not None:
                         caption = _caption_for_index(
@@ -818,6 +836,7 @@ def _refine_explicit_table_candidate_grid(
     page_rule_segments: list[tuple[float, float, float, float]],
     full_width_rule_segments: list[tuple[float, float, float, float]] | None = None,
     orientation_metadata: dict[str, Any],
+    caption_bbox: tuple[float, float, float, float] | None = None,
 ) -> dict[str, object]:
     """Refine coarse explicit-table grids using positioned words and structural rules."""
     table_cells = cell_bboxes
@@ -923,6 +942,45 @@ def _refine_explicit_table_candidate_grid(
         for cell in row
         if isinstance(cell, str) and (cell.count("\n") >= 2 or len(cell.split()) >= 12)
     )
+    first_row_internally_stacked = False
+    if raw_rows and len(row_bounds) == len(raw_rows) and max_raw_cols >= 4:
+        first_row = raw_rows[0]
+        first_row_stacked_cells = sum(
+            isinstance(cell, str) and cell.count("\n") >= 2
+            for cell in first_row
+        )
+        first_row_lines = [
+            str(cell).splitlines()[0].strip()
+            for cell in first_row
+            if isinstance(cell, str) and str(cell).splitlines()
+        ]
+        first_line_alpha_cells = sum(
+            bool(re.search(r"[A-Za-z]", cell)) for cell in first_row_lines if cell
+        )
+        row_heights = [
+            bottom - top
+            for top, bottom in row_bounds[1:]
+            if bottom > top
+        ]
+        median_following_height = (
+            sorted(row_heights)[len(row_heights) // 2]
+            if row_heights
+            else 0.0
+        )
+        first_row_height = row_bounds[0][1] - row_bounds[0][0]
+        first_row_has_internal_rule = any(
+            row_bounds[0][0] + 3.0 < float(rule) < row_bounds[0][1] - 3.0
+            for rule in full_width_rules
+        )
+        first_row_internally_stacked = (
+            not has_vertical_rotation_signal
+            and len(raw_rows) >= 4
+            and len(clipped_words) >= 12
+            and first_row_stacked_cells >= max(3, max_raw_cols // 2)
+            and first_line_alpha_cells >= max(3, max_raw_cols // 2)
+            and first_row_height >= max(30.0, median_following_height * 3.0)
+            and first_row_has_internal_rule
+        )
     rotated_few_column_stacked_grid = (
         has_vertical_rotation_signal
         and rotation_confidence >= 0.5
@@ -939,6 +997,7 @@ def _refine_explicit_table_candidate_grid(
             and len(clipped_words) >= 12
         )
         or rotated_few_column_stacked_grid
+        or first_row_internally_stacked
     )
 
     if collapsed_explicit_grid:
@@ -970,6 +1029,15 @@ def _refine_explicit_table_candidate_grid(
                         float(bbox[1]),
                         max(float(bbox[2]), rule_right),
                         max(float(bbox[3]), rule_bottom),
+                    )
+            if caption_bbox is not None:
+                caption_left_hint = min(float(caption_bbox[0]), float(caption_bbox[1]))
+                if 0.0 < rotated_refinement_bbox[0] - caption_left_hint <= 24.0:
+                    rotated_refinement_bbox = (
+                        caption_left_hint - 2.0,
+                        rotated_refinement_bbox[1],
+                        rotated_refinement_bbox[2],
+                        rotated_refinement_bbox[3],
                     )
             rotated_words = [
                 word
@@ -1103,12 +1171,18 @@ def _refine_explicit_table_candidate_grid(
                     "chars": clipped_chars,
                     "horizontal_rules": horizontal_rules,
                     "full_width_horizontal_rules": full_width_rules,
-                    "refinement_source": "collapsed_explicit_grid_word_positions",
+                    "refinement_source": (
+                        "stacked_row_word_positions"
+                        if first_row_internally_stacked
+                        else "collapsed_explicit_grid_word_positions"
+                    ),
                     "coordinate_frame": "page",
                     "geometry_transform_source_bbox": None,
                     "geometry_transform_transposed": False,
                     "geometry_transform_applied": False,
-                    "minimum_row_gain": 4,
+                    "minimum_row_gain": 3 if first_row_internally_stacked else 4,
+                    "allow_same_column_count": first_row_internally_stacked,
+                    "use_top_header_boundaries": first_row_internally_stacked,
                 }
             )
 
@@ -1125,6 +1199,30 @@ def _refine_explicit_table_candidate_grid(
                 working_full_width_rules = []
             refined_lines = build_word_lines(working_words)
             column_start_boundaries: list[float] | None = None
+            if bool(refinement_attempt.get("use_top_header_boundaries")) and refined_lines:
+                first_line = refined_lines[0]
+                header_starts: list[float] = []
+                previous_x1: float | None = None
+                for word in sorted(first_line["words"], key=lambda item: float(item["x0"])):
+                    text = str(word["text"]).strip()
+                    if not text:
+                        continue
+                    word_x0 = float(word["x0"])
+                    word_x1 = float(word["x1"])
+                    if previous_x1 is None or word_x0 - previous_x1 > 10.0:
+                        header_starts.append(word_x0)
+                    previous_x1 = word_x1
+                clustered_starts: list[float] = []
+                for start in sorted(header_starts):
+                    if not clustered_starts or abs(start - clustered_starts[-1]) > 8.0:
+                        clustered_starts.append(start)
+                    else:
+                        clustered_starts[-1] = (clustered_starts[-1] + start) / 2.0
+                if len(clustered_starts) >= max(4, max_raw_cols):
+                    column_start_boundaries = [
+                        (clustered_starts[index] + clustered_starts[index + 1]) / 2.0
+                        for index in range(len(clustered_starts) - 1)
+                    ]
             if (
                 bool(refinement_attempt["geometry_transform_applied"])
                 and len(working_horizontal_rules) >= 3
@@ -1205,7 +1303,14 @@ def _refine_explicit_table_candidate_grid(
                     refined_col_count > 30 or not has_rotated_rule_support
                 ):
                     continue
-                if column_gain_ok and (row_gain_ok or stacked_column_gain_ok):
+                same_column_stacked_row_ok = (
+                    bool(refinement_attempt.get("allow_same_column_count"))
+                    and refined_col_count >= max_raw_cols
+                    and row_gain_ok
+                )
+                if (
+                    column_gain_ok and (row_gain_ok or stacked_column_gain_ok)
+                ) or same_column_stacked_row_ok:
                     return {
                         "raw_rows": refined_rows,
                         "table_cells": refined_cell_bboxes,

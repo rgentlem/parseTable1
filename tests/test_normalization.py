@@ -151,6 +151,85 @@ def test_header_detector_excludes_title_row_above_header_band() -> None:
     assert metadata["separator_body_support"] == "sparse_body_starter_with_value_rows"
 
 
+def test_header_detector_skips_header_band_with_empty_row_label_below_rule() -> None:
+    """Column header bands below early hlines should not become body rows."""
+    rows = [
+        ["Prevalence of", "Total Periodontitis", "", "Using", "NHANES", "Data", "by Selected"],
+        ["Individuals Aged", ">=30", "Years in", "the United", "States,", "2009", "to 2012"],
+        ["", "", "", "", "NHANES", "2009 to 2012", "(Combined NHANES"],
+        ["", "NHANES", "2009 to 2010", "", "NHANES", "2011 to 2012", ""],
+        ["", "", "", "Total", "", "", "Total"],
+        ["", "", "", "Periodontitis,", "", "", "Periodontitis,"],
+        ["", "", "Weighted", "n Periodontitis", "Standardized", "Weighted", ""],
+        ["Characteristics", "n", "(millions)*", "(% - SE)", "(% - SE)", "n", "(millions)"],
+        ["All (NHANES 2009 to 2012)", "3,743", "137.1", "47.2 - 2.1", "47.7 - 1.9", "3,323", "144.8"],
+    ]
+
+    header_rows, body_rows, metadata = detect_header_rows_with_metadata(
+        rows,
+        row_bounds=[
+            (8.2, 19.6),
+            (21.1, 33.5),
+            (49.7, 57.8),
+            (61.6, 69.8),
+            (79.6, 87.8),
+            (91.6, 99.8),
+            (115.5, 123.7),
+            (125.4, 135.7),
+            (144.5, 153.7),
+        ],
+        separator_horizontal_rules=[43.5, 73.8, 139.7],
+    )
+
+    assert header_rows == list(range(8))
+    assert body_rows == [8]
+    assert metadata["separator_rule_y"] == 139.7
+
+
+def test_header_detector_keeps_leaf_header_above_first_value_row() -> None:
+    """Value-anchor backtracking should not absorb a leaf header row into the body."""
+    rows = [
+        ["Table", "1.", "", "", "", "", ""],
+        ["Prevalence of", "Total Periodontitis", "", "Using", "NHANES", "Data", "by Selected"],
+        ["Individuals Aged", ">=30", "Years in", "the United", "States,", "2009", "to 2012"],
+        ["", "", "", "", "NHANES", "2009 to 2012", "(Combined NHANES"],
+        ["", "NHANES", "2009 to 2010", "", "NHANES", "2011 to 2012", ""],
+        ["", "", "", "Total", "", "", "Total"],
+        ["", "", "", "Periodontitis,", "", "", "Periodontitis,"],
+        ["", "", "Weighted", "n Periodontitis", "Standardized", "Weighted", ""],
+        ["Characteristics", "n", "(millions)*", "(% - SE)", "(% - SE)", "n", "(millions)"],
+        ["All (NHANES 2009 to 2012)", "3,743", "137.1", "47.2 - 2.1", "47.7 - 1.9", "3,323", "144.8"],
+    ]
+
+    header_rows, body_rows, metadata = detect_header_rows_with_metadata(rows)
+
+    assert header_rows == list(range(1, 9))
+    assert body_rows == [9]
+    assert metadata["preamble_rows"] == [0]
+    assert metadata["value_anchor_body_start"] == 9
+
+
+def test_header_detector_keeps_sample_size_row_above_model_values() -> None:
+    """N rows below group labels should remain header rows."""
+    rows = [
+        ["", "", "aMED Score 1", "Low 1", "Moderate 1", "High 1"],
+        ["Frail vs.", "Robust/Pre-frail 2", "N = 610 (7.1%)", "N = 220 (10.6%)", "N = 276 (7.0%)", "N = 114 (4.3%)"],
+        ["", "Model 1", "0.79 (0.73, 0.84)", "Ref.", "0.64 (0.50, 0.82)", "0.38 (0.26, 0.54)"],
+        ["", "Model 2", "0.81 (0.75, 0.87)", "Ref.", "0.64 (0.50, 0.82)", "0.42 (0.29, 0.61)"],
+    ]
+
+    header_rows, body_rows, metadata = detect_header_rows_with_metadata(
+        rows,
+        row_bounds=[(96.0, 110.4), (110.4, 127.6), (127.6, 142.4), (142.4, 154.3)],
+        horizontal_rules=[93.1, 110.4, 127.6, 180.5],
+        separator_horizontal_rules=[93.1, 110.4, 127.6, 180.5],
+    )
+
+    assert header_rows == [0, 1]
+    assert body_rows == [2, 3]
+    assert metadata["source"] == "horizontal_rules+promotion"
+
+
 def test_header_detector_accepts_sparse_categorical_parent_below_header_rule() -> None:
     """A categorical parent row can start the body even when it is not value-dense."""
     rows = [
@@ -211,6 +290,35 @@ def test_header_detector_accepts_label_only_parent_below_header_rule() -> None:
             (634.3, 644.7),
         ],
         separator_horizontal_rules=[593.8, 620.1, 693.4],
+    )
+
+    assert header_rows == [0, 1]
+    assert body_rows == [2, 3, 4]
+    assert metadata["source"] == "horizontal_rule_separator"
+    assert metadata["separator_body_support"] == "label_only_body_starter_with_value_rows"
+
+
+def test_header_detector_keeps_multicolumn_leaf_header_above_label_only_parent() -> None:
+    """A group header plus leaf header should stop before a row-label-only parent."""
+    rows = [
+        ["", "Model 1", "", "Model 2", "", "Model 3", ""],
+        ["", "OR (95% CI)", "p-value", "OR (95% CI)", "p-value", "OR (95% CI)", "p-value"],
+        ["Classified by WC quantiles", "", "", "", "", "", ""],
+        ["Q1", "1.0", "-", "1.0", "-", "1.0", "-"],
+        ["Q2", "1.18 (1.01, 1.38)", "0.049", "0.87 (0.73, 1.03)", "0.109", "0.86 (0.73, 1.03)", "0.101"],
+    ]
+    row_bounds = [
+        (88.2, 100.8),
+        (100.8, 113.3),
+        (113.3, 125.8),
+        (125.8, 138.3),
+        (138.3, 150.8),
+    ]
+
+    header_rows, body_rows, metadata = detect_header_rows_with_metadata(
+        rows,
+        row_bounds=row_bounds,
+        separator_horizontal_rules=[88.2, 100.8, 113.3, 125.8, 138.3, 150.8],
     )
 
     assert header_rows == [0, 1]

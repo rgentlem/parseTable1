@@ -2282,6 +2282,125 @@ def test_pymupdf4llm_extractor_refines_collapsed_table1_grid_from_words_in_bbox(
     assert tables[0].metadata["grid_refinement_source"] == "collapsed_explicit_grid_word_positions"
 
 
+def test_pymupdf4llm_extractor_refines_stacked_first_row_from_words(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    """A plausible explicit grid should be rebuilt when row 0 stacks header and body lines."""
+    pdf_path = tmp_path / "paper.pdf"
+    pdf_path.write_text("placeholder")
+    columns = [
+        (50.0, "Outcome"),
+        (150.0, "Numbers"),
+        (220.0, "HR"),
+        (310.0, "I2%"),
+        (370.0, "PBegg"),
+        (440.0, "PEgger"),
+        (510.0, "Model"),
+    ]
+    word_rows = [
+        ("Outcome", "Numbers", "HR (95% CI)", "I2%", "PBegg value", "PEgger value", "Model"),
+        ("colorectal cancer", "3", "0.87 (0.78-0.97)", "0.0", "1.000", "0.901", "Fixed effects model"),
+        ("lung cancer", "3", "0.68 (0.59, 0.78)", "0.0", "1.000", "0.685", "Fixed effects model"),
+        ("CVDs", "9", "0.83 (0.76-0.90)", "62.7", "0.466", "0.335", "Random effects model"),
+        ("CHD", "6", "0.83 (0.78-0.88)", "0.0", "0.452", "0.162", "Fixed effects model"),
+        ("diabetes", "7", "0.74 (0.62-0.87)", "93.4", "0.072", "0.119", "Random effects model"),
+        ("total stroke", "9", "0.84 (0.76-0.91)", "59.1", "0.466", "0.575", "Random effects model"),
+        ("ischemic stroke", "7", "0.94 (0.86-1.03)", "0.0", "0.764", "0.809", "Fixed effects model"),
+    ]
+    words: list[dict[str, object]] = []
+    for row_idx, row in enumerate(word_rows):
+        top = 104.0 + row_idx * 12.0
+        for col_idx, text in enumerate(row):
+            x0 = columns[col_idx][0]
+            cursor = x0
+            for part in text.split():
+                width = max(10.0, len(part) * 4.0)
+                words.append(
+                    {
+                        "text": part,
+                        "x0": cursor,
+                        "x1": cursor + width,
+                        "top": top,
+                        "bottom": top + 8.0,
+                    }
+                )
+                cursor += width + 3.0
+
+    _install_fake_pymupdf4llm(
+        monkeypatch,
+        {
+            "pages": [
+                {
+                    "page_number": 1,
+                    "boxes": [
+                        {
+                            "bbox": [40, 72, 260, 88],
+                            "boxclass": "text",
+                            "textlines": [{"spans": [{"text": "Table 2. Meta-analysis"}]}],
+                        },
+                        {
+                            "bbox": [40, 100, 580, 210],
+                            "boxclass": "table",
+                            "table": {
+                                "bbox": [40, 100, 580, 210],
+                                "extract": [
+                                    [
+                                        "Outcome\ncolorectal cancer\nlung cancer\nCVDs\nCHD\ndiabetes",
+                                        "Numbers\n3\n3\n9\n6\n7",
+                                        "HR (95% CI)\n0.87 (0.78-0.97)\n0.68 (0.59, 0.78)\n0.83 (0.76-0.90)\n0.83 (0.78-0.88)\n0.74 (0.62-0.87)",
+                                        "I2%\n0.0\n0.0\n62.7\n0.0\n93.4",
+                                        "PBegg value\n1.000\n1.000\n0.466\n0.452\n0.072",
+                                        "PEgger value\n0.901\n0.685\n0.335\n0.162\n0.119",
+                                        "Model\nFixed effects model\nFixed effects model\nRandom effects model\nFixed effects model\nRandom effects model",
+                                    ],
+                                    ["", "", "", "", "", "", "model"],
+                                    ["total stroke", "9", "0.84 (0.76-0.91)", "59.1", "0.466", "0.575", "Random effects"],
+                                    ["", "", "", "", "", "", "model"],
+                                    ["ischemic stroke", "7", "0.94 (0.86-1.03)", "0.0", "0.764", "0.809", "Fixed effects model"],
+                                ],
+                                "cells": [
+                                    [[40, 100, 120, 172], [120, 100, 190, 172], [190, 100, 300, 172], [300, 100, 360, 172], [360, 100, 430, 172], [430, 100, 500, 172], [500, 100, 580, 172]],
+                                    [[40, 172, 120, 182], [120, 172, 190, 182], [190, 172, 300, 182], [300, 172, 360, 182], [360, 172, 430, 182], [430, 172, 500, 182], [500, 172, 580, 182]],
+                                    [[40, 182, 120, 192], [120, 182, 190, 192], [190, 182, 300, 192], [300, 182, 360, 192], [360, 182, 430, 192], [430, 182, 500, 192], [500, 182, 580, 192]],
+                                    [[40, 192, 120, 202], [120, 192, 190, 202], [190, 192, 300, 202], [300, 192, 360, 202], [360, 192, 430, 202], [430, 192, 500, 202], [500, 192, 580, 202]],
+                                    [[40, 202, 120, 212], [120, 202, 190, 212], [190, 202, 300, 212], [300, 202, 360, 212], [360, 202, 430, 212], [430, 202, 500, 212], [500, 202, 580, 212]],
+                                ],
+                            },
+                        },
+                    ],
+                }
+            ]
+        },
+    )
+    _install_fake_pymupdf_document(
+        monkeypatch,
+        [
+            FakePyMuPage(
+                text="Table 2. Meta-analysis",
+                words=words,
+                rule_segments=[(40.0, 114.0, 580.0, 114.0)],
+            )
+        ],
+    )
+
+    tables = PyMuPDF4LLMExtractor(max_candidates=5, heuristic_confidence_threshold=0.0).extract(str(pdf_path))
+
+    assert len(tables) == 1
+    assert tables[0].n_rows == 8
+    assert tables[0].n_cols == 7
+    cell_map = {(cell.row_idx, cell.col_idx): cell.text for cell in tables[0].cells}
+    assert cell_map[(0, 0)] == "Outcome"
+    assert cell_map[(0, 6)] == "Model"
+    assert cell_map[(1, 0)] == "colorectal cancer"
+    assert cell_map[(1, 2)] == "0.87 (0.78-0.97)"
+    assert cell_map[(5, 0)] == "diabetes"
+    assert cell_map[(7, 0)] == "ischemic stroke"
+    assert tables[0].metadata["explicit_grid_refined_from_words"] is True
+    assert tables[0].metadata["grid_refinement_source"] == "stacked_row_word_positions"
+    assert tables[0].metadata["original_backend_rows"] is not None
+
+
 def test_text_layout_fallback_restores_spaces_in_collapsed_first_column_tokens(
     tmp_path,
     monkeypatch,

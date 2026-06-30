@@ -33,7 +33,6 @@ MAX_HEADER_ROWS = 3
 SEPARATOR_MAX_HEADER_ROWS = 8
 POST_SEPARATOR_NOTE_MAX_ROWS = 2
 POST_SEPARATOR_NOTE_MAX_GAP = 30.0
-SEPARATOR_MAX_RULE_COUNT = 8
 
 
 def _numeric_density(row: list[str]) -> float:
@@ -136,7 +135,7 @@ def _detect_separator_rule_headers(
     horizontal_rules: list[float],
 ) -> dict[str, object] | None:
     """Use an internal horizontal rule as the header/body separator when supported by value rows."""
-    if not rows or len(row_bounds) != len(rows) or len(horizontal_rules) > SEPARATOR_MAX_RULE_COUNT:
+    if not rows or len(row_bounds) != len(rows):
         return None
     sorted_rules = sorted(horizontal_rules)
     candidates: list[dict[str, object]] = []
@@ -225,10 +224,20 @@ def _detect_separator_rule_headers(
             continue
 
         body_support = "first_body_value_matrix"
-        if not _is_value_matrix_row(rows[first_body_row_idx]):
-            first_body_row = rows[first_body_row_idx]
-            first_body_has_left_label = bool(_clean_cell(first_body_row[0]))
-            first_body_trailing = [_clean_cell(cell) for cell in first_body_row[1:] if _clean_cell(cell)]
+        first_body_row = rows[first_body_row_idx]
+        first_body_has_left_label = bool(_clean_cell(first_body_row[0]))
+        first_body_trailing = [_clean_cell(cell) for cell in first_body_row[1:] if _clean_cell(cell)]
+        if _is_value_matrix_row(first_body_row):
+            first_body_alpha_trailing_count = sum(bool(re.search(r"[A-Za-z]", cell)) for cell in first_body_trailing)
+            first_body_sample_size_cells = sum(
+                bool(SAMPLE_SIZE_HEADER_CELL_PATTERN.search(cell))
+                for cell in first_body_trailing
+            )
+            if first_body_sample_size_cells >= max(2, len(first_body_trailing) // 2):
+                continue
+            if not first_body_has_left_label and first_body_alpha_trailing_count:
+                continue
+        else:
             first_body_numeric_trailing_count = sum(bool(re.search(r"\d", cell)) for cell in first_body_trailing)
             first_body_alpha_trailing_count = sum(bool(re.search(r"[A-Za-z]", cell)) for cell in first_body_trailing)
             if not first_body_has_left_label or (
@@ -271,7 +280,47 @@ def _detect_separator_rule_headers(
         )
     if not candidates:
         return None
+    multicolumn_leaf_candidates: list[dict[str, object]] = []
+    for candidate in candidates:
+        if candidate["body_support"] != "label_only_body_starter_with_value_rows":
+            continue
+        header_rows = [row_idx for row_idx in candidate["header_rows"] if isinstance(row_idx, int)]
+        if len(header_rows) < 2:
+            continue
+        leaf_row = rows[header_rows[-1]]
+        leaf_value_cells = [_clean_cell(cell) for cell in leaf_row[1:] if _clean_cell(cell)]
+        if len(leaf_value_cells) < max(2, (len(leaf_row) - 1) // 2):
+            continue
+        group_row_found = False
+        for row_idx in header_rows[:-1]:
+            prior_row = rows[row_idx]
+            prior_value_cells = [_clean_cell(cell) for cell in prior_row[1:] if _clean_cell(cell)]
+            prior_has_blank_gap = any(
+                _clean_cell(prior_row[col_idx]) and col_idx + 1 < len(prior_row) and not _clean_cell(prior_row[col_idx + 1])
+                for col_idx in range(1, len(prior_row) - 1)
+            )
+            if prior_value_cells and (prior_has_blank_gap or len(prior_value_cells) < len(leaf_value_cells)):
+                group_row_found = True
+                break
+        if group_row_found:
+            multicolumn_leaf_candidates.append(candidate)
+    if multicolumn_leaf_candidates:
+        return min(multicolumn_leaf_candidates, key=lambda item: int(item["first_body_row_idx"]))
     return max(candidates, key=lambda item: int(item["first_body_row_idx"]))
+
+
+def _looks_like_generated_row_boundary_rules(
+    row_bounds: list[tuple[float, float]],
+    horizontal_rules: list[float],
+) -> bool:
+    if not row_bounds or not horizontal_rules:
+        return False
+    boundary_values = [value for bounds in row_bounds for value in bounds]
+    matched_boundaries = sum(
+        any(abs(rule - boundary) <= BOUNDARY_RULE_TOLERANCE for rule in horizontal_rules)
+        for boundary in boundary_values
+    )
+    return matched_boundaries >= max(4, int(len(boundary_values) * 0.8))
 
 
 def _detect_value_region_anchor(rows: list[list[str]]) -> dict[str, object] | None:
@@ -320,6 +369,8 @@ def _detect_value_region_anchor(rows: list[list[str]]) -> dict[str, object] | No
             body_start = row_idx
             continue
         value_like_count, _ = _count_trailing_value_like_cells(row)
+        if value_like_count == 0 and header_score(row, row_idx) >= 0.55:
+            break
         repeated_text_values = len(set(trailing)) <= max(1, len(trailing) // 2)
         if value_like_count == 0 and repeated_text_values:
             body_start = row_idx
@@ -381,6 +432,13 @@ def detect_header_rows_with_metadata(
             break
 
     separator_rules = separator_horizontal_rules if separator_horizontal_rules is not None else horizontal_rules
+    if (
+        separator_horizontal_rules is None
+        and separator_rules is not None
+        and row_bounds is not None
+        and _looks_like_generated_row_boundary_rules(row_bounds, separator_rules)
+    ):
+        separator_rules = None
     separator_detection = (
         _detect_separator_rule_headers(rows, row_bounds, separator_rules)
         if rows and row_bounds and separator_rules and len(row_bounds) == len(rows)
@@ -548,6 +606,12 @@ def compare_header_body_split_rules(
         "reason": "no_selective_hline_candidate",
     }
     if rows and row_bounds and rule_source and len(row_bounds) == len(rows):
+        if (
+            separator_horizontal_rules is None
+            and _looks_like_generated_row_boundary_rules(row_bounds, rule_source)
+        ):
+            rule_source = None
+    if rows and row_bounds and rule_source and len(row_bounds) == len(rows):
         sorted_rules = sorted(rule_source)
         separator_detection = _detect_separator_rule_headers(rows, row_bounds, sorted_rules)
         if separator_detection is not None:
@@ -561,28 +625,18 @@ def compare_header_body_split_rules(
                 "body_support": separator_detection["body_support"],
             }
         else:
-            ruled_gaps = 0
-            for row_idx in range(len(row_bounds) - 1):
-                bottom = row_bounds[row_idx][1]
-                next_top = row_bounds[row_idx + 1][0]
-                if any(bottom - BOUNDARY_RULE_TOLERANCE <= rule_y <= next_top + BOUNDARY_RULE_TOLERANCE for rule_y in sorted_rules):
-                    ruled_gaps += 1
-            dense_grid = ruled_gaps >= max(3, len(rows) - 2)
-            if dense_grid:
-                hline_candidate["reason"] = "dense_row_grid_hlines"
-            else:
-                for rule_y in sorted_rules:
-                    header_count = sum(row_bottom <= rule_y + BOUNDARY_RULE_TOLERANCE for _, row_bottom in row_bounds)
-                    if 0 < header_count < len(rows):
-                        hline_candidate = {
-                            "rule": "selective_hline_prefix",
-                            "body_start": header_count,
-                            "header_rows": list(range(header_count)),
-                            "preamble_rows": [],
-                            "reason": "first_selective_hline_boundary",
-                            "rule_y": rule_y,
-                        }
-                        break
+            for rule_y in sorted_rules:
+                header_count = sum(row_bottom <= rule_y + BOUNDARY_RULE_TOLERANCE for _, row_bottom in row_bounds)
+                if 0 < header_count < len(rows):
+                    hline_candidate = {
+                        "rule": "selective_hline_prefix",
+                        "body_start": header_count,
+                        "header_rows": list(range(header_count)),
+                        "preamble_rows": [],
+                        "reason": "first_selective_hline_boundary",
+                        "rule_y": rule_y,
+                    }
+                    break
 
     data_anchor_candidate: dict[str, object] = {
         "rule": "first_value_region_data_row",

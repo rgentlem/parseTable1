@@ -11,6 +11,34 @@ Research-oriented tooling for extracting, normalizing, heuristically interpretin
 - `ParsedTable` is now emitted as the final structured value layer, with conservative numeric parsing and soft Table 1 `n (%)` heuristics.
 - The repository also contains heuristic interpretation, diagnostics, paper-context artifacts, R inspection helpers, and a standalone LLM variable-plausibility review command.
 
+## Real-Paper Review Status
+
+The current real-paper review guide is:
+
+- [`docs/implementation/real_paper_testing_guide.md`](docs/implementation/real_paper_testing_guide.md)
+
+That file is the ordered checklist for corpus-driven review. It records the
+current reference run, the papers to inspect next, and the known failure groups.
+
+Current reference baseline:
+
+```text
+outputs/testpapers_reference_20260630_153142
+```
+
+That run parsed the 27-PDF corpus under
+`/Users/robert/Projects/Epiconnector/testpapers` with no command failures and
+no missing core artifacts. At this point the table parser is being treated as
+the current baseline: the next review work is focused on footnote and reference
+artifacts, especially false-positive footnote anchors, bibliographic superscript
+citations, statistical-significance markers, and unresolved table references.
+
+The extraction layer still uses the `pymupdf4llm` backend with raw PyMuPDF word,
+character, and rule-geometry refinements for difficult cases. A later extraction
+push should move difficult ruled or rotated tables toward a more direct
+raw-PyMuPDF geometry path instead of adding downstream table-parsing fixes for
+bad extracted grids.
+
 ## Basic Idea
 
 The goal of this project is to parse Table 1-style tables from epidemiology papers into structured representations that can be inspected, validated, and used by downstream tools.

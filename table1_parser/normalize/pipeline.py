@@ -872,7 +872,7 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
     separator_horizontal_rules = (
         [float(value) for value in raw_separator_rules]
         if isinstance(raw_separator_rules, list)
-        else horizontal_rules
+        else None
     )
     header_row_bounds = None if extra_wide_value_column_repair is not None else row_bounds
     header_horizontal_rules = None if extra_wide_value_column_repair is not None else horizontal_rules
