@@ -193,6 +193,7 @@ Design intent:
 - continuation linkage belongs in metadata, not in synthetic renamed titles such as `Table 1a`
 - numbering audits are for inspection only; they must not be used to silently drop extracted tables
 - extraction may refine a coarse explicit backend grid when word geometry inside the table bbox, together with strong horizontal boundaries, supports a better row/column structure
+- full-width horizontal-rule metadata should be based on stroked line/rule geometry, not filled row highlighting or background shading
 - collapsed-grid word-position refinement chooses value-column anchors from repeated value-like numeric positions rather than one-off digit-bearing label tokens; when needed, it preserves a left label anchor and pulls nonnumeric label fragments back from value columns on rows whose only right-side value is a trailing statistic such as a p-value
 - rotated explicit tables may be refined in a table-local normalized coordinate frame; when that happens, `table_cells`, `row_bounds`, and `horizontal_rules` describe that local frame rather than raw page coordinates, while `geometry_transform_source_bbox`, `geometry_transform_transposed`, and `geometry_transform_applied` record the transform input needed to map page characters into the same frame
 - for explicit PyMuPDF4LLM tables, extraction may record `first_column_text_x0_by_row` so normalization can infer visible row-label indentation from word positions rather than full cell boundaries; this metadata supports row classification only and does not replace cell bboxes
@@ -270,6 +271,7 @@ Important current `metadata` keys produced by normalization:
 - `source_col_indices`
 - `column_repairs`
 - `header_detection`
+- `header_body_split_rule_comparison`
 - `indentation_informative`
 - `text_cleaning_provenance`
 
@@ -283,13 +285,16 @@ Design intent:
   original extracted column when that identity is still well-defined; entries
   may be `null` after repairs that merge, synthesize, or expand columns
 - when wide horizontal boundaries sit just slightly above or below the first extracted text line, header detection may still use them as the top table boundary; minor geometry jitter should not suppress obvious header/body bracketing
-- when a dense numeric value matrix begins after several header-like rows, normalization may use that first value row as the header/body boundary and suppress a sparse leading caption or note tail from both `header_rows` and `body_rows`
+- header/body separation is selected in normalization using structural evidence first: validated full-width separator rules, then the first value-region data anchor, then content scoring as a fallback
+- when a value-region data anchor begins after several header-like rows, normalization may use that first value row as the header/body boundary and suppress a sparse leading caption or note tail from both `header_rows` and `body_rows`
 - normalization may apply conservative structural repairs when extraction has clearly split one logical value across adjacent columns
 - normalization may also drop a sparse structural stub column when strong row-pattern evidence shows that the next column is the true row-label field and columns to the right are the value region
 - normalization may also merge two adjacent row-label field columns when the second column repeatedly contains label fragments and data-like values clearly begin to the right
 - normalization may also move an embedded count out of the first value column when that cell contains the tail of a row label plus a count-like value, recording evidence in `metadata.column_repairs.embedded_label_count_cells`
 - normalization may also merge label-only continuation rows into the preceding valued row when punctuation, footnote, or phrase-continuation cues show that the visual row label wrapped vertically, recording evidence in `metadata.column_repairs.vertical_label_continuations`
 - normalization may also expand a collapsed extracted value-region cell back into many visual value columns when that cell repeatedly contains a stable newline-delimited stack of numeric values; this repairs an extractor artifact where an upright wide data table has been collapsed in the raw grid even though the visual table is multi-column
+- normalization records a comparison of the two primary structural header/body split candidates, a selective horizontal-rule boundary and the first value-region data anchor, so corpus review can inspect whether the selected rows came from agreeing evidence or from one available rule
+- when full-width horizontal rules identify a header band, `metadata.header_detection` may record `preamble_rows` above that band and `separator_body_support` explaining whether the body starts with a value-dense row or with a sparse parent/reference row followed by value rows
 - those repairs should be driven by row-style expectations and body-value patterns, not by paper-specific header templates
 - normalization may also repair a small set of extractor-facing glyph-to-Unicode failures in parser-facing text, such as a broken replacement character before a numeric threshold becoming `<=`
 - these symbol repairs belong in normalized text only; the original extracted cell text remains preserved in `ExtractedTable`
@@ -301,7 +306,7 @@ Conservative repair rule:
 - when a categorical block implies `n (%)` values and adjacent cells are strongly consistent with `count` plus parenthesized percent fragments, normalization may merge those fragments back into one cell before later semantic stages run
 - when a broad extracted value cell contains a repeated fixed-width stack of mostly numeric tokens across several rows, normalization may split that stack into separate value columns, repeat coarser shared header labels over their leaf columns, and record the evidence in `metadata.column_repairs.extra_wide_value_column`
 - when that repair reveals a strongly header-like first body row, normalization may promote that row into `header_rows`
-- when a dense numeric value matrix provides a clearer body boundary than the initial header detector, normalization may promote the non-empty rows above that matrix into `header_rows`; sparse leading note/caption tails are kept in `cleaned_rows` for provenance but excluded from both header and body rows
+- when a value-region anchor provides the selected body boundary, normalization may treat the non-empty rows above that anchor as `header_rows`; sparse leading note/caption tails are kept in `cleaned_rows` for provenance but excluded from both header and body rows
 - when a first column is sparse, value-free, and mostly section-like while the second column is dense and label-like, normalization may suppress pure stub rows, shift the second column into the row-label position, and merge first-plus-second labels for rows where both pieces form one label
 - when a single logical row-label field is split across the first two columns, normalization may shift second-column level labels left and merge first-plus-second label fragments before row signatures are built; this can be supported by shifted label rows or by many merged first-plus-second label fragments with values clearly starting to the right
 - when only the tail of a label is embedded in the first value cell, normalization may merge that label tail back into column 0 while leaving the count in the value column
@@ -1114,6 +1119,7 @@ Design intent:
 
 - expose deterministic quality signals for every normalized table considered by `parse`
 - make column-determination problems inspectable, including weak p-value columns, mostly empty columns, and group/overall columns with low value-pattern recognition
+- report header/body split disagreements when both structural candidates exist and choose different body starts; the full candidate details remain in `normalized_tables.json`
 - keep softer quality warnings separate from `table_processing_status.json`, which records coarse pass/fail outcomes and rescue attempts
 - preserve parse behavior: warnings and errors in this artifact do not halt parsing and do not rewrite `table_definitions.json` or `parsed_tables.json`
 - allow `table_processing_status.json` to mark obvious non-table layout artifacts, such as article-info/abstract boxes emitted as explicit backend tables, as failed non-semantic candidates while preserving them in extraction and normalization artifacts

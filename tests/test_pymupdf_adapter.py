@@ -105,14 +105,28 @@ def test_extract_page_rule_segments_reads_rects_and_line_items() -> None:
     page = FakePyMuPage(
         drawings=[
             {"rect": FakeRect(10.0, 24.0, 120.0, 24.8), "items": []},
+            {"rect": FakeRect(10.0, 40.0, 120.0, 52.0), "items": []},
+            {
+                "rect": FakeRect(10.0, 60.0, 120.0, 70.0),
+                "fill": (0.9, 0.8, 0.3),
+                "color": None,
+                "items": [("l", FakePoint(10.0, 60.0), FakePoint(120.0, 60.0))],
+            },
             {"rect": None, "items": [("l", FakePoint(12.0, 30.0), FakePoint(90.0, 30.0))]},
         ]
     )
 
     segments = extract_page_rule_segments(page)
+    stroked_segments = extract_page_rule_segments(page, include_filled=False)
 
     assert (10.0, 24.0, 120.0, 24.8) in segments
+    assert (10.0, 40.0, 120.0, 52.0) in segments
+    assert (10.0, 60.0, 120.0, 60.0) in segments
     assert (12.0, 30.0, 90.0, 30.0) in segments
+    assert (10.0, 24.0, 120.0, 24.8) in stroked_segments
+    assert (10.0, 40.0, 120.0, 52.0) not in stroked_segments
+    assert (10.0, 60.0, 120.0, 60.0) not in stroked_segments
+    assert (12.0, 30.0, 90.0, 30.0) in stroked_segments
 
 
 def test_adapter_helpers_tolerate_page_errors() -> None:

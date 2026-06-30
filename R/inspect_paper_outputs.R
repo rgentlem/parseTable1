@@ -230,6 +230,78 @@ load_paper_outputs <- function(paper_dir) {
   )
 }
 
+paper_table_summary <- function(outputs) {
+  rows <- lapply(seq_along(outputs$normalized_tables) - 1L, function(table_index) {
+    idx <- as.integer(table_index) + 1L
+    table <- outputs$normalized_tables[[idx]]
+    status <- outputs$table_processing_status[[idx]]
+    definition <- outputs$table_definitions[[idx]]
+    schema <- outputs$column_header_schemas[[idx]]
+    data.frame(
+      table_index = as.integer(table_index),
+      table_number = table_number_for_table(table),
+      table_id = as.character(table$table_id %||% ""),
+      page_num = as.integer(table$metadata$source_page_num %||% table$page_num %||% NA_integer_),
+      n_rows = as.integer(table$n_rows %||% NA_integer_),
+      n_cols = as.integer(table$n_cols %||% NA_integer_),
+      column_label_count = length(schema$leaves %||% list()),
+      variable_count = length(definition$variables %||% list()),
+      failed = identical(status$status %||% "", "failed"),
+      status = as.character(status$status %||% ""),
+      failure_stage = as.character(status$failure_stage %||% ""),
+      failure_reason = as.character(status$failure_reason %||% ""),
+      title = as.character(table$title %||% table$caption %||% ""),
+      stringsAsFactors = FALSE
+    )
+  })
+  do.call(rbind, rows)
+}
+
+table_column_labels <- function(outputs, table_index = 0L, table_number = NULL) {
+  selected_index <- if (!is.null(table_number)) resolve_table_index(outputs, table_number = table_number) else as.integer(table_index)
+  labels <- column_header_leaf_paths_df(outputs$column_header_schemas[[selected_index + 1L]])
+  labels[, c("col_idx", "leaf_label", "header_path", "is_row_label_column"), drop = FALSE]
+}
+
+table_row_labels <- function(outputs, table_index = 0L, table_number = NULL) {
+  selected_index <- if (!is.null(table_number)) resolve_table_index(outputs, table_number = table_number) else as.integer(table_index)
+  normalized <- outputs$normalized_tables[[selected_index + 1L]]
+  schema <- column_header_schema_by_index(outputs, selected_index)
+  label_col_idx <- as.integer(schema$label_col_idx %||% 0L)
+  cleaned_rows <- normalized$metadata$cleaned_rows %||% list()
+  row_indices <- as.integer(unlist(normalized$body_rows %||% list(), use.names = FALSE))
+  data.frame(
+    row_idx = row_indices,
+    row_label = vapply(row_indices, function(row_idx) {
+      as.character(cleaned_rows[[row_idx + 1L]][[label_col_idx + 1L]] %||% "")
+    }, character(1)),
+    stringsAsFactors = FALSE
+  )
+}
+
+table_variable_definitions <- function(outputs, table_index = 0L, table_number = NULL) {
+  selected_index <- if (!is.null(table_number)) resolve_table_index(outputs, table_number = table_number) else as.integer(table_index)
+  definition <- outputs$table_definitions[[selected_index + 1L]]
+  variables <- definition$variables %||% list()
+  rows <- lapply(variables, function(variable) {
+    levels <- vapply(variable$levels %||% list(), function(level) {
+      row_idx <- as.integer(level$row_idx %||% NA_integer_)
+      label <- as.character(level$level_label %||% level$level_name %||% "")
+      if (is.na(row_idx)) label else sprintf("%s: %s", row_idx, label)
+    }, character(1))
+    data.frame(
+      row_start = as.integer(variable$row_start %||% NA_integer_),
+      row_end = as.integer(variable$row_end %||% NA_integer_),
+      variable_name = as.character(variable$variable_name %||% ""),
+      variable_label = as.character(variable$variable_label %||% ""),
+      variable_type = as.character(variable$variable_type %||% ""),
+      levels = paste(levels[nzchar(levels)], collapse = " | "),
+      stringsAsFactors = FALSE
+    )
+  })
+  do.call(rbind, rows)
+}
+
 paper_variable_mentions_df <- function(outputs, role_hint = NULL, source_type = NULL, mention_role = NULL) {
   mentions <- outputs$paper_variable_inventory$mentions %||% list()
   rows <- lapply(mentions, function(x) {

@@ -870,7 +870,8 @@ def _header_runs_for_groups(
     runs: list[_HeaderRun] = []
     header_detection = metadata.get("header_detection")
     trust_structural_header_rows = (
-        isinstance(header_detection, dict) and header_detection.get("source") == "value_matrix_boundary"
+        isinstance(header_detection, dict)
+        and header_detection.get("source") in {"value_matrix_boundary", "value_region_anchor"}
     )
     for row_idx in sorted(row_indices):
         row = [_grid_cell(grid, row_idx, col_idx) for col_idx in range(n_cols)]

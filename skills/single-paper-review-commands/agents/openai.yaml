@@ -1,4 +1,0 @@
-interface:
-  display_name: "Single Paper Review Commands"
-  short_description: "Produce one-paper parse and R inspection commands"
-  default_prompt: "Use the single-paper-review-commands skill to give parse and interactive R inspection code for a testpaper, including table overview, headers, continuations, and citation markers."

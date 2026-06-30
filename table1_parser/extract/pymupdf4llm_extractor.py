@@ -164,10 +164,12 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                     page_words = []
                     page_chars = []
                     page_rule_segments = []
+                    page_stroked_rule_segments = []
                 else:
                     page_words = extract_page_words(page)
                     page_chars = _extract_page_chars_with_page_num(page, page_num)
                     page_rule_segments = extract_page_rule_segments(page)
+                    page_stroked_rule_segments = extract_page_rule_segments(page, include_filled=False)
                 page_candidates: list[DetectedTableCandidate] = []
                 table_boxes = [
                     box
@@ -210,6 +212,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                         page_words=page_words,
                         page_chars=page_chars,
                         page_rule_segments=page_rule_segments,
+                        full_width_rule_segments=page_stroked_rule_segments,
                         orientation_metadata=orientation_metadata,
                     )
                     raw_rows = refinement["raw_rows"]
@@ -566,7 +569,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                     page_text=page_text,
                     words=extract_page_words(page),
                     chars=_extract_page_chars_with_page_num(page, page_num),
-                    rule_segments=extract_page_rule_segments(page),
+                    rule_segments=extract_page_rule_segments(page, include_filled=False),
                     layout_source="pymupdf_text_positions",
                 ):
                     candidates.append(
@@ -666,7 +669,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
             page_text=page_text or extract_page_text(page),
             words=extract_page_words(page),
             chars=_extract_page_chars_with_page_num(page, page_num),
-            rule_segments=extract_page_rule_segments(page),
+            rule_segments=extract_page_rule_segments(page, include_filled=False),
             layout_source="pymupdf_text_positions_rescue",
         )
         if not rescue_candidates:
@@ -813,6 +816,7 @@ def _refine_explicit_table_candidate_grid(
     page_words: list[dict[str, object]],
     page_chars: list[dict[str, object]],
     page_rule_segments: list[tuple[float, float, float, float]],
+    full_width_rule_segments: list[tuple[float, float, float, float]] | None = None,
     orientation_metadata: dict[str, Any],
 ) -> dict[str, object]:
     """Refine coarse explicit-table grids using positioned words and structural rules."""
@@ -844,7 +848,8 @@ def _refine_explicit_table_candidate_grid(
         if not horizontal_rules or abs(value - horizontal_rules[-1]) > 1.5:
             horizontal_rules.append(value)
 
-    full_width_rules = detect_horizontal_rules(page_rule_segments, bbox) if bbox is not None else []
+    separator_rule_segments = full_width_rule_segments if full_width_rule_segments is not None else page_rule_segments
+    full_width_rules = detect_horizontal_rules(separator_rule_segments, bbox) if bbox is not None else []
     if full_width_rules:
         for value in sorted(horizontal_rules + full_width_rules):
             if not horizontal_rules or abs(value - horizontal_rules[-1]) > 1.5:
@@ -865,13 +870,20 @@ def _refine_explicit_table_candidate_grid(
             "geometry_transform_applied": False,
         }
 
+    word_clip_bbox = bbox
+    if full_width_rules:
+        sorted_full_width_rules = sorted(float(rule) for rule in full_width_rules)
+        top_rule = sorted_full_width_rules[0]
+        if top_rule < bbox[1] and bbox[1] - top_rule <= 20.0:
+            word_clip_bbox = (bbox[0], top_rule, bbox[2], bbox[3])
+
     clipped_words = [
         word
         for word in page_words
-        if float(word["x0"]) >= bbox[0] - 2.0
-        and float(word["x1"]) <= bbox[2] + 2.0
-        and float(word["top"]) >= bbox[1] - 2.0
-        and float(word["bottom"]) <= bbox[3] + 2.0
+        if float(word["x0"]) >= word_clip_bbox[0] - 2.0
+        and float(word["x1"]) <= word_clip_bbox[2] + 2.0
+        and float(word["top"]) >= word_clip_bbox[1] - 2.0
+        and float(word["bottom"]) <= word_clip_bbox[3] + 2.0
     ]
     if not clipped_words:
         return {
@@ -891,10 +903,10 @@ def _refine_explicit_table_candidate_grid(
     clipped_chars = [
         char
         for char in page_chars
-        if float(char["x0"]) >= bbox[0] - 2.0
-        and float(char["x1"]) <= bbox[2] + 2.0
-        and float(char["top"]) >= bbox[1] - 2.0
-        and float(char["bottom"]) <= bbox[3] + 2.0
+        if float(char["x0"]) >= word_clip_bbox[0] - 2.0
+        and float(char["x1"]) <= word_clip_bbox[2] + 2.0
+        and float(char["top"]) >= word_clip_bbox[1] - 2.0
+        and float(char["bottom"]) <= word_clip_bbox[3] + 2.0
     ]
 
     rotation_direction = str(orientation_metadata.get("rotation_direction") or "")
@@ -1180,6 +1192,19 @@ def _refine_explicit_table_candidate_grid(
                     and refined_col_count >= max_raw_cols + 4
                     and len(refined_rows) >= max(4, len(raw_rows) - 1)
                 )
+                wide_rotated_refinement = (
+                    bool(refinement_attempt["geometry_transform_applied"])
+                    and max_raw_cols <= 4
+                    and refined_col_count > 12
+                )
+                has_rotated_rule_support = (
+                    len(working_horizontal_rules) >= 3
+                    or column_start_boundaries is not None
+                )
+                if wide_rotated_refinement and (
+                    refined_col_count > 30 or not has_rotated_rule_support
+                ):
+                    continue
                 if column_gain_ok and (row_gain_ok or stacked_column_gain_ok):
                     return {
                         "raw_rows": refined_rows,

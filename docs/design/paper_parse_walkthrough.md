@@ -147,7 +147,7 @@ Conceptually, this stage does three things:
 
 The current extractor uses `pymupdf4llm` as the main backend. It tries to recover explicit table boxes and table cell grids from the backend JSON output. When that is not enough, it can fall back to text-position-based layout reconstruction.
 
-For some explicit tables, the backend cell grid is too coarse even though the page still contains enough geometry to do better. When a table shows strong grouped-header signals, such as repeated `Model 1`, `Model 2`, `Model 3` blocks plus wide horizontal boundaries, extraction can now refine the explicit backend grid using word positions inside the table bounding box.
+For some explicit tables, the backend cell grid is too coarse even though the page still contains enough geometry to do better. When a table shows strong grouped-header signals, such as repeated `Model 1`, `Model 2`, `Model 3` blocks plus wide horizontal boundaries, extraction can now refine the explicit backend grid using word positions inside the table bounding box. If the backend table box starts just below a true full-width top rule, extraction may expand the word clip up to that rule so the grouped header row is not lost before column-header schema construction.
 
 For collapsed explicit grids, word-position refinement treats stable value columns as repeated value-like numeric anchors. This prevents label text such as `Q1-Q3`, `kg/m2`, or biomarker names containing digits from creating fake columns. Rows with a trailing statistic and only nonnumeric fragments to its left can also be repaired from right to left so long first-column labels remain a single row label.
 
@@ -404,23 +404,24 @@ When this fires, normalization:
 
 This treats the visual table as a normal multi-column table while preserving the original collapsed cell text in `ExtractedTable`.
 
-#### 3.12 Recover Header Bands From Value-Matrix Boundaries
+#### 3.12 Select Header Bands From Structural Boundaries
 
 Some extracted table fragments begin with a stray caption tail or note row,
-followed by a compact multi-row header and then a dense numeric value matrix.
-If the numeric matrix starts early in the table and the rows above it are
-structurally header-like, normalization can use that first matrix row as the
-header/body boundary.
+followed by a compact multi-row header and then a value region. Normalization
+first tries validated full-width horizontal separator rules. If no separator
+candidate is available, it can use the first row-label-plus-value-region anchor
+as the header/body boundary.
 
 When this fires, normalization:
 
-- promotes the non-empty rows above the value matrix into `header_rows`
+- promotes the non-empty rows above the selected structural boundary into `header_rows`
 - trims a sparse leading note/caption tail out of the promoted header band
-- starts `body_rows` at the first dense numeric value row
+- starts `body_rows` at the first structural body row
 - records the boundary source in `metadata.header_detection`
 
-This is a structural boundary repair, not a semantic interpretation of the
-header words.
+This is a structural boundary decision, not a semantic interpretation of the
+header words. Tables without usable rules or a clear value-region anchor still
+fall back to content scoring.
 
 #### 3.13 Drop Columns Emptied By Repair
 
@@ -781,6 +782,8 @@ It is meant to answer questions like:
 - did a p-value column mostly contain p-value-like values?
 - are inferred group or overall columns mostly numeric/statistical?
 - did header detection or normalization emit suspicious structural signals?
+- do the full-width hline separator and first value-region anchor disagree on
+  where the table body starts?
 
 This step does not change `table_definitions.json` or `parsed_tables.json`.
 It exists so column and row problems are visible even when the table technically parses.

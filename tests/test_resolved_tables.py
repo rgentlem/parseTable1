@@ -280,6 +280,62 @@ def test_boundary_continuation_notes_integrate_uncaptioned_fragments() -> None:
     )
 
 
+def test_empty_continued_row_integrates_adjacent_fragment_after_column_match() -> None:
+    """A final empty Continued row is dropped only after the next fragment matches columns."""
+    base_rows = [
+        ["Variables", "Total", "With asthma", "Without asthma", "P value"],
+        ["Ever told you had chronic bronchitis", "", "", "", "0.000"],
+        ["No", "53,355 (83.1)", "3889 (83.9)", "49,466 (98.4)", ""],
+        ["Yes", "1564 (2.4)", "761 (16.4)", "803 (1.6)", ""],
+        ["Continued", "", "", "", ""],
+    ]
+    continuation_rows = [
+        ["Variables", "Total", "With asthma", "Without asthma", "P value"],
+        ["Missing values", "9303 (14.5)", "", "", ""],
+        ["Ever told you had COPD, emphysema, ChB", "", "", "", "0.000"],
+    ]
+    base = NormalizedTable(
+        table_id="asthma-p4-t0",
+        title=None,
+        caption=None,
+        header_rows=[0],
+        body_rows=[1, 2, 3, 4],
+        row_views=[_row_view(row_idx, base_rows[row_idx]) for row_idx in [1, 2, 3, 4]],
+        n_rows=5,
+        n_cols=5,
+        metadata={"cleaned_rows": base_rows, "source_page_num": 4},
+    )
+    continuation = NormalizedTable(
+        table_id="asthma-p5-t0",
+        title=None,
+        caption=None,
+        header_rows=[0],
+        body_rows=[1, 2],
+        row_views=[_row_view(row_idx, continuation_rows[row_idx]) for row_idx in [1, 2]],
+        n_rows=3,
+        n_cols=5,
+        metadata={"cleaned_rows": continuation_rows, "source_page_num": 5},
+    )
+
+    resolved_set = build_resolved_table_set(
+        [base, continuation],
+        [
+            _schema(base, ["Variables", "Total", "With asthma", "Without asthma", "P value"]),
+            _schema(continuation, ["Variables", "Total", "With asthma", "Without asthma", "P value"]),
+        ],
+    )
+
+    assert len(resolved_set.resolved_tables) == 1
+    resolved = resolved_set.resolved_tables[0]
+    assert resolved.resolution_type == "integrated_continuation"
+    assert ["Continued", "", "", "", ""] not in resolved.table.metadata["cleaned_rows"]
+    assert resolved.table.metadata["cleaned_rows"][4] == ["Missing values", "9303 (14.5)", "", "", ""]
+    assert resolved.integration_boundaries[0].dropped_rows[0].reason == (
+        "base_trailing_empty_continued_row_dropped_after_schema_match"
+    )
+    assert "adjacent_page_after_empty_continued_row" in resolved_set.decisions[-1].identity_evidence
+
+
 def _extracted_table(table_id: str) -> ExtractedTable:
     return ExtractedTable(
         table_id=table_id,

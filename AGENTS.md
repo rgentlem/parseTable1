@@ -107,36 +107,6 @@ Before committing parser changes, report:
 - which papers failed, if any
 - whether `pytest` passed
 
-## Repo-Local Skills
-
-This repository includes shared Codex skills under:
-
-```text
-/Users/robert/Projects/Epiconnector/parseTable1/skills
-```
-
-These skills are committed with the repository so collaborators can use the
-same workflows. When a request matches one of these skills, read that skill's
-`SKILL.md` before acting:
-
-- `skills/epiconnector-parser-change/SKILL.md`
-  - Use for parser code, schema, CLI output, pipeline, design-doc, or commit
-    work.
-- `skills/testpapers-batch-review/SKILL.md`
-  - Use for running or summarizing the real-paper corpus under
-    `/Users/robert/Projects/Epiconnector/testpapers`.
-- `skills/known-failure-regression/SKILL.md`
-  - Use when adding or changing parser tests for known failures or important
-    artifact contracts.
-- `skills/implementation-goal-checklist/SKILL.md`
-  - Use when turning parser goals, completion priorities, design notes, TODOs,
-    or phases into checkbox implementation plans.
-- `skills/single-paper-review-commands/SKILL.md`
-  - Use when giving one-paper parse commands and interactive R inspection code
-    for papers in the local testpaper corpus.
-
----
-
 # Project Goals
 
 The package should:

@@ -197,7 +197,7 @@ def _install_fake_pymupdf_document(monkeypatch, pages: list[FakePyMuPage]) -> No
     monkeypatch.setattr(
         pymupdf4llm_extractor_module,
         "extract_page_rule_segments",
-        lambda page: page.rule_segments,
+        lambda page, include_filled=True: page.rule_segments,
     )
 
 
@@ -869,6 +869,78 @@ def test_pymupdf4llm_extractor_refines_rotated_explicit_tables_from_words_and_ru
     assert tables[0].metadata["refined_table_cells"] is not None
     assert tables[0].metadata["table_cells"] == tables[0].metadata["refined_table_cells"]
     assert tables[0].cells[0].bbox is not None
+
+
+def test_rotated_explicit_grid_rejects_overexpanded_word_refinement() -> None:
+    """Rotated word refinement should not turn a small backend grid into fragments."""
+    table_bbox = (100.0, 60.0, 280.0, 220.0)
+    bottom = table_bbox[3]
+    left = table_bbox[0]
+
+    def to_page_bbox(
+        local_x0: float,
+        local_top: float,
+        local_x1: float,
+        local_bottom: float,
+    ) -> tuple[float, float, float, float]:
+        corners = [
+            (left + local_top, bottom - local_x0),
+            (left + local_top, bottom - local_x1),
+            (left + local_bottom, bottom - local_x0),
+            (left + local_bottom, bottom - local_x1),
+        ]
+        return (
+            min(point[0] for point in corners),
+            min(point[1] for point in corners),
+            max(point[0] for point in corners),
+            max(point[1] for point in corners),
+        )
+
+    page_words: list[dict[str, object]] = []
+    for row_idx in range(5):
+        for col_idx in range(30):
+            local_x0 = 5.0 + col_idx * 5.0
+            local_top = 6.0 + row_idx * 14.0
+            x0, top, x1, bottom_y = to_page_bbox(
+                local_x0,
+                local_top,
+                local_x0 + 2.0,
+                local_top + 6.0,
+            )
+            page_words.append(
+                {
+                    "text": f"C{col_idx}" if row_idx == 0 else f"{row_idx}.{col_idx}",
+                    "x0": x0,
+                    "x1": x1,
+                    "top": top,
+                    "bottom": bottom_y,
+                }
+            )
+
+    raw_rows = [["Header blob", "Body blob", "Note blob"]]
+    refinement = pymupdf4llm_extractor_module._refine_explicit_table_candidate_grid(
+        raw_rows=raw_rows,
+        cell_bboxes=[
+            [
+                (100.0, 60.0, 130.0, 220.0),
+                (130.0, 60.0, 250.0, 220.0),
+                (250.0, 60.0, 280.0, 220.0),
+            ]
+        ],
+        bbox=table_bbox,
+        page_words=page_words,
+        page_chars=[],
+        page_rule_segments=[],
+        orientation_metadata={
+            "table_orientation": "rotated",
+            "rotation_direction": "vertical_text_down",
+            "rotation_confidence": 1.0,
+        },
+    )
+
+    assert refinement["raw_rows"] == raw_rows
+    assert refinement["grid_refinement_source"] is None
+    assert refinement["refined_table_cells"] is None
 
 
 def test_pymupdf4llm_extractor_replaces_collapsed_sideways_page_candidate(
@@ -1939,10 +2011,10 @@ def test_pymupdf4llm_extractor_rescues_low_quality_explicit_table_with_text_layo
                             "textlines": [{"spans": [{"text": "Association with DKD"}]}],
                         },
                         {
-                            "bbox": [40, 90, 560, 170],
+                            "bbox": [40, 99, 560, 170],
                             "boxclass": "table",
                             "table": {
-                                "bbox": [40, 90, 560, 170],
+                                "bbox": [40, 99, 560, 170],
                                 "extract": [
                                     ["", "OR (95% CI), P-value"],
                                     ["", "Participants\nCrude\nModel 1\nModel 2"],
@@ -2020,10 +2092,10 @@ def test_pymupdf4llm_extractor_refines_model_table_columns_from_words_and_rules(
                             "textlines": [{"spans": [{"text": "Table 2. Association with hyperlipidemia"}]}],
                         },
                         {
-                            "bbox": [40, 90, 560, 170],
+                            "bbox": [40, 99, 560, 170],
                             "boxclass": "table",
                             "table": {
-                                "bbox": [40, 90, 560, 170],
+                                "bbox": [40, 99, 560, 170],
                                 "extract": [
                                     ["PAHs quintiles", "Model_1\nOR (95% CI)\nP", "Model_2\nOR (95% CI)\nP", "Model_3\nOR (95% CI)\nP"],
                                     ["", "", "", ""],
@@ -2035,7 +2107,7 @@ def test_pymupdf4llm_extractor_refines_model_table_columns_from_words_and_rules(
                                     ],
                                 ],
                                 "cells": [
-                                    [[40, 90, 130, 105], [130, 90, 270, 105], [270, 90, 410, 105], [410, 90, 560, 105]],
+                                    [[40, 99, 130, 105], [130, 99, 270, 105], [270, 99, 410, 105], [410, 99, 560, 105]],
                                     [[40, 105, 130, 120], [130, 105, 270, 120], [270, 105, 410, 120], [410, 105, 560, 120]],
                                     [[40, 120, 130, 170], [130, 120, 270, 170], [270, 120, 410, 170], [410, 120, 560, 170]],
                                 ],

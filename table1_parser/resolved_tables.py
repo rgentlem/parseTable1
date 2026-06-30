@@ -21,6 +21,7 @@ from table1_parser.schemas import (
 
 TABLE_NUMBER_PATTERN = re.compile(r"\btable\s*(\d+)\b", re.IGNORECASE)
 CONTINUATION_PATTERN = re.compile(r"\bcont(?:inued)?\.?\b|\(\s*continued\s*\)", re.IGNORECASE)
+CONTINUED_ROW_PATTERN = re.compile(r"^\(?\s*continued\s*\)?$", re.IGNORECASE)
 
 
 def _trailing_continuation_table_number(table: NormalizedTable) -> int | None:
@@ -181,6 +182,43 @@ def build_resolved_table_set(
                 )
                 if prior_trailing_number is not None:
                     continuation_identity_evidence.append(f"prior_trailing_continuation_table_number:{prior_trailing_number}")
+
+        if (
+            continuation_number is None
+            and not title_caption_text
+            and logical_table_number is None
+            and not metadata_is_continuation
+            and source_index > 0
+            and isinstance(source_page_num, int)
+            and not isinstance(source_page_num, bool)
+        ):
+            prior_table = normalized_tables[source_index - 1]
+            prior_page = prior_table.metadata.get("source_page_num")
+            prior_rows = prior_table.metadata.get("cleaned_rows")
+            prior_last_body_row_idx = prior_table.body_rows[-1] if prior_table.body_rows else None
+            prior_last_body_row = (
+                prior_rows[prior_last_body_row_idx]
+                if isinstance(prior_rows, list)
+                and isinstance(prior_last_body_row_idx, int)
+                and prior_last_body_row_idx < len(prior_rows)
+                else None
+            )
+            if (
+                isinstance(prior_page, int)
+                and not isinstance(prior_page, bool)
+                and source_page_num == prior_page + 1
+                and isinstance(prior_last_body_row, list)
+                and prior_last_body_row
+                and CONTINUED_ROW_PATTERN.fullmatch(str(prior_last_body_row[0]).strip()) is not None
+                and all(not str(cell).strip() for cell in prior_last_body_row[1:])
+            ):
+                boundary_parent_index = source_index - 1
+                continuation_identity_evidence.extend(
+                    [
+                        "adjacent_page_after_empty_continued_row",
+                        f"prior_trailing_continued_row:{prior_table.table_id}",
+                    ]
+                )
 
         if (
             continuation_number is None
@@ -387,6 +425,25 @@ def build_resolved_table_set(
             continuation_rows = table.metadata.get("cleaned_rows")
             if parent_resolved is not None and isinstance(parent_rows, list) and isinstance(continuation_rows, list):
                 integrated_rows = [[str(cell) for cell in row] for row in parent_rows if isinstance(row, list)]
+                dropped_parent_row_idx: int | None = None
+                if parent_resolved.table.body_rows:
+                    parent_last_body_row_idx = parent_resolved.table.body_rows[-1]
+                    parent_last_body_row = (
+                        parent_rows[parent_last_body_row_idx]
+                        if parent_last_body_row_idx < len(parent_rows)
+                        and isinstance(parent_rows[parent_last_body_row_idx], list)
+                        else None
+                    )
+                    if (
+                        isinstance(parent_last_body_row, list)
+                        and parent_last_body_row
+                        and CONTINUED_ROW_PATTERN.fullmatch(str(parent_last_body_row[0]).strip()) is not None
+                        and all(not str(cell).strip() for cell in parent_last_body_row[1:])
+                    ):
+                        dropped_parent_row_idx = parent_last_body_row_idx
+                        integrated_rows = [
+                            row for row_idx, row in enumerate(integrated_rows) if row_idx != dropped_parent_row_idx
+                        ]
                 row_provenance = [
                     provenance.model_copy(
                         update={
@@ -398,6 +455,7 @@ def build_resolved_table_set(
                         }
                     )
                     for provenance in parent_resolved.row_provenance
+                    if provenance.resolved_row_idx != dropped_parent_row_idx
                 ]
                 continuation_row_views_by_row_idx = {row_view.row_idx: row_view for row_view in table.row_views}
                 appended_body_rows: list[int] = []
@@ -419,6 +477,25 @@ def build_resolved_table_set(
                         )
                     )
 
+                parent_dropped_rows = []
+                if dropped_parent_row_idx is not None:
+                    source_page_for_dropped_parent = next(
+                        (
+                            provenance.source_page_num
+                            for provenance in parent_resolved.row_provenance
+                            if provenance.resolved_row_idx == dropped_parent_row_idx
+                        ),
+                        None,
+                    )
+                    parent_dropped_rows.append(
+                        DroppedSourceRow(
+                            source_table_id=parent_resolved.table.table_id,
+                            source_table_index=parent_index,
+                            source_row_idx=dropped_parent_row_idx,
+                            source_page_num=source_page_for_dropped_parent,
+                            reason="base_trailing_empty_continued_row_dropped_after_schema_match",
+                        )
+                    )
                 dropped_rows = [
                     DroppedSourceRow(
                         source_table_id=table.table_id,
@@ -442,7 +519,7 @@ def build_resolved_table_set(
                     if integrated_rows and appended_body_rows
                     else None,
                     after_resolved_row_idx=appended_body_rows[0] if appended_body_rows else None,
-                    dropped_rows=dropped_rows,
+                    dropped_rows=[*parent_dropped_rows, *dropped_rows],
                     decision_id=decision_id,
                     notes=["parent_headers_carried_forward_after_schema_match"],
                 )
@@ -479,8 +556,22 @@ def build_resolved_table_set(
                     update={
                         "table_id": integrated_table_id,
                         "header_rows": list(parent_resolved.table.header_rows),
-                        "body_rows": [*parent_resolved.table.body_rows, *appended_body_rows],
-                        "row_views": [*parent_resolved.table.row_views, *continuation_row_views],
+                        "body_rows": [
+                            *[
+                                row_idx
+                                for row_idx in parent_resolved.table.body_rows
+                                if row_idx != dropped_parent_row_idx
+                            ],
+                            *appended_body_rows,
+                        ],
+                        "row_views": [
+                            *[
+                                row_view
+                                for row_view in parent_resolved.table.row_views
+                                if row_view.row_idx != dropped_parent_row_idx
+                            ],
+                            *continuation_row_views,
+                        ],
                         "n_rows": len(integrated_rows),
                         "n_cols": parent_resolved.table.n_cols,
                         "metadata": integrated_metadata,
@@ -557,7 +648,8 @@ def build_resolved_table_set(
                     )
                 )
                 source_to_resolved_index[source_index] = parent_resolved_index
-                latest_fragment_by_number[continuation_number] = source_index
+                if continuation_number is not None:
+                    latest_fragment_by_number[continuation_number] = source_index
                 continue
             column_schema_decision = column_schema_decision.model_copy(
                 update={

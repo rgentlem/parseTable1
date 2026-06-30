@@ -6,7 +6,10 @@ import re
 
 from table1_parser.heuristics.variable_grouper import group_variable_blocks
 from table1_parser.heuristics.value_pattern_detector import detect_value_pattern
-from table1_parser.normalize.header_detector import detect_header_rows_with_metadata
+from table1_parser.normalize.header_detector import (
+    compare_header_body_split_rules,
+    detect_header_rows_with_metadata,
+)
 from table1_parser.normalize.row_signature import build_row_signature
 from table1_parser.schemas import ExtractedTable, NormalizedTable
 from table1_parser.text_cleaning import clean_text, summarize_text_cleaning_provenance
@@ -396,6 +399,7 @@ def _drop_sparse_nonmatrix_value_columns(
     raw_rows: list[list[str]],
     cleaned_rows: list[list[str]],
     body_rows: list[int],
+    header_rows: list[int],
 ) -> tuple[list[list[str]], list[list[str]], list[dict[str, int]]]:
     """Drop sparse non-numeric value columns introduced by page-margin text."""
     if not raw_rows or len(raw_rows[0]) < 4 or len(body_rows) < 3:
@@ -411,6 +415,15 @@ def _drop_sparse_nonmatrix_value_columns(
         p_value_like = 0
         left_numeric = 0
         right_numeric = 0
+        header_populated = any(
+            row_idx < len(cleaned_rows)
+            and col_idx < len(cleaned_rows[row_idx])
+            and bool(clean_text(cleaned_rows[row_idx][col_idx]))
+            for row_idx in header_rows
+        )
+        if header_populated:
+            keep_indices.append(col_idx)
+            continue
         for row_idx in matrix_rows:
             if row_idx >= len(cleaned_rows):
                 continue
@@ -885,30 +898,6 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
                 "extra_wide_header_rows": repaired_header_rows,
                 "extra_wide_first_value_row_idx": extra_wide_value_column_repair.get("first_value_row_idx"),
             }
-    first_matrix_row_idx = _first_dense_numeric_matrix_row(cleaned_rows)
-    if (
-        extra_wide_value_column_repair is None
-        and first_matrix_row_idx is not None
-        and 2 < first_matrix_row_idx <= 5
-        and len(header_rows) < first_matrix_row_idx
-    ):
-        repaired_header_rows = [row_idx for row_idx in range(first_matrix_row_idx) if any(clean_text(cell) for cell in cleaned_rows[row_idx])]
-        while len(repaired_header_rows) > 1:
-            first_row = cleaned_rows[repaired_header_rows[0]]
-            later_counts = [sum(bool(clean_text(cell)) for cell in cleaned_rows[row_idx]) for row_idx in repaired_header_rows[1:]]
-            if sum(bool(clean_text(cell)) for cell in first_row) <= 2 and max(later_counts, default=0) >= max(3, len(first_row) // 2):
-                repaired_header_rows = repaired_header_rows[1:]
-                continue
-            break
-        if len(repaired_header_rows) > len(header_rows):
-            header_rows = repaired_header_rows
-            body_rows = [row_idx for row_idx in range(first_matrix_row_idx, len(cleaned_rows))]
-            header_detection = {
-                **header_detection,
-                "source": "value_matrix_boundary",
-                "value_matrix_header_rows": repaired_header_rows,
-                "value_matrix_first_value_row_idx": first_matrix_row_idx,
-            }
     suppressed_stub_row_indices = (
         set(sparse_stub_label_column_repair.get("removed_stub_row_indices", []))
         if sparse_stub_label_column_repair is not None
@@ -1090,6 +1079,7 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
         raw_rows,
         cleaned_rows,
         body_rows,
+        header_rows,
     )
     if sparse_nonmatrix_column_repairs:
         dropped_sparse_cols = {repair["dropped_col_idx"] for repair in sparse_nonmatrix_column_repairs}
@@ -1146,6 +1136,14 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
         meaningful_offsets = [level - baseline for level in indent_levels if level - baseline >= 2]
         indentation_informative = len(meaningful_offsets) >= 2 and len(set(indent_levels)) >= 2
     text_cleaning_provenance = summarize_text_cleaning_provenance(raw_rows)
+    header_body_split_rule_comparison = compare_header_body_split_rules(
+        cleaned_rows,
+        row_bounds=header_row_bounds,
+        horizontal_rules=header_horizontal_rules,
+        separator_horizontal_rules=header_separator_rules,
+        selected_header_rows=header_rows,
+        selected_body_rows=body_rows,
+    )
 
     metadata = {
         **table.metadata,
@@ -1169,6 +1167,7 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
             "dropped_empty_columns_after_repair": dropped_repaired_cols,
         },
         "header_detection": header_detection,
+        "header_body_split_rule_comparison": header_body_split_rule_comparison,
         "indentation_informative": indentation_informative,
         "text_cleaning_provenance": text_cleaning_provenance,
     }

@@ -94,7 +94,11 @@ def extract_page_chars(page: Any, page_num: int | None = None) -> list[dict[str,
     return chars
 
 
-def extract_page_rule_segments(page: Any) -> list[tuple[float, float, float, float]]:
+def extract_page_rule_segments(
+    page: Any,
+    *,
+    include_filled: bool = True,
+) -> list[tuple[float, float, float, float]]:
     """Extract candidate horizontal drawing segments from a PyMuPDF page."""
     try:
         drawings = page.get_drawings() or []
@@ -111,8 +115,10 @@ def extract_page_rule_segments(page: Any) -> list[tuple[float, float, float, flo
             rect = (float(rect_value[0]), float(rect_value[1]), float(rect_value[2]), float(rect_value[3]))
         else:
             rect = None
-        if rect is not None:
+        if rect is not None and (include_filled or abs(rect[3] - rect[1]) <= 1.5):
             segments.append(rect)
+        if not include_filled and drawing.get("fill") is not None and drawing.get("color") is None:
+            continue
         for item in drawing.get("items", []):
             if not isinstance(item, tuple) or len(item) < 3 or item[0] != "l":
                 segment = None

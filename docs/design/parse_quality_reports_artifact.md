@@ -79,6 +79,8 @@ The artifact should expose existing diagnostics such as:
 - low recognized value-pattern rate
 - suspicious header-row count
 - header-rule/content disagreement
+- header/body split disagreement when the validated hline separator and the
+  first value-region anchor both exist but choose different body starts
 - normalization edge-column cleanup
 - mostly empty columns
 - p-value columns with too few p-value-like entries

@@ -255,7 +255,7 @@ def build_parse_quality_report(
         )
     if (
         isinstance(header_detection, dict)
-        and header_detection.get("source") == "horizontal_rules"
+        and header_detection.get("source") == "horizontal_rule_separator"
         and header_detection.get("rule_content_disagreement")
     ):
         table_diagnostics.append(
@@ -265,6 +265,36 @@ def build_parse_quality_report(
                 message="Strong horizontal-rule evidence overrode content-based header detection.",
             )
         )
+    split_comparison = table.metadata.get("header_body_split_rule_comparison")
+    if isinstance(split_comparison, dict):
+        candidates = split_comparison.get("candidates")
+        if isinstance(candidates, list):
+            body_start_by_rule = {
+                candidate.get("rule"): candidate.get("body_start")
+                for candidate in candidates
+                if isinstance(candidate, dict) and isinstance(candidate.get("body_start"), int)
+            }
+            hline_body_start = body_start_by_rule.get("selective_hline_prefix")
+            value_anchor_body_start = body_start_by_rule.get("first_value_region_data_row")
+            if (
+                isinstance(hline_body_start, int)
+                and isinstance(value_anchor_body_start, int)
+                and hline_body_start != value_anchor_body_start
+            ):
+                selected = split_comparison.get("selected")
+                selected_body_start = selected.get("body_start") if isinstance(selected, dict) else None
+                table_diagnostics.append(
+                    DiagnosticItem(
+                        severity="warning",
+                        code="header_body_split_rule_disagreement",
+                        message=(
+                            "Horizontal-rule and value-region header/body splits disagree "
+                            f"(hline body_start={hline_body_start}, "
+                            f"value-anchor body_start={value_anchor_body_start}, "
+                            f"selected body_start={selected_body_start})."
+                        ),
+                    )
+                )
 
     role_by_col = {role.col_idx: role for role in column_roles}
     for col_idx in range(1, table.n_cols):

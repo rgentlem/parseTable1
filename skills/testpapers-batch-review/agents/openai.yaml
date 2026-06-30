@@ -1,4 +1,0 @@
-interface:
-  display_name: "Testpapers Batch Review"
-  short_description: "Run and summarize the real-paper corpus"
-  default_prompt: "Use -batch-review to run parseTable1 on the testpapers corpus."

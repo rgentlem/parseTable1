@@ -25,8 +25,8 @@ def test_header_detector_prefers_top_text_heavy_rows() -> None:
     assert body_rows == [1, 2]
 
 
-def test_header_detector_uses_horizontal_rules_as_strong_boundary_signal() -> None:
-    """Wide horizontal rules should strengthen top header-boundary detection when row bounds exist."""
+def test_header_detector_uses_full_width_rule_as_header_boundary() -> None:
+    """A full-width drawn rule below top rows should define the header boundary."""
     rows = [
         ["Characteristic", "Overall", "P-value"],
         ["Age, years", "52.1", "0.03"],
@@ -36,15 +36,81 @@ def test_header_detector_uses_horizontal_rules_as_strong_boundary_signal() -> No
     header_rows, body_rows = detect_header_rows(
         rows,
         row_bounds=[(12.0, 20.0), (26.0, 34.0), (40.0, 48.0)],
-        horizontal_rules=[6.0, 24.0],
+        separator_horizontal_rules=[6.0, 24.0],
     )
 
     assert header_rows == [0]
     assert body_rows == [1, 2]
 
 
-def test_header_detector_lets_strong_rules_override_weaker_text_heuristics() -> None:
-    """Strong bracketing rules should win even when text-only cues would miss a second header row."""
+def test_normalization_keeps_complete_first_row_header_before_later_value_matrix() -> None:
+    """A clear first-row header should not absorb early body rows before dense values."""
+    rows = [
+        ["Variables", "Total", "With asthma", "Without asthma", "P value"],
+        ["Missing values", "9303 (14.5)", "", "", ""],
+        ["Ever told you had COPD, emphysema, ChB", "", "", "", "0.000"],
+        ["No", "8361 (13.0)", "616 (68.9)", "7745 (93.2)", ""],
+    ]
+    extracted = ExtractedTable(
+        table_id="tbl-complete-first-row-header",
+        source_pdf="paper.pdf",
+        page_num=1,
+        n_rows=len(rows),
+        n_cols=len(rows[0]),
+        cells=[
+            TableCell(row_idx=row_idx, col_idx=col_idx, text=value)
+            for row_idx, row in enumerate(rows)
+            for col_idx, value in enumerate(row)
+        ],
+        extraction_backend="pymupdf4llm",
+        metadata={},
+    )
+
+    normalized = normalize_extracted_table(extracted)
+
+    assert normalized.header_rows == [0]
+    assert normalized.body_rows == [1, 2, 3]
+    assert normalized.metadata["header_detection"]["source"] == "value_region_anchor"
+
+
+def test_normalization_records_header_body_split_rule_comparison() -> None:
+    """Normalization should expose shadow split-rule agreement without changing rows."""
+    rows = [
+        ["Characteristic", "Overall", "P-value"],
+        ["Age, years", "52.1", "0.03"],
+        ["Male", "34", "0.10"],
+    ]
+    extracted = ExtractedTable(
+        table_id="tbl-header-body-comparison",
+        source_pdf="paper.pdf",
+        page_num=1,
+        n_rows=len(rows),
+        n_cols=len(rows[0]),
+        cells=[
+            TableCell(row_idx=row_idx, col_idx=col_idx, text=value)
+            for row_idx, row in enumerate(rows)
+            for col_idx, value in enumerate(row)
+        ],
+        extraction_backend="pymupdf4llm",
+        metadata={
+            "row_bounds": [(12.0, 20.0), (26.0, 34.0), (40.0, 48.0)],
+            "horizontal_rules": [6.0, 24.0],
+            "full_width_horizontal_rules": [6.0, 24.0],
+        },
+    )
+
+    normalized = normalize_extracted_table(extracted)
+    comparison = normalized.metadata["header_body_split_rule_comparison"]
+
+    assert normalized.header_rows == [0]
+    assert normalized.body_rows == [1, 2]
+    assert comparison["rules_agree"] is True
+    assert comparison["selected"]["body_start"] == 1
+    assert [candidate["body_start"] for candidate in comparison["candidates"]] == [1, 1]
+
+
+def test_header_detector_lets_full_width_rule_define_multiline_header() -> None:
+    """A full-width separator should keep a two-line header together."""
     rows = [
         ["Characteristic", "Overall", "Cases"],
         ["", "n", "%"],
@@ -55,11 +121,101 @@ def test_header_detector_lets_strong_rules_override_weaker_text_heuristics() -> 
     header_rows, body_rows = detect_header_rows(
         rows,
         row_bounds=[(12.0, 20.0), (24.0, 32.0), (38.0, 46.0), (50.0, 58.0)],
-        horizontal_rules=[7.0, 35.0],
+        separator_horizontal_rules=[7.0, 35.0],
     )
 
     assert header_rows == [0, 1]
     assert body_rows == [2, 3]
+
+
+def test_header_detector_excludes_title_row_above_header_band() -> None:
+    """A title row above the header band should be neither header nor body."""
+    rows = [
+        ["Table 1 Baseline characteristics", "", "", "", ""],
+        ["Variables", "Overall", "Group A", "Group B", "P-value"],
+        ["Sex, n (%)", "", "", "", "< 0.001"],
+        ["Male", "20 (50%)", "8 (40%)", "12 (60%)", ""],
+        ["Female", "20 (50%)", "12 (60%)", "8 (40%)", ""],
+    ]
+
+    header_rows, body_rows, metadata = detect_header_rows_with_metadata(
+        rows,
+        row_bounds=[(10.0, 18.0), (20.0, 28.0), (30.0, 38.0), (40.0, 48.0), (50.0, 58.0)],
+        separator_horizontal_rules=[18.0, 29.0],
+    )
+
+    assert header_rows == [1]
+    assert body_rows == [2, 3, 4]
+    assert metadata["source"] == "horizontal_rule_separator"
+    assert metadata["preamble_rows"] == [0]
+    assert metadata["separator_body_support"] == "sparse_body_starter_with_value_rows"
+
+
+def test_header_detector_accepts_sparse_categorical_parent_below_header_rule() -> None:
+    """A categorical parent row can start the body even when it is not value-dense."""
+    rows = [
+        ["Variables", "Overall", "PAD", "", "P-value"],
+        ["", "(n = 8636)", "NO (n = 8108)", "YES (n = 618)", ""],
+        ["Sex, n (%)", "", "", "", "0.727"],
+        ["Male", "4309 (49.38%)", "4008 (49.43%)", "301 (48.71%)", ""],
+        ["Female", "4417 (50.62%)", "4100 (50.57%)", "317 (51.29%)", ""],
+    ]
+
+    header_rows, body_rows = detect_header_rows(
+        rows,
+        row_bounds=[(10.0, 18.0), (20.0, 28.0), (30.0, 38.0), (40.0, 48.0), (50.0, 58.0)],
+        separator_horizontal_rules=[9.0, 29.0],
+    )
+
+    assert header_rows == [0, 1]
+    assert body_rows == [2, 3, 4]
+
+
+def test_header_detector_accepts_sparse_reference_rows_below_header_rule() -> None:
+    """Estimate tables can start with sparse group and reference rows before dense rows."""
+    rows = [
+        ["", "Adjusted", "95% confidence", ""],
+        ["Variable", "odds ratio", "intervals", "P value"],
+        ["Cobalt", "", "", ""],
+        ["Q1", "1(reference)", "", ""],
+        ["Q2", "0.97", "0.82-1.14", ".679"],
+    ]
+
+    header_rows, body_rows = detect_header_rows(
+        rows,
+        row_bounds=[(10.0, 18.0), (20.0, 28.0), (30.0, 38.0), (40.0, 48.0), (50.0, 58.0)],
+        separator_horizontal_rules=[9.0, 29.0],
+    )
+
+    assert header_rows == [0, 1]
+    assert body_rows == [2, 3, 4]
+
+
+def test_header_detector_keeps_split_estimate_header_above_value_body() -> None:
+    """Split estimate leaf headers with digits should not be treated as body values."""
+    rows = [
+        ["Exposure", "Model 1", "", "Model 2", "", "Model 3", ""],
+        ["", "OR (95%", "CI), P-value", "OR (95%", "CI), P-value", "OR (95%", "CI), P-value"],
+        ["Continuous", "1.50 (1.40-1.60),", "< 0.001", "1.52 (1.41-1.63),", "< 0.001", "1.46 (1.36-1.58),", "< 0.001"],
+        ["METS-IR quartile", "", "", "", "", "", ""],
+        ["Q1", "Reference", "", "Reference", "", "Reference", ""],
+    ]
+
+    header_rows, body_rows, metadata = detect_header_rows_with_metadata(
+        rows,
+        row_bounds=[
+            (97.4, 107.2),
+            (109.1, 118.9),
+            (121.1, 130.6),
+            (132.8, 142.3),
+            (144.5, 154.0),
+        ],
+        separator_horizontal_rules=[96.4, 119.7, 201.5],
+    )
+
+    assert header_rows == [0, 1]
+    assert body_rows == [2, 3, 4]
+    assert metadata["source"] == "horizontal_rule_separator"
 
 
 def test_header_detector_accepts_top_rule_that_sits_slightly_below_first_row_top() -> None:
@@ -199,8 +355,9 @@ def test_header_detector_does_not_treat_row_boundaries_as_separator_rules() -> N
     )
 
     assert metadata["source"] != "horizontal_rule_separator"
-    assert header_rows != list(range(7))
-    assert body_rows[0] < 7
+    assert metadata["source"] == "value_region_anchor"
+    assert header_rows == list(range(7))
+    assert body_rows[0] == 7
 
 
 def test_normalization_keeps_separator_header_when_first_body_row_is_dash_heavy() -> None:
@@ -240,6 +397,7 @@ def test_normalization_keeps_separator_header_when_first_body_row_is_dash_heavy(
                 (70.3, 77.5),
             ],
             "horizontal_rules": [39.9],
+            "full_width_horizontal_rules": [39.9],
         },
     )
 
@@ -627,8 +785,8 @@ def test_normalization_trims_sparse_caption_tail_before_value_matrix_header() ->
 
     assert normalized.header_rows == [1, 2, 3]
     assert 0 not in normalized.body_rows
-    assert normalized.metadata["header_detection"]["source"] == "value_matrix_boundary"
-    assert normalized.metadata["header_detection"]["value_matrix_first_value_row_idx"] == 4
+    assert normalized.metadata["header_detection"]["source"] == "value_region_anchor"
+    assert normalized.metadata["header_detection"]["value_anchor_data_row_idx"] == 4
 
 
 def test_normalization_repairs_embedded_label_count_in_first_value_column() -> None:
@@ -887,6 +1045,7 @@ def test_normalization_uses_rotated_local_rule_metadata_after_extraction_refinem
                 (48.15, 57.21),
             ],
             "horizontal_rules": [-0.22, 31.77, 327.17],
+            "full_width_horizontal_rules": [-0.22, 31.77, 327.17],
         },
     )
 
@@ -1095,6 +1254,46 @@ def test_normalization_keeps_sparse_footnoted_p_value_column() -> None:
     assert normalized.metadata["source_col_indices"] == [0, 1, 2, 3, 4]
 
 
+def test_normalization_keeps_sparse_header_supported_estimate_columns() -> None:
+    """Sparse model-label and reference columns are table structure, not page noise."""
+    rows = [
+        ["", "", "aMED Score 1", "Low 1", "Moderate 1", "High 1"],
+        ["Frail vs.", "Robust/Pre-frail 2", "N = 610 (7.1%)", "N = 220 (10.6%)", "N = 276 (7.0%)", "N = 114 (4.3%)"],
+        ["", "Model 1", "0.79 (0.73, 0.84)", "Ref.", "0.64 (0.50, 0.82)", "0.38 (0.26, 0.54)"],
+        ["", "Model 2", "0.81 (0.75, 0.87)", "Ref.", "0.64 (0.50, 0.82)", "0.42 (0.29, 0.61)"],
+        ["", "Model 3", "0.81 (0.75, 0.87)", "Ref.", "0.65 (0.51, 0.84)", "0.43 (0.30, 0.62)"],
+        ["", "Model 4", "0.84 (0.78, 0.91)", "Ref.", "0.71 (0.55, 0.92)", "0.52 (0.36, 0.75)"],
+    ]
+    extracted = ExtractedTable(
+        table_id="tbl-estimate-reference-column",
+        source_pdf="paper.pdf",
+        page_num=1,
+        title="Table 5",
+        caption="Logistic Regression of Frailty by Mediterranean Diet Adherence",
+        n_rows=len(rows),
+        n_cols=len(rows[0]),
+        cells=[
+            TableCell(row_idx=row_idx, col_idx=col_idx, text=value)
+            for row_idx, row in enumerate(rows)
+            for col_idx, value in enumerate(row)
+        ],
+        extraction_backend="pymupdf4llm",
+        metadata={
+            "row_bounds": [(float(idx * 10), float(idx * 10 + 8)) for idx in range(len(rows))],
+            "full_width_horizontal_rules": [9.0, 19.0],
+        },
+    )
+
+    normalized = normalize_extracted_table(extracted)
+
+    assert normalized.n_cols == 6
+    assert normalized.metadata["source_col_indices"] == [0, 1, 2, 3, 4, 5]
+    assert normalized.metadata["cleaned_rows"][1][1] == "Robust/Pre-frail 2"
+    assert normalized.metadata["cleaned_rows"][2][1] == "Model 1"
+    assert normalized.metadata["cleaned_rows"][2][3] == "Ref."
+    assert normalized.metadata["column_repairs"]["sparse_nonmatrix_value_columns"] == []
+
+
 def test_normalized_table_round_trip_serialization(tmp_path: Path) -> None:
     """Normalized tables should round-trip cleanly through the persisted JSON artifact."""
     extracted = ExtractedTable(
@@ -1173,6 +1372,7 @@ def test_normalization_uses_rule_metadata_for_header_boundary_when_available() -
         metadata={
             "row_bounds": [(12.0, 20.0), (26.0, 34.0), (40.0, 48.0)],
             "horizontal_rules": [6.0, 24.0],
+            "full_width_horizontal_rules": [6.0, 24.0],
         },
     )
 
@@ -1180,7 +1380,7 @@ def test_normalization_uses_rule_metadata_for_header_boundary_when_available() -
 
     assert normalized.header_rows == [0]
     assert normalized.body_rows == [1, 2]
-    assert normalized.metadata["header_detection"]["source"] == "horizontal_rules"
+    assert normalized.metadata["header_detection"]["source"] == "horizontal_rule_separator"
     assert normalized.metadata["header_detection"]["rule_strength"] == "strong"
 
 
@@ -1210,13 +1410,14 @@ def test_normalization_accepts_pymupdf_text_layout_rule_metadata() -> None:
             "layout_source": "pymupdf_text_positions",
             "row_bounds": [(12.0, 20.0), (26.0, 34.0), (40.0, 48.0)],
             "horizontal_rules": [6.0, 24.0],
+            "full_width_horizontal_rules": [6.0, 24.0],
         },
     )
 
     normalized = normalize_extracted_table(extracted)
 
     assert normalized.metadata["extraction_backend"] == "pymupdf4llm"
-    assert normalized.metadata["header_detection"]["source"] == "horizontal_rules"
+    assert normalized.metadata["header_detection"]["source"] == "horizontal_rule_separator"
 
 
 def test_mostly_empty_leading_column_gets_removed() -> None:
