@@ -141,7 +141,9 @@ def build_column_header_schema(
         elif prior_rows:
             bounded_header_rows = sorted(row_idx for row_idx in usable_header_rows if row_idx <= leaf_header_row_idx)
             row_bounds = table.metadata.get("row_bounds")
-            rules = table.metadata.get("horizontal_rules")
+            rules = table.metadata.get("full_width_horizontal_rules")
+            if not isinstance(rules, list) or not rules:
+                rules = table.metadata.get("horizontal_rules")
             split_after_position: int | None = None
             if isinstance(row_bounds, list) and isinstance(rules, list):
                 numeric_rules = sorted(float(rule) for rule in rules if isinstance(rule, (int, float)))
@@ -982,17 +984,27 @@ def _header_runs_for_groups(
                 if not (run.col_start == 0 and clean_text(run.label).lower() in LABEL_COLUMN_TOKENS)
             ]
         if not geometry_gap_used and len(value_runs) >= 2 and (has_blank_gap or has_text_run) and not repeated_single_cell_labels:
+            centered_group_labels = (
+                has_text_run
+                and value_runs[0].col_start > 1
+                and all(
+                    next_run.col_start - run.col_start >= max(4, run.col_end - run.col_start + 2)
+                    for run, next_run in zip(value_runs, value_runs[1:], strict=False)
+                )
+            )
             expanded: list[_HeaderRun] = []
             for run in row_runs:
                 if run not in value_runs:
                     expanded.append(run)
                     continue
-                if has_text_run:
+                if centered_group_labels:
                     target_start = max(1, run.col_start - 1)
+                elif not has_text_run and run == value_runs[0] and run.col_start > 1:
+                    target_start = 1
                 else:
-                    target_start = 1 if run == value_runs[0] and run.col_start > 1 else run.col_start
+                    target_start = run.col_start
                 next_starts = [next_run.col_start for next_run in value_runs if next_run.col_start > run.col_start]
-                span_end = min(next_starts) - (2 if has_text_run else 1) if next_starts else n_cols - 1
+                span_end = min(next_starts) - (2 if centered_group_labels else 1) if next_starts else n_cols - 1
                 expanded.append(
                     run._replace(
                         col_start=target_start,
@@ -1039,11 +1051,19 @@ def _can_stack_header_runs(
         return False
     overlap = min(upper.col_end, lower.col_end) - max(upper.col_start, lower.col_start) + 1
     smaller_width = min(upper.col_end - upper.col_start + 1, lower.col_end - lower.col_start + 1)
-    return (
+    if (
         overlap > 0
         and overlap / max(1, smaller_width) >= 0.75
         and upper.col_start == lower.col_start
         and upper.col_end == lower.col_end
+    ):
+        return True
+    lower_width = lower.col_end - lower.col_start + 1
+    return (
+        upper.col_start <= lower.col_start
+        and lower.col_end <= upper.col_end
+        and overlap == lower_width
+        and _physical_row_gap(metadata, upper.row_end_idx, lower.row_idx) <= 5.0
     )
 
 

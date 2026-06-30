@@ -191,6 +191,34 @@ def test_header_detector_accepts_sparse_reference_rows_below_header_rule() -> No
     assert body_rows == [2, 3, 4]
 
 
+def test_header_detector_accepts_label_only_parent_below_header_rule() -> None:
+    """A label-only parent row below a full-width rule can start the body."""
+    rows = [
+        ["Quartiles", "Crude.", "", "Model", "1"],
+        ["", "OR (95% CI)", "p-value", "OR (95%", "CI) p-value"],
+        ["GOLD BioAge", "", "", "", ""],
+        ["", "0.63", "", "", ""],
+        ["Q1(<=32.7)", "", "<0.001", "0.63 (0.56-0.71)", "<0.001"],
+    ]
+
+    header_rows, body_rows, metadata = detect_header_rows_with_metadata(
+        rows,
+        row_bounds=[
+            (595.1, 605.6),
+            (608.2, 618.7),
+            (621.4, 631.8),
+            (629.9, 640.4),
+            (634.3, 644.7),
+        ],
+        separator_horizontal_rules=[593.8, 620.1, 693.4],
+    )
+
+    assert header_rows == [0, 1]
+    assert body_rows == [2, 3, 4]
+    assert metadata["source"] == "horizontal_rule_separator"
+    assert metadata["separator_body_support"] == "label_only_body_starter_with_value_rows"
+
+
 def test_header_detector_keeps_split_estimate_header_above_value_body() -> None:
     """Split estimate leaf headers with digits should not be treated as body values."""
     rows = [

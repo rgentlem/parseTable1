@@ -199,6 +199,53 @@ def test_build_schema_uses_internal_header_rule_for_wrapped_leaf_stack() -> None
     assert "split_wrapped_leaf_header_rows_by_rule:rows=1,2,3" in schema.diagnostics
 
 
+def test_build_schema_uses_full_width_internal_rule_for_sparse_wrapped_leaf_stack() -> None:
+    """A sparse lower header band below an internal hline should supply leaf labels."""
+    rows = [
+        ["", "The AUC of the optimal", "", "The AUC of the", ""],
+        ["", "parameter combination", "", "optimal parameter", ""],
+        ["", "in the training cohort", "", "combination", ""],
+        ["", "", "", "in the testing cohort", ""],
+        ["", "All-cause", "Cardio-", "All-cause", "Cardio-"],
+        ["", "mortality", "vascular", "mortality", "vascular"],
+        ["", "", "mortality", "", "mortality"],
+        ["Logistic", "0.860", "0.831", "0.852", "0.829"],
+    ]
+    table = _normalized_table("tbl-internal-sparse-leaf-band", rows, header_rows=list(range(7)), body_rows=[7])
+    table.metadata["row_bounds"] = [
+        (99.0, 108.2),
+        (108.2, 118.2),
+        (118.2, 128.2),
+        (128.2, 138.1),
+        (138.1, 149.2),
+        (149.2, 160.0),
+        (160.0, 171.0),
+        (171.0, 181.8),
+    ]
+    table.metadata["horizontal_rules"] = [99.0, 108.2, 118.2, 128.2, 138.1, 149.2, 160.0, 171.0, 181.8]
+    table.metadata["full_width_horizontal_rules"] = [96.4, 138.1, 181.8]
+    table.metadata["header_detection"] = {
+        "source": "value_region_anchor",
+        "value_anchor_body_start": 7,
+        "value_anchor_header_rows": list(range(7)),
+    }
+
+    schema = build_column_header_schema(table, _extracted_table("tbl-internal-sparse-leaf-band", rows))
+
+    assert [leaf.leaf_label for leaf in schema.leaves] == [
+        "",
+        "All-cause mortality",
+        "Cardio- vascular mortality",
+        "All-cause mortality",
+        "Cardio- vascular mortality",
+    ]
+    assert [(group.label, group.col_start, group.col_end) for group in schema.groups] == [
+        ("The AUC of the optimal parameter combination in the training cohort", 1, 2),
+        ("The AUC of the optimal parameter combination in the testing cohort", 3, 4),
+    ]
+    assert "split_wrapped_leaf_header_rows_by_rule:rows=4,5,6" in schema.diagnostics
+
+
 def test_build_schema_trusts_separator_header_stack_over_body_geometry() -> None:
     """A horizontal-rule separator from normalization should keep body rows out of leaf labels."""
     rows = [

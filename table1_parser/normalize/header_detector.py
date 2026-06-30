@@ -231,10 +231,12 @@ def _detect_separator_rule_headers(
             first_body_trailing = [_clean_cell(cell) for cell in first_body_row[1:] if _clean_cell(cell)]
             first_body_numeric_trailing_count = sum(bool(re.search(r"\d", cell)) for cell in first_body_trailing)
             first_body_alpha_trailing_count = sum(bool(re.search(r"[A-Za-z]", cell)) for cell in first_body_trailing)
-            if (
-                not first_body_has_left_label
-                or first_body_numeric_trailing_count == 0
-                or (first_body_alpha_trailing_count > 1 and first_body_numeric_trailing_count < 2)
+            if not first_body_has_left_label or (
+                first_body_trailing
+                and (
+                    first_body_numeric_trailing_count == 0
+                    or (first_body_alpha_trailing_count > 1 and first_body_numeric_trailing_count < 2)
+                )
             ):
                 continue
             support_row_idx = next(
@@ -249,7 +251,11 @@ def _detect_separator_rule_headers(
             )
             if support_row_idx is None or support_row_idx - first_body_row_idx > 3:
                 continue
-            body_support = "sparse_body_starter_with_value_rows"
+            body_support = (
+                "label_only_body_starter_with_value_rows"
+                if not first_body_trailing
+                else "sparse_body_starter_with_value_rows"
+            )
         body_rows = [row_idx for row_idx in range(first_body_row_idx, len(rows)) if row_idx not in set(note_rows)]
         candidates.append(
             {

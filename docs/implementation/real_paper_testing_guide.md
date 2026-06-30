@@ -95,9 +95,9 @@ For each checklist item:
   value-anchor candidate is later only because it misses sparse or categorical
   body starters:
   1. `papers_from_laha/Association between anthropometric indices and chronic kidney disease- Insights from NHANES 2009–2018.pdf`
-     - `...-p12-t0`: hline body start 3, value-anchor body start 2, selected 3
+     - `Association between anthropometric indices and chronic kidney disease- Insights from NHANES 2009–2018-p12-t0`: hline body start 3, value-anchor body start 2, selected 3
   2. `papers_from_laha/Association between metabolic score for insulin resistance (METS-IR) and hypertension- a cross-sectional study based on NHANES 2007–2018.pdf`
-     - `...-p6-t0`: hline body start 2, value-anchor body start 3, selected 2
+     - `Association between metabolic score for insulin resistance (METS-IR) and hypertension- a cross-sectional study based on NHANES 2007–2018-p6-t0`: hline body start 2, value-anchor body start 3, selected 2
 
   METS-IR is currently the expected pattern: the header is bounded by full-width
   hlines, row 2 is the first body row, and `ColumnHeaderSchema` recovers
@@ -107,25 +107,33 @@ For each checklist item:
   where the first value-region anchor currently selects a later body start than
   an earlier hline candidate, or where the hline candidate is only a weak first
   selective boundary:
-  1. `papers_from_laha/GOLD BioAge and depression- Associations with mortality among depressed NHANES participants (2005–2018).pdf`
-     - `...-p4-t1`: hline body start 2, value-anchor body start 4, selected 4
-  2. `papers_from_laha/Role of Estimated Glucose Disposal Rate in Staging and Death Risk of Cardiovascular-Kidney-Metabolic Syndrome- Insights from NHANES 1999-2018.pdf`
-     - `...-p4-t0`: hline body start 1, value-anchor body start 3, selected 3
+  1. **GOLD BioAge and depression: Associations with mortality among depressed NHANES participants (2005–2018)**
+     - PDF path: `papers_from_laha/GOLD BioAge and depression- Associations with mortality among depressed NHANES participants (2005–2018).pdf`
+     - `GOLD BioAge and depression- Associations with mortality among depressed NHANES participants (2005–2018)-p4-t1`: hline body start 2, value-anchor body start 4, selected 4 in the recomputed baseline; current parser should select body start 2 after accepting label-only parent body starters.
+  2. [x] **Role of Estimated Glucose Disposal Rate in Staging and Death Risk of Cardiovascular-Kidney-Metabolic Syndrome: Insights from NHANES 1999-2018**
+     - PDF path: `papers_from_laha/Role of Estimated Glucose Disposal Rate in Staging and Death Risk of Cardiovascular-Kidney-Metabolic Syndrome- Insights from NHANES 1999-2018.pdf`
+     - `Role of Estimated Glucose Disposal Rate in Staging and Death Risk of Cardiovascular-Kidney-Metabolic Syndrome- Insights from NHANES 1999-2018-p4-t0`: hline body start 1, value-anchor body start 3, selected 3
+     - Reviewed on 2026-06-30: selected body start 3 is acceptable. Row 0 is preamble/title, rows 1-2 are column headers, and row 3 (`Age, years`) starts the data body. The `(N = ...)` row is a column-header row, not a data row.
   3. `papers_from_johnny/Sarcopenia.pdf`
      - `Sarcopenia-p7-t0` and `Sarcopenia-p8-t0`: hline body start 1, value-anchor body start 2, selected 2
   4. `papers_from_laha/Science-Advanaced-Planetary Health Diet and risk of mortality and chronic diseases- Results from US NHANES, UK Biobank, and a meta-analysis.pdf`
-     - `...-p2-t0`: hline body start 1, value-anchor body start 4, selected 4
-     - `...-p5-t0`: hline body start 2, value-anchor body start 0, selected 0
+     - `Science-Advanaced-Planetary Health Diet and risk of mortality and chronic diseases- Results from US NHANES, UK Biobank, and a meta-analysis-p2-t0`: hline body start 1, value-anchor body start 4, selected 4
+     - `Science-Advanaced-Planetary Health Diet and risk of mortality and chronic diseases- Results from US NHANES, UK Biobank, and a meta-analysis-p5-t0`: hline body start 2, value-anchor body start 0, selected 0
   5. `papers_from_johnny/cardiovascular.pdf`
      - `cardiovascular-p5-t0`: hline body start 4, value-anchor body start 7, selected 7
+
+  For `cardiovascular-p5-t0`, the selected body start 7 is currently expected:
+  the hline at row 4 is internal to the header band, separating upper spanning
+  headers from wrapped leaf headers. `ColumnHeaderSchema` should use rows 4-6
+  as leaf labels and rows 0-3 as training/testing cohort groups.
 
 - [ ] **C1.3** Review Eke disagreement tables as data/result-table examples.
   Do not force these into ordinary descriptive Table 1 semantics unless the
   visible table supports that:
   1. `papers_from_laha/Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009.pdf`
-     - `...-p4-t0`: hline body start 2, value-anchor body start 8, selected 2
-     - `...-p5-t0`: hline body start 3, value-anchor body start 10, selected 10
-     - `...-p7-t0`: hline body start 3, value-anchor body start 5, selected 5
+     - `Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009-p4-t0`: hline body start 2, value-anchor body start 8, selected 2
+     - `Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009-p5-t0`: hline body start 3, value-anchor body start 10, selected 10
+     - `Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009-p7-t0`: hline body start 3, value-anchor body start 5, selected 5
 
 Acceptance for C1: each disagreement is classified as correct hline split,
 correct value-anchor split, extraction hline defect, normalization candidate
@@ -137,13 +145,13 @@ defect, or unsupported/misrouted table family.
   failures. Decide whether extraction missed the visible table structure or
   whether the page fragment is correctly rejected:
   1. `papers_from_laha/An environment-wide association study (EWAS) on type 2 diabetes mellitus.pdf`
-     - `...-p6-t0`
+     - `An environment-wide association study (EWAS) on type 2 diabetes mellitus-p6-t0`
   2. `papers_from_laha/mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017.pdf`
-     - `...-p3-t0`
+     - `mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017-p3-t0`
 
 - [ ] **C2.2** Review the rotated collapsed-grid failure:
   1. `papers_from_laha/Ethnic Differences in the Relationship Between Insulin Sensitivity and Insulin Response.pdf`
-     - `...-p5-t0`, `collapsed_grid_unrecovered`
+     - `Ethnic Differences in the Relationship Between Insulin Sensitivity and Insulin Response-p5-t0`, `collapsed_grid_unrecovered`
 
   Current expectation: fail closed is better than recovering an implausible
   50-plus-column rotated grid. The next improvement should recover the true
@@ -152,9 +160,9 @@ defect, or unsupported/misrouted table family.
 - [ ] **C2.3** Review `non_table_layout_candidate` failures and decide which
   are correct non-table rejections versus missed real tables:
   1. `papers_from_laha/Asthma prevalence among United States population insights from NHANES data analysis.pdf`
-     - `...-p6-t0`
+     - `Asthma prevalence among United States population insights from NHANES data analysis-p6-t0`
   2. `papers_from_laha/GOLD BioAge and depression- Associations with mortality among depressed NHANES participants (2005–2018).pdf`
-     - `...-p1-t0`
+     - `GOLD BioAge and depression- Associations with mortality among depressed NHANES participants (2005–2018)-p1-t0`
   3. `papers_from_laha/Helicobacter pylori infection in the United States beyond NHANES- a scoping review of seroprevalence estimates by racial and ethnic groups.pdf`
      - resolved continuation over pages 5, 6, and 7
   4. `papers_from_laha/periodontis2.pdf`
