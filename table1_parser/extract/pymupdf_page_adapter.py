@@ -6,6 +6,16 @@ from pathlib import Path
 from typing import Any
 
 
+SYMBOL_FONT_CHAR_MAPS: dict[str, dict[str, str]] = {
+    "AdvPS586B": {
+        ",": "<",
+        "2": "−",
+        "3": "×",
+        "6": "±",
+    },
+}
+
+
 def open_pymupdf_document(pdf_path: str) -> Any:
     """Open a PDF with PyMuPDF."""
     path = Path(pdf_path)
@@ -32,14 +42,31 @@ def extract_page_words(page: Any) -> list[dict[str, object]]:
         raw_words = page.get_text("words") or []
     except Exception:
         return []
+    page_chars = extract_page_chars(page)
     words: list[dict[str, object]] = []
     for word in raw_words:
         if not isinstance(word, (list, tuple)) or len(word) < 5:
             continue
         x0, top, x1, bottom, text = word[:5]
+        word_text = str(text).strip()
+        chars_in_word = [
+            char
+            for char in page_chars
+            if float(char["x0"]) >= float(x0) - 0.5
+            and float(char["x1"]) <= float(x1) + 0.5
+            and float(char["top"]) >= float(top) - 0.5
+            and float(char["bottom"]) <= float(bottom) + 0.5
+        ]
+        if chars_in_word:
+            rebuilt_text = "".join(
+                str(char.get("text", ""))
+                for char in sorted(chars_in_word, key=lambda char: int(char.get("char_index", 0)))
+            ).strip()
+            if rebuilt_text:
+                word_text = rebuilt_text
         words.append(
             {
-                "text": str(text).strip(),
+                "text": word_text,
                 "x0": float(x0),
                 "x1": float(x1),
                 "top": float(top),
@@ -74,14 +101,20 @@ def extract_page_chars(page: Any, page_num: int | None = None) -> list[dict[str,
                         bbox = None
                     if bbox is None:
                         continue
+                    raw_text = str(char.get("c", ""))
+                    normalized_text = _normalize_symbol_font_char(raw_text, span_font)
                     char_record: dict[str, object] = {
-                        "text": str(char.get("c", "")),
+                        "text": normalized_text,
                         "x0": bbox[0],
                         "x1": bbox[2],
                         "top": bbox[1],
                         "bottom": bbox[3],
                         "char_height": bbox[3] - bbox[1],
+                        "char_index": len(chars),
                     }
+                    if normalized_text != raw_text:
+                        char_record["raw_text"] = raw_text
+                        char_record["text_normalization"] = "symbol_font_char_map"
                     if page_num is not None:
                         char_record["page_num"] = page_num
                     if isinstance(span_font_size, (int, float)):
@@ -92,6 +125,13 @@ def extract_page_chars(page: Any, page_num: int | None = None) -> list[dict[str,
                         char_record["span_flags"] = span_flags
                     chars.append(char_record)
     return chars
+
+
+def _normalize_symbol_font_char(text: str, font: object) -> str:
+    """Map known embedded-symbol font codes to their Unicode text equivalents."""
+    if not isinstance(font, str):
+        return text
+    return SYMBOL_FONT_CHAR_MAPS.get(font, {}).get(text, text)
 
 
 def extract_page_rule_segments(

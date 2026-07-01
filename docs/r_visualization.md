@@ -36,6 +36,7 @@ Public functions:
 - `show_parse_quality(paper_dir, table_number = 1L)`
 - `cell_text_annotations_df(outputs, table_number = NULL, table_index = NULL)`
 - `show_cell_text_annotations(paper_dir, table_number = 1L, table_index = NULL)`
+- `footnote_footers_df(outputs, table_number = NULL, table_index = NULL)`
 - `footnote_anchors_df(outputs, table_number = NULL, table_index = NULL)`
 - `footnote_definitions_df(outputs, table_number = NULL, table_index = NULL)`
 - `footnote_links_df(outputs, table_number = NULL, table_index = NULL)`
@@ -163,10 +164,10 @@ What these are for:
   return one row per persisted superscript, subscript, or marker annotation with table, row, column, bbox, LaTeX text, and diagnostics fields
 - `show_cell_text_annotations(...)`
   print the persisted cell-text annotations for one table without inferring marker meaning
-- `footnote_anchors_df(...)`, `footnote_definitions_df(...)`, and `footnote_links_df(...)`
-  return paper-footnote anchors, candidate definitions, and glyph-key links as review data frames, optionally filtered to one table
+- `footnote_footers_df(...)`, `footnote_anchors_df(...)`, `footnote_definitions_df(...)`, and `footnote_links_df(...)`
+  return detected table-local footers, paper-footnote anchors, candidate definitions, and glyph-key links as review data frames, optionally filtered to one table
 - `show_paper_footnotes(...)`
-  print a compact review of those footnote records for a paper or one table
+  print a compact review of detected footers and footnote records for a paper or one table
 - `show_merged_table1(...)`
   print the artifact-only merged Table 1 rows with source table and source row provenance
 - `show_paper_visuals(...)`

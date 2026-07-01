@@ -23,7 +23,7 @@ REFERENCE_LIST_CUE_PATTERN = re.compile(
     re.IGNORECASE,
 )
 REFERENCE_ENTRY_START_PATTERN = re.compile(
-    r"(?P<prefix>^|\s+-\s+|\n)\s*(?:\[\s*)?(?P<label>\d{1,3})(?:\s*\])?[.)]?\s+(?=[A-Za-z])"
+    r"(?P<prefix>^|\s+-\s+|\s+)\s*(?:\[\s*)?(?P<label>\d{1,3})(?:\s*\])?[.)]?\s+(?=[A-Za-z])"
 )
 REFERENCE_TABLE_ROW_SPLIT_PATTERN = re.compile(r"\s+(?=\|(?:\d{1,3}|---|\|))")
 REFERENCE_TABLE_START_PATTERN = re.compile(r"\s+\|\d{1,3}\|")
@@ -98,7 +98,13 @@ def build_bibliography_entries_from_sections(
             section=section,
             confidence=confidence,
         )
-        entry_matches = list(REFERENCE_ENTRY_START_PATTERN.finditer(reference_region))
+        entry_matches = []
+        next_expected_label: int | None = None
+        for match in REFERENCE_ENTRY_START_PATTERN.finditer(reference_region):
+            label_value = int(match.group("label"))
+            if next_expected_label is None or label_value == next_expected_label:
+                entry_matches.append(match)
+                next_expected_label = label_value + 1
         if not entry_matches:
             for table_entry in table_entries:
                 if table_entry.entry_id not in seen_entry_ids:
@@ -154,7 +160,7 @@ def build_bibliography_reference_mentions_from_footnote_anchors(
     footnote_definitions: Sequence[FootnoteDefinition],
     bibliography_entries: Sequence[BibliographyEntry],
 ) -> list[BibliographyReferenceMention]:
-    """Promote numeric row-label anchors without local footnotes into bibliography references."""
+    """Promote numeric table-cell anchors without local footnotes into bibliography references."""
     entries_by_label_key: dict[str, list[BibliographyEntry]] = {}
     for entry in bibliography_entries:
         entries_by_label_key.setdefault(entry.label_key, []).append(entry)
@@ -163,7 +169,6 @@ def build_bibliography_reference_mentions_from_footnote_anchors(
         if (
             anchor.glyph_kind != "number"
             or anchor.source_scope != "table_cell"
-            or anchor.source_role != "row_label"
             or _has_local_footnote_definition(anchor, footnote_definitions)
         ):
             continue
@@ -172,7 +177,7 @@ def build_bibliography_reference_mentions_from_footnote_anchors(
             link_status = "resolved"
             entry_id = candidate_entries[0].entry_id
             confidence = min(anchor.confidence, candidate_entries[0].confidence, 0.86)
-            notes = ["numeric_row_label_marker_linked_to_bibliography_entry"]
+            notes = ["numeric_table_cell_marker_linked_to_bibliography_entry"]
         elif len(candidate_entries) > 1:
             link_status = "ambiguous"
             entry_id = None
@@ -182,7 +187,7 @@ def build_bibliography_reference_mentions_from_footnote_anchors(
             link_status = "unresolved"
             entry_id = None
             confidence = 0.0
-            notes = ["no_bibliography_entry_for_numeric_row_label_marker"]
+            notes = ["no_bibliography_entry_for_numeric_table_cell_marker"]
         mentions.append(
             BibliographyReferenceMention(
                 mention_id=f"bibref:{anchor.anchor_id}",

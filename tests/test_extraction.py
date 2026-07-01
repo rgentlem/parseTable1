@@ -17,6 +17,7 @@ from table1_parser.extract.layout_fallback import (
     build_text_layout_candidates,
     build_word_lines,
 )
+from table1_parser.extract.pymupdf_page_adapter import extract_page_chars, extract_page_words
 from table1_parser.extract.pymupdf4llm_extractor import PyMuPDF4LLMExtractor
 from table1_parser.extract.table_detector import (
     DetectedTableCandidate,
@@ -256,6 +257,88 @@ def test_table_caption_metadata_accepts_pdf_dash_extracted_as_d() -> None:
     assert metadata["caption"] == "Table 1. Characteristics of NGT, IGR, or T2D cohort subjects"
     assert metadata["table_number"] == 1
     assert _table_caption_metadata("Table 1 displays baseline values") is None
+
+
+def test_pymupdf_page_adapter_normalizes_symbol_font_chars_and_words() -> None:
+    """Known embedded symbol-font codes should be converted before word/grid reconstruction."""
+    raw_chars = [
+        {"c": ",", "bbox": (0.0, 0.0, 4.0, 8.0)},
+        {"c": "2", "bbox": (5.0, 0.0, 9.0, 8.0)},
+        {"c": "3", "bbox": (10.0, 0.0, 14.0, 8.0)},
+        {"c": "6", "bbox": (15.0, 0.0, 19.0, 8.0)},
+        {"c": "x", "bbox": (20.0, 0.0, 24.0, 8.0)},
+    ]
+
+    class FakeSymbolPage:
+        def get_text(self, mode: str) -> object:
+            if mode == "rawdict":
+                return {
+                    "blocks": [
+                        {
+                            "lines": [
+                                {
+                                    "spans": [
+                                        {
+                                            "font": "AdvPS586B",
+                                            "size": 8.0,
+                                            "chars": raw_chars[:4],
+                                        },
+                                        {
+                                            "font": "AdvP4C4E74",
+                                            "size": 8.0,
+                                            "chars": raw_chars[4:],
+                                        },
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            if mode == "words":
+                return [(0.0, 0.0, 24.0, 8.0, ",236x", 0, 0, 0)]
+            return ""
+
+    chars = extract_page_chars(FakeSymbolPage(), page_num=3)
+    words = extract_page_words(FakeSymbolPage())
+
+    assert "".join(str(char["text"]) for char in chars) == "<−×±x"
+    assert [char.get("raw_text") for char in chars[:4]] == [",", "2", "3", "6"]
+    assert all(char.get("text_normalization") == "symbol_font_char_map" for char in chars[:4])
+    assert chars[4].get("text_normalization") is None
+    assert words[0]["text"] == "<−×±x"
+
+
+def test_mixed_bbox_rotated_text_block_detector_recovers_vertical_region() -> None:
+    """A mixed-orientation backend box should expose its contiguous rotated text block."""
+    class FakeMixedOrientationPage:
+        def get_text(self, mode: str) -> object:
+            if mode != "dict":
+                return {}
+            return {
+                "blocks": [
+                    {
+                        "type": 0,
+                        "bbox": [210.0, 40.0, 430.0, 520.0],
+                        "lines": [{"dir": [1.0, 0.0]} for _ in range(8)],
+                    },
+                    {
+                        "type": 0,
+                        "bbox": [40.0, 55.0, 175.0, 730.0],
+                        "lines": [{"dir": [0.0, 1.0]} for _ in range(6)],
+                    },
+                ]
+            }
+
+    orientation = pymupdf4llm_extractor_module._find_rotated_text_block_in_bbox(
+        FakeMixedOrientationPage(),
+        (30.0, 30.0, 500.0, 760.0),
+    )
+
+    assert orientation is not None
+    assert orientation["table_orientation"] == "rotated"
+    assert orientation["rotation_direction"] == "vertical_text_down"
+    assert orientation["rotation_confidence"] == 1.0
+    assert orientation["rotated_text_block_bbox"] == (38.0, 53.0, 177.0, 732.0)
 
 
 def test_build_extractor_defaults_to_pymupdf4llm() -> None:

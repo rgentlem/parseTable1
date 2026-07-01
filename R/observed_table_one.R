@@ -129,6 +129,7 @@ pt1_variable_lookup <- function(table_definition) {
 }
 
 new_observed_footnotes <- function(
+  footers = list(),
   anchors = list(),
   definitions = list(),
   links = list(),
@@ -138,10 +139,12 @@ new_observed_footnotes <- function(
   noSpaces = FALSE
 ) {
   object <- list(
+    Footers = footers %||% list(),
     Anchors = anchors %||% list(),
     Definitions = definitions %||% list(),
     Links = links %||% list(),
     MetaData = metadata %||% list(),
+    footers = footers %||% list(),
     anchors = anchors %||% list(),
     definitions = definitions %||% list(),
     links = links %||% list(),
@@ -158,8 +161,8 @@ validate_observed_footnotes <- function(x) {
   if (!inherits(x, "ObservedFootnotes")) {
     stop("Object must inherit from 'ObservedFootnotes'.", call. = FALSE)
   }
-  if (!is.list(x$Anchors) || !is.list(x$Definitions) || !is.list(x$Links)) {
-    stop("ObservedFootnotes must contain list fields Anchors, Definitions, and Links.", call. = FALSE)
+  if (!is.list(x$Footers) || !is.list(x$Anchors) || !is.list(x$Definitions) || !is.list(x$Links)) {
+    stop("ObservedFootnotes must contain list fields Footers, Anchors, Definitions, and Links.", call. = FALSE)
   }
   if (!is.list(x$MetaData)) {
     stop("ObservedFootnotes$MetaData must be a list.", call. = FALSE)
@@ -181,6 +184,7 @@ print.ObservedFootnotes <- function(x, printToggle = x$printToggle, quote = x$qu
   if (!is.null(table_number) && !is.na(table_number)) {
     cat(sprintf("table_number: %s\n", table_number))
   }
+  cat(sprintf("footers: %d\n", length(x$Footers %||% list())))
   cat(sprintf("anchors: %d\n", length(x$Anchors %||% list())))
   cat(sprintf("definitions: %d\n", length(x$Definitions %||% list())))
   cat(sprintf("links: %d\n", length(x$Links %||% list())))
@@ -229,8 +233,10 @@ build_observed_footnotes <- function(
   }
 
   resolved_table_id <- pt1_character_or_null(table_id) %||% ""
+  footers <- paper_footnotes$footers %||% list()
   anchors <- paper_footnotes$anchors %||% list()
   if (nzchar(resolved_table_id)) {
+    footers <- Filter(function(footer) identical(pt1_character_or_null(footer$table_id) %||% "", resolved_table_id), footers)
     anchors <- Filter(function(anchor) identical(pt1_character_or_null(anchor$table_id) %||% "", resolved_table_id), anchors)
   }
   anchor_ids <- vapply(anchors, function(anchor) pt1_character_or_null(anchor$anchor_id) %||% "", character(1))
@@ -254,6 +260,7 @@ build_observed_footnotes <- function(
       source_pdf = pt1_character_or_null(paper_footnotes$source_pdf),
       table_id = table_id,
       table_number = table_number,
+      footer_count = length(footers),
       anchor_count = length(anchors),
       definition_count = length(definitions),
       link_count = length(links),
@@ -264,6 +271,7 @@ build_observed_footnotes <- function(
     )
   )
   new_observed_footnotes(
+    footers = footers,
     anchors = anchors,
     definitions = definitions,
     links = links,

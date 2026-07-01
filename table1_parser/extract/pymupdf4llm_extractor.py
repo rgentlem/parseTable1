@@ -470,6 +470,23 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                     if uncaptioned_prose_shard:
                         continue
                     page_candidates.append(scored_candidate)
+                    rotated_block_candidate = _build_rotated_block_candidate_from_mixed_table_box(
+                        page_num=page_num,
+                        table_index=table_index,
+                        page=page,
+                        page_text=page_text,
+                        page_words=page_words,
+                        page_chars=page_chars,
+                        page_rule_segments=page_rule_segments,
+                        page_stroked_rule_segments=page_stroked_rule_segments,
+                        source_bbox=bbox,
+                        source_table=table,
+                        source_candidate=scored_candidate,
+                        caption=caption,
+                        paper_page_furniture=paper_page_furniture,
+                    )
+                    if rotated_block_candidate is not None:
+                        page_candidates.append(rotated_block_candidate)
                 page_candidates = self._rescue_low_quality_page_candidates(
                     page_num=page_num,
                     page=page,
@@ -830,6 +847,202 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                 )
             )
         return rescued
+
+
+def _build_rotated_block_candidate_from_mixed_table_box(
+    *,
+    page_num: int,
+    table_index: int,
+    page: Any,
+    page_text: str,
+    page_words: list[dict[str, object]],
+    page_chars: list[dict[str, object]],
+    page_rule_segments: list[tuple[float, float, float, float]],
+    page_stroked_rule_segments: list[tuple[float, float, float, float]],
+    source_bbox: tuple[float, float, float, float] | None,
+    source_table: dict[str, Any],
+    source_candidate: DetectedTableCandidate,
+    caption: str | None,
+    paper_page_furniture: PaperPageFurniture | None,
+) -> DetectedTableCandidate | None:
+    """Recover a rotated table block when PyMuPDF4LLM emits a mixed-orientation table box."""
+    if page is None or source_bbox is None:
+        return None
+    if source_candidate.metadata.get("table_orientation") == "rotated":
+        return None
+    signals = source_candidate.metadata.get("signals", {})
+    if not isinstance(signals, dict) or not signals.get("caption_match"):
+        return None
+
+    rotated_orientation = _find_rotated_text_block_in_bbox(page, source_bbox)
+    rotated_bbox = _as_bbox(rotated_orientation.get("rotated_text_block_bbox")) if rotated_orientation else None
+    if rotated_orientation is None or rotated_bbox is None:
+        return None
+
+    refinement = _refine_explicit_table_candidate_grid(
+        raw_rows=[[""]],
+        cell_bboxes=[],
+        bbox=rotated_bbox,
+        caption_bbox=None,
+        page_words=page_words,
+        page_chars=page_chars,
+        page_rule_segments=page_rule_segments,
+        full_width_rule_segments=page_stroked_rule_segments,
+        orientation_metadata=rotated_orientation,
+    )
+    raw_rows = refinement["raw_rows"]
+    if not isinstance(raw_rows, list) or not raw_rows:
+        return None
+    n_cols = max((len(row) for row in raw_rows), default=0)
+    data_like_rows = sum(
+        sum(bool(re.search(r"\d", cell)) for cell in row[1:] if cell.strip()) >= 2
+        for row in raw_rows[1:]
+    )
+    if len(raw_rows) < 4 or n_cols < 3 or data_like_rows < 2:
+        return None
+    if str(refinement.get("geometry_coordinate_frame") or "") not in {
+        "table_local_rotated_normalized",
+        "table_local_rotated_transposed_normalized",
+    }:
+        return None
+
+    table_bbox_cluster_ids = page_furniture_cluster_ids_for_bbox(
+        paper_page_furniture,
+        page_num=page_num,
+        bbox=rotated_bbox,
+        min_overlap_fraction=0.0,
+    )
+    return score_candidate(
+        DetectedTableCandidate(
+            page_num=page_num,
+            table_index=table_index,
+            bbox=rotated_bbox,
+            raw_rows=raw_rows,
+            caption=caption,
+            page_text=page_text,
+            metadata={
+                "layout_source": "pymupdf4llm_json_rotated_block_repair",
+                "caption_source": source_candidate.metadata.get("caption_source"),
+                "primary_representation": "json",
+                "extractor_used": "pymupdf4llm",
+                "fallback_used": True,
+                "orientation_strategy": "rotated_text_block_from_mixed_table_box",
+                "rotated_block_candidate": True,
+                "source_mixed_table_bbox": source_bbox,
+                "row_count": source_table.get("row_count"),
+                "col_count": source_table.get("col_count"),
+                "explicit_grid_refined_from_words": True,
+                "grid_refinement_source": refinement["grid_refinement_source"],
+                "geometry_coordinate_frame": refinement["geometry_coordinate_frame"],
+                "geometry_transform_source_bbox": refinement.get("geometry_transform_source_bbox"),
+                "geometry_transform_transposed": refinement.get("geometry_transform_transposed"),
+                "geometry_transform_applied": refinement.get("geometry_transform_applied"),
+                "table_markdown": source_table.get("markdown"),
+                "table_cells": refinement["table_cells"],
+                "first_column_text_x0_by_row": {},
+                "refined_table_cells": refinement["refined_table_cells"],
+                "original_table_cells": source_table.get("cells"),
+                "original_backend_rows": source_table.get("extract"),
+                "row_bounds": refinement["row_bounds"],
+                "horizontal_rules": refinement["horizontal_rules"],
+                "full_width_horizontal_rules": refinement["full_width_horizontal_rules"],
+                "page_furniture_overlap": {
+                    "source_artifact": "paper_page_furniture.json",
+                    "has_overlap": bool(table_bbox_cluster_ids),
+                    "table_bbox_cluster_ids": table_bbox_cluster_ids,
+                },
+                **rotated_orientation,
+            },
+        )
+    )
+
+
+def _find_rotated_text_block_in_bbox(
+    page: Any,
+    bbox: tuple[float, float, float, float],
+) -> dict[str, Any] | None:
+    """Find a contiguous rotated text block inside a larger mixed-orientation bbox."""
+    try:
+        raw_blocks = (page.get_text("dict") or {}).get("blocks", [])
+    except Exception:
+        return None
+
+    candidates_by_direction: dict[str, list[tuple[tuple[float, float, float, float], int, int]]] = {
+        "vertical_text_up": [],
+        "vertical_text_down": [],
+    }
+    for block in raw_blocks:
+        if not isinstance(block, dict) or block.get("type", 0) != 0:
+            continue
+        block_bbox = _as_bbox(block.get("bbox"))
+        if block_bbox is None:
+            continue
+        if (
+            min(block_bbox[2], bbox[2]) <= max(block_bbox[0], bbox[0])
+            or min(block_bbox[3], bbox[3]) <= max(block_bbox[1], bbox[1])
+        ):
+            continue
+        horizontal_count = 0
+        vertical_up_count = 0
+        vertical_down_count = 0
+        for line in block.get("lines", []):
+            if not isinstance(line, dict):
+                continue
+            direction = line.get("dir")
+            if not isinstance(direction, (list, tuple)) or len(direction) != 2:
+                continue
+            dx = float(direction[0])
+            dy = float(direction[1])
+            if abs(dx) >= 0.8 and abs(dy) <= 0.2:
+                horizontal_count += 1
+                continue
+            if abs(dy) >= 0.8 and abs(dx) <= 0.35:
+                if dy < 0:
+                    vertical_up_count += 1
+                else:
+                    vertical_down_count += 1
+        vertical_count = vertical_up_count + vertical_down_count
+        directed_count = horizontal_count + vertical_count
+        if directed_count == 0 or vertical_count / directed_count < 0.75:
+            continue
+        if vertical_up_count >= vertical_down_count:
+            rotation_direction = "vertical_text_up"
+            matching_count = vertical_up_count
+        else:
+            rotation_direction = "vertical_text_down"
+            matching_count = vertical_down_count
+        if matching_count < 2 or matching_count / directed_count < 0.75:
+            continue
+        candidates_by_direction[rotation_direction].append((block_bbox, matching_count, directed_count))
+
+    ranked_directions = sorted(
+        candidates_by_direction.items(),
+        key=lambda item: sum(candidate[1] for candidate in item[1]),
+        reverse=True,
+    )
+    if not ranked_directions or not ranked_directions[0][1]:
+        return None
+    rotation_direction, block_candidates = ranked_directions[0]
+    matching_line_count = sum(candidate[1] for candidate in block_candidates)
+    directed_line_count = sum(candidate[2] for candidate in block_candidates)
+    if matching_line_count < 4 or directed_line_count == 0:
+        return None
+    block_bboxes = [candidate[0] for candidate in block_candidates]
+    rotated_text_block_bbox = (
+        min(block_bbox[0] for block_bbox in block_bboxes) - 2.0,
+        min(block_bbox[1] for block_bbox in block_bboxes) - 2.0,
+        max(block_bbox[2] for block_bbox in block_bboxes) + 2.0,
+        max(block_bbox[3] for block_bbox in block_bboxes) + 2.0,
+    )
+    return {
+        "table_orientation": "rotated",
+        "rotation_source": "pymupdf_mixed_bbox_rotated_text_block",
+        "rotation_direction": rotation_direction,
+        "rotation_confidence": round(matching_line_count / directed_line_count, 4),
+        "rotated_text_block_bbox": rotated_text_block_bbox,
+        "rotated_text_region_source": "pymupdf_directional_text_blocks_in_mixed_table_box",
+        "rotated_text_block_line_count": matching_line_count,
+    }
 
 
 def _infer_table_orientation_metadata(

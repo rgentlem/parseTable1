@@ -1090,6 +1090,6 @@ def test_link_paper_footnotes_does_not_paper_level_link_numeric_row_label_citati
 
     assert linked.links[0].link_status == "unresolved"
     assert linked.links[0].candidate_definition_ids == []
-    assert linked.links[0].link_basis == ["numeric_row_label_anchor_requires_local_definition"]
+    assert linked.links[0].link_basis == ["numeric_table_cell_anchor_requires_local_definition"]
     assert linked.links[0].notes == ["possible_bibliographic_reference"]
     assert linked.metadata["unresolved_link_count"] == 1

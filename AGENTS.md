@@ -81,6 +81,13 @@ For broad parser changes, prefer testing against this corpus when practical,
 especially before commits that change parse outputs, schemas, value parsing,
 normalization, or table semantics.
 
+When running multiple real-paper PDFs from the corpus, use bounded parallel
+workers by default so available CPU cores are used efficiently. A reasonable
+default is up to 6 concurrent `table1-parser parse` processes, capped by the
+number of PDFs and available cores. Use a serial run only when debugging a
+single failure, reproducing ordering-sensitive behavior, or when parallelism is
+causing resource problems.
+
 ## Parser Output Directory
 
 The parser writes generated outputs under:
@@ -118,6 +125,12 @@ Before committing parser changes, report:
 - which output directory was used
 - which papers failed, if any
 - whether `pytest` passed
+
+Before staging or committing changes for GitHub, explicitly check whether new
+tests are needed for the work being committed. If new tests may be needed, stop
+and describe the proposed tests, what behavior they protect, and why they are
+worth adding. Do not implement those tests until the user gives specific
+permission.
 
 # Project Goals
 

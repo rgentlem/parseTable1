@@ -11,8 +11,8 @@ from table1_parser.page_furniture_mask import filter_positioned_items_for_page_f
 from table1_parser.schemas import CellTextAnnotation, CellTextAnnotationTable, ExtractedTable, PaperPageFurniture, TableCell
 
 
-MARKER_SYMBOLS = {"*", "†", "‡", "§", "¶", "#", "|"}
-INLINE_MARKER_PREFIX_PATTERN = re.compile(r"^[<>=\d.,%()\s+-]+$")
+MARKER_SYMBOLS = {"*", "†", "‡", "§", "¶", "#", "|", "{", "}"}
+INLINE_MARKER_PREFIX_PATTERN = re.compile(r"^[<>=≤≥\d.,%()\s+\-±−×]+$")
 SUPPORTED_TRANSFORMED_FRAMES = {
     "page_sideways_transformed",
     "table_local_rotated_normalized",
@@ -260,6 +260,19 @@ def _annotation_from_group(
     elif annotation_type == "subscript":
         text_latex = f"_{{{escaped}}}"
     confidence = 0.9 if annotation_type in {"superscript", "subscript"} else 0.65
+    fonts = sorted(
+        {
+            str(item[2].get("font"))
+            for item in group
+            if item[2].get("font") is not None
+        }
+    )
+    raw_text = "".join(str(item[2].get("raw_text", item[2].get("text", ""))) for item in group)
+    metadata: dict[str, object] = {"source": "pymupdf_char_geometry"}
+    if fonts:
+        metadata["fonts"] = fonts
+    if raw_text != text:
+        metadata["raw_text"] = raw_text
     return CellTextAnnotation(
         row_idx=cell.row_idx,
         col_idx=cell.col_idx,
@@ -269,5 +282,5 @@ def _annotation_from_group(
         bbox=(left, top, right, bottom),
         attached_to_text=attached_to_text,
         confidence=confidence,
-        metadata={"source": "pymupdf_char_geometry"},
+        metadata=metadata,
     )

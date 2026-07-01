@@ -17,6 +17,8 @@ from table1_parser.schemas import (
     FootnoteAnchor,
     FootnoteDefinition,
     FootnoteDefinitionCandidateLine,
+    FootnoteFooter,
+    FootnoteFooterRow,
     FootnoteGlyphKind,
     FootnoteInferredMeaning,
     FootnoteLink,
@@ -28,14 +30,14 @@ from table1_parser.schemas import (
 from table1_parser.text_cleaning import clean_text
 
 
-TEXT_MARKER_PATTERN = re.compile(r"(?P<glyph>[*﹡＊†‡§¶#|]|[⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉]+)(?=$|[\s.,;:)])")
-DEFINITION_GLYPH_PATTERN = r"[*﹡＊]+|[A-Za-z]|\d+(?!\.\d)|[†‡§¶#|]|[⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉]+"
+TEXT_MARKER_PATTERN = re.compile(r"(?P<glyph>[*﹡＊†‡§¶#|{}]|[⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉]+)(?=$|[\s.,;:)])")
+DEFINITION_GLYPH_PATTERN = r"[*﹡＊]+|[A-Za-z]|\d+(?!\.\d)|[†‡§¶#|{}]|[⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉]+"
 DEFINITION_MARKER_TOKEN_PATTERN = (
     rf"\[\s*(?:{DEFINITION_GLYPH_PATTERN})\s*\]"
     rf"|\(\s*(?:{DEFINITION_GLYPH_PATTERN})\s*\)"
     rf"|(?:{DEFINITION_GLYPH_PATTERN})"
 )
-DEFINITION_SYMBOL_GLYPH_PATTERN = r"[*﹡＊]+|[†‡§¶#|]"
+DEFINITION_SYMBOL_GLYPH_PATTERN = r"[*﹡＊]+|[†‡§¶#|{}]"
 DEFINITION_SYMBOL_MARKER_TOKEN_PATTERN = (
     rf"\[\s*(?:{DEFINITION_SYMBOL_GLYPH_PATTERN})\s*\]"
     rf"|\(\s*(?:{DEFINITION_SYMBOL_GLYPH_PATTERN})\s*\)"
@@ -43,7 +45,7 @@ DEFINITION_SYMBOL_MARKER_TOKEN_PATTERN = (
 )
 DEFINITION_SYMBOL_SEPARATOR_PATTERN = r"[\s.)\]:;,\-–—]+"
 DEFINITION_TEXT_SEPARATOR_PATTERN = r"(?:\s+|[\s.)\]:;,\-–—]*\s+)"
-DEFINITION_BODY_START_PATTERN = r"[A-Z0-9(*†‡§¶#]"
+DEFINITION_BODY_START_PATTERN = r"[A-Z0-9(*†‡§¶#{}]"
 DEFINITION_ATTACHED_SYMBOL_BODY_START_PATTERN = r"(?=[A-Z0-9(])"
 DEFINITION_LINE_START_PATTERN = re.compile(
     rf"^\s*(?:"
@@ -65,9 +67,9 @@ DEFINITION_MARKER_PATTERN = re.compile(
     rf"{DEFINITION_TEXT_SEPARATOR_PATTERN}"
     rf"(?P<body>\S.*?)(?=(?:[.;,]\s+(?:{DEFINITION_MARKER_TOKEN_PATTERN})[\s.)\]:;,\-–—]+\S)|$)"
 )
-DEFINITION_SYMBOL_BLOCK_MARKER_PATTERN = re.compile(
+DEFINITION_BLOCK_MARKER_PATTERN = re.compile(
     rf"(?:^|(?<=[.;:,]\s)|(?<=\)\s)|(?<=\]\s))"
-    rf"(?P<glyph>{DEFINITION_SYMBOL_MARKER_TOKEN_PATTERN})"
+    rf"(?P<glyph>{DEFINITION_SYMBOL_MARKER_TOKEN_PATTERN}|[a-z](?=[A-Z]))"
     rf"\s*(?=\S)"
 )
 TABLE_FOOTER_ATTACHED_MARKER_PATTERN = re.compile(r"^\s*(?P<glyph>[a-z])(?P<body>[A-Z]\S.*)$")
@@ -103,6 +105,7 @@ def build_paper_footnote_anchor_inventory(
     suppressed_anchor_count = 0
     suppressed_anchor_cluster_ids: set[str] = set()
     math_unit_suppressed_anchor_count = 0
+    subscript_suppressed_anchor_count = 0
     word_like_subscript_suppressed_anchor_count = 0
     schemas_by_table_id = {schema.table_id: schema for schema in column_header_schemas or []}
     extracted_by_table_id = {table.table_id: table for table in extracted_tables or []}
@@ -125,6 +128,9 @@ def build_paper_footnote_anchor_inventory(
                 trailing_asterisks = re.search(r"([*﹡＊]+)$", annotation.attached_to_text.strip())
                 if trailing_asterisks is not None:
                     glyph_raw = trailing_asterisks.group(1) + glyph_raw
+            if annotation.annotation_type == "subscript":
+                subscript_suppressed_anchor_count += 1
+                continue
             if _is_math_unit_notation_marker(
                 glyph_raw,
                 annotation.annotation_type,
@@ -226,6 +232,7 @@ def build_paper_footnote_anchor_inventory(
         paper_id=paper_id,
         source_pdf=Path(source_pdf).name,
         anchors=anchors,
+        footers=[],
         definitions=[],
         links=[],
         metadata={
@@ -235,6 +242,7 @@ def build_paper_footnote_anchor_inventory(
             "page_furniture_anchor_suppression_count": suppressed_anchor_count,
             "page_furniture_suppressed_anchor_cluster_ids": sorted(suppressed_anchor_cluster_ids),
             "math_unit_anchor_suppression_count": math_unit_suppressed_anchor_count,
+            "subscript_anchor_suppression_count": subscript_suppressed_anchor_count,
             "word_like_subscript_anchor_suppression_count": word_like_subscript_suppressed_anchor_count,
             "definitions_status": "not_built",
             "links_status": "not_built",
@@ -414,17 +422,15 @@ def build_paper_footnote_definition_lines_from_extracted_tables(
             (row_idx, sorted(cells, key=lambda cell: cell.col_idx))
             for row_idx, cells in sorted(rows_by_idx.items())
         ]
-        last_value_row_idx = _last_value_matrix_row_idx(ordered_rows, table.n_cols)
-        if last_value_row_idx is None:
+        footer_rows, _footer_detection_basis = find_table_footer_rows(table, ordered_rows)
+        if not footer_rows:
             continue
 
         current_start_row_idx: int | None = None
         current_end_row_idx: int | None = None
         current_text_parts: list[str] = []
 
-        for row_idx, row_cells in ordered_rows:
-            if row_idx <= last_value_row_idx:
-                continue
+        for row_idx, row_cells in footer_rows:
             row_text = _row_text(row_cells)
             if not row_text:
                 continue
@@ -477,6 +483,54 @@ def build_paper_footnote_definition_lines_from_extracted_tables(
                 )
             )
     return lines
+
+
+def build_paper_footnote_footers_from_extracted_tables(
+    extracted_tables: Sequence[ExtractedTable],
+    table1_continuation_groups: Sequence[Table1ContinuationGroup] | None = None,
+) -> list[FootnoteFooter]:
+    """Build reviewable table-footer regions from extracted table rows."""
+    footers: list[FootnoteFooter] = []
+    visual_id_by_table_id = _table_visual_ids(extracted_tables, table1_continuation_groups)
+    for table_position, table in enumerate(extracted_tables):
+        rows_by_idx: dict[int, list[TableCell]] = {}
+        for cell in table.cells:
+            rows_by_idx.setdefault(cell.row_idx, []).append(cell)
+        if not rows_by_idx:
+            continue
+        ordered_rows = [
+            (row_idx, sorted(cells, key=lambda cell: cell.col_idx))
+            for row_idx, cells in sorted(rows_by_idx.items())
+        ]
+        footer_rows, detection_basis = find_table_footer_rows(table, ordered_rows)
+        if not footer_rows or detection_basis is None:
+            continue
+        footer_row_records = [
+            FootnoteFooterRow(
+                row_idx=row_idx,
+                raw_cells=[cell.text for cell in row_cells],
+                text=_row_text(row_cells),
+            )
+            for row_idx, row_cells in footer_rows
+            if _row_text(row_cells)
+        ]
+        if not footer_row_records:
+            continue
+        footers.append(
+            FootnoteFooter(
+                footer_id=f"footer:{table_position}",
+                table_id=table.table_id,
+                visual_id=visual_id_by_table_id.get(table.table_id),
+                page_num=table.page_num,
+                detection_basis=detection_basis,
+                start_row_idx=min(row.row_idx for row in footer_row_records),
+                end_row_idx=max(row.row_idx for row in footer_row_records),
+                raw_text=clean_text(" ".join(row.text for row in footer_row_records)),
+                rows=footer_row_records,
+                notes=["table_footer_rows_detected_from_extracted_table"],
+            )
+        )
+    return footers
 
 
 def filter_footnote_definition_lines_for_page_furniture(
@@ -571,6 +625,10 @@ def build_paper_footnote_definition_candidates(
                 source_scope == "body_text"
                 and line.page_height is not None
                 and bottom >= line.page_height - PAGE_NOTE_FOOTER_HEIGHT
+                and (
+                    top >= line.page_height - (PAGE_NOTE_FOOTER_HEIGHT * 2)
+                    or bottom - top <= PAGE_NOTE_FOOTER_HEIGHT * 1.5
+                )
             ):
                 source_scope = "page_note"
                 confidence = confidence if confidence is not None else 0.65
@@ -652,12 +710,16 @@ def build_paper_footnote_definition_candidates(
     return definitions
 
 
-def link_paper_footnotes(footnotes: PaperFootnotes) -> PaperFootnotes:
+def link_paper_footnotes(
+    footnotes: PaperFootnotes,
+    bibliography_label_keys: set[str] | None = None,
+) -> PaperFootnotes:
     """Link footnote anchors to definitions by glyph and local scope."""
     definitions_by_glyph: dict[str, list[FootnoteDefinition]] = {}
     for definition in footnotes.definitions:
         definitions_by_glyph.setdefault(definition.glyph_key, []).append(definition)
 
+    bibliography_label_keys = bibliography_label_keys or set()
     citation_like_anchor_ids: set[str] = set()
     numeric_row_label_anchors_without_local_definition = [
         anchor
@@ -681,6 +743,19 @@ def link_paper_footnotes(footnotes: PaperFootnotes) -> PaperFootnotes:
         citation_like_anchor_ids = {
             anchor.anchor_id for anchor in numeric_row_label_anchors_without_local_definition
         }
+    for anchor in footnotes.anchors:
+        if (
+            anchor.glyph_kind == "number"
+            and anchor.source_scope == "table_cell"
+            and anchor.glyph_key in bibliography_label_keys
+            and not [
+                definition
+                for definition in definitions_by_glyph.get(anchor.glyph_key, [])
+                if (anchor.table_id is not None and anchor.table_id == definition.table_id)
+                or (anchor.visual_id is not None and anchor.visual_id == definition.visual_id)
+            ]
+        ):
+            citation_like_anchor_ids.add(anchor.anchor_id)
     retained_anchors = [
         anchor for anchor in footnotes.anchors if anchor.anchor_id not in citation_like_anchor_ids
     ]
@@ -692,7 +767,6 @@ def link_paper_footnotes(footnotes: PaperFootnotes) -> PaperFootnotes:
             candidates
             and anchor.glyph_kind == "number"
             and anchor.source_scope == "table_cell"
-            and anchor.source_role == "row_label"
         ):
             candidates = [
                 definition
@@ -708,7 +782,7 @@ def link_paper_footnotes(footnotes: PaperFootnotes) -> PaperFootnotes:
                         glyph_key=anchor.glyph_key,
                         link_status="unresolved",
                         candidate_definition_ids=[],
-                        link_basis=["numeric_row_label_anchor_requires_local_definition"],
+                        link_basis=["numeric_table_cell_anchor_requires_local_definition"],
                         confidence=0.0,
                         notes=["possible_bibliographic_reference"],
                     )
@@ -882,6 +956,56 @@ def glyph_fields(glyph_raw: str) -> tuple[FootnoteGlyphKind, str, list[str]]:
     return "unknown", f"unknown:{normalized_key or glyph}", codepoints
 
 
+def find_table_footer_rows(
+    table: ExtractedTable,
+    ordered_rows: Sequence[tuple[int, list[TableCell]]],
+) -> tuple[list[tuple[int, list[TableCell]]], str | None]:
+    """Return table-local footer rows using existing table rule geometry when available."""
+    last_value_row_idx = _last_value_matrix_row_idx(ordered_rows, table.n_cols)
+    row_bounds = table.metadata.get("row_bounds")
+    rules = table.metadata.get("full_width_horizontal_rules")
+    if not isinstance(rules, list) or not rules:
+        rules = table.metadata.get("horizontal_rules")
+    if (
+        last_value_row_idx is not None
+        and isinstance(row_bounds, list)
+        and isinstance(rules, list)
+        and last_value_row_idx < len(row_bounds)
+        and row_bounds
+        and rules
+    ):
+        numeric_rules = sorted(float(rule) for rule in rules if isinstance(rule, (int, float)))
+        last_value_bounds = row_bounds[last_value_row_idx]
+        if isinstance(last_value_bounds, (list, tuple)) and len(last_value_bounds) == 2 and numeric_rules:
+            last_value_bottom = float(last_value_bounds[1])
+            footer_boundary_rules = [
+                rule for rule in numeric_rules if rule >= last_value_bottom - 2.0
+            ]
+        else:
+            footer_boundary_rules = []
+        if footer_boundary_rules:
+            bottom_rule = footer_boundary_rules[-1]
+            rows_below_bottom_rule: list[tuple[int, list[TableCell]]] = []
+            for row_idx, row_cells in ordered_rows:
+                if row_idx >= len(row_bounds):
+                    continue
+                bounds = row_bounds[row_idx]
+                if not isinstance(bounds, (list, tuple)) or len(bounds) != 2:
+                    continue
+                row_top = float(bounds[0])
+                if row_top >= bottom_rule - 2.0:
+                    rows_below_bottom_rule.append((row_idx, row_cells))
+            if any(_row_starts_footnote_definition(row_cells) for _, row_cells in rows_below_bottom_rule):
+                return rows_below_bottom_rule, "after_bottom_horizontal_rule"
+
+    if last_value_row_idx is None:
+        return [], None
+    footer_rows = [(row_idx, row_cells) for row_idx, row_cells in ordered_rows if row_idx > last_value_row_idx]
+    if any(_row_starts_footnote_definition(row_cells) for _, row_cells in footer_rows):
+        return footer_rows, "after_last_value_matrix_row"
+    return [], None
+
+
 def _last_value_matrix_row_idx(
     ordered_rows: Sequence[tuple[int, list[TableCell]]],
     n_cols: int,
@@ -891,11 +1015,8 @@ def _last_value_matrix_row_idx(
     last_value_row_idx: int | None = None
     for row_idx, row_cells in ordered_rows:
         row_text = _row_text(row_cells)
-        definition_like = (
-            DEFINITION_LINE_START_PATTERN.search(row_text) is not None
-            or DEFINITION_LINE_EMBEDDED_PATTERN.search(row_text) is not None
-            or TABLE_FOOTER_ATTACHED_MARKER_PATTERN.match(row_text) is not None
-        )
+        if _row_starts_footnote_definition(row_cells):
+            continue
         nonempty_cells = [cell for cell in row_cells if clean_text(cell.text)]
         if not nonempty_cells:
             continue
@@ -916,9 +1037,16 @@ def _last_value_matrix_row_idx(
                 value_like_count += 1
         if value_like_count >= required_value_cells:
             last_value_row_idx = row_idx
-        elif definition_like:
-            continue
     return last_value_row_idx
+
+
+def _row_starts_footnote_definition(row_cells: Sequence[TableCell]) -> bool:
+    row_text = _row_text(row_cells)
+    return (
+        DEFINITION_LINE_START_PATTERN.search(row_text) is not None
+        or DEFINITION_LINE_EMBEDDED_PATTERN.search(row_text) is not None
+        or TABLE_FOOTER_ATTACHED_MARKER_PATTERN.match(row_text) is not None
+    )
 
 
 def _row_text(row_cells: Sequence[TableCell]) -> str:
@@ -1040,7 +1168,7 @@ def _definition_glyph_from_marker(marker_text: str) -> str:
 
 def _parse_definition_markers(raw_text: str) -> list[tuple[str, str]]:
     """Parse explicit footnote definitions from one local note block."""
-    symbol_matches = list(DEFINITION_SYMBOL_BLOCK_MARKER_PATTERN.finditer(raw_text))
+    symbol_matches = list(DEFINITION_BLOCK_MARKER_PATTERN.finditer(raw_text))
     if symbol_matches:
         parsed_definitions: list[tuple[str, str]] = []
         for match_index, match in enumerate(symbol_matches):

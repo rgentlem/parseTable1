@@ -667,6 +667,61 @@ paper_footnote_filter_context <- function(outputs, table_number = NULL, table_in
   )
 }
 
+footnote_footers_df <- function(outputs, table_number = NULL, table_index = NULL) {
+  empty_df <- data.frame(
+    table_number = integer(),
+    table_index = integer(),
+    table_id = character(),
+    footer_id = character(),
+    visual_id = character(),
+    page_num = integer(),
+    detection_basis = character(),
+    start_row_idx = integer(),
+    end_row_idx = integer(),
+    row_indices = character(),
+    row_texts = character(),
+    raw_text = character(),
+    source_artifact = character(),
+    notes = character(),
+    stringsAsFactors = FALSE
+  )
+
+  context <- paper_footnote_filter_context(outputs, table_number = table_number, table_index = table_index)
+  footers <- outputs$paper_footnotes$footers %||% list()
+  if (!is.null(context)) {
+    footers <- Filter(function(footer) identical(as.character(footer$table_id %||% ""), context$table_id), footers)
+  }
+
+  rows <- lapply(footers, function(footer) {
+    table_id <- as.character(footer$table_id %||% "")
+    row_table_index <- table_index_for_table_id(outputs, table_id)
+    row_table_number <- if (is.na(row_table_index)) NA_integer_ else table_number_for_outputs(outputs, row_table_index)
+    footer_rows <- footer$rows %||% list()
+    data.frame(
+      table_number = row_table_number,
+      table_index = as.integer(row_table_index),
+      table_id = table_id,
+      footer_id = as.character(footer$footer_id %||% ""),
+      visual_id = as.character(footer$visual_id %||% ""),
+      page_num = as.integer(footer$page_num %||% NA_integer_),
+      detection_basis = as.character(footer$detection_basis %||% ""),
+      start_row_idx = as.integer(footer$start_row_idx %||% NA_integer_),
+      end_row_idx = as.integer(footer$end_row_idx %||% NA_integer_),
+      row_indices = paste(vapply(footer_rows, function(row) as.character(row$row_idx %||% ""), character(1)), collapse = " | "),
+      row_texts = paste(vapply(footer_rows, function(row) as.character(row$text %||% ""), character(1)), collapse = " | "),
+      raw_text = as.character(footer$raw_text %||% ""),
+      source_artifact = as.character(footer$source_artifact %||% ""),
+      notes = paste(character_vector(footer$notes), collapse = " | "),
+      stringsAsFactors = FALSE
+    )
+  })
+
+  if (length(rows) == 0L) {
+    return(empty_df)
+  }
+  do.call(rbind, rows)
+}
+
 footnote_anchors_df <- function(outputs, table_number = NULL, table_index = NULL) {
   empty_df <- data.frame(
     table_number = integer(),
@@ -899,6 +954,7 @@ show_paper_footnotes <- function(paper_dir, table_number = NULL, table_index = N
   outputs <- load_paper_outputs(paper_dir)
   context <- paper_footnote_filter_context(outputs, table_number = table_number, table_index = table_index)
   anchors <- footnote_anchors_df(outputs, table_number = table_number, table_index = table_index)
+  footers <- footnote_footers_df(outputs, table_number = table_number, table_index = table_index)
   definitions <- footnote_definitions_df(outputs, table_number = table_number, table_index = table_index)
   links <- footnote_links_df(outputs, table_number = table_number, table_index = table_index)
   metadata <- outputs$paper_footnotes$metadata %||% list()
@@ -915,6 +971,7 @@ show_paper_footnotes <- function(paper_dir, table_number = NULL, table_index = N
     cat(sprintf("table_id: %s\n", context$table_id))
   }
   cat(sprintf("anchor_count: %s\n", nrow(anchors)))
+  cat(sprintf("footer_count: %s\n", nrow(footers)))
   cat(sprintf("definition_count: %s\n", nrow(definitions)))
   cat(sprintf("link_count: %s\n", nrow(links)))
   cat(sprintf("resolved_link_count: %s\n", sum(links$link_status == "resolved", na.rm = TRUE)))
@@ -923,6 +980,14 @@ show_paper_footnotes <- function(paper_dir, table_number = NULL, table_index = N
   cat(sprintf("unresolved_link_count: %s\n", sum(links$link_status == "unresolved", na.rm = TRUE)))
 
   sections <- list(
+    Footers = footers[, c(
+      "footer_id",
+      "page_num",
+      "detection_basis",
+      "start_row_idx",
+      "end_row_idx",
+      "raw_text"
+    ), drop = FALSE],
     Anchors = anchors[, c(
       "anchor_id",
       "glyph_raw",
@@ -962,7 +1027,7 @@ show_paper_footnotes <- function(paper_dir, table_number = NULL, table_index = N
       print(section_df, row.names = FALSE, right = FALSE)
     }
   }
-  invisible(list(anchors = anchors, definitions = definitions, links = links, metadata = metadata))
+  invisible(list(footers = footers, anchors = anchors, definitions = definitions, links = links, metadata = metadata))
 }
 
 page_furniture_clusters_df <- function(outputs) {

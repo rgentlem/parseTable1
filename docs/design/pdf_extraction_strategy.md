@@ -104,6 +104,20 @@ If existing table code already operates on JSON, preserve that architecture.
 
 Do not change the table pipeline to Markdown-first.
 
+When PyMuPDF4LLM emits an oversized table box that mixes upright article text
+with a rotated table region, the extractor may derive a separate table
+candidate from the contiguous rotated PyMuPDF text block inside that box. The
+derived candidate uses positioned words/chars and rule geometry, records
+`orientation_strategy = "rotated_text_block_from_mixed_table_box"`, and
+competes with the original backend box through normal candidate deduplication.
+This keeps the primary backend but prevents a backend table-box regression from
+pulling non-table body text into the table grid.
+
+PyMuPDF character extraction also performs narrow, font-qualified symbol
+normalization before word/grid reconstruction. Known embedded symbol-font codes
+such as plus-minus, multiplication, minus, and comparator glyphs are converted
+to Unicode while preserving raw glyph provenance on character records.
+
 ## 3. Figure extraction
 Preferred path:
 

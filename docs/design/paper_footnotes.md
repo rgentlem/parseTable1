@@ -25,6 +25,7 @@ The parser should write a valid empty artifact when no candidates are found.
   "paper_id": "paper-stem",
   "source_pdf": "paper.pdf",
   "anchors": [],
+  "footers": [],
   "definitions": [],
   "links": [],
   "metadata": {
@@ -33,6 +34,45 @@ The parser should write a valid empty artifact when no candidates are found.
   }
 }
 ```
+
+## Footer Record
+
+A footer is a table-local footer region detected from extracted table geometry.
+It is persisted so R review can validate the footer boundary before reviewing
+definition splitting or anchor links.
+
+Required fields:
+
+- `footer_id`
+- `table_id`
+- `page_num`
+- `source_scope`
+- `source_artifact`
+- `detection_basis`
+- `start_row_idx`
+- `end_row_idx`
+- `raw_text`
+- `rows`
+
+Optional fields:
+
+- `visual_id`
+- `notes`
+
+Each `rows` item records:
+
+- `row_idx`
+- `raw_cells`
+- `text`
+
+Footer detection should use existing table geometry first. When extracted
+`row_bounds` and full-width/horizontal rules are available, the footer starts
+below a rule only if that rule is at or below the last detected value-matrix
+row. This prevents header/body separators from being mistaken for footer
+boundaries. The region is accepted only when rows below the boundary contain at
+least one definition-like marker row. If rule evidence is unavailable, the
+fallback footer region starts after the last value-matrix row and is accepted
+only when it also contains definition-like rows.
 
 ## Anchor Record
 
@@ -107,9 +147,14 @@ Initial math/unit exponent rule:
   `cell_text_annotations.json`; a future metadata counter or dedicated
   annotation classification field may expose how many candidate anchors were
   rejected for this reason.
-- Multi-letter alphabetic subscript text such as `P_Begg` or `P_Egger` remains
-  inspectable in `cell_text_annotations.json` but should not be promoted to a
-  `FootnoteAnchor`; letter footnote markers are single visible glyphs.
+- Subscript annotations remain inspectable in `cell_text_annotations.json` but
+  should not be promoted to `FootnoteAnchor` records. Table footnote anchors
+  should come from superscript markers, inline markers, captions, or footer
+  definitions, not from subscript notation. Preserve the original glyph case in
+  the annotation and any retained `glyph_raw` evidence for debugging.
+- Multi-letter alphabetic subscript text such as `P_Begg` or `P_Egger` is one
+  example of this general subscript suppression rule; letter footnote markers
+  are single visible superscript or inline glyphs.
 
 ## P-Value Significance Stars
 
@@ -170,12 +215,16 @@ Optional fields:
 Definition candidates may be built from typed source blocks before they are
 promoted into definition records. Source blocks should preserve raw text, page,
 optional bbox and page height, source scope, source ID, table ID, visual ID, and
-source artifact. These input blocks are not a persisted top-level artifact.
-The parse command builds source blocks first from extracted table footer rows,
-then from PyMuPDF page text geometry. Extracted-table footer rows are identified
-structurally: after the last value-matrix row, a row that starts or embeds a
-definition marker opens a table-note block, and adjacent following rows without
-a new marker are appended as continuation text until the next marker block.
+source artifact. Extracted table footer regions are persisted in `footers`;
+definition source lines are then built from those footer rows. The parse command
+builds source blocks first from extracted table footer rows, then from PyMuPDF
+page text geometry. Extracted-table footer rows are identified structurally by
+`find_table_footer_rows()`: prefer rows below a bottom table rule that is itself
+below the last value-matrix row, then fall back to rows after the last
+value-matrix row when rule evidence is unavailable. Within that region, a row
+that starts or embeds a definition marker opens a table-note block, and adjacent
+following rows without a new marker are appended as continuation text until the
+next marker block.
 PyMuPDF geometry is consumed as contiguous text blocks rather than isolated
 lines. `find_table_footer_definition_blocks()` classifies complete PDF text
 blocks as table-local footer blocks when they sit just below a table bbox,
@@ -190,15 +239,16 @@ definitions after preceding abbreviation or significance prose, such as
 parenthesized markers such as `[a]` and `(a)` are canonicalized to the visible
 glyph before matching.
 
-Known symbol markers such as `†`, `‡`, `§`, `¶`, `#`, `|`, and asterisk runs
-are structural footnote-definition evidence when they start a local table/footer
-definition and are followed by any non-empty definition body. Do not require the
-body to contain p-value wording or other semantic vocabulary. Statistical
-footer lines can define repeated asterisk runs such as `*`, `**`, and `***` in
-one comma-separated line; these are split into separate definition records with
-`asterisk:1`, `asterisk:2`, and `asterisk:3` glyph keys. P-value semantics are
-special only for the conventional fallback applied to unresolved asterisk
-anchors after explicit definition matching fails.
+Known symbol markers such as `†`, `‡`, `§`, `¶`, `#`, `|`, brace-like marker
+glyphs, and asterisk runs are structural footnote-definition evidence when they
+start a local table/footer definition and are followed by any non-empty
+definition body. Do not require the body to contain p-value wording or other
+semantic vocabulary. Statistical footer lines can define repeated asterisk runs
+such as `*`, `**`, and `***` in one comma-separated line; these are split into
+separate definition records with `asterisk:1`, `asterisk:2`, and `asterisk:3`
+glyph keys. P-value semantics are special only for the conventional fallback
+applied to unresolved asterisk anchors after explicit definition matching
+fails.
 Distinct symbol markers in one contiguous footer block, such as `* Race ...
 †Education ... ‡Smoking ... §Income ...`, are split into separate definition
 records without requiring whitespace between the glyph and definition body.
@@ -316,6 +366,12 @@ Metadata records the page-furniture filter:
 - `page_furniture_definition_line_suppression_count`
 - `page_furniture_suppressed_definition_cluster_ids`
 
+Metadata also records pre-footnote suppression counts:
+
+- `math_unit_anchor_suppression_count`
+- `subscript_anchor_suppression_count`
+- `word_like_subscript_anchor_suppression_count`
+
 ## R Surface
 
 R loads this artifact as data first, then exposes review helpers.
@@ -323,6 +379,7 @@ R loads this artifact as data first, then exposes review helpers.
 Current R helpers:
 
 - `footnote_anchors_df()`
+- `footnote_footers_df()`
 - `footnote_definitions_df()`
 - `footnote_links_df()`
 - `show_paper_footnotes()`
@@ -330,6 +387,7 @@ Current R helpers:
 Tableone-aligned object:
 
 - `ObservedFootnotes`
+- `Footers`
 - `Anchors`
 - `Definitions`
 - `Links`

@@ -76,9 +76,10 @@ A reference mention is an observed marker in a paper source that points to a
 bibliography entry.
 
 The initial implemented source is numeric table-cell markers that were detected
-as cell text annotations, especially numeric superscripts attached to row-label
-study/source names. These are bibliography references, not table footnotes, when
-they have no local table-note definition.
+as cell text annotations, including numeric superscripts attached to row-label
+study/source names and column-header citation phrases. These are bibliography
+references, not table footnotes, when they have no local table-note definition
+and match an entry in the paper's own bibliography.
 
 Important fields:
 

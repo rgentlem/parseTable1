@@ -65,6 +65,17 @@ Detection is geometry-first:
 - close attachment to adjacent text
 - correct coordinate frame
 
+Inline marker detection also allows same-height trailing glyphs when they are
+attached to numeric or comparator-like text, including values containing `±`.
+This covers marker-font symbols that a PDF exposes as ordinary-looking
+characters, while still keeping subscript notation such as `S_I` and `AIR_g`
+as `subscript` annotations rather than footnote anchors.
+
+Annotation metadata may include source fonts and raw glyph text when extraction
+normalized a symbol-font character. That metadata is diagnostic evidence only;
+the annotation `text` remains the visible marker text used by downstream
+footnote linking.
+
 For rotated or sideways-transformed tables, annotation `bbox` values use the
 same coordinate frame as the table cell bboxes, recorded in table-level
 `metadata.coordinate_frame`. The extractor persists the transform source bbox

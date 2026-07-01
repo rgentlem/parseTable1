@@ -57,6 +57,7 @@ from table1_parser.paper_footnotes import (
     build_paper_footnote_definition_blocks_from_pdf,
     build_paper_footnote_definition_candidates,
     build_paper_footnote_definition_lines_from_extracted_tables,
+    build_paper_footnote_footers_from_extracted_tables,
     find_table_footer_definition_blocks,
     filter_footnote_definition_lines_for_page_furniture,
     link_paper_footnotes,
@@ -523,6 +524,10 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         table1_continuation_groups=table1_continuation_groups,
     )
     paper_footnote_anchors_before_linking = list(paper_footnotes.anchors)
+    table_footers = build_paper_footnote_footers_from_extracted_tables(
+        extracted_tables,
+        table1_continuation_groups=table1_continuation_groups,
+    )
     table_local_footnote_definition_lines = (
         build_paper_footnote_definition_lines_from_extracted_tables(
             extracted_tables,
@@ -558,6 +563,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     paper_footnotes = link_paper_footnotes(
         paper_footnotes.model_copy(
             update={
+                "footers": table_footers,
                 "definitions": paper_footnote_definitions,
                 "metadata": {
                     **paper_footnotes.metadata,
@@ -569,6 +575,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
                         }
                     ),
                     **footnote_page_furniture_metadata,
+                    "footer_count_from_extracted_tables": len(table_footers),
                     "definition_line_count_from_extracted_tables": len(table_local_footnote_definition_lines),
                     "definition_block_count_from_pdf": len(pdf_footnote_definition_blocks),
                     "definition_footer_block_count_from_pdf": len(table_footer_pdf_definition_blocks),
@@ -579,7 +586,8 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
                     "definitions_status": "built",
                 },
             }
-        )
+        ),
+        bibliography_label_keys={entry.label_key for entry in bibliography_entries},
     )
     table_profiles = build_table_profiles(resolved_tables)
     parse_quality_reports = []

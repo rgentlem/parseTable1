@@ -87,6 +87,31 @@ class FootnoteDefinitionCandidateLine(BaseModel):
     notes: list[str] = Field(default_factory=list)
 
 
+class FootnoteFooterRow(BaseModel):
+    """One extracted row that belongs to a table-local footer region."""
+
+    row_idx: int = Field(ge=0)
+    raw_cells: list[str] = Field(default_factory=list)
+    text: str
+
+
+class FootnoteFooter(BaseModel):
+    """One table-local footer region detected from extracted table geometry."""
+
+    footer_id: str
+    table_id: str
+    visual_id: str | None = None
+    page_num: int = Field(ge=1)
+    source_scope: FootnoteSourceScope = "table_note"
+    source_artifact: str = "extracted_tables.json"
+    detection_basis: str
+    start_row_idx: int = Field(ge=0)
+    end_row_idx: int = Field(ge=0)
+    raw_text: str
+    rows: list[FootnoteFooterRow] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)
+
+
 class FootnoteInferredMeaning(BaseModel):
     """A structured conventional meaning inferred without an explicit definition."""
 
@@ -121,6 +146,7 @@ class PaperFootnotes(BaseModel):
     paper_id: str
     source_pdf: str
     anchors: list[FootnoteAnchor] = Field(default_factory=list)
+    footers: list[FootnoteFooter] = Field(default_factory=list)
     definitions: list[FootnoteDefinition] = Field(default_factory=list)
     links: list[FootnoteLink] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)

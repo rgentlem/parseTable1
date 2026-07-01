@@ -64,16 +64,19 @@ clusters, and generic ignored regions. It is built before table extraction,
 passed into extraction as an early geometry mask, and written even when no
 repeated page furniture is found.
 
-`paper_footnotes.json` records detected footnote anchors, candidate definitions,
-and glyph-key links as a paper-level review artifact. It is written even when no
-anchors or definitions are found.
+`paper_footnotes.json` records detected table-local footer regions, footnote
+anchors, candidate definitions, and glyph-key links as a paper-level review
+artifact. It is written even when no anchors or definitions are found.
 Definition candidates are fed first by footer rows preserved in
-`extracted_tables.json`: rows after the last value-matrix row that start a
-marker definition are grouped with adjacent continuation rows in extracted row
-order. PyMuPDF contiguous page text blocks are the PDF fallback source, not
-isolated page lines. A table-footer finder uses table bboxes, horizontal
-overlap, vertical adjacency, and continuation-group visual identity to classify
-complete PDF text blocks as table-local footer blocks before glyph-key linking.
+`extracted_tables.json`: `find_table_footer_rows()` prefers rows below a
+bottom table rule that is itself below the last value-matrix row, then falls
+back to rows after the last value-matrix row when rule evidence is unavailable.
+Rows that start a marker definition are grouped with adjacent continuation rows
+in extracted row order. PyMuPDF contiguous page text blocks are the PDF fallback
+source, not isolated page lines. A table-footer finder uses table bboxes,
+horizontal overlap, vertical adjacency, and continuation-group visual identity
+to classify complete PDF text blocks as table-local footer blocks before
+glyph-key linking.
 Remaining PDF text blocks can still become page-bottom notes. Candidate blocks
 may start with a marker or contain embedded marker definitions after nearby
 explanatory prose. A single table-footer block can yield several definition
@@ -81,9 +84,10 @@ records, for example `*`, `†`, `‡`, `§`, `**`, and `***` definitions. Repea
 page-furniture regions remain a late footnote guardrail for overlapping
 table-cell anchors and page-text definition candidate blocks that survive early
 extraction masking.
-Numeric row-label bibliography markers are removed from table-footnote link
-counts when they have no local table-note definition and are represented instead
-through `paper_bibliography.json`.
+Numeric table-cell bibliography markers are removed from table-footnote link
+counts when they have no local table-note definition and match the paper's
+bibliography entries; they are represented instead through
+`paper_bibliography.json`.
 
 `paper_bibliography.json` records the paper's own numbered bibliography entries
 and observed reference markers linked to those entries. Bibliography entries are
@@ -206,6 +210,10 @@ The extractor still scores candidates, but the score is now diagnostic rather th
   bboxes as the source-region boundary before coordinate transformation. On
   two-column pages this keeps the rotated table plus its footer in one source
   column while excluding upright article text in the other column.
+- if a backend explicit table box mixes upright article text with a rotated
+  table, derive a separate rotated-block candidate from the contiguous vertical
+  PyMuPDF text block inside that box and let normal candidate deduplication
+  choose between the original mixed box and the recovered rotated table.
 - remove repeated page furniture before candidate refinement. Extraction records
   `metadata.page_furniture_overlap` when a candidate bbox touches an ignored
   region and `metadata.page_furniture_mask` when words, chars, or rows were
@@ -234,6 +242,11 @@ This is the parser's record of what came out of the PDF layer.
 That does not always mean “what one backend reported verbatim.” If the backend emits one fused model column but the table bbox, word positions, and wide horizontal rules clearly support a better grid, extraction may refine that grid before writing `ExtractedTable`.
 
 For rotated refinements, the recovered `table_cells`, `row_bounds`, and `horizontal_rules` may be expressed in a table-local normalized coordinate frame rather than the original page frame. That is intentional: later stages use those values as structural boundaries. Extraction records `geometry_transform_source_bbox`, `geometry_transform_transposed`, and `geometry_transform_applied` so later annotation code can transform page characters into the same coordinate frame when needed.
+
+For mixed backend boxes repaired into rotated-block candidates, extraction also
+records `orientation_strategy`, `rotated_block_candidate`, and the
+`source_mixed_table_bbox` so review can see that the final table came from a
+geometry-derived subregion rather than the full backend table box.
 
 For explicit tables, extraction may also record the visible first-word x-position for each first-column row label. This exists because backend cell boxes often describe the full column boundary, while the actual text inside that cell may be indented. Normalization uses that compact word-position metadata for indentation inference while preserving the original cell boxes as grid geometry.
 
@@ -294,6 +307,13 @@ The shared text cleaning layer currently does things like:
 - repair a narrow set of known extractor glyph failures
 
 One example of that last category is a broken replacement character such as `�0.12` being repaired to `<=0.12` in parser-facing text.
+
+Some symbol-font repairs happen earlier, during PyMuPDF character extraction,
+because font context is needed to know that an extracted character such as `6`
+is really `±` or that a symbol-font comma is really `<`. Those repairs feed
+word/grid reconstruction and preserve raw glyph provenance on character
+records. Parser-facing text cleaning remains the later table-text normalization
+layer.
 
 Important design rule:
 
@@ -1020,7 +1040,7 @@ When a parse looks wrong, inspect the outputs in this order.
    If the parse succeeded but the columns, p-values, headers, or row classifications look suspicious, inspect this artifact for deterministic quality warnings.
 
 13. `paper_footnotes.json`
-   If superscripts, subscripts, or note markers matter, inspect this artifact for anchors, candidate definitions, math/unit suppression metadata, and resolved, ambiguous, inferred, or unresolved glyph-key links.
+   If superscripts, subscripts, or note markers matter, inspect this artifact for detected table-local footer regions, anchors, candidate definitions, math/unit suppression metadata, and resolved, ambiguous, inferred, or unresolved glyph-key links.
 
 14. `paper_bibliography.json`
    If numeric study/source markers look like bibliography references, inspect this artifact for the paper's fixed reference-list entries, observed marker links, and per-paper coverage diagnostics.
