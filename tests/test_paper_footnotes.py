@@ -651,8 +651,8 @@ def test_filter_footnote_definition_lines_for_page_furniture() -> None:
     assert metadata["page_furniture_suppressed_definition_cluster_ids"] == ["cluster:header"]
 
 
-def test_build_definition_lines_from_pdf_collects_positioned_marker_lines(monkeypatch) -> None:
-    """PyMuPDF page lines should become positioned definition candidate lines."""
+def test_build_definition_lines_from_pdf_collects_positioned_marker_blocks(monkeypatch) -> None:
+    """PyMuPDF page text blocks should remain contiguous definition candidates."""
 
     class FakeRect:
         height = 800.0
@@ -708,16 +708,16 @@ def test_build_definition_lines_from_pdf_collects_positioned_marker_lines(monkey
     lines = build_paper_footnote_definition_lines_from_pdf("paper.pdf")
 
     assert fake_document.closed is True
-    assert len(lines) == 3
-    assert lines[0].line_id == "page-1-line-0"
-    assert lines[0].raw_text == "a Table note text."
-    assert lines[0].bbox == (50.0, 140.0, 180.0, 152.0)
+    assert len(lines) == 1
+    assert lines[0].line_id == "page-1-block-0"
+    assert lines[0].raw_text == (
+        "a Table note text. significance. a Represents the Chi-square test. "
+        "HbA1c: glycated hemoglobin. p -values in bold. Body prose without a marker. "
+        "112.0 [90.0, 138.0] † Bottom note text."
+    )
+    assert lines[0].bbox == (40.0, 140.0, 260.0, 742.0)
     assert lines[0].page_height == 800.0
-    assert lines[0].source_artifact == "pymupdf_page_text_lines"
-    assert lines[1].line_id == "page-1-line-1"
-    assert lines[1].raw_text == "significance. a Represents the Chi-square test."
-    assert lines[2].line_id == "page-1-line-5"
-    assert lines[2].raw_text == "† Bottom note text."
+    assert lines[0].source_artifact == "pymupdf_page_text_blocks"
 
 
 def test_definition_candidates_do_not_split_decimal_values_as_numbered_notes() -> None:

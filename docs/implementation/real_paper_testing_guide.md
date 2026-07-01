@@ -9,8 +9,8 @@ Corpus-Driven Hardening Of Extraction, Normalization, Semantics, Footnotes, And 
 The goal is to work through real papers in a reproducible order, identify the
 first artifact where structure goes wrong, and fix the earliest parser stage
 that owns the problem. The current priority is to review the remaining
-footnote/reference issues after the early page-furniture mask and trailing-trim
-retirement.
+footnote/reference issues after the early page-furniture mask, trailing-trim
+retirement, and table-footer block finder.
 
 All paper paths below are relative to:
 
@@ -23,14 +23,16 @@ All paper paths below are relative to:
 Latest reference run:
 
 ```text
-outputs/testpapers_page_furniture_mask_retired_trim_20260701
+outputs/testpapers_footer_blocks_20260701_final
 ```
 
 The current refreshed baseline is
-`outputs/testpapers_page_furniture_mask_retired_trim_20260701`. It was produced
-after building `paper_page_furniture.json` before extraction, applying ignored
-regions as an early mask, and retiring broad trailing large-gap/text-spread row
-cleanup. Older generated `outputs/` runs should not be treated as current.
+`outputs/testpapers_footer_blocks_20260701_final`. It was produced after
+building `paper_page_furniture.json` before extraction, applying ignored regions
+as an early mask, retiring broad trailing large-gap/text-spread row cleanup, and
+using contiguous PyMuPDF text blocks plus table geometry to identify complete
+table-local footer blocks. Older generated `outputs/` runs should not be
+treated as current.
 
 Current footnote summary:
 
@@ -38,15 +40,17 @@ Current footnote summary:
 PDFs: 27
 parse command failures: 0
 paper_footnotes:
-  anchors: 486
-  definitions: 329
-  links: 486
-  resolved links: 370
+  anchors: 447
+  definitions: 739
+  links: 447
+  resolved links: 375
   inferred links: 54
-  ambiguous links: 6
-  unresolved links: 56
-  math/unit anchors suppressed before footnote linking: 37
-  page-furniture definition lines suppressed: 46
+  ambiguous links: 7
+  unresolved links: 11
+  math/unit anchors suppressed before footnote linking: 39
+  word-like subscript anchors suppressed before footnote linking: 2
+  PDF text blocks classified as table footers: 56
+  page-furniture definition blocks suppressed: 48
 extraction page-furniture mask:
   extracted tables with mask metadata: 77
   page words removed before extraction/refinement: 1163
@@ -59,14 +63,10 @@ Current papers with unresolved or ambiguous footnote links:
 - `Ethnic Differences in the Relationship Between Insulin Sensitivity and
   Insulin Response` has 3 unresolved links: residual `letter:i`, `letter:x`,
   and `letter:g` false markers on the rescued p5 table.
-- `Journal of Periodontology - 2015 - Eke` has 6 unresolved and 2 ambiguous
-  links. The previous small-letter geometry false positives are gone in the
-  full-corpus baseline; the remaining issues are numeric citation-like markers
-  and one paragraph-symbol ambiguity.
-- `Science-Advanaced-Planetary Health Diet and risk of mortality and chronic
-  diseases` has 6 unresolved links and 1 ambiguous link.
-- `mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older
-  Adults` has 3 unresolved and 3 ambiguous numeric links.
+- `Journal of Periodontology - 2015 - Eke` has 5 unresolved and 7 ambiguous
+  links. Remaining unresolved links are one residual small-letter false marker
+  and numeric citation-like markers; ambiguous links are repeated table/page
+  footer definitions with only paper-level scope.
 - `periodontis2` has 3 unresolved numeric body-cell links.
 
 Resolved since the prior baseline:
@@ -76,9 +76,19 @@ Resolved since the prior baseline:
 - `Association between anthropometric indices and chronic kidney disease` now
   resolves its 2 dagger links and converts 160 formerly conventional inferred
   p-value-star links into explicit same-table footer links.
+- `Science-Advanaced-Planetary Health Diet and risk of mortality and chronic
+  diseases` now resolves its Table 1 `*`, `†`, `‡`, and `§` links from the
+  complete footer block on the continued page. `CO₂`, `I²`, `P_Begg`, and
+  `P_Egger` are suppressed as notation or word-like subscripts rather than
+  unresolved footnotes.
+- `mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older
+  Adults` no longer has unresolved or ambiguous footnote links in the current
+  baseline.
 - Early page-furniture masking plus trailing-trim retirement reduces the
   full-corpus footnote issue count from 669 unresolved / 16 ambiguous links to
   56 unresolved / 6 ambiguous links.
+- The footer-block finder reduces the current full-corpus footnote issue count
+  from 56 unresolved / 6 ambiguous links to 11 unresolved / 7 ambiguous links.
 - Eke drops from 529 unresolved / 11 ambiguous links to 6 unresolved / 2
   ambiguous links in the full-corpus baseline.
 
@@ -111,7 +121,7 @@ For each checklist item:
     anchors but no definitions, because the definition line started with
     explanatory prose rather than a marker.
   - Current result: fixed in
-    `outputs/testpapers_page_furniture_mask_retired_trim_20260701`; Table 1
+    `outputs/testpapers_footer_blocks_20260701_final`; Table 1
     `a`/`b` links are resolved, and Table 2 asterisk p-value markers are now
     conventional `inferred` links rather than unresolved footnotes.
 
@@ -125,11 +135,13 @@ For each checklist item:
     rotated table plus footer and excluding upright article text in the other
     page column.
   - Current full-corpus result:
-    `outputs/testpapers_page_furniture_mask_retired_trim_20260701` extracts page
+    `outputs/testpapers_footer_blocks_20260701_final` extracts page
     7 with no `letter:t`, `letter:r`, or `letter:l` anchors.
     `paper_footnotes.json` builds the page 7 `†` and `‡` definitions from
     extracted footer row blocks, including their continuation rows. Remaining
-    links are 6 unresolved and 2 ambiguous, mostly numeric citation-like markers.
+    links are 5 unresolved and 7 ambiguous: mostly numeric citation-like markers
+    and repeated table/page footer definitions that currently only link at
+    paper-level scope.
 
 - [x] **C0.2** Review bibliographic superscripts versus table footnotes.
   - PDF path: `papers_from_laha/Helicobacter pylori infection in the United States beyond NHANES- a scoping review of seroprevalence estimates by racial and ethnic groups.pdf`
@@ -161,7 +173,7 @@ For each checklist item:
   - Strong signal: 58 unresolved anchors were statistical-significance
     asterisks, often attached to p-values such as `<0.001***`.
   - Current result: fixed in
-    `outputs/testpapers_page_furniture_mask_retired_trim_20260701`; Table 1,
+    `outputs/testpapers_footer_blocks_20260701_final`; Table 1,
     Table 2, and Table 3 each have local `*`, `**`, and `***` definitions linked
     by same-table scope.
   - The previous 7 row-label unit exponents are now suppressed before
@@ -180,18 +192,18 @@ For each checklist item:
     and 160 conventional inferred p-value-star links because local symbol
     footer definitions were not harvested.
   - Current result: fixed in
-    `outputs/testpapers_page_furniture_mask_retired_trim_20260701`. Known symbol
+    `outputs/testpapers_footer_blocks_20260701_final`. Known symbol
     markers such as `†`, `‡`, and `*` now define any non-empty local footer text;
     this is a structural footnote rule, not a p-value rule.
 
-- [ ] **C0.6** Review ambiguous footnote linking where definitions exist but are
+- [x] **C0.6** Review ambiguous footnote linking where definitions exist but are
   not unique.
   - PDF paths:
     1. `papers_from_laha/mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017.pdf`
-  - Current artifact issue: MDPI Mediterranean has
-    3 ambiguous links and 3 unresolved numeric links.
-  - Decide whether ambiguity comes from duplicate definitions, repeated page
-    furniture, or too-broad matching scope.
+  - Previous artifact issue: MDPI Mediterranean had 3 ambiguous links and 3
+    unresolved numeric links.
+  - Current result: `outputs/testpapers_footer_blocks_20260701_final` has 0
+    unresolved and 0 ambiguous footnote links for this paper.
 
 - [ ] **C0.7** Review unresolved table-reference resolution before worrying
   about figures.
@@ -241,7 +253,7 @@ supplement-only or out-of-scope references.
   - PDF path: `papers_from_laha/Ethnic Differences in the Relationship Between Insulin Sensitivity and Insulin Response.pdf`
   - Table: `Ethnic Differences in the Relationship Between Insulin Sensitivity and Insulin Response-p5-t0`
   - Current status: `rescued`; the prior `collapsed_grid_unrecovered` failure is
-    no longer present in `outputs/testpapers_page_furniture_mask_retired_trim_20260701`.
+    no longer present in `outputs/testpapers_footer_blocks_20260701_final`.
   - Remaining issue: 3 residual unresolved small-letter false footnote markers
     on the rescued table.
 

@@ -70,7 +70,7 @@ Non-scope:
    - Include table footnotes, page notes, and caption-adjacent notes when available.
    - Verify the artifact can represent unresolved and ambiguous links.
    - Real-paper pass: 28 fixture PDFs parsed without CLI failures. Generated artifacts included resolved table-note links, unresolved p-value marker anchors, and ambiguous glyph-key matches.
-   - Follow-up fix: `metabolic` Table 1 p-value markers now resolve because PyMuPDF page-line harvesting keeps embedded definitions such as `significance. a Represents ... b Represents ...` when they classify as local table notes.
+   - Follow-up fix: `metabolic` Table 1 p-value markers now resolve because PyMuPDF text-block harvesting keeps embedded definitions such as `significance. a Represents ... b Represents ...` when they classify as local table notes.
    - Follow-up fix: `stroke` Table 1-3 statistical-significance asterisks now resolve because repeated asterisk runs are preserved on anchors and comma-separated footer definitions are split into `*`, `**`, and `***` records.
    - Review note: page-note candidates can include journal/download boilerplate and repeated marginal text; keep links review-only until pruning is improved.
 
@@ -119,7 +119,7 @@ Non-scope:
      P-value semantics are limited to the existing conventional fallback for
      unresolved asterisk anchors after explicit definition matching fails.
    - Implemented: the 2026-07-01 corpus run in
-     `outputs/testpapers_page_furniture_mask_retired_trim_20260701` resolves the
+     `outputs/testpapers_footer_blocks_20260701_final` resolves the
      `cardiovascular` Table 1 double-dagger footer and the anthropometric CKD
      dagger/star footer definitions.
 
@@ -128,7 +128,24 @@ Non-scope:
      value-matrix row, using extracted row order.
    - Append adjacent non-marker rows to the current marker definition block so
      multiline footers preserved by rotated extraction are not truncated to one
-     PyMuPDF page line.
-   - Prefer same-table extracted-footer definitions over same-table page-line
-     definitions during linking, so global page-line duplicates do not make a
+     PyMuPDF text line.
+   - Prefer same-table extracted-footer definitions over same-table PDF-text
+     definitions during linking, so global PDF-text duplicates do not make a
      fuller table-local definition ambiguous.
+
+16. [x] Add a table-footer block finder for PDF text geometry
+   - Harvest PyMuPDF page text as contiguous text blocks rather than isolated
+     lines.
+   - Classify complete PDF text blocks as table-local footers when they are
+     vertically adjacent to a table bbox, overlap the table horizontally, and do
+     not cross into the next table region.
+   - Carry Table 1 continuation-group visual IDs into footnote scoping so a
+     footer on an uncaptioned terminal fragment can resolve anchors from earlier
+     fragments of the same visual table.
+   - Split distinctive symbol markers inside one footer block, including glued
+     forms such as `†Education` and comma-separated forms such as `*`, `**`,
+     `***`.
+   - Implemented: the 2026-07-01 corpus run in
+     `outputs/testpapers_footer_blocks_20260701_final` resolves the Planetary
+     Health Table 1 `*`, `†`, `‡`, and `§` links and keeps stroke and
+     anthropometric CKD explicit footer links resolved.

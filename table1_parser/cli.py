@@ -54,9 +54,10 @@ from table1_parser.parse import (
 )
 from table1_parser.paper_footnotes import (
     build_paper_footnote_anchor_inventory,
+    build_paper_footnote_definition_blocks_from_pdf,
     build_paper_footnote_definition_candidates,
     build_paper_footnote_definition_lines_from_extracted_tables,
-    build_paper_footnote_definition_lines_from_pdf,
+    find_table_footer_definition_blocks,
     filter_footnote_definition_lines_for_page_furniture,
     link_paper_footnotes,
     paper_footnotes_to_payload,
@@ -508,6 +509,10 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         normalized_tables,
         value_column_indices_by_table_id=value_column_indices_by_table_id,
     )
+    table1_continuation_groups, merged_table1_tables = build_table1_continuation_artifacts(
+        normalized_tables,
+        column_header_schemas,
+    )
     paper_footnotes = build_paper_footnote_anchor_inventory(
         paper_id=paper_stem,
         source_pdf=pdf_path,
@@ -515,14 +520,28 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         extracted_tables=extracted_tables,
         column_header_schemas=column_header_schemas,
         paper_page_furniture=paper_page_furniture,
+        table1_continuation_groups=table1_continuation_groups,
     )
     paper_footnote_anchors_before_linking = list(paper_footnotes.anchors)
     table_local_footnote_definition_lines = (
-        build_paper_footnote_definition_lines_from_extracted_tables(extracted_tables)
+        build_paper_footnote_definition_lines_from_extracted_tables(
+            extracted_tables,
+            table1_continuation_groups=table1_continuation_groups,
+        )
     )
-    page_footnote_definition_lines = build_paper_footnote_definition_lines_from_pdf(pdf_path)
+    pdf_footnote_definition_blocks = build_paper_footnote_definition_blocks_from_pdf(pdf_path)
+    table_footer_pdf_definition_blocks = find_table_footer_definition_blocks(
+        pdf_footnote_definition_blocks,
+        extracted_tables,
+        table1_continuation_groups=table1_continuation_groups,
+    )
+    table_footer_pdf_block_ids = {line.line_id for line in table_footer_pdf_definition_blocks}
+    page_footnote_definition_lines = [
+        line for line in pdf_footnote_definition_blocks if line.line_id not in table_footer_pdf_block_ids
+    ]
     paper_footnote_definition_lines = [
         *table_local_footnote_definition_lines,
+        *table_footer_pdf_definition_blocks,
         *page_footnote_definition_lines,
     ]
     filtered_footnote_definition_lines, footnote_page_furniture_metadata = (
@@ -534,6 +553,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     paper_footnote_definitions = build_paper_footnote_definition_candidates(
         filtered_footnote_definition_lines,
         extracted_tables,
+        table1_continuation_groups=table1_continuation_groups,
     )
     paper_footnotes = link_paper_footnotes(
         paper_footnotes.model_copy(
@@ -544,13 +564,15 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
                     "source_artifacts": sorted(
                         {
                             *paper_footnotes.metadata.get("source_artifacts", []),
-                            "pymupdf_page_text_lines",
+                            "pymupdf_page_text_blocks",
                             "paper_page_furniture.json",
                         }
                     ),
                     **footnote_page_furniture_metadata,
                     "definition_line_count_from_extracted_tables": len(table_local_footnote_definition_lines),
-                    "definition_line_count_from_pdf": len(page_footnote_definition_lines),
+                    "definition_block_count_from_pdf": len(pdf_footnote_definition_blocks),
+                    "definition_footer_block_count_from_pdf": len(table_footer_pdf_definition_blocks),
+                    "definition_line_count_from_pdf": len(pdf_footnote_definition_blocks),
                     "definition_line_count": len(paper_footnote_definition_lines),
                     "definition_line_count_after_page_furniture": len(filtered_footnote_definition_lines),
                     "definition_count": len(paper_footnote_definitions),
@@ -560,10 +582,6 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         )
     )
     table_profiles = build_table_profiles(resolved_tables)
-    table1_continuation_groups, merged_table1_tables = build_table1_continuation_artifacts(
-        normalized_tables,
-        column_header_schemas,
-    )
     parse_quality_reports = []
     for table_index, table in enumerate(normalized_tables):
         row_classifications = classify_rows(table)

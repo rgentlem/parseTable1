@@ -95,7 +95,8 @@ Initial math/unit exponent rule:
 - Treat a numeric superscript or subscript as math/unit notation when it is
   directly attached to a numeric base or unit-like expression. Portable examples
   include `10^9`, `10^6`, `m^2`, `cm^3`, `kg/m^2`, `mL/min/1.73m^2`, `x10^9/L`,
-  and `×10^9/L`.
+  `×10^9/L`, `CO₂`, and single-letter exponent/statistic notation such as
+  `I²`.
 - Evidence can come from `attached_to_text` ending in a numeric base, a
   multiplication-by-ten pattern, a slash-separated unit expression, or a
   letter-unit token immediately before the superscript.
@@ -106,6 +107,9 @@ Initial math/unit exponent rule:
   `cell_text_annotations.json`; a future metadata counter or dedicated
   annotation classification field may expose how many candidate anchors were
   rejected for this reason.
+- Multi-letter alphabetic subscript text such as `P_Begg` or `P_Egger` remains
+  inspectable in `cell_text_annotations.json` but should not be promoted to a
+  `FootnoteAnchor`; letter footnote markers are single visible glyphs.
 
 ## P-Value Significance Stars
 
@@ -163,17 +167,24 @@ Optional fields:
 - `source_artifact`
 - `notes`
 
-Definition candidates may be built from typed source lines before they are
-promoted into definition records. Source lines should preserve raw text, page,
+Definition candidates may be built from typed source blocks before they are
+promoted into definition records. Source blocks should preserve raw text, page,
 optional bbox and page height, source scope, source ID, table ID, visual ID, and
-source artifact. These input lines are not a persisted top-level artifact.
-The parse command builds source lines first from extracted table footer rows,
+source artifact. These input blocks are not a persisted top-level artifact.
+The parse command builds source blocks first from extracted table footer rows,
 then from PyMuPDF page text geometry. Extracted-table footer rows are identified
 structurally: after the last value-matrix row, a row that starts or embeds a
 definition marker opens a table-note block, and adjacent following rows without
 a new marker are appended as continuation text until the next marker block.
-Page-text lines are then classified as table notes or page-bottom notes.
-Candidate source lines may start with a marker, or may contain embedded marker
+PyMuPDF geometry is consumed as contiguous text blocks rather than isolated
+lines. `find_table_footer_definition_blocks()` classifies complete PDF text
+blocks as table-local footer blocks when they sit just below a table bbox,
+overlap the table horizontally, and do not cross into the next table region.
+Continuation-group identity can supply the parent visual ID for an uncaptioned
+continued fragment, so a footer on the terminal fragment can resolve anchors on
+earlier fragments of the same visual table. Remaining page-text blocks can be
+classified as page-bottom notes.
+Candidate source blocks may start with a marker, or may contain embedded marker
 definitions after preceding abbreviation or significance prose, such as
 `significance. a Represents ... b Represents ...`. Bracketed and
 parenthesized markers such as `[a]` and `(a)` are canonicalized to the visible
@@ -188,7 +199,10 @@ one comma-separated line; these are split into separate definition records with
 `asterisk:1`, `asterisk:2`, and `asterisk:3` glyph keys. P-value semantics are
 special only for the conventional fallback applied to unresolved asterisk
 anchors after explicit definition matching fails.
-Before candidate promotion, page-text lines overlapping
+Distinct symbol markers in one contiguous footer block, such as `* Race ...
+†Education ... ‡Smoking ... §Income ...`, are split into separate definition
+records without requiring whitespace between the glyph and definition body.
+Before candidate promotion, page-text blocks overlapping
 `paper_page_furniture.json` ignored regions are suppressed and counted in
 metadata. Extracted-table footer rows are already table-local source evidence
 and are not suppressed by page-furniture geometry.
@@ -196,7 +210,7 @@ and are not suppressed by page-furniture geometry.
 `raw_text` preserves extracted text. `clean_text` is normalized only enough to
 support matching and review. `definition_text` may drop the leading glyph when
 that split is unambiguous. When multiple definitions come from one table footer
-line, each definition keeps the full footer line in `raw_text` and the marker
+block, each definition keeps the full footer block in `raw_text` and the marker
 specific meaning in `definition_text`.
 
 ## Link Record

@@ -70,14 +70,17 @@ anchors or definitions are found.
 Definition candidates are fed first by footer rows preserved in
 `extracted_tables.json`: rows after the last value-matrix row that start a
 marker definition are grouped with adjacent continuation rows in extracted row
-order. PyMuPDF page text lines remain a fallback source with bbox and page-height
-provenance so table-local notes and page-bottom notes can be classified
-deterministically before glyph-key linking. Candidate lines may start with a
-marker or contain embedded marker definitions after nearby explanatory prose. A
-single table-footer line can yield several definition records, for example `*`,
-`**`, and `***` statistical-significance definitions. Repeated page-furniture
-regions remain a late footnote guardrail for overlapping table-cell anchors and
-page-text definition candidate lines that survive early extraction masking.
+order. PyMuPDF contiguous page text blocks are the PDF fallback source, not
+isolated page lines. A table-footer finder uses table bboxes, horizontal
+overlap, vertical adjacency, and continuation-group visual identity to classify
+complete PDF text blocks as table-local footer blocks before glyph-key linking.
+Remaining PDF text blocks can still become page-bottom notes. Candidate blocks
+may start with a marker or contain embedded marker definitions after nearby
+explanatory prose. A single table-footer block can yield several definition
+records, for example `*`, `†`, `‡`, `§`, `**`, and `***` definitions. Repeated
+page-furniture regions remain a late footnote guardrail for overlapping
+table-cell anchors and page-text definition candidate blocks that survive early
+extraction masking.
 Numeric row-label bibliography markers are removed from table-footnote link
 counts when they have no local table-note definition and are represented instead
 through `paper_bibliography.json`.
@@ -87,8 +90,10 @@ and observed reference markers linked to those entries. Bibliography entries are
 extracted from `paper_markdown.md`/`paper_sections.json` before table extraction;
 table-cell reference-marker links are added later after cell text annotations are
 available.
-Numeric unit/exponent superscripts such as `10^9` and `m^2` are suppressed
-before footnote-anchor creation and counted in metadata.
+Numeric unit/exponent superscripts and subscripts such as `10^9`, `m^2`,
+`CO₂`, and `I²` are suppressed before footnote-anchor creation and counted in
+metadata. Multi-letter subscript words such as `P_Begg` and `P_Egger` are also
+kept out of the footnote anchor inventory.
 P-value asterisk markers without explicit definitions can be emitted as
 structured `inferred` links with conventional threshold meanings.
 
@@ -120,13 +125,13 @@ PDF
   -> column header schemas
   -> resolved tables
   -> parsed source-cell values
+  -> Table 1 continuation inspection artifacts over source fragments
+  -> paper footnotes
   -> table profiles over resolved tables
   -> table definitions over resolved tables
   -> parsed tables
   -> table processing statuses over resolved tables
   -> parse quality reports
-  -> Table 1 continuation inspection artifacts over source fragments
-  -> paper footnotes
 
 PDF
   -> paper markdown

@@ -22,6 +22,7 @@ from table1_parser.schemas import (
     FootnoteLink,
     PaperFootnotes,
     PaperPageFurniture,
+    Table1ContinuationGroup,
     TableCell,
 )
 from table1_parser.text_cleaning import clean_text
@@ -43,15 +44,18 @@ DEFINITION_SYMBOL_MARKER_TOKEN_PATTERN = (
 DEFINITION_SYMBOL_SEPARATOR_PATTERN = r"[\s.)\]:;,\-–—]+"
 DEFINITION_TEXT_SEPARATOR_PATTERN = r"(?:\s+|[\s.)\]:;,\-–—]*\s+)"
 DEFINITION_BODY_START_PATTERN = r"[A-Z0-9(*†‡§¶#]"
+DEFINITION_ATTACHED_SYMBOL_BODY_START_PATTERN = r"(?=[A-Z0-9(])"
 DEFINITION_LINE_START_PATTERN = re.compile(
     rf"^\s*(?:"
     rf"(?:{DEFINITION_SYMBOL_MARKER_TOKEN_PATTERN}){DEFINITION_SYMBOL_SEPARATOR_PATTERN}\S"
+    rf"|(?:{DEFINITION_SYMBOL_MARKER_TOKEN_PATTERN}){DEFINITION_ATTACHED_SYMBOL_BODY_START_PATTERN}"
     rf"|(?:{DEFINITION_MARKER_TOKEN_PATTERN}){DEFINITION_TEXT_SEPARATOR_PATTERN}{DEFINITION_BODY_START_PATTERN}"
     rf")"
 )
 DEFINITION_LINE_EMBEDDED_PATTERN = re.compile(
     rf"(?<=[.;:]\s)(?:"
     rf"(?:{DEFINITION_SYMBOL_MARKER_TOKEN_PATTERN}){DEFINITION_SYMBOL_SEPARATOR_PATTERN}\S"
+    rf"|(?:{DEFINITION_SYMBOL_MARKER_TOKEN_PATTERN}){DEFINITION_ATTACHED_SYMBOL_BODY_START_PATTERN}"
     rf"|(?:{DEFINITION_MARKER_TOKEN_PATTERN}){DEFINITION_TEXT_SEPARATOR_PATTERN}{DEFINITION_BODY_START_PATTERN}"
     rf")"
 )
@@ -60,6 +64,11 @@ DEFINITION_MARKER_PATTERN = re.compile(
     rf"(?P<glyph>{DEFINITION_MARKER_TOKEN_PATTERN})"
     rf"{DEFINITION_TEXT_SEPARATOR_PATTERN}"
     rf"(?P<body>\S.*?)(?=(?:[.;,]\s+(?:{DEFINITION_MARKER_TOKEN_PATTERN})[\s.)\]:;,\-–—]+\S)|$)"
+)
+DEFINITION_SYMBOL_BLOCK_MARKER_PATTERN = re.compile(
+    rf"(?:^|(?<=[.;:,]\s)|(?<=\)\s)|(?<=\]\s))"
+    rf"(?P<glyph>{DEFINITION_SYMBOL_MARKER_TOKEN_PATTERN})"
+    rf"\s*(?=\S)"
 )
 TABLE_FOOTER_ATTACHED_MARKER_PATTERN = re.compile(r"^\s*(?P<glyph>[a-z])(?P<body>[A-Z]\S.*)$")
 TABLE_CAPTION_ROW_PATTERN = re.compile(r"^\s*(?:Table|Figure)\s+[A-Za-z]?\d+[A-Za-z]?\s*[:.]", re.IGNORECASE)
@@ -86,6 +95,7 @@ def build_paper_footnote_anchor_inventory(
     extracted_tables: Sequence[ExtractedTable] | None = None,
     column_header_schemas: Sequence[ColumnHeaderSchema] | None = None,
     paper_page_furniture: PaperPageFurniture | None = None,
+    table1_continuation_groups: Sequence[Table1ContinuationGroup] | None = None,
 ) -> PaperFootnotes:
     """Build a paper-level footnote artifact populated with anchor records only."""
     anchors: list[FootnoteAnchor] = []
@@ -93,9 +103,10 @@ def build_paper_footnote_anchor_inventory(
     suppressed_anchor_count = 0
     suppressed_anchor_cluster_ids: set[str] = set()
     math_unit_suppressed_anchor_count = 0
+    word_like_subscript_suppressed_anchor_count = 0
     schemas_by_table_id = {schema.table_id: schema for schema in column_header_schemas or []}
     extracted_by_table_id = {table.table_id: table for table in extracted_tables or []}
-    visual_id_by_table_id = _table_visual_ids(extracted_tables or [])
+    visual_id_by_table_id = _table_visual_ids(extracted_tables or [], table1_continuation_groups)
 
     for table_position, annotation_table in enumerate(cell_text_annotations):
         schema = schemas_by_table_id.get(annotation_table.table_id)
@@ -121,6 +132,10 @@ def build_paper_footnote_anchor_inventory(
             ):
                 math_unit_suppressed_anchor_count += 1
                 continue
+            glyph_kind, glyph_key, glyph_codepoints = glyph_fields(glyph_raw)
+            if glyph_kind == "letter" and len(unicodedata.normalize("NFKC", glyph_raw).strip()) > 1:
+                word_like_subscript_suppressed_anchor_count += 1
+                continue
             page_num = annotation_table.page_num or (
                 extracted_by_table_id.get(annotation_table.table_id).page_num
                 if annotation_table.table_id in extracted_by_table_id
@@ -136,7 +151,6 @@ def build_paper_footnote_anchor_inventory(
                     suppressed_anchor_count += 1
                     suppressed_anchor_cluster_ids.update(overlapping_cluster_ids)
                     continue
-            glyph_kind, glyph_key, glyph_codepoints = glyph_fields(glyph_raw)
             source_role = None
             notes: list[str] = []
             if schema is None:
@@ -221,20 +235,21 @@ def build_paper_footnote_anchor_inventory(
             "page_furniture_anchor_suppression_count": suppressed_anchor_count,
             "page_furniture_suppressed_anchor_cluster_ids": sorted(suppressed_anchor_cluster_ids),
             "math_unit_anchor_suppression_count": math_unit_suppressed_anchor_count,
+            "word_like_subscript_anchor_suppression_count": word_like_subscript_suppressed_anchor_count,
             "definitions_status": "not_built",
             "links_status": "not_built",
         },
     )
 
 
-def build_paper_footnote_definition_lines_from_pdf(pdf_path: str) -> list[FootnoteDefinitionCandidateLine]:
-    """Collect positioned page text lines that may contain footnote definitions."""
+def build_paper_footnote_definition_blocks_from_pdf(pdf_path: str) -> list[FootnoteDefinitionCandidateLine]:
+    """Collect positioned contiguous page text blocks that may contain footnote definitions."""
     try:
         document = open_pymupdf_document(pdf_path)
     except Exception:  # noqa: BLE001
         return []
 
-    lines: list[FootnoteDefinitionCandidateLine] = []
+    blocks: list[FootnoteDefinitionCandidateLine] = []
     try:
         page_count = int(getattr(document, "page_count", 0))
         for page_index in range(page_count):
@@ -251,16 +266,19 @@ def build_paper_footnote_definition_lines_from_pdf(pdf_path: str) -> list[Footno
                     page_height = float(page_rect.height)
                 elif all(hasattr(page_rect, attr) for attr in ("y0", "y1")):
                     page_height = float(page_rect.y1) - float(page_rect.y0)
-            line_index = 0
+            block_index = 0
             for block in page_dict.get("blocks", []):
+                if block.get("type", 0) != 0:
+                    continue
+                block_text_parts: list[str] = []
+                bbox_parts: list[tuple[float, float, float, float]] = []
                 for page_line in block.get("lines", []):
-                    span_text_parts: list[str] = []
-                    bbox_parts: list[tuple[float, float, float, float]] = []
+                    line_text_parts: list[str] = []
                     for span in page_line.get("spans", []):
                         span_text = str(span.get("text", "")).strip()
                         bbox_value = span.get("bbox")
                         if span_text:
-                            span_text_parts.append(span_text)
+                            line_text_parts.append(span_text)
                         if all(hasattr(bbox_value, attr) for attr in ("x0", "y0", "x1", "y1")):
                             bbox_parts.append(
                                 (
@@ -272,50 +290,120 @@ def build_paper_footnote_definition_lines_from_pdf(pdf_path: str) -> list[Footno
                             )
                         elif isinstance(bbox_value, (list, tuple)) and len(bbox_value) == 4:
                             bbox_parts.append(tuple(float(part) for part in bbox_value))
-                    raw_text = " ".join(span_text_parts).strip()
-                    current_line_index = line_index
-                    line_index += 1
-                    if (
-                        not raw_text
-                        or not bbox_parts
-                        or (
-                            DEFINITION_LINE_START_PATTERN.search(raw_text) is None
-                            and DEFINITION_LINE_EMBEDDED_PATTERN.search(raw_text) is None
-                        )
-                    ):
-                        continue
-                    bbox = (
-                        min(part[0] for part in bbox_parts),
-                        min(part[1] for part in bbox_parts),
-                        max(part[2] for part in bbox_parts),
-                        max(part[3] for part in bbox_parts),
+                    if line_text_parts:
+                        block_text_parts.append(" ".join(line_text_parts))
+                raw_text = " ".join(block_text_parts).strip()
+                current_block_index = block_index
+                block_index += 1
+                if (
+                    not raw_text
+                    or not bbox_parts
+                    or (
+                        DEFINITION_LINE_START_PATTERN.search(raw_text) is None
+                        and DEFINITION_LINE_EMBEDDED_PATTERN.search(raw_text) is None
                     )
-                    lines.append(
-                        FootnoteDefinitionCandidateLine(
-                            line_id=f"page-{page_num}-line-{current_line_index}",
-                            page_num=page_num,
-                            raw_text=raw_text,
-                            source_scope="body_text",
-                            source_id=f"page-{page_num}-line-{current_line_index}",
-                            bbox=bbox,
-                            page_height=page_height,
-                            line_index=current_line_index,
-                            source_artifact="pymupdf_page_text_lines",
-                        )
+                ):
+                    continue
+                bbox = (
+                    min(part[0] for part in bbox_parts),
+                    min(part[1] for part in bbox_parts),
+                    max(part[2] for part in bbox_parts),
+                    max(part[3] for part in bbox_parts),
+                )
+                blocks.append(
+                    FootnoteDefinitionCandidateLine(
+                        line_id=f"page-{page_num}-block-{current_block_index}",
+                        page_num=page_num,
+                        raw_text=raw_text,
+                        source_scope="body_text",
+                        source_id=f"page-{page_num}-block-{current_block_index}",
+                        bbox=bbox,
+                        page_height=page_height,
+                        line_index=current_block_index,
+                        source_artifact="pymupdf_page_text_blocks",
+                        notes=["contiguous_pdf_text_block"],
                     )
+                )
     finally:
         close = getattr(document, "close", None)
         if callable(close):
             close()
-    return lines
+    return blocks
+
+
+def build_paper_footnote_definition_lines_from_pdf(pdf_path: str) -> list[FootnoteDefinitionCandidateLine]:
+    """Collect positioned page text blocks that may contain footnote definitions."""
+    return build_paper_footnote_definition_blocks_from_pdf(pdf_path)
+
+
+def find_table_footer_definition_blocks(
+    definition_blocks: Sequence[FootnoteDefinitionCandidateLine],
+    extracted_tables: Sequence[ExtractedTable],
+    table1_continuation_groups: Sequence[Table1ContinuationGroup] | None = None,
+) -> list[FootnoteDefinitionCandidateLine]:
+    """Identify complete table-local footer blocks from positioned PDF text blocks."""
+    table_bboxes: dict[str, tuple[float, float, float, float]] = {}
+    tables_by_id = {table.table_id: table for table in extracted_tables}
+    visual_id_by_table_id = _table_visual_ids(extracted_tables, table1_continuation_groups)
+    for table in extracted_tables:
+        cell_bboxes = [cell.bbox for cell in table.cells if cell.bbox is not None]
+        if not cell_bboxes:
+            continue
+        table_bboxes[table.table_id] = (
+            min(bbox[0] for bbox in cell_bboxes),
+            min(bbox[1] for bbox in cell_bboxes),
+            max(bbox[2] for bbox in cell_bboxes),
+            max(bbox[3] for bbox in cell_bboxes),
+        )
+
+    footer_blocks: list[FootnoteDefinitionCandidateLine] = []
+    for block_index, block in enumerate(definition_blocks):
+        if block.source_scope != "body_text" or block.bbox is None:
+            continue
+        left, top, right, _ = block.bbox
+        for candidate_table_id, table_bbox in table_bboxes.items():
+            table = tables_by_id[candidate_table_id]
+            if table.page_num != block.page_num:
+                continue
+            table_left, _, table_right, table_bottom = table_bbox
+            next_table_top = min(
+                (
+                    other_bbox[1]
+                    for other_table_id, other_bbox in table_bboxes.items()
+                    if other_table_id != candidate_table_id
+                    and tables_by_id[other_table_id].page_num == block.page_num
+                    and other_bbox[1] > table_bottom
+                ),
+                default=None,
+            )
+            if next_table_top is not None and top >= next_table_top - 2.0:
+                continue
+            overlap = max(0.0, min(right, table_right) - max(left, table_left))
+            block_width = max(right - left, 1.0)
+            if top >= table_bottom - 2.0 and top - table_bottom <= 96.0 and overlap / block_width >= 0.25:
+                footer_blocks.append(
+                    block.model_copy(
+                        update={
+                            "source_scope": "table_note",
+                            "source_id": f"{candidate_table_id}:footer_block:{block_index}",
+                            "table_id": candidate_table_id,
+                            "visual_id": visual_id_by_table_id.get(candidate_table_id),
+                            "confidence": block.confidence if block.confidence is not None else 0.82,
+                            "notes": [*block.notes, "table_footer_block_after_table_bbox"],
+                        }
+                    )
+                )
+                break
+    return footer_blocks
 
 
 def build_paper_footnote_definition_lines_from_extracted_tables(
     extracted_tables: Sequence[ExtractedTable],
+    table1_continuation_groups: Sequence[Table1ContinuationGroup] | None = None,
 ) -> list[FootnoteDefinitionCandidateLine]:
     """Collect table-local footer definition blocks from extracted table rows."""
     lines: list[FootnoteDefinitionCandidateLine] = []
-    visual_id_by_table_id = _table_visual_ids(extracted_tables)
+    visual_id_by_table_id = _table_visual_ids(extracted_tables, table1_continuation_groups)
     for table in extracted_tables:
         rows_by_idx: dict[int, list[TableCell]] = {}
         for cell in table.cells:
@@ -422,12 +510,13 @@ def filter_footnote_definition_lines_for_page_furniture(
 def build_paper_footnote_definition_candidates(
     definition_lines: Sequence[FootnoteDefinitionCandidateLine],
     extracted_tables: Sequence[ExtractedTable] | None = None,
+    table1_continuation_groups: Sequence[Table1ContinuationGroup] | None = None,
 ) -> list[FootnoteDefinition]:
     """Extract candidate footnote definition records from local note text."""
     definitions: list[FootnoteDefinition] = []
     table_bboxes: dict[str, tuple[float, float, float, float]] = {}
     tables_by_id = {table.table_id: table for table in extracted_tables or []}
-    visual_id_by_table_id = _table_visual_ids(extracted_tables or [])
+    visual_id_by_table_id = _table_visual_ids(extracted_tables or [], table1_continuation_groups)
     for table in extracted_tables or []:
         cell_bboxes = [cell.bbox for cell in table.cells if cell.bbox is not None]
         if not cell_bboxes:
@@ -489,13 +578,7 @@ def build_paper_footnote_definition_candidates(
             notes.append("definition_line_skipped:not_local_note_scope")
             continue
         confidence = confidence if confidence is not None else 0.8
-        parsed_definitions: list[tuple[str, str]] = []
-        for match in DEFINITION_MARKER_PATTERN.finditer(raw_text):
-            glyph_raw = _definition_glyph_from_marker(match.group("glyph"))
-            definition_text = clean_text(match.group("body"))
-            if not glyph_raw or not definition_text:
-                continue
-            parsed_definitions.append((glyph_raw, definition_text))
+        parsed_definitions = _parse_definition_markers(raw_text)
         if (
             not parsed_definitions
             and source_scope == "table_note"
@@ -888,11 +971,15 @@ def _is_math_unit_notation_marker(
     compact = re.sub(r"\s+", "", context)
     if re.search(r"(?:×|x|\*)?10$", compact, flags=re.IGNORECASE):
         return True
+    if annotation_type == "superscript" and re.fullmatch(r"[A-Za-z]", compact):
+        return True
     if re.search(r"(?:^|[^A-Za-z0-9])(?:m|cm|mm|kg|g|mg|ug|μg|µg|l|dl|ml|mol|mmol|umol|μmol|µmol)$", compact, flags=re.IGNORECASE):
         return True
     if "/" in compact and re.search(r"[A-Za-zµμ][A-Za-zµμ0-9.]*$", compact):
         return True
     if re.search(r"\d+(?:\.\d+)?[A-Za-zµμ]+$", compact):
+        return True
+    if annotation_type == "subscript" and re.search(r"[A-Z]{1,4}$", compact):
         return True
     return False
 
@@ -951,7 +1038,39 @@ def _definition_glyph_from_marker(marker_text: str) -> str:
     return glyph
 
 
-def _table_visual_ids(extracted_tables: Sequence[ExtractedTable]) -> dict[str, str]:
+def _parse_definition_markers(raw_text: str) -> list[tuple[str, str]]:
+    """Parse explicit footnote definitions from one local note block."""
+    symbol_matches = list(DEFINITION_SYMBOL_BLOCK_MARKER_PATTERN.finditer(raw_text))
+    if symbol_matches:
+        parsed_definitions: list[tuple[str, str]] = []
+        for match_index, match in enumerate(symbol_matches):
+            glyph_raw = _definition_glyph_from_marker(match.group("glyph"))
+            body_start = match.end()
+            body_end = (
+                symbol_matches[match_index + 1].start()
+                if match_index + 1 < len(symbol_matches)
+                else len(raw_text)
+            )
+            body_text = raw_text[body_start:body_end].strip().lstrip(".)]:;,–—- ")
+            definition_text = clean_text(body_text.rstrip(" \t\n\r,;"))
+            if glyph_raw and definition_text:
+                parsed_definitions.append((glyph_raw, definition_text))
+        return parsed_definitions
+
+    parsed_definitions: list[tuple[str, str]] = []
+    for match in DEFINITION_MARKER_PATTERN.finditer(raw_text):
+        glyph_raw = _definition_glyph_from_marker(match.group("glyph"))
+        definition_text = clean_text(match.group("body"))
+        if not glyph_raw or not definition_text:
+            continue
+        parsed_definitions.append((glyph_raw, definition_text))
+    return parsed_definitions
+
+
+def _table_visual_ids(
+    extracted_tables: Sequence[ExtractedTable],
+    table1_continuation_groups: Sequence[Table1ContinuationGroup] | None = None,
+) -> dict[str, str]:
     visual_id_by_table_id: dict[str, str] = {}
     for table in extracted_tables:
         table_number = table.metadata.get("table_number") or (table.metadata.get("signals") or {}).get(
@@ -966,4 +1085,8 @@ def _table_visual_ids(extracted_tables: Sequence[ExtractedTable]) -> dict[str, s
                 table_number = parsed[1]
         if table_number is not None:
             visual_id_by_table_id[table.table_id] = visual_id_for("table", str(table_number))
+    for group in table1_continuation_groups or []:
+        visual_id = visual_id_for("table", str(group.table_number))
+        for table_id in group.source_table_ids:
+            visual_id_by_table_id[table_id] = visual_id
     return visual_id_by_table_id

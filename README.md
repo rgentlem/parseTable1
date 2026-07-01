@@ -23,15 +23,16 @@ current reference run, the papers to inspect next, and the known failure groups.
 Current reference baseline:
 
 ```text
-outputs/testpapers_reference_20260630_153142
+outputs/testpapers_footer_blocks_20260701_final
 ```
 
 That run parsed the 27-PDF corpus under
 `/Users/robert/Projects/Epiconnector/testpapers` with no command failures and
 no missing core artifacts. At this point the table parser is being treated as
-the current baseline: the next review work is focused on footnote and reference
-artifacts, especially false-positive footnote anchors, bibliographic superscript
-citations, statistical-significance markers, and unresolved table references.
+the current baseline: the next review work is focused on the remaining
+footnote/reference artifacts, especially false-positive footnote anchors,
+numeric citation-like markers, ambiguous repeated footer definitions, and
+unresolved table references.
 
 The extraction layer still uses the `pymupdf4llm` backend with raw PyMuPDF word,
 character, and rule-geometry refinements for difficult cases. A later extraction

@@ -137,17 +137,17 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     _patch_paper_context(monkeypatch)
     monkeypatch.setattr(
         cli,
-        "build_paper_footnote_definition_lines_from_pdf",
+        "build_paper_footnote_definition_blocks_from_pdf",
         lambda _: [
             FootnoteDefinitionCandidateLine(
-                line_id="page-1-line-99",
+                line_id="page-1-block-99",
                 page_num=1,
                 raw_text="a Page-bottom note.",
                 source_scope="body_text",
                 bbox=(40.0, 730.0, 240.0, 742.0),
                 page_height=800.0,
                 line_index=99,
-                source_artifact="pymupdf_page_text_lines",
+                source_artifact="pymupdf_page_text_blocks",
             )
         ],
     )
