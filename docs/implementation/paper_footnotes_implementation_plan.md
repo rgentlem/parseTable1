@@ -119,7 +119,7 @@ Non-scope:
      P-value semantics are limited to the existing conventional fallback for
      unresolved asterisk anchors after explicit definition matching fails.
    - Implemented: the 2026-07-01 corpus run in
-     `outputs/testpapers_double_dagger_current_20260701` resolves the
+     `outputs/testpapers_page_furniture_mask_retired_trim_20260701` resolves the
      `cardiovascular` Table 1 double-dagger footer and the anthropometric CKD
      dagger/star footer definitions.
 

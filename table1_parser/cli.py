@@ -223,9 +223,10 @@ def _handle_extract(args: argparse.Namespace) -> int:
         return 1
 
     extractor = _build_default_extractor()
+    paper_page_furniture = build_paper_page_furniture(args.pdf_path, paper_id=Path(args.pdf_path).stem)
 
     try:
-        tables = extractor.extract(args.pdf_path)
+        tables = extractor.extract(args.pdf_path, paper_page_furniture=paper_page_furniture)
     except Exception as exc:
         _print_stderr(_error_payload(str(exc)))
         return 1
@@ -248,7 +249,10 @@ def _handle_normalize(args: argparse.Namespace) -> int:
 
     try:
         extractor = _build_default_extractor()
-        normalized_tables = normalize_extracted_tables(extractor.extract(args.pdf_path))
+        paper_page_furniture = build_paper_page_furniture(args.pdf_path, paper_id=Path(args.pdf_path).stem)
+        normalized_tables = normalize_extracted_tables(
+            extractor.extract(args.pdf_path, paper_page_furniture=paper_page_furniture)
+        )
     except Exception as exc:
         _print_stderr(_error_payload(str(exc)))
         return 1
@@ -423,9 +427,13 @@ def _handle_review_variable_plausibility(args: argparse.Namespace) -> int:
 def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     """Run the deterministic parse pipeline and build the paper-level context artifacts."""
     extractor = _build_default_extractor()
-    extracted_tables = extractor.extract(pdf_path)
-    cell_text_annotations = build_cell_text_annotation_tables_from_pdf(pdf_path, extracted_tables)
     paper_page_furniture = build_paper_page_furniture(pdf_path, paper_id=Path(pdf_path).stem)
+    extracted_tables = extractor.extract(pdf_path, paper_page_furniture=paper_page_furniture)
+    cell_text_annotations = build_cell_text_annotation_tables_from_pdf(
+        pdf_path,
+        extracted_tables,
+        paper_page_furniture=paper_page_furniture,
+    )
     normalized_tables = normalize_extracted_tables(extracted_tables)
     column_header_schemas = build_column_header_schemas(normalized_tables, extracted_tables)
     resolved_table_set = build_resolved_table_set(normalized_tables, column_header_schemas)

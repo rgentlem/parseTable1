@@ -129,7 +129,7 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     calls = {"extract": 0}
 
     class FakeExtractor:
-        def extract(self, _: str) -> list[ExtractedTable]:
+        def extract(self, _: str, *, paper_page_furniture: object | None = None) -> list[ExtractedTable]:
             calls["extract"] += 1
             return [_build_extracted_table()]
 
@@ -328,7 +328,7 @@ def test_cli_parse_marks_descriptive_tables_with_empty_definitions_as_failed(tmp
     )
 
     class FakeExtractor:
-        def extract(self, _: str) -> list[ExtractedTable]:
+        def extract(self, _: str, *, paper_page_furniture: object | None = None) -> list[ExtractedTable]:
             return [_build_extracted_table()]
 
     monkeypatch.setattr(cli, "build_extractor", lambda _: FakeExtractor())
@@ -409,7 +409,7 @@ def test_cli_review_variable_plausibility_writes_review_output_when_available(tm
     pdf_path.write_text("placeholder")
 
     class FakeExtractor:
-        def extract(self, _: str) -> list[ExtractedTable]:
+        def extract(self, _: str, *, paper_page_furniture: object | None = None) -> list[ExtractedTable]:
             return [_build_extracted_table()]
 
     class FakeReviewParser:
@@ -465,7 +465,7 @@ def test_cli_review_variable_plausibility_warns_and_writes_empty_review_when_con
     pdf_path.write_text("placeholder")
 
     class FakeExtractor:
-        def extract(self, _: str) -> list[ExtractedTable]:
+        def extract(self, _: str, *, paper_page_furniture: object | None = None) -> list[ExtractedTable]:
             return [_build_extracted_table()]
 
     monkeypatch.setattr(cli, "build_extractor", lambda _: FakeExtractor())
@@ -495,7 +495,7 @@ def test_cli_review_variable_plausibility_skips_estimate_result_tables(tmp_path,
     review_calls = {"count": 0}
 
     class FakeExtractor:
-        def extract(self, _: str) -> list[ExtractedTable]:
+        def extract(self, _: str, *, paper_page_furniture: object | None = None) -> list[ExtractedTable]:
             return [_build_estimate_table()]
 
     class FakeReviewParser:
@@ -546,7 +546,7 @@ def test_cli_review_variable_plausibility_writes_debug_monitoring_when_llm_debug
     pdf_path.write_text("placeholder")
 
     class FakeExtractor:
-        def extract(self, _: str) -> list[ExtractedTable]:
+        def extract(self, _: str, *, paper_page_furniture: object | None = None) -> list[ExtractedTable]:
             return [_build_extracted_table()]
 
     class FakeReviewParser:
@@ -607,7 +607,7 @@ def test_cli_extract_writes_default_output_file(tmp_path, monkeypatch, capsys) -
     pdf_path.write_text("placeholder")
 
     class FakeExtractor:
-        def extract(self, _: str) -> list[object]:
+        def extract(self, _: str, *, paper_page_furniture: object | None = None) -> list[object]:
             return []
 
     monkeypatch.setattr(cli, "build_extractor", lambda _: FakeExtractor())
@@ -631,7 +631,7 @@ def test_cli_extract_stdout_preserves_json_output(tmp_path, monkeypatch, capsys)
             return {"table_id": "tbl-1", "mode": mode}
 
     class FakeExtractor:
-        def extract(self, _: str) -> list[object]:
+        def extract(self, _: str, *, paper_page_furniture: object | None = None) -> list[object]:
             return [FakeTable()]
 
     monkeypatch.setattr(cli, "build_extractor", lambda _: FakeExtractor())
@@ -650,7 +650,7 @@ def test_cli_normalize_writes_default_output_file(tmp_path, monkeypatch, capsys)
     pdf_path.write_text("placeholder")
 
     class FakeExtractor:
-        def extract(self, _: str) -> list[ExtractedTable]:
+        def extract(self, _: str, *, paper_page_furniture: object | None = None) -> list[ExtractedTable]:
             return [_build_extracted_table()]
 
     monkeypatch.setattr(cli, "build_extractor", lambda _: FakeExtractor())
@@ -674,7 +674,7 @@ def test_cli_normalize_stdout_preserves_json_output(tmp_path, monkeypatch, capsy
     pdf_path.write_text("placeholder")
 
     class FakeExtractor:
-        def extract(self, _: str) -> list[ExtractedTable]:
+        def extract(self, _: str, *, paper_page_furniture: object | None = None) -> list[ExtractedTable]:
             return [_build_extracted_table()]
 
     monkeypatch.setattr(cli, "build_extractor", lambda _: FakeExtractor())

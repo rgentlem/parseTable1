@@ -22,9 +22,11 @@ outputs/papers/<paper_stem>/paper_page_furniture.json
 The parser should write a valid empty artifact when no repeated page furniture
 is found.
 
-Current status: `table1-parser parse` writes this artifact for every paper.
-R inspection helpers can load and display clusters and ignored regions. Footnote
-filtering uses ignored regions to suppress overlapping table-cell anchors and
+Current status: `table1-parser parse` builds this artifact before table
+extraction and writes it for every paper. R inspection helpers can load and
+display clusters and ignored regions. Extraction uses ignored regions to mask
+repeated page-furniture words, chars, and explicit-grid rows; footnote filtering
+uses the same regions as a late guardrail for overlapping table-cell anchors and
 definition candidate lines.
 
 ## Top-Level Shape
@@ -156,6 +158,9 @@ headers. In that case `page_fraction` may be low across the full paper, but
 
 ## Consumption Status
 
-Footnote code uses this artifact to suppress definition candidate lines and
-table-cell anchors whose bboxes overlap repeated page-furniture regions. Later
-extraction stages may also use it after the artifact is reviewed on real papers.
+Extraction uses this artifact before candidate refinement. It records
+`page_furniture_overlap` metadata when a candidate bbox touches ignored regions
+and `page_furniture_mask` metadata when positioned words, chars, or explicit-grid
+rows are removed. Cell-text annotation and footnote code consume the same
+regions as guardrails so repeated page furniture is not reintroduced as small
+markers or definition lines.

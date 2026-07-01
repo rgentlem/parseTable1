@@ -91,7 +91,7 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Table processing status | `TableProcessingStatus`, `TableProcessingAttempt` | Written now as `table_processing_status.json` by `parse` | Persist resolved-table rescue attempts, source fragment IDs and diagnostics, terminal failure stage, and failure reason without overloading semantic artifacts |
 | Parse quality diagnostics | `ParseQualityReport` | Written now as `parse_quality_reports.json` by `parse` | Persist deterministic row, column, and value-pattern diagnostics without changing parse behavior |
 | Paper footnotes | `PaperFootnotes` | Written now as `paper_footnotes.json` by `parse` | Persist footnote anchors, PyMuPDF page-line definition candidates, page-furniture and math/unit suppression metadata, explicit glyph-key links, and structured conventional p-value-star inferences as reviewable evidence without rewriting table text or parsed values |
-| Paper page furniture | `PaperPageFurniture` | Written now as `paper_page_furniture.json` by `parse` | Persist repeated page text observations, clusters, and ignored regions for footnote suppression without changing table parsing |
+| Paper page furniture | `PaperPageFurniture` | Written now as `paper_page_furniture.json` by `parse` | Persist repeated page text observations, clusters, and ignored regions used as an early extraction mask and as a late footnote guardrail |
 
 Design note for future multitable support:
 
@@ -173,6 +173,8 @@ Important current `metadata` keys produced by extraction may include:
 - `caption_detection_space`
 - `table_cells`
 - `first_column_text_x0_by_row`
+- `page_furniture_overlap`
+- `page_furniture_mask`
 - `trailing_non_table_rows`
 
 `TableCell` design components:
@@ -204,11 +206,16 @@ Design intent:
   union bbox as the source table region. This source bbox defines the column
   before coordinate transformation, so a rotated table and its footer can stay
   together while upright article text in another page column is excluded.
-- legacy extraction may trim trailing non-table rows from non-block-scoped
-  candidates after the final numeric value-matrix row; the removed range and
-  reasons are recorded in `metadata.trailing_non_table_rows`. This is a fallback
-  behavior to retire once page-furniture ignore regions are available before
-  extraction.
+- repeated page furniture is detected before extraction and passed into the
+  extractor as ignored regions. Extraction records
+  `metadata.page_furniture_overlap.has_overlap` and related cluster IDs when a
+  candidate bbox touches ignored furniture; it records
+  `metadata.page_furniture_mask` when positioned words, chars, or explicit-grid
+  rows are actually removed.
+- extraction may remove explicit trailing continuation-page notes such as
+  `(Table 1 continues on next page)` and record the removed range in
+  `metadata.trailing_non_table_rows`. Broad footer/furniture cleanup belongs to
+  the earlier page-furniture mask, not to value-gap trailing-row heuristics.
 
 ## 2. `NormalizedTable` JSON
 
@@ -1197,7 +1204,10 @@ Current status:
 
 - canonical paper-level page-furniture schema exists now
 - written by the `parse` CLI command as `paper_page_furniture.json`
-- support artifact only; it suppresses overlapping footnote candidate lines and table-cell anchors but does not alter table extraction, table definitions, or parsed tables
+- built before table extraction and passed to the extractor as page-coordinate
+  ignored regions
+- still suppresses overlapping footnote candidate lines and table-cell anchors
+  as a late guardrail when extraction-side masking did not eliminate the text
 
 Current CLI path:
 
@@ -1225,7 +1235,8 @@ Design intent:
 - preserve raw page text in observations
 - store generic ignored regions without classifying them as header, footer, watermark, or boilerplate
 - expose thresholds and diagnostics in `metadata`
-- provide footnote-harvesting code with page regions to suppress
+- provide extraction, cell-text annotation, and footnote-harvesting code with
+  page regions to suppress
 
 ## Trace Wrappers vs Canonical Payloads
 

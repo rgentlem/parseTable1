@@ -420,11 +420,11 @@ def test_pymupdf4llm_extractor_uses_pymupdf_page_text_for_missing_caption(
     assert tables[0].metadata["table_number"] == 1
 
 
-def test_pymupdf4llm_extractor_trims_trailing_watermark_rows_from_explicit_table(
+def test_pymupdf4llm_extractor_does_not_trim_trailing_watermark_without_page_furniture_mask(
     tmp_path,
     monkeypatch,
 ) -> None:
-    """Blank rows plus footer/watermark text after the value matrix should not become table rows."""
+    """Broad trailing-row cleanup should not duplicate page-furniture masking."""
     pdf_path = tmp_path / "paper.pdf"
     pdf_path.write_text("placeholder")
     raw_rows = [
@@ -490,18 +490,9 @@ def test_pymupdf4llm_extractor_trims_trailing_watermark_rows_from_explicit_table
     tables = PyMuPDF4LLMExtractor(max_candidates=3, heuristic_confidence_threshold=0.0).extract(str(pdf_path))
 
     assert len(tables) == 1
-    assert tables[0].n_rows == 4
-    assert all("onlinelibrary" not in cell.text for cell in tables[0].cells)
-    assert tables[0].metadata["trailing_non_table_rows"] == {
-        "start_row_idx": 4,
-        "removed_row_count": 5,
-        "last_value_row_idx": 3,
-        "reasons": [
-            "multiple_blank_rows_after_last_value_row",
-            "text_spread_without_table_values_after_last_value_row",
-        ],
-        "gap_after_last_value_row": 2.0,
-    }
+    assert tables[0].n_rows == 9
+    assert any("onlinelibrary" in cell.text for cell in tables[0].cells)
+    assert tables[0].metadata["trailing_non_table_rows"] is None
 
 
 def test_pymupdf4llm_extractor_skips_tables_after_references_heading(tmp_path, monkeypatch) -> None:

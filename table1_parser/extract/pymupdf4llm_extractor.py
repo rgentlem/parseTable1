@@ -35,7 +35,12 @@ from table1_parser.extract.table_detector import (
     score_candidate,
 )
 from table1_parser.extract.table_selector import select_top_candidates
-from table1_parser.schemas import ExtractedTable, TableCell
+from table1_parser.page_furniture_mask import (
+    filter_positioned_items_for_page_furniture,
+    filter_table_rows_for_page_furniture,
+    page_furniture_cluster_ids_for_bbox,
+)
+from table1_parser.schemas import ExtractedTable, PaperPageFurniture, TableCell
 
 
 MODEL_HEADER_PATTERN = re.compile(r"\bmodel[_\s]*\d+\b", re.IGNORECASE)
@@ -64,10 +69,18 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
             else settings.heuristic_confidence_threshold
         )
 
-    def extract(self, pdf_path: str) -> list[ExtractedTable]:
+    def extract(
+        self,
+        pdf_path: str,
+        *,
+        paper_page_furniture: PaperPageFurniture | None = None,
+    ) -> list[ExtractedTable]:
         """Extract and rank raw table candidates from a PDF."""
         try:
-            candidates = self._detect_table_candidates(pdf_path)
+            candidates = self._detect_table_candidates(
+                pdf_path,
+                paper_page_furniture=paper_page_furniture,
+            )
         except Exception:
             return []
 
@@ -117,7 +130,12 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
             for table in tables
         ]
 
-    def _detect_table_candidates(self, pdf_path: str) -> list[DetectedTableCandidate]:
+    def _detect_table_candidates(
+        self,
+        pdf_path: str,
+        *,
+        paper_page_furniture: PaperPageFurniture | None = None,
+    ) -> list[DetectedTableCandidate]:
         try:
             import pymupdf4llm
         except ModuleNotFoundError as exc:
@@ -160,21 +178,46 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                         references_start_page_num = page_num
                 if in_references_section:
                     continue
+                page_word_mask_metadata: dict[str, object] | None = None
+                page_char_mask_metadata: dict[str, object] | None = None
                 if page is None:
                     page_words = []
                     page_chars = []
                     page_rule_segments = []
                     page_stroked_rule_segments = []
                 else:
-                    page_words = extract_page_words(page)
-                    page_chars = _extract_page_chars_with_page_num(page, page_num)
+                    page_words, page_word_mask_metadata = filter_positioned_items_for_page_furniture(
+                        extract_page_words(page),
+                        paper_page_furniture,
+                        page_num=page_num,
+                    )
+                    page_chars, page_char_mask_metadata = filter_positioned_items_for_page_furniture(
+                        _extract_page_chars_with_page_num(page, page_num),
+                        paper_page_furniture,
+                        page_num=page_num,
+                    )
                     page_rule_segments = extract_page_rule_segments(page)
                     page_stroked_rule_segments = extract_page_rule_segments(page, include_filled=False)
+                page_item_furniture_mask = {
+                    key: value
+                    for key, value in {
+                        "word_items": page_word_mask_metadata,
+                        "char_items": page_char_mask_metadata,
+                    }.items()
+                    if value is not None
+                }
                 page_candidates: list[DetectedTableCandidate] = []
                 table_boxes = [
                     box
                     for box in page_boxes
-                    if isinstance(box, dict) and box.get("table")
+                    if isinstance(box, dict)
+                    and box.get("table")
+                    and not page_furniture_cluster_ids_for_bbox(
+                        paper_page_furniture,
+                        page_num=page_num,
+                        bbox=_as_bbox((box.get("table") or {}).get("bbox")) or _box_bbox(box),
+                        min_overlap_fraction=0.8,
+                    )
                 ]
                 table_count = len(table_boxes)
                 table_box_bboxes = [
@@ -261,6 +304,32 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                     horizontal_rules = refinement["horizontal_rules"]
                     full_width_horizontal_rules = refinement["full_width_horizontal_rules"]
                     geometry_coordinate_frame = str(refinement["geometry_coordinate_frame"])
+                    table_bbox_cluster_ids = page_furniture_cluster_ids_for_bbox(
+                        paper_page_furniture,
+                        page_num=page_num,
+                        bbox=bbox,
+                        min_overlap_fraction=0.0,
+                    )
+                    page_furniture_overlap = {
+                        "source_artifact": "paper_page_furniture.json",
+                        "has_overlap": bool(table_bbox_cluster_ids),
+                        "table_bbox_cluster_ids": table_bbox_cluster_ids,
+                    }
+                    row_furniture_mask: dict[str, object] | None = None
+                    if geometry_coordinate_frame == "page":
+                        row_mask = filter_table_rows_for_page_furniture(
+                            raw_rows,
+                            cell_bboxes=cell_bboxes,
+                            row_bounds=row_bounds,
+                            paper_page_furniture=paper_page_furniture,
+                            page_num=page_num,
+                        )
+                        raw_rows = row_mask.raw_rows
+                        cell_bboxes = row_mask.cell_bboxes
+                        row_bounds = row_mask.row_bounds
+                        row_furniture_mask = row_mask.metadata
+                        if not raw_rows:
+                            continue
                     is_block_scoped_rotated_stream = (
                         geometry_coordinate_frame
                         in {
@@ -363,6 +432,15 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                                 "horizontal_rules": horizontal_rules,
                                 "full_width_horizontal_rules": full_width_horizontal_rules,
                                 "trailing_non_table_rows": trailing_non_table_rows,
+                                "page_furniture_overlap": page_furniture_overlap,
+                                "page_furniture_mask": {
+                                    key: value
+                                    for key, value in {
+                                        **page_item_furniture_mask,
+                                        "rows": row_furniture_mask,
+                                    }.items()
+                                    if value is not None
+                                },
                                 **orientation_metadata,
                             },
                         )
@@ -397,6 +475,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                     page=page,
                     page_text=page_text,
                     page_candidates=page_candidates,
+                    paper_page_furniture=paper_page_furniture,
                 )
                 if page is not None and page_words:
                     extracted_page_text = extract_page_text(page)
@@ -544,6 +623,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                                         "table_orientation": "rotated",
                                         "rotation_source": "pymupdf_page_line_direction",
                                         "rotation_confidence": round(vertical_confidence, 4),
+                                        "page_furniture_mask": page_item_furniture_mask,
                                     },
                                 }
                             )
@@ -600,6 +680,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                     chars=_extract_page_chars_with_page_num(page, page_num),
                     rule_segments=extract_page_rule_segments(page, include_filled=False),
                     layout_source="pymupdf_text_positions",
+                    paper_page_furniture=paper_page_furniture,
                 ):
                     candidates.append(
                         candidate.model_copy(
@@ -680,6 +761,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
         page: Any,
         page_text: str,
         page_candidates: list[DetectedTableCandidate],
+        paper_page_furniture: PaperPageFurniture | None = None,
     ) -> list[DetectedTableCandidate]:
         """Replace suspicious explicit page candidates with better text-layout candidates."""
         if page is None or not any(
@@ -700,6 +782,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
             chars=_extract_page_chars_with_page_num(page, page_num),
             rule_segments=extract_page_rule_segments(page, include_filled=False),
             layout_source="pymupdf_text_positions_rescue",
+            paper_page_furniture=paper_page_furniture,
         )
         if not rescue_candidates:
             return page_candidates

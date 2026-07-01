@@ -9,6 +9,7 @@ from pathlib import Path
 
 from table1_parser.context.visual_references import parse_visual_label, visual_id_for
 from table1_parser.extract.pymupdf_page_adapter import open_pymupdf_document
+from table1_parser.page_furniture_mask import page_furniture_cluster_ids_for_bbox as _page_furniture_cluster_ids_for_bbox
 from table1_parser.schemas import (
     CellTextAnnotationTable,
     ColumnHeaderSchema,
@@ -699,19 +700,11 @@ def page_furniture_cluster_ids_for_bbox(
     bbox: tuple[float, float, float, float] | None,
 ) -> list[str]:
     """Return repeated page-furniture cluster IDs whose page bbox overlaps `bbox`."""
-    if paper_page_furniture is None or page_num is None or bbox is None:
-        return []
-    left, top, right, bottom = bbox
-    if right <= left or bottom <= top:
-        return []
-    cluster_ids: set[str] = set()
-    for region in paper_page_furniture.ignored_regions:
-        if region.page_num != page_num:
-            continue
-        region_left, region_top, region_right, region_bottom = region.bbox
-        if min(right, region_right) > max(left, region_left) and min(bottom, region_bottom) > max(top, region_top):
-            cluster_ids.add(region.cluster_id)
-    return sorted(cluster_ids)
+    return _page_furniture_cluster_ids_for_bbox(
+        paper_page_furniture,
+        page_num=page_num,
+        bbox=bbox,
+    )
 
 
 def glyph_fields(glyph_raw: str) -> tuple[FootnoteGlyphKind, str, list[str]]:

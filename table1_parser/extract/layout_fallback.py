@@ -5,6 +5,11 @@ from __future__ import annotations
 import re
 from typing import NamedTuple
 
+from table1_parser.page_furniture_mask import (
+    filter_positioned_items_for_page_furniture,
+    page_furniture_cluster_ids_for_bbox,
+)
+from table1_parser.schemas import PaperPageFurniture
 from table1_parser.extract.table_detector import (
     DetectedTableCandidate,
     _is_rectangular,
@@ -32,7 +37,7 @@ CONTINUATION_PAGE_NOTE_PATTERN = re.compile(
 
 
 class TrimmedTableRows(NamedTuple):
-    """Candidate rows plus metadata after trailing non-table text removal."""
+    """Candidate rows plus metadata after trailing continuation-note removal."""
 
     raw_rows: list[list[str]]
     cell_bboxes: list[list[tuple[float, float, float, float] | None]]
@@ -206,7 +211,7 @@ def trim_trailing_non_table_rows(
     cell_bboxes: list[list[tuple[float, float, float, float] | None]] | None = None,
     row_bounds: list[tuple[float, float]] | None = None,
 ) -> TrimmedTableRows:
-    """Remove footer/watermark rows that trail a recovered table candidate."""
+    """Remove explicit trailing continuation-page notes from a table candidate."""
     rows = _normalize_rows(raw_rows)
     bboxes = cell_bboxes or []
     bounds = row_bounds or []
@@ -255,59 +260,7 @@ def trim_trailing_non_table_rows(
                 "continuation_table_number": continuation_table_number,
             },
         )
-    if len(rows) < 5:
-        return TrimmedTableRows(rows, bboxes, bounds, None)
-
-    data_row_indices = [
-        row_idx
-        for row_idx, row in enumerate(rows)
-        if _table_value_cell_count(row) >= (2 if len(row) >= 4 else 1)
-    ]
-    if len(data_row_indices) < 3:
-        return TrimmedTableRows(rows, bboxes, bounds, None)
-    last_data_row_idx = data_row_indices[-1]
-    if last_data_row_idx >= len(rows) - 1:
-        return TrimmedTableRows(rows, bboxes, bounds, None)
-
-    trailing_rows = rows[last_data_row_idx + 1 :]
-    trailing_nonempty_count = sum(_nonempty_cell_count(row) > 0 for row in trailing_rows)
-    trailing_blank_count = len(trailing_rows) - trailing_nonempty_count
-    trailing_text_spread_count = sum(
-        _nonempty_cell_count(row) >= 3 and _table_value_cell_count(row) <= 1
-        for row in trailing_rows
-    )
-    gap_after_last_data = None
-    if bounds and last_data_row_idx + 1 < len(bounds) and last_data_row_idx < len(bounds):
-        gap_after_last_data = round(
-            max(0.0, bounds[last_data_row_idx + 1][0] - bounds[last_data_row_idx][1]),
-            4,
-        )
-
-    reasons: list[str] = []
-    if trailing_blank_count >= 2:
-        reasons.append("multiple_blank_rows_after_last_value_row")
-    if trailing_text_spread_count and len(trailing_rows) >= 2:
-        reasons.append("text_spread_without_table_values_after_last_value_row")
-    if gap_after_last_data is not None and gap_after_last_data >= 24.0 and trailing_nonempty_count:
-        reasons.append("large_gap_after_last_value_row")
-    if not reasons and trailing_nonempty_count == 0:
-        reasons.append("blank_rows_after_last_value_row")
-    if not reasons:
-        return TrimmedTableRows(rows, bboxes, bounds, None)
-
-    keep_count = last_data_row_idx + 1
-    return TrimmedTableRows(
-        rows[:keep_count],
-        bboxes[:keep_count] if bboxes else bboxes,
-        bounds[:keep_count] if bounds else bounds,
-        {
-            "start_row_idx": keep_count,
-            "removed_row_count": len(rows) - keep_count,
-            "last_value_row_idx": last_data_row_idx,
-            "reasons": reasons,
-            "gap_after_last_value_row": gap_after_last_data,
-        },
-    )
+    return TrimmedTableRows(rows, bboxes, bounds, None)
 
 
 def _has_header_like_top_row(rows: list[list[str]]) -> bool:
@@ -595,10 +548,20 @@ def build_text_layout_candidates(
     chars: list[dict[str, object]] | None = None,
     rule_segments: list[tuple[float, float, float, float]] | None = None,
     layout_source: str = "text_positions",
+    paper_page_furniture: PaperPageFurniture | None = None,
 ) -> list[DetectedTableCandidate]:
     """Build scored candidates from page word and char geometry."""
-    page_chars = chars or []
-    lines = build_word_lines(words)
+    working_words, word_mask_metadata = filter_positioned_items_for_page_furniture(
+        words,
+        paper_page_furniture,
+        page_num=page_num,
+    )
+    page_chars, char_mask_metadata = filter_positioned_items_for_page_furniture(
+        chars or [],
+        paper_page_furniture,
+        page_num=page_num,
+    )
+    lines = build_word_lines(working_words)
 
     caption_indices = [index for index, line in enumerate(lines) if TABLE_CAPTION_PATTERN.search(str(line["text"]))]
     candidates: list[DetectedTableCandidate] = []
@@ -648,6 +611,8 @@ def build_text_layout_candidates(
         rows = trimmed.raw_rows
         cell_bboxes = trimmed.cell_bboxes
         content_lines = content_lines[: len(rows)]
+        if not rows or not content_lines:
+            continue
         caption = "\n".join(caption_parts)
         caption_signal = first_caption_metadata is not None
         strong_geometry = _has_strong_uncaptioned_table_geometry(rows)
@@ -655,6 +620,18 @@ def build_text_layout_candidates(
             continue
         left = min(float(word["x0"]) for line in content_lines for word in line["words"])
         right = max(float(word["x1"]) for line in content_lines for word in line["words"])
+        bbox = (
+            left,
+            float(segment_lines[0]["top"]),
+            right,
+            max(float(line["bottom"]) for line in content_lines),
+        )
+        table_bbox_cluster_ids = page_furniture_cluster_ids_for_bbox(
+            paper_page_furniture,
+            page_num=page_num,
+            bbox=bbox,
+            min_overlap_fraction=0.0,
+        )
         segments.append(
             {
                 "caption": caption if caption_signal else None,
@@ -664,13 +641,21 @@ def build_text_layout_candidates(
                 "rows": rows,
                 "cell_bboxes": cell_bboxes,
                 "row_bounds": trimmed.row_bounds,
-                "bbox": (
-                    left,
-                    float(segment_lines[0]["top"]),
-                    right,
-                    max(float(line["bottom"]) for line in content_lines),
-                ),
+                "bbox": bbox,
                 "trailing_non_table_rows": trimmed.metadata,
+                "page_furniture_overlap": {
+                    "source_artifact": "paper_page_furniture.json",
+                    "has_overlap": bool(table_bbox_cluster_ids),
+                    "table_bbox_cluster_ids": table_bbox_cluster_ids,
+                },
+                "page_furniture_mask": {
+                    key: value
+                    for key, value in {
+                        "word_items": word_mask_metadata,
+                        "char_items": char_mask_metadata,
+                    }.items()
+                    if value is not None
+                },
             }
         )
     for table_index, segment in enumerate(segments):
@@ -697,6 +682,8 @@ def build_text_layout_candidates(
                         "caption_signal": segment["caption_signal"],
                         "strong_uncaptioned_table_geometry": segment["strong_uncaptioned_table_geometry"],
                         "trailing_non_table_rows": segment["trailing_non_table_rows"],
+                        "page_furniture_overlap": segment["page_furniture_overlap"],
+                        "page_furniture_mask": segment["page_furniture_mask"],
                     },
                 )
             )

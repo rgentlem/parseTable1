@@ -27,6 +27,12 @@ Use this file as the persistent implementation ToDo list. When work resolves, ch
 
 When changing CLI behavior, persisted outputs, schema shape, markdown-context handling, or design assumptions, update the relevant `docs/*.md` files in the same change. Keep the design docs current.
 
+When updating or replacing a process, also remove, retire, or explicitly align
+all remaining artifacts, methods, docs, metadata fields, tests, and inspection
+paths from previous, less comprehensive approaches. Do not leave parallel
+cleanup or inference paths in place unless they have a clearly documented,
+non-overlapping purpose.
+
 If you change the implemented parse flow, the order of pipeline stages, the purpose of an intermediate artifact, or the paper-level/table-level outputs written by `table1-parser parse`, also update:
 
 - `docs/design/paper_parse_walkthrough.md`

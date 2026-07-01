@@ -7,7 +7,8 @@ from collections.abc import Mapping, Sequence
 from statistics import median
 from table1_parser.extract.layout_fallback import normalize_positioned_geometry_for_rotation
 from table1_parser.extract.pymupdf_page_adapter import extract_page_chars, open_pymupdf_document
-from table1_parser.schemas import CellTextAnnotation, CellTextAnnotationTable, ExtractedTable, TableCell
+from table1_parser.page_furniture_mask import filter_positioned_items_for_page_furniture
+from table1_parser.schemas import CellTextAnnotation, CellTextAnnotationTable, ExtractedTable, PaperPageFurniture, TableCell
 
 
 MARKER_SYMBOLS = {"*", "†", "‡", "§", "¶", "#", "|"}
@@ -29,6 +30,8 @@ def cell_text_annotation_tables_to_payload(
 def build_cell_text_annotation_tables_from_pdf(
     pdf_path: str,
     extracted_tables: Sequence[ExtractedTable],
+    *,
+    paper_page_furniture: PaperPageFurniture | None = None,
 ) -> list[CellTextAnnotationTable]:
     """Build cell text annotation artifacts using PyMuPDF character geometry."""
     page_chars_by_page: dict[int, list[dict[str, object]]] = {}
@@ -44,7 +47,11 @@ def build_cell_text_annotation_tables_from_pdf(
             for page_index in range(page_count):
                 page_num = page_index + 1
                 page = document.load_page(page_index)
-                page_chars_by_page[page_num] = extract_page_chars(page, page_num=page_num)
+                page_chars_by_page[page_num], _metadata = filter_positioned_items_for_page_furniture(
+                    extract_page_chars(page, page_num=page_num),
+                    paper_page_furniture,
+                    page_num=page_num,
+                )
         except Exception:  # noqa: BLE001
             page_chars_by_page = {}
             diagnostic = "char_geometry_unavailable"

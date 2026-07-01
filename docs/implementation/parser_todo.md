@@ -10,7 +10,7 @@ Current corpus-driven hardening guide:
 `docs/implementation/real_paper_testing_guide.md`. Use it for the ordered
 real-paper review loop across extraction, normalization, continuation handling,
 table semantics, footnote/reference artifacts, and mixed-family routing. The
-current retained reference run is `outputs/testpapers_double_dagger_current_20260701`.
+current retained reference run is `outputs/testpapers_page_furniture_mask_retired_trim_20260701`.
 
 1. [x] Add a parser-native column header schema artifact.
    Build `ColumnHeaderSchema` between `NormalizedTable` and `TableDefinition` so leaf columns, higher spanning header groups, group-to-leaf relationships, raw cell evidence, and coordinates are explicit before any tableone-style projection.
@@ -39,26 +39,36 @@ current retained reference run is `outputs/testpapers_double_dagger_current_2026
    Parser wiring G1.16-G1.20 is in place: `table1-parser parse` writes `resolved_tables.json`, builds `TableProfile` and `TableDefinition` over resolved working tables, keeps `parsed_cell_values.json` source-fragment keyed, and joins source value components into `ParsedTable.values` through resolved-row provenance. Remaining work includes continuation-level semantic hardening, status/source-fragment diagnostics, and corpus review.
    Continuation hardening G1.21-G1.23 is in place: accepted continuation body rows feed ordinary resolved-table row/level grouping, so leading continuation count/percent rows can attach to an open categorical parent from the base fragment; `table_processing_status.json` is keyed to resolved semantic tables and carries source table IDs plus structured source-fragment diagnostics; `continued_variable_integrations.json` is retained only as a source-fragment review artifact built from source-fragment definitions and is not consumed by canonical semantic parsing.
    Documentation/artifact contract G1.24-G1.27 is in place: `parsing_output_design.md` records the `resolved_tables.json` contract and source-fragment versus resolved-table artifact relationships; `paper_parse_walkthrough.md` shows resolved tables as the semantic input to profiles, definitions, parsed tables, paper table inventory, and status; no R inspection docs were changed because no real R inspection surface was added.
-   Verification G1.28-G1.33 is in place: focused resolved-table regressions cover accepted explicit continuations, schema-rejected continuation candidates, continuation level attachment to a base-fragment parent, and unrelated same-column tables remaining separate. The latest retained full 27-PDF run is `outputs/testpapers_double_dagger_current_20260701`; use that output for current footnote inspection and rerun the corpus before relying on older continuation/status counts.
+   Verification G1.28-G1.33 is in place: focused resolved-table regressions cover accepted explicit continuations, schema-rejected continuation candidates, continuation level attachment to a base-fragment parent, and unrelated same-column tables remaining separate. The latest retained full 27-PDF run is `outputs/testpapers_page_furniture_mask_retired_trim_20260701`; use that output for current footnote inspection and rerun the corpus before relying on older continuation/status counts.
 
-3. [ ] Move paper-page-furniture masking before extraction.
-   `paper_page_furniture.json` is now built and used for footnote anchor/definition
-   suppression, but it is still created after table extraction. Repeated download
-   notices, watermarks, page furniture, and marginal text should be detected before
-   extraction and supplied to the extractor as explicit ignore regions. Once that
-   upstream mask exists, retire the legacy extraction-time trailing-row trim for
-   footer/page-furniture cleanup rather than maintaining two independent cleanup
-   paths.
+3. [x] Move paper-page-furniture masking before extraction.
+   `paper_page_furniture.json` is now built before extraction and supplied to
+   the extractor as explicit ignore regions. Repeated page-furniture words and
+   chars are removed before text-position, rescue, rotated, or sideways
+   reconstruction consumes them, and explicit-grid rows are removed only when
+   most populated cell bboxes are mostly inside ignored regions. Extraction
+   records `metadata.page_furniture_overlap` when a candidate touches ignored
+   regions and `metadata.page_furniture_mask` when evidence was removed.
    Implementation plan: `docs/implementation/paper_page_furniture_implementation_plan.md`.
-   Design contract, Pydantic schemas, positioned page-text collection, matching-text normalization, edge-band recurrence clustering, `paper_page_furniture.json` parse output, R inspection helpers, a 28-PDF real-paper review, and footnote anchor/definition-line suppression are in place.
+   Design contract, Pydantic schemas, positioned page-text collection,
+   matching-text normalization, edge-band recurrence clustering,
+   `paper_page_furniture.json` parse output, R inspection helpers, real-paper
+   review, footnote anchor/definition-line suppression, and early extraction
+   masking are in place.
 
-4. [ ] Align parser route with table taxonomy.
+4. [x] Retire broad trailing-row cleanup where page-furniture masking owns the issue.
+   `metadata.trailing_non_table_rows` is now limited to explicit trailing
+   continuation-page notes. Broad large-gap/text-spread trimming after the final
+   value row was removed so footer/page-furniture cleanup is owned by the early
+   page-furniture mask rather than by a second heuristic path.
+
+5. [ ] Align parser route with table taxonomy.
    `table_category` should drive routing once it is available. Current `table_family` is better understood as an early provisional parser-route signal; decide whether to rename, replace, or derive it from the paper table inventory.
 
-5. [ ] Add first-class support for data matrices.
+6. [ ] Add first-class support for data matrices.
    Tables categorized as `data_presentation` need a sibling semantic model/parser instead of being forced through Table 1 descriptive semantics or left as only normalized grids.
 
-6. [ ] Model value semantics beyond count/percent.
+7. [ ] Model value semantics beyond count/percent.
    Add explicit handling for weighted population sizes, prevalence/percent estimates, age-standardized estimates, standard errors, and `N/A`/not-estimable values where appropriate.
    Design note: `docs/design/parsed_value_components.md`.
    Implementation plan: `docs/implementation/parsed_value_components_implementation_plan.md`.
@@ -67,10 +77,10 @@ current retained reference run is `outputs/testpapers_double_dagger_current_2026
    Do not preserve the old two-slot `ValueRecord` shape as canonical if it blocks the right design. The semantic value layer should become a component-aware joined view over source cell components, row/level semantics, and column semantics.
    Later paper typo/error review should consume the component layer, `ColumnHeaderSchema`, and `ParsedTable.values` once real review workflows identify concrete repeated checks. Do not add generic per-column profile artifacts or helper surfaces before those failure modes are known.
    Recent update: `ParsedTable.values` now preserves source-table provenance, row/column semantics, header paths, parse patterns, and typed value components without scalar compatibility aliases. Count-percent checks now operate on components, and `parsed_cell_values.json` records source-grid components without duplicating semantic row or column labels. The earlier validation-report and parsed-value-column-profile sidecars were removed as over-scoped for the current data-structure goal.
-6. [ ] Strengthen parent/level reasoning.
+8. [ ] Strengthen parent/level reasoning.
    Use table-local evidence such as repeated level blocks, blank or sparse parent rows, indentation, header value roles, continuation boundaries, and value-region shape. Indentation should be one strong signal, not the only signal.
 
-7. [ ] Clean up benign PDF text artifacts cautiously.
+9. [ ] Clean up benign PDF text artifacts cautiously.
    Some text-based PDFs include spreadsheet-like artifacts that should be normalized without hiding extraction evidence. Known examples:
    - U+FEFF zero-width no-break/BOM characters embedded in extracted table cells, likely from spreadsheet copy/paste into the source document. These currently survive into row labels such as Planetary Health rows with invisible trailing characters.
    - Single-row split label tails such as `Coronary heart disease, n` plus adjacent `(\%)`/`(%)` in the next cell when the fragment is physically adjacent to the row label and clearly before the first value column.
@@ -86,11 +96,11 @@ current retained reference run is `outputs/testpapers_double_dagger_current_2026
    Bibliographic citation follow-up: numeric superscripts attached to row-label study/source names are preserved in `cell_text_annotations.json` and `paper_footnotes.json`, but the parser does not yet match them to bibliography entries. The footnote linker now avoids paper-level fallback for numeric row-label anchors so citation-like markers do not resolve to unrelated table values. A future bibliography/citation artifact should parse reference-list entries and link citation anchors to those entries explicitly.
    Treat these as normalization follow-ups, not emergency parser changes. Preserve raw extraction, add focused repairs with provenance, and avoid broad rules that could merge real value columns into labels.
 
-8. [ ] Add known-failure regression fixtures.
+10. [ ] Add known-failure regression fixtures.
    Create stable real-paper or minimal extracted-table fixtures for specific failures and structural variants that have actually mattered in parser review. Focus on cases that protect parser behavior from silent regressions, not broad unit testing for its own sake. For value components, cover only the patterns and artifact contracts that are tied to real failures or review workflows.
    Recent cleanup: removed broad scaffold/schema/provider/synthetic/display smoke tests and kept the suite focused on parser structural regressions, artifact contracts, and LLM identity-safety checks. Future tests should continue to justify themselves as known-failure protections or important artifact contracts.
 
-9. [ ] Improve R inspection workflow.
+11. [ ] Improve R inspection workflow.
    Provide R-native review objects and display methods that make variables, levels, columns, parse notes, category/route decisions, and diagnostics easy to inspect during corpus review.
    Current direction: defer new R helper work until real usage of the component-native artifacts shows which views are needed. Decide whether `ObservedTableOne` remains the right R inspection object before extending it. Any R surface should consume canonical components directly and should not require parser scalar compatibility aliases. Avoid many tiny specialized helpers unless repeated review workflows justify them.
    Recent update: `show_table_structure()` now treats structured header spans, per-column header paths, and deterministic variable row spans as the default structure view, including the row-label leaf column from `ColumnHeaderSchema`, while raw normalized header rows remain opt-in provenance/debug evidence through `include_raw_header_rows = TRUE`.
@@ -104,15 +114,14 @@ current retained reference run is `outputs/testpapers_double_dagger_current_2026
   coordinate transformation. This keeps a rotated table plus footer together when
   they occupy one column of a two-column page and excludes upright article text in
   the other column.
-- Legacy extraction guardrail: explicit and text-position candidates may still
-  trim structurally trailing non-table rows after the final numeric value-matrix
-  row, recording `metadata.trailing_non_table_rows`. Treat this as a fallback to
-  retire after page-furniture ignore regions are available to extraction, not as
-  the primary footer/page-furniture design.
+- Recent extraction update: repeated page furniture is masked before extraction,
+  and broad trailing large-gap/text-spread cleanup after the final value row has
+  been retired. `metadata.trailing_non_table_rows` now records only explicit
+  trailing continuation-page notes.
 - Recent extraction guardrail: reference/bibliography section detection now combines backend payload text with PyMuPDF page text before table detection and carries the section stop into fallback extraction, so bibliography pages cannot enter the table pipeline just because the primary JSON payload missed the section heading.
-- Recent extraction guardrail: sparse trailing table-continuation notes such as `(Table 1 continues on next page)` are trimmed as page furniture and recorded in `metadata.trailing_non_table_rows`; post-header notes such as `(Continued from previous page)` remain provenance rows but are excluded from normalized `body_rows`.
-- Recent extraction guardrail: rotated word-position refinement now fails closed when a small backend grid would expand into an implausibly wide table. More than 30 columns is rejected for rotated collapsed-grid recovery, and 13-30 columns requires separator-rule support. Ethnic Differences Table 1 is now reported as `collapsed_grid_unrecovered` instead of a false wide table; true 9-column rotated recovery remains separate work.
+- Recent extraction guardrail: sparse trailing table-continuation notes such as `(Table 1 continues on next page)` are removed and recorded in `metadata.trailing_non_table_rows`; post-header notes such as `(Continued from previous page)` remain provenance rows but are excluded from normalized `body_rows`.
+- Recent extraction update: rotated word-position refinement fails closed when a small backend grid would expand into an implausibly wide table. More than 30 columns is rejected for rotated collapsed-grid recovery, and 13-30 columns requires separator-rule support. In the current retained run, Ethnic Differences Table 1 is `rescued`, but it still has 3 residual small-letter false footnote anchors.
 - Recent normalization update: header/body selection now uses validated full-width separator rules first, first value-region anchors second, and content scoring only as fallback. Full-width separator evidence is derived from stroked rule geometry so filled row highlighting/background shading does not create false hlines. Future work still needs a more principled model for data/estimate tables without clear separator or value-anchor evidence, rather than adding more ordered special cases.
 - Recent column-schema update: full-width hlines inside an already selected header band now split upper spanning-group rows from lower wrapped leaf-header rows. Cardiovascular Table 2 keeps body start row 7 while using rows 4-6 as leaf labels and rows 0-3 as training/testing cohort groups.
 - Recent normalization update: dense row-by-row full-width rules no longer disable hline separator detection. Fully ruled tables should still use hlines as boundary proposals, then choose the boundary that preserves a multicolumn group row plus its single-column leaf-label row above any row-label-only body parent. This fixes the Table 3 continuation in `Association between anthropometric indices and chronic kidney disease: Insights from NHANES 2009–2018`, where page 11 and page 12 now share the same `Model 1`/`Model 2`/`Model 3` column schema and integrate as one resolved table.
-- Recent review update: `docs/implementation/real_paper_testing_guide.md` now orders the next corpus pass around footnote/reference artifacts first, then failed table statuses, continuation decisions, header/body disagreements, extraction geometry, and mixed table families. The current retained run is `outputs/testpapers_double_dagger_current_20260701`: 27 PDF command successes, 1186 footnote links, 449 resolved links, 52 inferred links, 16 ambiguous links, 669 unresolved links, and 30 math/unit anchor suppressions. `parse_quality_reports.json` reports `header_body_split_rule_disagreement` when the hline and value-anchor candidates both exist and disagree.
+- Recent review update: `docs/implementation/real_paper_testing_guide.md` now uses `outputs/testpapers_page_furniture_mask_retired_trim_20260701` as the current retained run: 27 PDF command successes, 486 footnote links, 370 resolved links, 54 inferred links, 6 ambiguous links, 56 unresolved links, 37 math/unit anchor suppressions, and 46 page-furniture definition-line suppressions. `parse_quality_reports.json` reports `header_body_split_rule_disagreement` when the hline and value-anchor candidates both exist and disagree.

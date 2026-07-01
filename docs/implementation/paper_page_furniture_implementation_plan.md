@@ -8,13 +8,13 @@ Scope:
 - produce `paper_page_furniture.json`
 - detect text that recurs in nearly the same page-relative region
 - keep detection structural: repeated text plus stable position
-- use the artifact first to protect footnote harvesting
+- use the artifact first to protect extraction, then footnote harvesting
 
 Non-scope:
 
 - do not hard-code publisher names, journal names, URLs, or watermarks
 - do not remove one-off table notes or page notes
-- do not change table extraction until the artifact is reviewed
+- do not hard-code extraction cleanup around specific publisher boilerplate
 
 ## Steps
 
@@ -68,3 +68,18 @@ Non-scope:
    - Suppress table-cell footnote anchors whose annotation bbox overlaps furniture pulled into an extracted table.
    - Record suppression counts and source furniture cluster IDs in `paper_footnotes.json` metadata.
    - Implementation: `paper_footnotes.json` metadata now records page-furniture suppression counts and cluster IDs for table-cell anchors and definition candidate lines.
+
+9. [x] Integrate before table extraction
+   - Build `paper_page_furniture.json` before `extract()` in the `parse`,
+     `extract`, and `normalize` flows.
+   - Pass ignored regions to the extractor as page-coordinate mask evidence.
+   - Remove repeated page-furniture words and chars before text-position,
+     rescue, rotated, or sideways reconstruction consumes them.
+   - Remove explicit-grid rows only when most populated cell bboxes are mostly
+     inside ignored regions.
+   - Record `metadata.page_furniture_overlap` for candidate bboxes that touch
+     ignored regions and `metadata.page_furniture_mask` when extraction evidence
+     was actually removed.
+   - Retire broad large-gap/text-spread trailing-row cleanup after the final
+     value row; `metadata.trailing_non_table_rows` now records only explicit
+     trailing continuation-page notes.

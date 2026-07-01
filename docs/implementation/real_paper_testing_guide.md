@@ -8,8 +8,9 @@ Corpus-Driven Hardening Of Extraction, Normalization, Semantics, Footnotes, And 
 
 The goal is to work through real papers in a reproducible order, identify the
 first artifact where structure goes wrong, and fix the earliest parser stage
-that owns the problem. The current priority is to review footnote/reference
-artifacts before making larger extraction changes.
+that owns the problem. The current priority is to review the remaining
+footnote/reference issues after the early page-furniture mask and trailing-trim
+retirement.
 
 All paper paths below are relative to:
 
@@ -22,12 +23,14 @@ All paper paths below are relative to:
 Latest reference run:
 
 ```text
-outputs/testpapers_double_dagger_current_20260701
+outputs/testpapers_page_furniture_mask_retired_trim_20260701
 ```
 
-This is the only retained generated parser-output directory after the
-2026-07-01 cleanup. Older generated `outputs/` runs were removed so stale
-artifacts are not mistaken for current parser behavior.
+The current refreshed baseline is
+`outputs/testpapers_page_furniture_mask_retired_trim_20260701`. It was produced
+after building `paper_page_furniture.json` before extraction, applying ignored
+regions as an early mask, and retiring broad trailing large-gap/text-spread row
+cleanup. Older generated `outputs/` runs should not be treated as current.
 
 Current footnote summary:
 
@@ -35,31 +38,34 @@ Current footnote summary:
 PDFs: 27
 parse command failures: 0
 paper_footnotes:
-  anchors: 1186
-  definitions: 307
-  links: 1186
-  resolved links: 449
-  inferred links: 52
-  ambiguous links: 16
-  unresolved links: 669
-  math/unit anchors suppressed before footnote linking: 30
+  anchors: 486
+  definitions: 329
+  links: 486
+  resolved links: 370
+  inferred links: 54
+  ambiguous links: 6
+  unresolved links: 56
+  math/unit anchors suppressed before footnote linking: 37
+  page-furniture definition lines suppressed: 46
+extraction page-furniture mask:
+  extracted tables with mask metadata: 77
+  page words removed before extraction/refinement: 1163
+  page chars removed before extraction/refinement: 9225
+  explicit-grid rows removed by page-furniture mask: 0
 ```
 
 Current papers with unresolved or ambiguous footnote links:
 
 - `Ethnic Differences in the Relationship Between Insulin Sensitivity and
-  Insulin Response` has 95 unresolved links, mostly small-letter fragments in
-  column headers from collapsed/rotated extraction.
+  Insulin Response` has 3 unresolved links: residual `letter:i`, `letter:x`,
+  and `letter:g` false markers on the rescued p5 table.
 - `Helicobacter pylori infection in the United States beyond NHANES` has
-  33 unresolved numeric row-label links that look like bibliographic citations,
-  plus 1 ambiguous `letter:a` body-cell link.
-- `Journal of Periodontology - 2015 - Eke` has 529 unresolved links and
-  11 ambiguous links in the retained full-corpus baseline, mostly small-letter
-  geometry false positives and repeated note candidates. A focused rerun at
-  `outputs/eke_rotated_block_column_final_20260701` fixes the page 7
-  `letter:t`/`letter:r`/`letter:l` false anchors by extracting only the explicit
-  PyMuPDF rotated text-block column; rerun the full corpus before refreshing the
-  baseline counts.
+  35 unresolved numeric row-label links that look like bibliographic citations
+  across pages 5-7.
+- `Journal of Periodontology - 2015 - Eke` has 6 unresolved and 2 ambiguous
+  links. The previous small-letter geometry false positives are gone in the
+  full-corpus baseline; the remaining issues are numeric citation-like markers
+  and one paragraph-symbol ambiguity.
 - `Science-Advanaced-Planetary Health Diet and risk of mortality and chronic
   diseases` has 6 unresolved links and 1 ambiguous link.
 - `mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older
@@ -73,6 +79,11 @@ Resolved since the prior baseline:
 - `Association between anthropometric indices and chronic kidney disease` now
   resolves its 2 dagger links and converts 160 formerly conventional inferred
   p-value-star links into explicit same-table footer links.
+- Early page-furniture masking plus trailing-trim retirement reduces the
+  full-corpus footnote issue count from 669 unresolved / 16 ambiguous links to
+  56 unresolved / 6 ambiguous links.
+- Eke drops from 529 unresolved / 11 ambiguous links to 6 unresolved / 2
+  ambiguous links in the full-corpus baseline.
 
 ## Review Loop
 
@@ -102,10 +113,10 @@ For each checklist item:
   - Previous artifact issue: Table 1 had detected `a`/`b` p-value superscript
     anchors but no definitions, because the definition line started with
     explanatory prose rather than a marker.
-  - Current spot-check result: fixed in
-    `outputs/testpapers_double_dagger_current_20260701`; Table 1 `a`/`b` links are
-    resolved, and Table 2 asterisk p-value markers are now conventional
-    `inferred` links rather than unresolved footnotes.
+  - Current result: fixed in
+    `outputs/testpapers_page_furniture_mask_retired_trim_20260701`; Table 1
+    `a`/`b` links are resolved, and Table 2 asterisk p-value markers are now
+    conventional `inferred` links rather than unresolved footnotes.
 
 - [x] **C0.1** Review false-positive footnote marker detection in Eke.
   - PDF path: `papers_from_laha/Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009.pdf`
@@ -116,16 +127,16 @@ For each checklist item:
     as the rotated source column before coordinate transformation, keeping the
     rotated table plus footer and excluding upright article text in the other
     page column.
-  - Focused spot-check result:
-    `outputs/footer_definitions_current_20260701` extracts page 7 as 14 rows,
-    preserves the `*`, `†`, `‡` continuation, and `§` footer rows, and has no
-    `letter:t`, `letter:r`, or `letter:l` anchors. `paper_footnotes.json` now
-    builds the page 7 `†` and `‡` definitions from extracted footer row blocks,
-    including their continuation rows.
+  - Current full-corpus result:
+    `outputs/testpapers_page_furniture_mask_retired_trim_20260701` extracts page
+    7 with no `letter:t`, `letter:r`, or `letter:l` anchors.
+    `paper_footnotes.json` builds the page 7 `†` and `‡` definitions from
+    extracted footer row blocks, including their continuation rows. Remaining
+    links are 6 unresolved and 2 ambiguous, mostly numeric citation-like markers.
 
 - [ ] **C0.2** Review bibliographic superscripts versus table footnotes.
   - PDF path: `papers_from_laha/Helicobacter pylori infection in the United States beyond NHANES- a scoping review of seroprevalence estimates by racial and ethnic groups.pdf`
-  - Current artifact issue: 33 unresolved links and 1 ambiguous link.
+  - Current artifact issue: 35 unresolved links and 0 ambiguous links.
   - Strong signal: the study-name superscripts in the leftmost column are mostly
     numeric citation markers. They should not be treated as unresolved table
     footnotes unless a real local table-note definition exists.
@@ -133,10 +144,9 @@ For each checklist item:
 - [ ] **C0.3** Review collapsed/rotated extraction causing bogus footnote
   anchors.
   - PDF path: `papers_from_laha/Ethnic Differences in the Relationship Between Insulin Sensitivity and Insulin Response.pdf`
-  - Current artifact issue: 95 unresolved links.
-  - Strong signal: anchors come from one collapsed table cell with fragments such
-    as `letter:t`, `letter:r`, `letter:fri`, and symbol fragments. This may be an
-    extraction-grid failure creating false footnote anchors.
+  - Current artifact issue: 3 unresolved links.
+  - Strong signal: the p5 table is now `rescued`, but residual small-letter
+    geometry false positives remain (`letter:i`, `letter:x`, `letter:g`).
 
 - [x] **C0.4** Resolve statistical-significance stars with footer definitions
   in `stroke`.
@@ -144,9 +154,10 @@ For each checklist item:
   - Previous artifact issue: 65 unresolved links.
   - Strong signal: 58 unresolved anchors were statistical-significance
     asterisks, often attached to p-values such as `<0.001***`.
-  - Current spot-check result: fixed in
-    `outputs/testpapers_double_dagger_current_20260701`; Table 1, Table 2, and Table 3
-    each have local `*`, `**`, and `***` definitions linked by same-table scope.
+  - Current result: fixed in
+    `outputs/testpapers_page_furniture_mask_retired_trim_20260701`; Table 1,
+    Table 2, and Table 3 each have local `*`, `**`, and `***` definitions linked
+    by same-table scope.
   - The previous 7 row-label unit exponents are now suppressed before
     `FootnoteAnchor` creation and counted in
     `math_unit_anchor_suppression_count`, so this paper is now a clean resolved
@@ -163,9 +174,9 @@ For each checklist item:
     and 160 conventional inferred p-value-star links because local symbol
     footer definitions were not harvested.
   - Current result: fixed in
-    `outputs/testpapers_double_dagger_current_20260701`. Known symbol markers
-    such as `†`, `‡`, and `*` now define any non-empty local footer text; this is
-    a structural footnote rule, not a p-value rule.
+    `outputs/testpapers_page_furniture_mask_retired_trim_20260701`. Known symbol
+    markers such as `†`, `‡`, and `*` now define any non-empty local footer text;
+    this is a structural footnote rule, not a p-value rule.
 
 - [ ] **C0.6** Review ambiguous footnote linking where definitions exist but are
   not unique.
@@ -212,19 +223,21 @@ supplement-only or out-of-scope references.
   2. `papers_from_laha/GOLD BioAge and depression- Associations with mortality among depressed NHANES participants (2005–2018).pdf`
      - `GOLD BioAge and depression- Associations with mortality among depressed NHANES participants (2005–2018)-p1-t0`
   3. `papers_from_laha/Helicobacter pylori infection in the United States beyond NHANES- a scoping review of seroprevalence estimates by racial and ethnic groups.pdf`
-     - `Helicobacter pylori infection in the United States beyond NHANES- a scoping review of seroprevalence estimates by racial and ethnic groups-p5-t0-resolved-continuation`
+     - `Helicobacter pylori infection in the United States beyond NHANES- a scoping review of seroprevalence estimates by racial and ethnic groups-p5-t0`
+     - `Helicobacter pylori infection in the United States beyond NHANES- a scoping review of seroprevalence estimates by racial and ethnic groups-p6-t0`
+     - `Helicobacter pylori infection in the United States beyond NHANES- a scoping review of seroprevalence estimates by racial and ethnic groups-p7-t0`
   4. `papers_from_laha/periodontis2.pdf`
      - `periodontis2-p6-t0`
   5. `papers_from_johnny/periodontitis.pdf`
      - `periodontitis-p11-t0`
 
-- [ ] **C1.3** Review the collapsed-grid failure.
+- [x] **C1.3** Review the collapsed-grid failure.
   - PDF path: `papers_from_laha/Ethnic Differences in the Relationship Between Insulin Sensitivity and Insulin Response.pdf`
   - Table: `Ethnic Differences in the Relationship Between Insulin Sensitivity and Insulin Response-p5-t0`
-  - Status: `failed`, reason: `collapsed_grid_unrecovered`.
-  - Current expectation: fail closed is better than recovering an implausible
-    50-plus-column rotated grid. Any fix should recover the true visible grid,
-    probably in extraction using raw PyMuPDF geometry.
+  - Current status: `rescued`; the prior `collapsed_grid_unrecovered` failure is
+    no longer present in `outputs/testpapers_page_furniture_mask_retired_trim_20260701`.
+  - Remaining issue: 3 residual unresolved small-letter false footnote markers
+    on the rescued table.
 
 Acceptance for C1: every failed table is classified as correct non-target table,
 extraction failure, normalization failure, unsupported table family, or ambiguous

@@ -59,8 +59,9 @@ geometry by table cell when compatible PyMuPDF character geometry and extracted
 cell bboxes are available. It does not change the raw extracted grid.
 
 `paper_page_furniture.json` records repeated page text observations, recurrence
-clusters, and generic ignored regions for footnote suppression. It is written
-even when no repeated page furniture is found.
+clusters, and generic ignored regions. It is built before table extraction,
+passed into extraction as an early geometry mask, and written even when no
+repeated page furniture is found.
 
 `paper_footnotes.json` records detected footnote anchors, candidate definitions,
 and glyph-key links as a paper-level review artifact. It is written even when no
@@ -74,9 +75,10 @@ deterministically before glyph-key linking. Candidate lines may start with a
 marker or contain embedded marker definitions after nearby explanatory prose. A
 single table-footer line can yield several definition records, for example `*`,
 `**`, and `***` statistical-significance definitions. Repeated page-furniture
-regions are used first to suppress overlapping table-cell anchors and page-text
-definition candidate lines. Numeric unit/exponent superscripts such as `10^9`
-and `m^2` are suppressed before footnote-anchor creation and counted in metadata.
+regions remain a late footnote guardrail for overlapping table-cell anchors and
+page-text definition candidate lines that survive early extraction masking.
+Numeric unit/exponent superscripts such as `10^9` and `m^2` are suppressed
+before footnote-anchor creation and counted in metadata.
 P-value asterisk markers without explicit definitions can be emitted as
 structured `inferred` links with conventional threshold meanings.
 
@@ -101,7 +103,9 @@ The current implemented flow for `parse` is:
 
 ```text
 PDF
+  -> paper page furniture
   -> extracted tables
+  -> cell text annotations
   -> normalized tables
   -> column header schemas
   -> resolved tables
@@ -112,7 +116,6 @@ PDF
   -> table processing statuses over resolved tables
   -> parse quality reports
   -> Table 1 continuation inspection artifacts over source fragments
-  -> paper page furniture
   -> paper footnotes
 
 PDF
@@ -146,13 +149,17 @@ Why this is separate:
 
 ## Step 2: Table Extraction
 
-The extraction layer is responsible for finding likely tables in the PDF and recovering a raw grid for each one.
+Before table extraction, the parser builds repeated page-furniture regions from
+positioned page text. The extraction layer receives those regions and is
+responsible for finding likely tables in the remaining PDF geometry and
+recovering a raw grid for each one.
 
-Conceptually, this stage does three things:
+Conceptually, this stage does four things:
 
 1. inspect the PDF page layout
-2. find table candidates
-3. build `ExtractedTable` objects for the deduplicated candidates
+2. remove repeated page-furniture words, chars, and explicit-grid rows by bbox
+3. find table candidates
+4. build `ExtractedTable` objects for the deduplicated candidates
 
 The current extractor uses `pymupdf4llm` as the main backend. It tries to recover explicit table boxes and table cell grids from the backend JSON output. When that is not enough, it can fall back to text-position-based layout reconstruction.
 
@@ -184,10 +191,13 @@ The extractor still scores candidates, but the score is now diagnostic rather th
   bboxes as the source-region boundary before coordinate transformation. On
   two-column pages this keeps the rotated table plus its footer in one source
   column while excluding upright article text in the other column.
-- legacy trailing-row trim may still record `metadata.trailing_non_table_rows` for
-  non-block-scoped extraction candidates, but the intended long-term order is to
-  remove repeated page furniture before table extraction rather than duplicating
-  that decision in trailing-row trim heuristics.
+- remove repeated page furniture before candidate refinement. Extraction records
+  `metadata.page_furniture_overlap` when a candidate bbox touches an ignored
+  region and `metadata.page_furniture_mask` when words, chars, or rows were
+  actually removed.
+- trailing continuation-page notes such as `(Table 1 continues on next page)` may
+  still be removed and recorded in `metadata.trailing_non_table_rows`; broad
+  footer/furniture cleanup is handled by the earlier page-furniture mask.
 
 This matters for papers with table continuations, odd numbering, or weak captions. A bad score should be inspectable, not silently destructive.
 
@@ -804,14 +814,16 @@ It is meant to answer questions like:
 This step does not change `table_definitions.json` or `parsed_tables.json`.
 It exists so column and row problems are visible even when the table technically parses.
 
-## Step 11: Build Paper Page Furniture
+## Step 11: Write Paper Page Furniture
 
-The parser writes `paper_page_furniture.json`.
+The parser writes the `paper_page_furniture.json` artifact that was built before
+table extraction.
 
 This paper-level artifact collects PyMuPDF page text lines, normalizes text only
 for matching, clusters repeated text in stable page-relative positions, and emits
-generic ignored regions. The footnote stage uses those regions to suppress
-overlapping definition candidate lines and table-cell anchors before linking.
+generic ignored regions. Extraction uses those regions as an early mask, and the
+footnote stage uses them as a late guardrail for overlapping definition
+candidate lines and table-cell anchors before linking.
 
 ## Step 12: Build Paper-Level Document Context
 
@@ -982,7 +994,7 @@ When a parse looks wrong, inspect the outputs in this order.
    If superscripts, subscripts, or note markers matter, inspect this artifact for anchors, candidate definitions, math/unit suppression metadata, and resolved, ambiguous, inferred, or unresolved glyph-key links.
 
 14. `paper_page_furniture.json`
-   If repeated page headers, footers, watermarks, or download notices may be contaminating note extraction, inspect this artifact for recurring clusters and ignored regions.
+   If repeated page headers, footers, watermarks, or download notices may be contaminating extraction or note parsing, inspect this artifact for recurring clusters and ignored regions.
 
 15. `paper_markdown.md`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and `table_contexts/*.json`
    If semantic context retrieval is weak, inspect these next.
