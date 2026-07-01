@@ -59,9 +59,6 @@ Current papers with unresolved or ambiguous footnote links:
 - `Ethnic Differences in the Relationship Between Insulin Sensitivity and
   Insulin Response` has 3 unresolved links: residual `letter:i`, `letter:x`,
   and `letter:g` false markers on the rescued p5 table.
-- `Helicobacter pylori infection in the United States beyond NHANES` has
-  35 unresolved numeric row-label links that look like bibliographic citations
-  across pages 5-7.
 - `Journal of Periodontology - 2015 - Eke` has 6 unresolved and 2 ambiguous
   links. The previous small-letter geometry false positives are gone in the
   full-corpus baseline; the remaining issues are numeric citation-like markers
@@ -134,12 +131,21 @@ For each checklist item:
     extracted footer row blocks, including their continuation rows. Remaining
     links are 6 unresolved and 2 ambiguous, mostly numeric citation-like markers.
 
-- [ ] **C0.2** Review bibliographic superscripts versus table footnotes.
+- [x] **C0.2** Review bibliographic superscripts versus table footnotes.
   - PDF path: `papers_from_laha/Helicobacter pylori infection in the United States beyond NHANES- a scoping review of seroprevalence estimates by racial and ethnic groups.pdf`
-  - Current artifact issue: 35 unresolved links and 0 ambiguous links.
-  - Strong signal: the study-name superscripts in the leftmost column are mostly
-    numeric citation markers. They should not be treated as unresolved table
-    footnotes unless a real local table-note definition exists.
+  - Focused output: `outputs/helicobacter_bibliography_fix_20260701_final`.
+  - Result: `paper_footnotes.json` now has 3 resolved `letter:a` links and 0
+    unresolved links. The true footer definition is `Value shows median age
+    rather than mean.`
+  - Result: `paper_bibliography.json` preserves 80 numbered bibliography
+    entries and resolves all 35 numeric row-label study/source markers to
+    bibliography entries. Those markers are suppressed from table-footnote link
+    counts as citation-like row-label markers when no local table-note
+    definition exists.
+  - Remaining bibliography follow-up: body-text reference-marker harvesting is
+    not implemented yet, so `entry_without_mention_count` is expected to remain
+    nonzero until the future one-to-one bibliography coverage validation is
+    added.
 
 - [ ] **C0.3** Review collapsed/rotated extraction causing bogus footnote
   anchors.

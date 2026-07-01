@@ -26,6 +26,13 @@ from table1_parser.schemas.paper_variable_inventory import (
     VariableMention,
     VariableMentionRole,
 )
+from table1_parser.schemas.paper_bibliography import (
+    BibliographyEntry,
+    BibliographyMentionLinkStatus,
+    BibliographyMentionSourceScope,
+    BibliographyReferenceMention,
+    PaperBibliography,
+)
 from table1_parser.schemas.paper_table_inventory import PaperTableInventory, PaperTableRecord, TableCategory
 from table1_parser.schemas.paper_footnotes import (
     FootnoteAnchor,
@@ -94,6 +101,10 @@ from table1_parser.schemas.table_profile import TableProfile
 
 __all__ = [
     "ExtractedTable",
+    "BibliographyEntry",
+    "BibliographyMentionLinkStatus",
+    "BibliographyMentionSourceScope",
+    "BibliographyReferenceMention",
     "FootnoteAnchor",
     "FootnoteDefinition",
     "FootnoteDefinitionCandidateLine",
@@ -106,6 +117,7 @@ __all__ = [
     "LLMVariablePlausibilityMonitoringReport",
     "NormalizedTable",
     "PaperSection",
+    "PaperBibliography",
     "PaperFootnotes",
     "PaperPageFurniture",
     "PaperTableInventory",

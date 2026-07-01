@@ -40,25 +40,29 @@ DEFINITION_SYMBOL_MARKER_TOKEN_PATTERN = (
     rf"|\(\s*(?:{DEFINITION_SYMBOL_GLYPH_PATTERN})\s*\)"
     rf"|(?:{DEFINITION_SYMBOL_GLYPH_PATTERN})"
 )
+DEFINITION_SYMBOL_SEPARATOR_PATTERN = r"[\s.)\]:;,\-–—]+"
+DEFINITION_TEXT_SEPARATOR_PATTERN = r"(?:\s+|[\s.)\]:;,\-–—]*\s+)"
 DEFINITION_BODY_START_PATTERN = r"[A-Z0-9(*†‡§¶#]"
 DEFINITION_LINE_START_PATTERN = re.compile(
     rf"^\s*(?:"
-    rf"(?:{DEFINITION_SYMBOL_MARKER_TOKEN_PATTERN})[\s.)\]:;,\-–—]+\S"
-    rf"|(?:{DEFINITION_MARKER_TOKEN_PATTERN})[\s.)\]:;,\-–—]+{DEFINITION_BODY_START_PATTERN}"
+    rf"(?:{DEFINITION_SYMBOL_MARKER_TOKEN_PATTERN}){DEFINITION_SYMBOL_SEPARATOR_PATTERN}\S"
+    rf"|(?:{DEFINITION_MARKER_TOKEN_PATTERN}){DEFINITION_TEXT_SEPARATOR_PATTERN}{DEFINITION_BODY_START_PATTERN}"
     rf")"
 )
 DEFINITION_LINE_EMBEDDED_PATTERN = re.compile(
     rf"(?<=[.;:]\s)(?:"
-    rf"(?:{DEFINITION_SYMBOL_MARKER_TOKEN_PATTERN})[\s.)\]:;,\-–—]+\S"
-    rf"|(?:{DEFINITION_MARKER_TOKEN_PATTERN})[\s.)\]:;,\-–—]+{DEFINITION_BODY_START_PATTERN}"
+    rf"(?:{DEFINITION_SYMBOL_MARKER_TOKEN_PATTERN}){DEFINITION_SYMBOL_SEPARATOR_PATTERN}\S"
+    rf"|(?:{DEFINITION_MARKER_TOKEN_PATTERN}){DEFINITION_TEXT_SEPARATOR_PATTERN}{DEFINITION_BODY_START_PATTERN}"
     rf")"
 )
 DEFINITION_MARKER_PATTERN = re.compile(
     r"(?:^|(?<=[.;:,]\s))"
     rf"(?P<glyph>{DEFINITION_MARKER_TOKEN_PATTERN})"
-    r"[\s.)\]:;,\-–—]+"
+    rf"{DEFINITION_TEXT_SEPARATOR_PATTERN}"
     rf"(?P<body>\S.*?)(?=(?:[.;,]\s+(?:{DEFINITION_MARKER_TOKEN_PATTERN})[\s.)\]:;,\-–—]+\S)|$)"
 )
+TABLE_FOOTER_ATTACHED_MARKER_PATTERN = re.compile(r"^\s*(?P<glyph>[a-z])(?P<body>[A-Z]\S.*)$")
+TABLE_CAPTION_ROW_PATTERN = re.compile(r"^\s*(?:Table|Figure)\s+[A-Za-z]?\d+[A-Za-z]?\s*[:.]", re.IGNORECASE)
 CANONICAL_SYMBOL_KEYS = {
     "†": "dagger",
     "‡": "double_dagger",
@@ -336,9 +340,24 @@ def build_paper_footnote_definition_lines_from_extracted_tables(
             row_text = _row_text(row_cells)
             if not row_text:
                 continue
+            if current_start_row_idx is not None and TABLE_CAPTION_ROW_PATTERN.match(row_text):
+                lines.append(
+                    _table_footer_definition_line(
+                        table=table,
+                        visual_id=visual_id_by_table_id.get(table.table_id),
+                        start_row_idx=current_start_row_idx,
+                        end_row_idx=current_end_row_idx or current_start_row_idx,
+                        text_parts=current_text_parts,
+                    )
+                )
+                current_start_row_idx = None
+                current_end_row_idx = None
+                current_text_parts = []
+                continue
             starts_definition = (
                 DEFINITION_LINE_START_PATTERN.search(row_text) is not None
                 or DEFINITION_LINE_EMBEDDED_PATTERN.search(row_text) is not None
+                or TABLE_FOOTER_ATTACHED_MARKER_PATTERN.match(row_text) is not None
             )
             if starts_definition:
                 if current_start_row_idx is not None and current_text_parts:
@@ -470,11 +489,25 @@ def build_paper_footnote_definition_candidates(
             notes.append("definition_line_skipped:not_local_note_scope")
             continue
         confidence = confidence if confidence is not None else 0.8
+        parsed_definitions: list[tuple[str, str]] = []
         for match in DEFINITION_MARKER_PATTERN.finditer(raw_text):
             glyph_raw = _definition_glyph_from_marker(match.group("glyph"))
             definition_text = clean_text(match.group("body"))
             if not glyph_raw or not definition_text:
                 continue
+            parsed_definitions.append((glyph_raw, definition_text))
+        if (
+            not parsed_definitions
+            and source_scope == "table_note"
+            and line.source_artifact == "extracted_tables.json"
+        ):
+            attached_marker_match = TABLE_FOOTER_ATTACHED_MARKER_PATTERN.match(raw_text)
+            if attached_marker_match is not None:
+                glyph_raw = attached_marker_match.group("glyph").strip()
+                definition_text = clean_text(attached_marker_match.group("body"))
+                if glyph_raw and definition_text:
+                    parsed_definitions.append((glyph_raw, definition_text))
+        for glyph_raw, definition_text in parsed_definitions:
             glyph_kind, glyph_key, glyph_codepoints = glyph_fields(glyph_raw)
             definitions.append(
                 FootnoteDefinition(
@@ -542,8 +575,35 @@ def link_paper_footnotes(footnotes: PaperFootnotes) -> PaperFootnotes:
     for definition in footnotes.definitions:
         definitions_by_glyph.setdefault(definition.glyph_key, []).append(definition)
 
+    citation_like_anchor_ids: set[str] = set()
+    numeric_row_label_anchors_without_local_definition = [
+        anchor
+        for anchor in footnotes.anchors
+        if (
+            anchor.glyph_kind == "number"
+            and anchor.source_scope == "table_cell"
+            and anchor.source_role == "row_label"
+            and not [
+                definition
+                for definition in definitions_by_glyph.get(anchor.glyph_key, [])
+                if (anchor.table_id is not None and anchor.table_id == definition.table_id)
+                or (anchor.visual_id is not None and anchor.visual_id == definition.visual_id)
+            ]
+        )
+    ]
+    if (
+        len(numeric_row_label_anchors_without_local_definition) >= 5
+        and len({anchor.glyph_key for anchor in numeric_row_label_anchors_without_local_definition}) >= 5
+    ):
+        citation_like_anchor_ids = {
+            anchor.anchor_id for anchor in numeric_row_label_anchors_without_local_definition
+        }
+    retained_anchors = [
+        anchor for anchor in footnotes.anchors if anchor.anchor_id not in citation_like_anchor_ids
+    ]
+
     links: list[FootnoteLink] = []
-    for anchor_index, anchor in enumerate(footnotes.anchors):
+    for anchor_index, anchor in enumerate(retained_anchors):
         candidates = definitions_by_glyph.get(anchor.glyph_key, [])
         if (
             candidates
@@ -675,9 +735,20 @@ def link_paper_footnotes(footnotes: PaperFootnotes) -> PaperFootnotes:
 
     return footnotes.model_copy(
         update={
+            "anchors": retained_anchors,
             "links": links,
             "metadata": {
                 **footnotes.metadata,
+                "anchor_count": len(retained_anchors),
+                "citation_like_anchor_suppression_count": len(citation_like_anchor_ids),
+                "citation_like_suppressed_anchor_ids": sorted(citation_like_anchor_ids),
+                "citation_like_suppressed_glyph_keys": sorted(
+                    {
+                        anchor.glyph_key
+                        for anchor in footnotes.anchors
+                        if anchor.anchor_id in citation_like_anchor_ids
+                    }
+                ),
                 "link_count": len(links),
                 "links_status": "built",
                 "resolved_link_count": sum(link.link_status == "resolved" for link in links),
@@ -737,11 +808,11 @@ def _last_value_matrix_row_idx(
     last_value_row_idx: int | None = None
     for row_idx, row_cells in ordered_rows:
         row_text = _row_text(row_cells)
-        if (
+        definition_like = (
             DEFINITION_LINE_START_PATTERN.search(row_text) is not None
             or DEFINITION_LINE_EMBEDDED_PATTERN.search(row_text) is not None
-        ):
-            continue
+            or TABLE_FOOTER_ATTACHED_MARKER_PATTERN.match(row_text) is not None
+        )
         nonempty_cells = [cell for cell in row_cells if clean_text(cell.text)]
         if not nonempty_cells:
             continue
@@ -762,6 +833,8 @@ def _last_value_matrix_row_idx(
                 value_like_count += 1
         if value_like_count >= required_value_cells:
             last_value_row_idx = row_idx
+        elif definition_like:
+            continue
     return last_value_row_idx
 
 

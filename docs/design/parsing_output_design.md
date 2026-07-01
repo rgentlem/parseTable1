@@ -83,6 +83,7 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Continued variable integration | `TableDefinition` | Written now as `continued_variable_integrations.json` by `parse` | Persist a source-fragment review view for compatible continued Table 1 fragments; this is not consumed by canonical semantic parsing now that `resolved_tables.json` feeds `TableDefinition` and `ParsedTable` |
 | Parsed source-cell values | `ParsedCellValue` | Written now as `parsed_cell_values.json` by `parse` | Persist source-grid cell value components keyed by table and row/column indices before semantic row/column value joins |
 | Paper context | `PaperSection`, `PaperVisual`, `PaperVisualReference`, `TableContext` | Written now as `paper_markdown.md`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, and `table_contexts/*.json` by `parse` | Persist markdown sections, actual in-paper visual objects, anchored table/figure references, and per-table retrieval bundles, with only conservative glyph repair in the markdown text |
+| Paper bibliography | `PaperBibliography`, `BibliographyEntry`, `BibliographyReferenceMention` | Written now as `paper_bibliography.json` by `parse` | Persist the paper's own numbered bibliography entries and observed numeric reference markers linked to those entries without creating a cross-paper citation-management layer |
 | Paper variable inventory | `PaperVariableInventory`, `VariableMention`, `VariableCandidate` | Written now as `paper_variable_inventory.json` by `parse` | Persist the paper-level candidate variable reference list with explicit text/table provenance |
 | Variable-plausibility LLM review | `LLMVariablePlausibilityTableReview` | Written now as `table_variable_plausibility_llm.json` by `review-variable-plausibility` when LLM config is available | Persist table-local QA scores for variable label/type/level plausibility without rewriting the deterministic definition |
 | Variable-plausibility debug monitoring | `LLMVariablePlausibilityMonitoringReport`, `LLMVariablePlausibilityCallRecord` | Written only when `LLM_DEBUG=true` as `llm_variable_plausibility_debug/<timestamp>/llm_variable_plausibility_monitoring.json` plus per-table trace files | Persist per-table timing, payload-size, status, and raw-response debug evidence for the standalone review command |
@@ -684,6 +685,7 @@ Current CLI paths:
 ```text
 outputs/papers/<paper_stem>/paper_markdown.md
 outputs/papers/<paper_stem>/paper_sections.json
+outputs/papers/<paper_stem>/paper_bibliography.json
 outputs/papers/<paper_stem>/paper_visual_inventory.json
 outputs/papers/<paper_stem>/paper_references.json
 outputs/papers/<paper_stem>/paper_variable_inventory.json
@@ -693,6 +695,8 @@ outputs/papers/<paper_stem>/table_contexts/table_<n>_context.json
 Canonical models:
 
 - `PaperSection`
+- `PaperBibliography`
+- child models: `BibliographyEntry`, `BibliographyReferenceMention`
 - `PaperVisual`
 - `PaperVisualReference`
 - `PaperVariableInventory`
@@ -706,6 +710,10 @@ Design components:
   raw markdown extracted from the full paper
 - `paper_sections.json`
   markdown-derived sections with heading level and simple role hints
+- `paper_bibliography.json`
+  per-paper bibliography entries extracted before table extraction, plus
+  table-cell numeric reference markers linked to those entries after cell-text
+  annotations are available
 - `paper_visual_inventory.json`
   paper-level inventory of actual in-paper tables and figure captions, keyed by stable visual IDs such as `paper_visual:table:1`, with reference-check status fields showing whether the visual has at least one non-self text reference
 - `paper_references.json`

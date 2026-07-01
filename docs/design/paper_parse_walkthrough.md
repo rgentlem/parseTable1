@@ -42,6 +42,7 @@ Today that directory may contain:
 - `table_processing_status.json`
 - `parse_quality_reports.json`
 - `paper_footnotes.json`
+- `paper_bibliography.json`
 - `paper_page_furniture.json`
 - `paper_markdown.md`
 - `paper_sections.json`
@@ -77,6 +78,15 @@ single table-footer line can yield several definition records, for example `*`,
 `**`, and `***` statistical-significance definitions. Repeated page-furniture
 regions remain a late footnote guardrail for overlapping table-cell anchors and
 page-text definition candidate lines that survive early extraction masking.
+Numeric row-label bibliography markers are removed from table-footnote link
+counts when they have no local table-note definition and are represented instead
+through `paper_bibliography.json`.
+
+`paper_bibliography.json` records the paper's own numbered bibliography entries
+and observed reference markers linked to those entries. Bibliography entries are
+extracted from `paper_markdown.md`/`paper_sections.json` before table extraction;
+table-cell reference-marker links are added later after cell text annotations are
+available.
 Numeric unit/exponent superscripts such as `10^9` and `m^2` are suppressed
 before footnote-anchor creation and counted in metadata.
 P-value asterisk markers without explicit definitions can be emitted as
@@ -834,7 +844,7 @@ This is separate from table extraction.
 The current paper-context path is:
 
 ```text
-PDF -> paper_markdown.md -> paper_sections.json -> paper_visual_inventory.json -> paper_references.json -> paper_variable_inventory.json -> table_contexts/*.json
+PDF -> paper_markdown.md -> paper_sections.json -> paper_bibliography.json -> paper_visual_inventory.json -> paper_references.json -> paper_variable_inventory.json -> table_contexts/*.json
 ```
 
 ### `paper_markdown.md`
@@ -857,6 +867,20 @@ Only conservative glyph repair is allowed here. This artifact is not meant to be
 The markdown is split into a linear list of sections, with simple role hints such as methods-like or results-like.
 
 This gives the parser a document structure that is easier to retrieve from than raw markdown alone.
+
+### `paper_bibliography.json`
+
+The parser extracts the paper's numbered bibliography entries from the
+markdown-derived sections before table extraction begins. This artifact is
+per-paper only: it keeps labels and raw/clean entry text as separate entities
+without DOI lookup, author normalization, cross-paper deduplication, or any
+corpus-level reference store.
+
+After table extraction and cell text annotation, numeric table-cell markers that
+look like bibliography references can be linked to those bibliography entries.
+For example, numeric superscripts attached to study/source row labels should be
+represented here rather than counted as unresolved table footnotes when no local
+table-note definition exists.
 
 ### `paper_visual_inventory.json`
 
@@ -993,13 +1017,16 @@ When a parse looks wrong, inspect the outputs in this order.
 13. `paper_footnotes.json`
    If superscripts, subscripts, or note markers matter, inspect this artifact for anchors, candidate definitions, math/unit suppression metadata, and resolved, ambiguous, inferred, or unresolved glyph-key links.
 
-14. `paper_page_furniture.json`
+14. `paper_bibliography.json`
+   If numeric study/source markers look like bibliography references, inspect this artifact for the paper's fixed reference-list entries, observed marker links, and per-paper coverage diagnostics.
+
+15. `paper_page_furniture.json`
    If repeated page headers, footers, watermarks, or download notices may be contaminating extraction or note parsing, inspect this artifact for recurring clusters and ignored regions.
 
-15. `paper_markdown.md`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and `table_contexts/*.json`
+16. `paper_markdown.md`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and `table_contexts/*.json`
    If semantic context retrieval is weak, inspect these next.
 
-16. `table_variable_plausibility_llm.json`
+17. `table_variable_plausibility_llm.json`
    If deterministic variables were reasonable but the plausibility review looks wrong, the issue is in prompting, provider behavior, or validation for the standalone review command.
 
 ## Why This Pipeline Shape Is Worth Keeping

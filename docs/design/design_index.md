@@ -133,6 +133,10 @@ Then use the documents below as needed.
 - `docs/design/paper_visual_references.md`
   Planned paper-level visual-object and visual-reference artifacts for resolving table/figure mentions to actual in-paper tables and figures, preserving stable anchors for nearby text access, and later linking figure-image artifacts.
 
+- `docs/design/paper_bibliography.md`
+  Contract for `paper_bibliography.json`: per-paper bibliography entries plus
+  observed numeric reference markers linked to those entries.
+
 - `docs/implementation/paper_visual_references_implementation_plan.md`
   Stepwise implementation plan for visual-reference schemas, visual inventory, deterministic reference scanning and resolution, CLI artifacts, table-context links, and R inspection helpers.
 

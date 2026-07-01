@@ -61,6 +61,11 @@ from table1_parser.paper_footnotes import (
     link_paper_footnotes,
     paper_footnotes_to_payload,
 )
+from table1_parser.paper_bibliography import (
+    build_bibliography_entries_from_sections,
+    build_paper_bibliography,
+    paper_bibliography_to_payload,
+)
 from table1_parser.paper_page_furniture import build_paper_page_furniture, paper_page_furniture_to_payload
 from table1_parser.processing_status import build_table_processing_statuses
 from table1_parser.resolved_tables import build_resolved_table_set
@@ -72,6 +77,7 @@ from table1_parser.schemas import (
     LLMVariablePlausibilityMonitoringReport,
     NormalizedTable,
     PaperFootnotes,
+    PaperBibliography,
     PaperPageFurniture,
     PaperSection,
     PaperVariableInventory,
@@ -121,6 +127,7 @@ class PaperParseArtifacts:
     resolved_parse_quality_reports: list[ParseQualityReport]
     cell_text_annotations: list[CellTextAnnotationTable]
     paper_footnotes: PaperFootnotes
+    paper_bibliography: PaperBibliography
     paper_page_furniture: PaperPageFurniture
     paper_markdown: str
     paper_sections: list[PaperSection]
@@ -426,8 +433,12 @@ def _handle_review_variable_plausibility(args: argparse.Namespace) -> int:
 
 def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     """Run the deterministic parse pipeline and build the paper-level context artifacts."""
+    paper_stem = Path(pdf_path).stem
+    paper_markdown = extract_paper_markdown(pdf_path)
+    paper_sections = parse_markdown_sections(paper_markdown)
+    bibliography_entries = build_bibliography_entries_from_sections(paper_sections)
     extractor = _build_default_extractor()
-    paper_page_furniture = build_paper_page_furniture(pdf_path, paper_id=Path(pdf_path).stem)
+    paper_page_furniture = build_paper_page_furniture(pdf_path, paper_id=paper_stem)
     extracted_tables = extractor.extract(pdf_path, paper_page_furniture=paper_page_furniture)
     cell_text_annotations = build_cell_text_annotation_tables_from_pdf(
         pdf_path,
@@ -498,13 +509,14 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         value_column_indices_by_table_id=value_column_indices_by_table_id,
     )
     paper_footnotes = build_paper_footnote_anchor_inventory(
-        paper_id=Path(pdf_path).stem,
+        paper_id=paper_stem,
         source_pdf=pdf_path,
         cell_text_annotations=cell_text_annotations,
         extracted_tables=extracted_tables,
         column_header_schemas=column_header_schemas,
         paper_page_furniture=paper_page_furniture,
     )
+    paper_footnote_anchors_before_linking = list(paper_footnotes.anchors)
     table_local_footnote_definition_lines = (
         build_paper_footnote_definition_lines_from_extracted_tables(extracted_tables)
     )
@@ -594,9 +606,14 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         parsed_cell_values=parsed_cell_values,
         row_provenance_by_table_id=row_provenance_by_table_id,
     )
-    paper_markdown = extract_paper_markdown(pdf_path)
-    paper_sections = parse_markdown_sections(paper_markdown)
-    paper_stem = Path(pdf_path).stem
+    paper_bibliography = build_paper_bibliography(
+        paper_id=paper_stem,
+        source_pdf=pdf_path,
+        paper_sections=paper_sections,
+        footnote_anchors=paper_footnote_anchors_before_linking,
+        footnote_definitions=paper_footnote_definitions,
+        bibliography_entries=bibliography_entries,
+    )
     paper_visual_inventory = build_paper_visual_inventory(extracted_tables, table_definitions, paper_sections)
     paper_references = collect_paper_visual_references(paper_sections, paper_visual_inventory)
     paper_visual_inventory = annotate_visual_reference_checks(paper_visual_inventory, paper_references)
@@ -623,6 +640,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         resolved_parse_quality_reports=resolved_parse_quality_reports,
         cell_text_annotations=cell_text_annotations,
         paper_footnotes=paper_footnotes,
+        paper_bibliography=paper_bibliography,
         paper_page_furniture=paper_page_furniture,
         paper_markdown=paper_markdown,
         paper_sections=paper_sections,
@@ -696,6 +714,7 @@ def _write_parse_outputs(
     parse_quality_reports_output_path = paper_dir / "parse_quality_reports.json"
     cell_text_annotations_output_path = paper_dir / "cell_text_annotations.json"
     paper_footnotes_output_path = paper_dir / "paper_footnotes.json"
+    paper_bibliography_output_path = paper_dir / "paper_bibliography.json"
     paper_page_furniture_output_path = paper_dir / "paper_page_furniture.json"
     paper_markdown_output_path = paper_dir / "paper_markdown.md"
     paper_sections_output_path = paper_dir / "paper_sections.json"
@@ -794,6 +813,10 @@ def _write_parse_outputs(
     )
     paper_footnotes_output_path.write_text(
         json.dumps(paper_footnotes_to_payload(artifacts.paper_footnotes), indent=2) + "\n",
+        encoding="utf-8",
+    )
+    paper_bibliography_output_path.write_text(
+        json.dumps(paper_bibliography_to_payload(artifacts.paper_bibliography), indent=2) + "\n",
         encoding="utf-8",
     )
     paper_page_furniture_output_path.write_text(
