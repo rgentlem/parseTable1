@@ -22,7 +22,7 @@ All paper paths below are relative to:
 Latest reference run:
 
 ```text
-outputs/testpapers_footnote_current_20260701
+outputs/testpapers_double_dagger_current_20260701
 ```
 
 This is the only retained generated parser-output directory after the
@@ -36,20 +36,17 @@ PDFs: 27
 parse command failures: 0
 paper_footnotes:
   anchors: 1186
-  definitions: 293
+  definitions: 307
   links: 1186
-  resolved links: 260
-  inferred links: 219
+  resolved links: 449
+  inferred links: 52
   ambiguous links: 16
-  unresolved links: 691
+  unresolved links: 669
   math/unit anchors suppressed before footnote linking: 30
 ```
 
 Current papers with unresolved or ambiguous footnote links:
 
-- `Association between anthropometric indices and chronic kidney disease`
-  has 2 unresolved dagger links in column headers; its 160 p-value asterisk
-  links are now conventional inferred links, not unresolved footnotes.
 - `Ethnic Differences in the Relationship Between Insulin Sensitivity and
   Insulin Response` has 95 unresolved links, mostly small-letter fragments in
   column headers from collapsed/rotated extraction.
@@ -57,15 +54,25 @@ Current papers with unresolved or ambiguous footnote links:
   33 unresolved numeric row-label links that look like bibliographic citations,
   plus 1 ambiguous `letter:a` body-cell link.
 - `Journal of Periodontology - 2015 - Eke` has 529 unresolved links and
-  11 ambiguous links, mostly small-letter geometry false positives and repeated
-  note candidates.
+  11 ambiguous links in the retained full-corpus baseline, mostly small-letter
+  geometry false positives and repeated note candidates. A focused rerun at
+  `outputs/eke_rotated_block_column_final_20260701` fixes the page 7
+  `letter:t`/`letter:r`/`letter:l` false anchors by extracting only the explicit
+  PyMuPDF rotated text-block column; rerun the full corpus before refreshing the
+  baseline counts.
 - `Science-Advanaced-Planetary Health Diet and risk of mortality and chronic
   diseases` has 6 unresolved links and 1 ambiguous link.
-- `cardiovascular` has 20 unresolved double-dagger body-cell links with no
-  extracted definitions.
 - `mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older
   Adults` has 3 unresolved and 3 ambiguous numeric links.
 - `periodontis2` has 3 unresolved numeric body-cell links.
+
+Resolved since the prior baseline:
+
+- `cardiovascular` Table 1 page 4 now resolves 20 double-dagger body-cell
+  anchors to the local `‡` table footer definition.
+- `Association between anthropometric indices and chronic kidney disease` now
+  resolves its 2 dagger links and converts 160 formerly conventional inferred
+  p-value-star links into explicit same-table footer links.
 
 ## Review Loop
 
@@ -96,17 +103,25 @@ For each checklist item:
     anchors but no definitions, because the definition line started with
     explanatory prose rather than a marker.
   - Current spot-check result: fixed in
-    `outputs/testpapers_footnote_current_20260701`; Table 1 `a`/`b` links are
+    `outputs/testpapers_double_dagger_current_20260701`; Table 1 `a`/`b` links are
     resolved, and Table 2 asterisk p-value markers are now conventional
     `inferred` links rather than unresolved footnotes.
 
-- [ ] **C0.1** Review false-positive footnote marker detection in Eke.
+- [x] **C0.1** Review false-positive footnote marker detection in Eke.
   - PDF path: `papers_from_laha/Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009.pdf`
-  - Current artifact issue: `paper_footnotes.json` has 529 unresolved links and
-    11 ambiguous links.
-  - Strong signal: many unresolved anchors are small-letter glyphs such as
-    `letter:t`, `letter:r`, and `letter:l`; these are likely not table footnote
-    markers. Review whether small-letter geometry is being over-detected.
+  - Baseline artifact issue: `paper_footnotes.json` had 529 unresolved links and
+    11 ambiguous links, with many small-letter glyphs such as `letter:t`,
+    `letter:r`, and `letter:l`.
+  - Focused fix: page 7 now uses explicit PyMuPDF directional text-block geometry
+    as the rotated source column before coordinate transformation, keeping the
+    rotated table plus footer and excluding upright article text in the other
+    page column.
+  - Focused spot-check result:
+    `outputs/footer_definitions_current_20260701` extracts page 7 as 14 rows,
+    preserves the `*`, `†`, `‡` continuation, and `§` footer rows, and has no
+    `letter:t`, `letter:r`, or `letter:l` anchors. `paper_footnotes.json` now
+    builds the page 7 `†` and `‡` definitions from extracted footer row blocks,
+    including their continuation rows.
 
 - [ ] **C0.2** Review bibliographic superscripts versus table footnotes.
   - PDF path: `papers_from_laha/Helicobacter pylori infection in the United States beyond NHANES- a scoping review of seroprevalence estimates by racial and ethnic groups.pdf`
@@ -130,25 +145,38 @@ For each checklist item:
   - Strong signal: 58 unresolved anchors were statistical-significance
     asterisks, often attached to p-values such as `<0.001***`.
   - Current spot-check result: fixed in
-    `outputs/testpapers_footnote_current_20260701`; Table 1, Table 2, and Table 3
+    `outputs/testpapers_double_dagger_current_20260701`; Table 1, Table 2, and Table 3
     each have local `*`, `**`, and `***` definitions linked by same-table scope.
   - The previous 7 row-label unit exponents are now suppressed before
     `FootnoteAnchor` creation and counted in
     `math_unit_anchor_suppression_count`, so this paper is now a clean resolved
     footnote baseline for the local statistical-star-footer case.
 
-- [ ] **C0.5** Review ambiguous footnote linking where definitions exist but are
+- [x] **C0.5** Resolve symbol-marker footer definitions that start with
+  lowercase or arbitrary explanatory text.
+  - PDF paths:
+    1. `papers_from_johnny/cardiovascular.pdf`
+    2. `papers_from_laha/Association between anthropometric indices and chronic kidney disease- Insights from NHANES 2009–2018.pdf`
+  - Previous artifact issue: cardiovascular had 20 unresolved `‡` body-cell
+    links because the local table footer line `†: ...; ‡: ...` was filtered out
+    before definition parsing. Anthropometric CKD had 2 unresolved dagger links
+    and 160 conventional inferred p-value-star links because local symbol
+    footer definitions were not harvested.
+  - Current result: fixed in
+    `outputs/testpapers_double_dagger_current_20260701`. Known symbol markers
+    such as `†`, `‡`, and `*` now define any non-empty local footer text; this is
+    a structural footnote rule, not a p-value rule.
+
+- [ ] **C0.6** Review ambiguous footnote linking where definitions exist but are
   not unique.
   - PDF paths:
-    1. `papers_from_laha/Association between anthropometric indices and chronic kidney disease- Insights from NHANES 2009–2018.pdf`
-    2. `papers_from_laha/mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017.pdf`
-  - Current artifact issue: anthropometric CKD has 2 unresolved dagger links and
-    160 conventional inferred p-value-star links; MDPI Mediterranean has
+    1. `papers_from_laha/mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017.pdf`
+  - Current artifact issue: MDPI Mediterranean has
     3 ambiguous links and 3 unresolved numeric links.
   - Decide whether ambiguity comes from duplicate definitions, repeated page
     furniture, or too-broad matching scope.
 
-- [ ] **C0.6** Review unresolved table-reference resolution before worrying
+- [ ] **C0.7** Review unresolved table-reference resolution before worrying
   about figures.
   - Highest unresolved table-reference counts:
     1. `papers_from_laha/An atlas of exposome–phenome associations in health and disease risk.pdf` - 21 unresolved table references.

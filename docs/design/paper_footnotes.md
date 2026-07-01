@@ -167,18 +167,31 @@ Definition candidates may be built from typed source lines before they are
 promoted into definition records. Source lines should preserve raw text, page,
 optional bbox and page height, source scope, source ID, table ID, visual ID, and
 source artifact. These input lines are not a persisted top-level artifact.
-The parse command now builds these source lines from PyMuPDF page text geometry,
-then classifies local candidates as table notes or page-bottom notes.
+The parse command builds source lines first from extracted table footer rows,
+then from PyMuPDF page text geometry. Extracted-table footer rows are identified
+structurally: after the last value-matrix row, a row that starts or embeds a
+definition marker opens a table-note block, and adjacent following rows without
+a new marker are appended as continuation text until the next marker block.
+Page-text lines are then classified as table notes or page-bottom notes.
 Candidate source lines may start with a marker, or may contain embedded marker
 definitions after preceding abbreviation or significance prose, such as
 `significance. a Represents ... b Represents ...`. Bracketed and
 parenthesized markers such as `[a]` and `(a)` are canonicalized to the visible
-glyph before matching. Statistical-significance footer lines can define repeated
-asterisk runs such as `*`, `**`, and `***` in one comma-separated line; these are
-split into separate definition records with `asterisk:1`, `asterisk:2`, and
-`asterisk:3` glyph keys.
-Before candidate promotion, lines overlapping `paper_page_furniture.json`
-ignored regions are suppressed and counted in metadata.
+glyph before matching.
+
+Known symbol markers such as `†`, `‡`, `§`, `¶`, `#`, `|`, and asterisk runs
+are structural footnote-definition evidence when they start a local table/footer
+definition and are followed by any non-empty definition body. Do not require the
+body to contain p-value wording or other semantic vocabulary. Statistical
+footer lines can define repeated asterisk runs such as `*`, `**`, and `***` in
+one comma-separated line; these are split into separate definition records with
+`asterisk:1`, `asterisk:2`, and `asterisk:3` glyph keys. P-value semantics are
+special only for the conventional fallback applied to unresolved asterisk
+anchors after explicit definition matching fails.
+Before candidate promotion, page-text lines overlapping
+`paper_page_furniture.json` ignored regions are suppressed and counted in
+metadata. Extracted-table footer rows are already table-local source evidence
+and are not suppressed by page-furniture geometry.
 
 `raw_text` preserves extracted text. `clean_text` is normalized only enough to
 support matching and review. `definition_text` may drop the leading glyph when

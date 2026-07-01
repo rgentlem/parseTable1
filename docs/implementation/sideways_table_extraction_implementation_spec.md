@@ -113,7 +113,9 @@ Inputs:
 - `page_words`
 - `page_chars`
 - `page_rule_segments`
-- full page bbox or a conservative content bbox
+- explicit PyMuPDF directional text-block geometry when available; use its union
+  as the conservative content bbox for the rotated table column
+- full page bbox only as a fallback when directional block geometry is unavailable
 - dominant vertical direction: `vertical_text_up` or `vertical_text_down`
 
 Outputs:
@@ -122,6 +124,7 @@ Outputs:
 - transformed chars
 - transformed rule segments
 - transformed bbox
+- metadata recording the source directional block union bbox and region source
 
 The transformed word list should allow `build_word_lines(...)` and
 `build_text_layout_candidates(...)` to see the visual table rows in normal row-major
@@ -329,4 +332,3 @@ strategy and that downstream parsed artifacts remain normal table objects.
   or should we initially require explicit `continued` captions only?
 - Should sideways candidates be included in `extracted_tables.json` when they lose to
   upright candidates, or only surfaced through diagnostics?
-

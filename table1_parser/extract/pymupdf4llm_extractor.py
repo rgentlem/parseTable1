@@ -261,22 +261,33 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                     horizontal_rules = refinement["horizontal_rules"]
                     full_width_horizontal_rules = refinement["full_width_horizontal_rules"]
                     geometry_coordinate_frame = str(refinement["geometry_coordinate_frame"])
-                    trimmed = trim_trailing_non_table_rows(
-                        raw_rows,
-                        cell_bboxes=cell_bboxes,
-                        row_bounds=row_bounds,
+                    is_block_scoped_rotated_stream = (
+                        geometry_coordinate_frame
+                        in {
+                            "table_local_rotated_normalized",
+                            "table_local_rotated_transposed_normalized",
+                        }
+                        and orientation_metadata.get("rotated_text_block_bbox") is not None
                     )
-                    raw_rows = trimmed.raw_rows
-                    cell_bboxes = trimmed.cell_bboxes
-                    row_bounds = trimmed.row_bounds
-                    if trimmed.metadata is not None and row_bounds:
-                        table_bottom = row_bounds[-1][1]
-                        horizontal_rules = [
-                            rule for rule in horizontal_rules if float(rule) <= table_bottom + 2.0
-                        ]
-                        full_width_horizontal_rules = [
-                            rule for rule in full_width_horizontal_rules if float(rule) <= table_bottom + 2.0
-                        ]
+                    trailing_non_table_rows: dict[str, object] | None = None
+                    if not is_block_scoped_rotated_stream:
+                        trimmed = trim_trailing_non_table_rows(
+                            raw_rows,
+                            cell_bboxes=cell_bboxes,
+                            row_bounds=row_bounds,
+                        )
+                        raw_rows = trimmed.raw_rows
+                        cell_bboxes = trimmed.cell_bboxes
+                        row_bounds = trimmed.row_bounds
+                        trailing_non_table_rows = trimmed.metadata
+                        if trailing_non_table_rows is not None and row_bounds:
+                            table_bottom = row_bounds[-1][1]
+                            horizontal_rules = [
+                                rule for rule in horizontal_rules if float(rule) <= table_bottom + 2.0
+                            ]
+                            full_width_horizontal_rules = [
+                                rule for rule in full_width_horizontal_rules if float(rule) <= table_bottom + 2.0
+                            ]
                     first_column_text_x0_by_row = (
                         _infer_first_column_text_x0_by_row(
                             raw_rows=raw_rows,
@@ -351,7 +362,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                                 "row_bounds": row_bounds,
                                 "horizontal_rules": horizontal_rules,
                                 "full_width_horizontal_rules": full_width_horizontal_rules,
-                                "trailing_non_table_rows": trimmed.metadata,
+                                "trailing_non_table_rows": trailing_non_table_rows,
                                 **orientation_metadata,
                             },
                         )
@@ -775,11 +786,73 @@ def _infer_table_orientation_metadata(
             "rotation_confidence": 0.0,
         }
     if vertical_count > horizontal_count:
+        rotation_direction = (
+            "vertical_text_up"
+            if vertical_up_count >= vertical_down_count
+            else "vertical_text_down"
+        )
+        rotated_text_block_bboxes: list[tuple[float, float, float, float]] = []
+        try:
+            raw_blocks = (page.get_text("dict") or {}).get("blocks", [])
+        except Exception:
+            raw_blocks = []
+        for block in raw_blocks:
+            if not isinstance(block, dict):
+                continue
+            block_bbox = _as_bbox(block.get("bbox"))
+            if block_bbox is None:
+                continue
+            if (
+                min(block_bbox[2], bbox[2]) <= max(block_bbox[0], bbox[0])
+                or min(block_bbox[3], bbox[3]) <= max(block_bbox[1], bbox[1])
+            ):
+                continue
+            matching_line_count = 0
+            directed_line_count = 0
+            for line in block.get("lines", []):
+                if not isinstance(line, dict):
+                    continue
+                direction = line.get("dir")
+                if not isinstance(direction, (list, tuple)) or len(direction) != 2:
+                    continue
+                dx = float(direction[0])
+                dy = float(direction[1])
+                directed_line_count += 1
+                if (
+                    abs(dy) >= 0.8
+                    and abs(dx) <= 0.35
+                    and (
+                        (rotation_direction == "vertical_text_up" and dy < 0)
+                        or (rotation_direction == "vertical_text_down" and dy > 0)
+                    )
+                ):
+                    matching_line_count += 1
+            if (
+                directed_line_count > 0
+                and matching_line_count / directed_line_count >= 0.75
+            ):
+                rotated_text_block_bboxes.append(block_bbox)
+        rotated_text_block_bbox = (
+            (
+                min(block_bbox[0] for block_bbox in rotated_text_block_bboxes) - 2.0,
+                min(block_bbox[1] for block_bbox in rotated_text_block_bboxes) - 2.0,
+                max(block_bbox[2] for block_bbox in rotated_text_block_bboxes) + 2.0,
+                max(block_bbox[3] for block_bbox in rotated_text_block_bboxes) + 2.0,
+            )
+            if rotated_text_block_bboxes
+            else None
+        )
         return {
             "table_orientation": "rotated",
             "rotation_source": "pymupdf_line_direction",
-            "rotation_direction": "vertical_text_up" if vertical_up_count >= vertical_down_count else "vertical_text_down",
+            "rotation_direction": rotation_direction,
             "rotation_confidence": round(vertical_count / considered_count, 4),
+            "rotated_text_block_bbox": rotated_text_block_bbox,
+            "rotated_text_region_source": (
+                "pymupdf_directional_text_blocks"
+                if rotated_text_block_bbox is not None
+                else None
+            ),
         }
     return {
         "table_orientation": "upright",
@@ -1006,6 +1079,9 @@ def _refine_explicit_table_candidate_grid(
 
         if should_rotate_refinement:
             rotated_refinement_bbox = bbox
+            rotated_text_block_bbox = _as_bbox(
+                orientation_metadata.get("rotated_text_block_bbox")
+            )
             overlapping_rule_boxes: list[tuple[float, float, float, float]] = []
             for segment in page_rule_segments:
                 segment_left = min(float(segment[0]), float(segment[2]))
@@ -1039,6 +1115,8 @@ def _refine_explicit_table_candidate_grid(
                         rotated_refinement_bbox[2],
                         rotated_refinement_bbox[3],
                     )
+            if rotated_text_block_bbox is not None:
+                rotated_refinement_bbox = rotated_text_block_bbox
             rotated_words = [
                 word
                 for word in page_words

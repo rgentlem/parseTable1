@@ -5,6 +5,7 @@ from __future__ import annotations
 from table1_parser.paper_footnotes import (
     build_paper_footnote_anchor_inventory,
     build_paper_footnote_definition_candidates,
+    build_paper_footnote_definition_lines_from_extracted_tables,
     build_paper_footnote_definition_lines_from_pdf,
     filter_footnote_definition_lines_for_page_furniture,
     glyph_fields,
@@ -423,6 +424,114 @@ def test_build_definition_candidates_from_statistical_star_footer() -> None:
     ]
     assert {definition.source_scope for definition in definitions} == {"table_note"}
     assert {definition.table_id for definition in definitions} == {"tbl-1"}
+
+
+def test_build_definition_candidates_from_symbol_footer_without_semantic_body_rule() -> None:
+    """Known symbol footer definitions should not depend on the text meaning."""
+    definitions = build_paper_footnote_definition_candidates(
+        [
+            FootnoteDefinitionCandidateLine(
+                line_id="page-2-line-10",
+                page_num=2,
+                raw_text="‡: compared with the reference group.",
+                source_scope="table_note",
+                bbox=(56.0, 620.0, 260.0, 632.0),
+                source_artifact="pymupdf_page_text_lines",
+            )
+        ]
+    )
+
+    assert len(definitions) == 1
+    assert definitions[0].glyph_key == "symbol:double_dagger"
+    assert definitions[0].definition_text == "compared with the reference group."
+
+
+def test_build_definition_candidates_from_extracted_multiline_footer_rows() -> None:
+    """Extracted footer rows should define multiline table-local notes in row order."""
+    def row(row_idx: int, *texts: str) -> list[TableCell]:
+        return [
+            TableCell(row_idx=row_idx, col_idx=col_idx, text=text)
+            for col_idx, text in enumerate(texts)
+        ]
+
+    extracted_table = ExtractedTable(
+        table_id="tbl-1",
+        source_pdf="paper.pdf",
+        page_num=7,
+        title="Table 1",
+        caption="Table 1",
+        n_rows=6,
+        n_cols=4,
+        cells=[
+            *row(0, "Variable", "Overall", "Group", "P value"),
+            *row(1, "Age", "52 (4)", "53 (5)", "0.1"),
+            *row(2, "Sex", "48 (2)", "51 (3)", "0.04"),
+            *row(3, "† Full footer begins", "with 2009 applied to", "2012 records"),
+            *row(4, "all selected quadrants."),
+            *row(5, "‡ Second footer text."),
+        ],
+        extraction_backend="pymupdf4llm",
+        metadata={"table_number": 1},
+    )
+    table_lines = build_paper_footnote_definition_lines_from_extracted_tables([extracted_table])
+    page_duplicate_line = FootnoteDefinitionCandidateLine(
+        line_id="page-7-line-30",
+        page_num=7,
+        raw_text="† Short page-line footer.",
+        source_scope="table_note",
+        source_id="tbl-1:note:page",
+        table_id="tbl-1",
+        source_artifact="pymupdf_page_text_lines",
+    )
+
+    definitions = build_paper_footnote_definition_candidates(
+        [*table_lines, page_duplicate_line],
+        [extracted_table],
+    )
+    linked = link_paper_footnotes(
+        PaperFootnotes(
+            paper_id="paper",
+            source_pdf="paper.pdf",
+            anchors=[
+                FootnoteAnchor(
+                    anchor_id="anchor:dagger",
+                    glyph_raw="†",
+                    glyph_key="symbol:dagger",
+                    glyph_kind="symbol",
+                    glyph_codepoints=["U+2020"],
+                    source_scope="table_cell",
+                    source_id="tbl-1:r1:c1",
+                    page_num=7,
+                    confidence=0.95,
+                    table_id="tbl-1",
+                )
+            ],
+            definitions=definitions,
+        )
+    )
+
+    assert [line.source_id for line in table_lines] == [
+        "tbl-1:footer:r3-r4",
+        "tbl-1:footer:r5",
+    ]
+    assert table_lines[0].raw_text == (
+        "† Full footer begins with 2009 applied to 2012 records all selected quadrants."
+    )
+    assert [
+        (definition.glyph_key, definition.definition_text, definition.source_artifact)
+        for definition in definitions
+    ] == [
+        (
+            "symbol:dagger",
+            "Full footer begins with 2009 applied to 2012 records all selected quadrants.",
+            "extracted_tables.json",
+        ),
+        ("symbol:double_dagger", "Second footer text.", "extracted_tables.json"),
+        ("symbol:dagger", "Short page-line footer.", "pymupdf_page_text_lines"),
+    ]
+    assert linked.links[0].link_status == "resolved"
+    assert linked.links[0].definition_id == definitions[0].definition_id
+    assert linked.links[0].scope_distance == "same_table_extracted_footer"
 
 
 def test_table_note_candidate_does_not_steal_next_table_header() -> None:

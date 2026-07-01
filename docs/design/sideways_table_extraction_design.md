@@ -59,6 +59,9 @@ signals are present:
 - The page has portrait dimensions and `rotation=0`.
 - Text blocks that contain table/caption language are narrow in x and tall in y.
 - A `Table N` or `Table N. (continued)` caption appears as a vertical strip.
+- PyMuPDF exposes text blocks whose line directions match a vertical text stream
+  (`vertical_text_up` or `vertical_text_down`), and those blocks occupy a distinct
+  page column or region from upright body text.
 - Numeric-heavy table body text is arranged in repeated vertical bands.
 - Candidate table content spans a large part of the y axis but only a limited x band
   per logical row or group.
@@ -77,6 +80,10 @@ table detection.
 Conceptually:
 
 - Use the original PDF words/blocks as the source of truth.
+- Prefer explicit PyMuPDF text-block geometry with matching line direction to
+  define the sideways table region. This is especially important on two-column
+  pages where a rotated table plus footer occupies one column and ordinary article
+  text occupies the other.
 - Rotate or transpose their bounding boxes into a visual table coordinate system.
 - Run caption detection and table-grid construction in that transformed coordinate
   system.
@@ -189,4 +196,3 @@ Minimum expectations:
 Sideways tables should be handled in the extraction layer. The parser should not try
 to infer a table from already-collapsed cells, because that would mix extraction with
 semantic reconstruction and would make the result less inspectable.
-

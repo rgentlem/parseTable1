@@ -108,3 +108,27 @@ Non-scope:
    - Implemented: links can now have `link_status = "inferred"` with an
      `inferred_meaning` object. Explicit definitions still override the
      fallback, and R inspection helpers expose inference fields.
+
+14. [x] Accept known symbol-marker footer definitions without semantic body checks
+   - Treat `†`, `‡`, `§`, `¶`, `#`, `|`, and asterisk runs as structural
+     footnote-definition markers when they start a local table/footer definition
+     followed by any non-empty body text.
+   - Keep stricter body-start filtering for letter and numeric marker lines,
+     where false positives are more common.
+   - Do not add p-value-specific requirements to definition harvesting.
+     P-value semantics are limited to the existing conventional fallback for
+     unresolved asterisk anchors after explicit definition matching fails.
+   - Implemented: the 2026-07-01 corpus run in
+     `outputs/testpapers_double_dagger_current_20260701` resolves the
+     `cardiovascular` Table 1 double-dagger footer and the anthropometric CKD
+     dagger/star footer definitions.
+
+15. [x] Build table-local footer definitions from extracted table rows
+   - Harvest definition source lines from `extracted_tables.json` after the last
+     value-matrix row, using extracted row order.
+   - Append adjacent non-marker rows to the current marker definition block so
+     multiline footers preserved by rotated extraction are not truncated to one
+     PyMuPDF page line.
+   - Prefer same-table extracted-footer definitions over same-table page-line
+     definitions during linking, so global page-line duplicates do not make a
+     fuller table-local definition ambiguous.

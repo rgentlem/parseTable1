@@ -55,6 +55,7 @@ from table1_parser.parse import (
 from table1_parser.paper_footnotes import (
     build_paper_footnote_anchor_inventory,
     build_paper_footnote_definition_candidates,
+    build_paper_footnote_definition_lines_from_extracted_tables,
     build_paper_footnote_definition_lines_from_pdf,
     filter_footnote_definition_lines_for_page_furniture,
     link_paper_footnotes,
@@ -496,7 +497,14 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         column_header_schemas=column_header_schemas,
         paper_page_furniture=paper_page_furniture,
     )
-    paper_footnote_definition_lines = build_paper_footnote_definition_lines_from_pdf(pdf_path)
+    table_local_footnote_definition_lines = (
+        build_paper_footnote_definition_lines_from_extracted_tables(extracted_tables)
+    )
+    page_footnote_definition_lines = build_paper_footnote_definition_lines_from_pdf(pdf_path)
+    paper_footnote_definition_lines = [
+        *table_local_footnote_definition_lines,
+        *page_footnote_definition_lines,
+    ]
     filtered_footnote_definition_lines, footnote_page_furniture_metadata = (
         filter_footnote_definition_lines_for_page_furniture(
             paper_footnote_definition_lines,
@@ -521,6 +529,8 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
                         }
                     ),
                     **footnote_page_furniture_metadata,
+                    "definition_line_count_from_extracted_tables": len(table_local_footnote_definition_lines),
+                    "definition_line_count_from_pdf": len(page_footnote_definition_lines),
                     "definition_line_count": len(paper_footnote_definition_lines),
                     "definition_line_count_after_page_furniture": len(filtered_footnote_definition_lines),
                     "definition_count": len(paper_footnote_definitions),

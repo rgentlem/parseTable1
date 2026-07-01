@@ -21,6 +21,7 @@ from table1_parser.schemas import (
     FootnoteLink,
     PaperFootnotes,
     PaperPageFurniture,
+    TableCell,
 )
 from table1_parser.text_cleaning import clean_text
 
@@ -32,11 +33,24 @@ DEFINITION_MARKER_TOKEN_PATTERN = (
     rf"|\(\s*(?:{DEFINITION_GLYPH_PATTERN})\s*\)"
     rf"|(?:{DEFINITION_GLYPH_PATTERN})"
 )
+DEFINITION_SYMBOL_GLYPH_PATTERN = r"[*﹡＊]+|[†‡§¶#|]"
+DEFINITION_SYMBOL_MARKER_TOKEN_PATTERN = (
+    rf"\[\s*(?:{DEFINITION_SYMBOL_GLYPH_PATTERN})\s*\]"
+    rf"|\(\s*(?:{DEFINITION_SYMBOL_GLYPH_PATTERN})\s*\)"
+    rf"|(?:{DEFINITION_SYMBOL_GLYPH_PATTERN})"
+)
+DEFINITION_BODY_START_PATTERN = r"[A-Z0-9(*†‡§¶#]"
 DEFINITION_LINE_START_PATTERN = re.compile(
-    rf"^\s*(?:{DEFINITION_MARKER_TOKEN_PATTERN})[\s.)\]:;,\-–—]+[A-Z0-9(*†‡§¶#]"
+    rf"^\s*(?:"
+    rf"(?:{DEFINITION_SYMBOL_MARKER_TOKEN_PATTERN})[\s.)\]:;,\-–—]+\S"
+    rf"|(?:{DEFINITION_MARKER_TOKEN_PATTERN})[\s.)\]:;,\-–—]+{DEFINITION_BODY_START_PATTERN}"
+    rf")"
 )
 DEFINITION_LINE_EMBEDDED_PATTERN = re.compile(
-    rf"(?<=[.;:]\s)(?:{DEFINITION_MARKER_TOKEN_PATTERN})[\s.)\]:;,\-–—]+[A-Z0-9(*†‡§¶#]"
+    rf"(?<=[.;:]\s)(?:"
+    rf"(?:{DEFINITION_SYMBOL_MARKER_TOKEN_PATTERN})[\s.)\]:;,\-–—]+\S"
+    rf"|(?:{DEFINITION_MARKER_TOKEN_PATTERN})[\s.)\]:;,\-–—]+{DEFINITION_BODY_START_PATTERN}"
+    rf")"
 )
 DEFINITION_MARKER_PATTERN = re.compile(
     r"(?:^|(?<=[.;:,]\s))"
@@ -291,6 +305,72 @@ def build_paper_footnote_definition_lines_from_pdf(pdf_path: str) -> list[Footno
     return lines
 
 
+def build_paper_footnote_definition_lines_from_extracted_tables(
+    extracted_tables: Sequence[ExtractedTable],
+) -> list[FootnoteDefinitionCandidateLine]:
+    """Collect table-local footer definition blocks from extracted table rows."""
+    lines: list[FootnoteDefinitionCandidateLine] = []
+    visual_id_by_table_id = _table_visual_ids(extracted_tables)
+    for table in extracted_tables:
+        rows_by_idx: dict[int, list[TableCell]] = {}
+        for cell in table.cells:
+            rows_by_idx.setdefault(cell.row_idx, []).append(cell)
+        if not rows_by_idx:
+            continue
+        ordered_rows = [
+            (row_idx, sorted(cells, key=lambda cell: cell.col_idx))
+            for row_idx, cells in sorted(rows_by_idx.items())
+        ]
+        last_value_row_idx = _last_value_matrix_row_idx(ordered_rows, table.n_cols)
+        if last_value_row_idx is None:
+            continue
+
+        current_start_row_idx: int | None = None
+        current_end_row_idx: int | None = None
+        current_text_parts: list[str] = []
+
+        for row_idx, row_cells in ordered_rows:
+            if row_idx <= last_value_row_idx:
+                continue
+            row_text = _row_text(row_cells)
+            if not row_text:
+                continue
+            starts_definition = (
+                DEFINITION_LINE_START_PATTERN.search(row_text) is not None
+                or DEFINITION_LINE_EMBEDDED_PATTERN.search(row_text) is not None
+            )
+            if starts_definition:
+                if current_start_row_idx is not None and current_text_parts:
+                    lines.append(
+                        _table_footer_definition_line(
+                            table=table,
+                            visual_id=visual_id_by_table_id.get(table.table_id),
+                            start_row_idx=current_start_row_idx,
+                            end_row_idx=current_end_row_idx or current_start_row_idx,
+                            text_parts=current_text_parts,
+                        )
+                    )
+                current_start_row_idx = row_idx
+                current_end_row_idx = row_idx
+                current_text_parts = [row_text]
+                continue
+            if current_start_row_idx is not None:
+                current_end_row_idx = row_idx
+                current_text_parts.append(row_text)
+
+        if current_start_row_idx is not None and current_text_parts:
+            lines.append(
+                _table_footer_definition_line(
+                    table=table,
+                    visual_id=visual_id_by_table_id.get(table.table_id),
+                    start_row_idx=current_start_row_idx,
+                    end_row_idx=current_end_row_idx or current_start_row_idx,
+                    text_parts=current_text_parts,
+                )
+            )
+    return lines
+
+
 def filter_footnote_definition_lines_for_page_furniture(
     definition_lines: Sequence[FootnoteDefinitionCandidateLine],
     paper_page_furniture: PaperPageFurniture | None,
@@ -300,6 +380,9 @@ def filter_footnote_definition_lines_for_page_furniture(
     suppressed_cluster_ids: set[str] = set()
     suppressed_count = 0
     for line in definition_lines:
+        if line.source_scope != "body_text":
+            filtered_lines.append(line)
+            continue
         overlapping_cluster_ids = page_furniture_cluster_ids_for_bbox(
             paper_page_furniture,
             line.page_num,
@@ -520,7 +603,13 @@ def link_paper_footnotes(footnotes: PaperFootnotes) -> PaperFootnotes:
 
         scored_candidates: list[tuple[int, float, str, FootnoteDefinition]] = []
         for definition in candidates:
-            if anchor.table_id is not None and anchor.table_id == definition.table_id:
+            if (
+                anchor.table_id is not None
+                and anchor.table_id == definition.table_id
+                and definition.source_artifact == "extracted_tables.json"
+            ):
+                scored_candidates.append((5, 0.93, "same_table_extracted_footer", definition))
+            elif anchor.table_id is not None and anchor.table_id == definition.table_id:
                 scored_candidates.append((4, 0.9, "same_table", definition))
             elif anchor.visual_id is not None and anchor.visual_id == definition.visual_id:
                 scored_candidates.append((3, 0.82, "same_visual", definition))
@@ -644,6 +733,77 @@ def glyph_fields(glyph_raw: str) -> tuple[FootnoteGlyphKind, str, list[str]]:
     if any(not char.isalnum() for char in glyph):
         return "symbol", "symbol:" + ",".join(codepoints), codepoints
     return "unknown", f"unknown:{normalized_key or glyph}", codepoints
+
+
+def _last_value_matrix_row_idx(
+    ordered_rows: Sequence[tuple[int, list[TableCell]]],
+    n_cols: int,
+) -> int | None:
+    """Return the last row that has enough value-like cells to precede footer rows."""
+    required_value_cells = 1 if n_cols <= 3 else 2
+    last_value_row_idx: int | None = None
+    for row_idx, row_cells in ordered_rows:
+        row_text = _row_text(row_cells)
+        if (
+            DEFINITION_LINE_START_PATTERN.search(row_text) is not None
+            or DEFINITION_LINE_EMBEDDED_PATTERN.search(row_text) is not None
+        ):
+            continue
+        nonempty_cells = [cell for cell in row_cells if clean_text(cell.text)]
+        if not nonempty_cells:
+            continue
+        first_nonempty_col = min(cell.col_idx for cell in nonempty_cells)
+        trailing_texts = [
+            cell.text
+            for cell in nonempty_cells
+            if cell.col_idx > first_nonempty_col
+        ]
+        value_like_count = 0
+        for text in trailing_texts:
+            normalized = unicodedata.normalize("NFKC", clean_text(text))
+            if (
+                normalized
+                and re.search(r"\d", normalized)
+                and len(re.findall(r"[A-Za-z]", normalized)) <= 3
+            ):
+                value_like_count += 1
+        if value_like_count >= required_value_cells:
+            last_value_row_idx = row_idx
+    return last_value_row_idx
+
+
+def _row_text(row_cells: Sequence[TableCell]) -> str:
+    """Join extracted row cells in column order without discarding marker text."""
+    return clean_text(" ".join(cell.text for cell in row_cells if clean_text(cell.text)))
+
+
+def _table_footer_definition_line(
+    *,
+    table: ExtractedTable,
+    visual_id: str | None,
+    start_row_idx: int,
+    end_row_idx: int,
+    text_parts: Sequence[str],
+) -> FootnoteDefinitionCandidateLine:
+    """Build one logical table-footer source line from one or more extracted rows."""
+    row_range = (
+        f"r{start_row_idx}"
+        if start_row_idx == end_row_idx
+        else f"r{start_row_idx}-r{end_row_idx}"
+    )
+    return FootnoteDefinitionCandidateLine(
+        line_id=f"{table.table_id}:footer:{row_range}",
+        page_num=table.page_num,
+        raw_text=clean_text(" ".join(text_parts)),
+        source_scope="table_note",
+        source_id=f"{table.table_id}:footer:{row_range}",
+        table_id=table.table_id,
+        visual_id=visual_id,
+        line_index=start_row_idx,
+        source_artifact="extracted_tables.json",
+        confidence=0.9,
+        notes=["table_footer_rows_after_value_matrix"],
+    )
 
 
 def _is_math_unit_notation_marker(

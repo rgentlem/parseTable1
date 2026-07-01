@@ -65,15 +65,18 @@ even when no repeated page furniture is found.
 `paper_footnotes.json` records detected footnote anchors, candidate definitions,
 and glyph-key links as a paper-level review artifact. It is written even when no
 anchors or definitions are found.
-Definition candidates are fed by PyMuPDF page text lines with bbox and page-height
+Definition candidates are fed first by footer rows preserved in
+`extracted_tables.json`: rows after the last value-matrix row that start a
+marker definition are grouped with adjacent continuation rows in extracted row
+order. PyMuPDF page text lines remain a fallback source with bbox and page-height
 provenance so table-local notes and page-bottom notes can be classified
-deterministically before glyph-key linking. These lines may start with a marker
-or contain embedded marker definitions after nearby explanatory prose. A single
-table-footer line can yield several definition records, for example `*`, `**`,
-and `***` statistical-significance definitions. Repeated page-furniture regions
-are used first to suppress overlapping table-cell anchors and definition
-candidate lines. Numeric unit/exponent superscripts such as `10^9` and `m^2`
-are suppressed before footnote-anchor creation and counted in metadata.
+deterministically before glyph-key linking. Candidate lines may start with a
+marker or contain embedded marker definitions after nearby explanatory prose. A
+single table-footer line can yield several definition records, for example `*`,
+`**`, and `***` statistical-significance definitions. Repeated page-furniture
+regions are used first to suppress overlapping table-cell anchors and page-text
+definition candidate lines. Numeric unit/exponent superscripts such as `10^9`
+and `m^2` are suppressed before footnote-anchor creation and counted in metadata.
 P-value asterisk markers without explicit definitions can be emitted as
 structured `inferred` links with conventional threshold meanings.
 
@@ -177,7 +180,14 @@ The extractor still scores candidates, but the score is now diagnostic rather th
 - require page-text-layout fallback candidates to have a real table-number/caption signal unless their reconstructed grid has strong table geometry: at least three columns, at least four rows, a header-like top row, stable multi-column alignment, and multiple rows with data-like trailing cells
 - when a text-position fallback caption wraps onto the next line, keep a short caption continuation line with the table label, and also keep a lowercase sentence fragment ending in punctuation with the caption instead of treating it as the first table row
 - when text-position fallback builds column anchors, prefer an early stable table prefix if using the full page would collapse separated value columns because of later wrapped rows, page-margin text, or other noisy numeric positions
-- trim trailing footer or watermark rows from explicit and text-position candidates when they appear after the final numeric value-matrix row and structural clues show they are outside the table, such as multiple blank rows, a large vertical gap, or text spread across many columns without table-like values; the trim is recorded in `metadata.trailing_non_table_rows`
+- for explicit rotated-grid refinement, prefer PyMuPDF directional text-block
+  bboxes as the source-region boundary before coordinate transformation. On
+  two-column pages this keeps the rotated table plus its footer in one source
+  column while excluding upright article text in the other column.
+- legacy trailing-row trim may still record `metadata.trailing_non_table_rows` for
+  non-block-scoped extraction candidates, but the intended long-term order is to
+  remove repeated page furniture before table extraction rather than duplicating
+  that decision in trailing-row trim heuristics.
 
 This matters for papers with table continuations, odd numbering, or weak captions. A bad score should be inspectable, not silently destructive.
 

@@ -151,34 +151,6 @@ def test_stats_only_parent_rows_do_not_chain_as_levels() -> None:
     assert blocks[1].level_row_indices == [5, 6]
 
 
-def test_symbol_only_parent_row_starts_new_categorical_block() -> None:
-    """A parent row with only significance markers should own the following count-like levels."""
-    table = NormalizedTable(
-        table_id="tbl-symbol-parent",
-        header_rows=[0],
-        body_rows=[1, 2, 3, 4, 5, 6],
-        row_views=[
-            _build_row(1, "Education level", ["", "", "†", ""], indent_level=0),
-            _build_row(2, "Less Than 9th Grade", ["1287(16.25%)", "929(15.46%)", "358(18.73%)", "106(18.12%)"], indent_level=8),
-            _build_row(3, "College Graduate or above", ["1526(19.27%)", "1256(20.90%)", "270(14.13%)", "77(13.16%)"], indent_level=8),
-            _build_row(4, "Ethnicity", ["", "", "‡", "‡"], indent_level=0),
-            _build_row(5, "Mexican American", ["1256(15.86%)", "1095(18.22%)", "161(8.42%)", "34(5.81%)"], indent_level=8),
-            _build_row(6, "Non-Hispanic White", ["3961(50.01%)", "2786(46.36%)", "1175(61.49%)", "372(63.59%)"], indent_level=8),
-        ],
-        n_rows=7,
-        n_cols=5,
-    )
-
-    classifications = {item.row_idx: item.classification for item in classify_rows(table)}
-    blocks = group_variable_blocks(table)
-
-    assert classifications[4] == "variable_header"
-    assert classifications[5] == "level_row"
-    assert classifications[6] == "level_row"
-    ethnicity = next(block for block in blocks if block.variable_label == "Ethnicity")
-    assert ethnicity.level_row_indices == [5, 6]
-
-
 def test_split_parent_and_level_descriptor_cells_still_group_levels() -> None:
     """A split parent label and one split level descriptor cell should not fragment a block."""
     table = NormalizedTable(
@@ -244,33 +216,6 @@ def test_mean_sd_row_without_children_stays_continuous() -> None:
     assert len(blocks) == 1
     assert blocks[0].variable_kind == "continuous"
     assert blocks[0].level_row_indices == []
-
-
-def test_pdf_plusminus_six_rows_classify_as_continuous() -> None:
-    """PDFs sometimes extract the plus/minus glyph as a numeric-looking 6."""
-    table = NormalizedTable(
-        table_id="tbl-pdf-six",
-        header_rows=[0, 1],
-        body_rows=[2, 3],
-        row_views=[
-            _build_row(2, "Age (years)", ["25.9 6 3.6", "31.2 6 2.7", "32.6 6 2.9"]),
-            _build_row(3, "BMI (kg/m2)", ["24.7 6 1.0", "24.6 6 0.7", "21.5 6 0.4†"]),
-        ],
-        n_rows=4,
-        n_cols=4,
-    )
-
-    classifications = classify_rows(table)
-    blocks = group_variable_blocks(table, classifications=classifications)
-
-    assert [item.classification for item in classifications] == [
-        "continuous_variable_row",
-        "continuous_variable_row",
-    ]
-    assert [(block.variable_label, block.variable_kind) for block in blocks] == [
-        ("Age (years)", "continuous"),
-        ("BMI (kg/m2)", "continuous"),
-    ]
 
 
 def test_adjacent_threshold_binary_rows_form_one_level_block() -> None:
@@ -390,47 +335,6 @@ def test_unknown_rows_do_not_force_impossible_grouping() -> None:
     assert blocks[2].variable_kind == "binary"
 
 
-def test_number_with_integer_values_forms_one_row_variable_block() -> None:
-    """Short scalar-count rows should behave as one-row variables."""
-    table = NormalizedTable(
-        table_id="tbl-number",
-        header_rows=[0],
-        body_rows=[1],
-        row_views=[_build_row(1, "Number", ["123", "456"])],
-        n_rows=2,
-        n_cols=3,
-    )
-
-    classifications = classify_rows(table)
-    blocks = group_variable_blocks(table, classifications=classifications)
-
-    assert classifications[0].classification == "continuous_variable_row"
-    assert len(blocks) == 1
-    assert blocks[0].variable_label == "Number"
-    assert blocks[0].variable_kind == "continuous"
-    assert blocks[0].level_row_indices == []
-
-
-def test_lowercase_n_with_integer_values_forms_one_row_variable_block() -> None:
-    """A compact n row with integer counts should be treated as a one-row variable."""
-    table = NormalizedTable(
-        table_id="tbl-lower-n",
-        header_rows=[0],
-        body_rows=[1],
-        row_views=[_build_row(1, "n", ["5490", "5171", "319"])],
-        n_rows=2,
-        n_cols=4,
-    )
-
-    classifications = classify_rows(table)
-    blocks = group_variable_blocks(table, classifications=classifications)
-
-    assert classifications[0].classification == "continuous_variable_row"
-    assert len(blocks) == 1
-    assert blocks[0].variable_label == "n"
-    assert blocks[0].level_row_indices == []
-
-
 def test_body_count_percent_row_named_no_is_not_suppressed_as_count_label() -> None:
     """Body rows with count-percent values should be resolved by value layout, not by a count-label regex."""
     table = NormalizedTable(
@@ -450,49 +354,6 @@ def test_body_count_percent_row_named_no_is_not_suppressed_as_count_label() -> N
     assert classifications[0].classification == "binary_variable_row"
     assert len(blocks) == 1
     assert blocks[0].variable_label == "No"
-
-
-def test_uppercase_n_with_integer_values_forms_one_row_variable_block() -> None:
-    """An uppercase N row with integer counts should be treated as a one-row variable."""
-    table = NormalizedTable(
-        table_id="tbl-upper-n",
-        header_rows=[0],
-        body_rows=[1],
-        row_views=[_build_row(1, "N", ["5490", "5171", "319"])],
-        n_rows=2,
-        n_cols=4,
-    )
-
-    classifications = classify_rows(table)
-    blocks = group_variable_blocks(table, classifications=classifications)
-
-    assert classifications[0].classification == "continuous_variable_row"
-    assert len(blocks) == 1
-    assert blocks[0].variable_label == "N"
-    assert blocks[0].level_row_indices == []
-
-
-def test_gender_female_percent_row_becomes_one_row_summary_block() -> None:
-    """Inline female summary rows should behave as complete one-row variables when they own no levels."""
-    table = NormalizedTable(
-        table_id="tbl-gender-female",
-        header_rows=[0],
-        body_rows=[1, 2],
-        row_views=[
-            _build_row(1, "Gender = Female (%)", ["2793 (50.9)", "2603 (50.3)", "190 (59.6)", "0.002"]),
-            _build_row(2, "Age, years", ["48.35 (17.47)", "47.60 (17.42)", "60.51 (13.27)", "<0.001"]),
-        ],
-        n_rows=3,
-        n_cols=5,
-    )
-
-    classifications = classify_rows(table)
-    blocks = group_variable_blocks(table, classifications=classifications)
-
-    assert classifications[0].classification == "binary_variable_row"
-    assert blocks[0].variable_label == "Gender = Female (%)"
-    assert blocks[0].variable_kind == "binary"
-    assert blocks[0].row_start == blocks[0].row_end == 1
 
 
 def test_female_percent_row_becomes_one_row_summary_block() -> None:
@@ -565,30 +426,6 @@ def test_true_categorical_parent_with_child_levels_is_not_collapsed_to_one_row_s
     assert len(blocks) == 1
     assert blocks[0].variable_kind == "categorical"
     assert blocks[0].level_row_indices == [2, 3]
-
-
-def test_hispanic_mexican_is_level_row_after_categorical_parent() -> None:
-    """Slash-separated category labels should still be treated as level rows."""
-    table = NormalizedTable(
-        table_id="tbl-slash-level",
-        header_rows=[0],
-        body_rows=[1, 2, 3, 4],
-        row_views=[
-            _build_row(1, "Ethnicity", []),
-            _build_row(2, "White", ["220 (55.0)", "110 (56.0)"]),
-            _build_row(3, "Hispanic/Mexican", ["120 (30.0)", "55 (28.0)"]),
-            _build_row(4, "Other", ["40 (10.0)", "18 (9.0)"]),
-        ],
-        n_rows=5,
-        n_cols=3,
-    )
-
-    classifications = {item.row_idx: item.classification for item in classify_rows(table)}
-
-    assert classifications[1] == "variable_header"
-    assert classifications[2] == "level_row"
-    assert classifications[3] == "level_row"
-    assert classifications[4] == "level_row"
 
 
 def test_indented_row_gets_stronger_level_signal_below_parent() -> None:

@@ -284,6 +284,10 @@ Do not collapse modules into one file.
 
 All modules must be testable.
 
+Do not create new tests without specific user permission. To request permission,
+explain exactly what behavior the test would cover and why that coverage is
+worth adding.
+
 ---
 
 # Style Guidelines
