@@ -70,10 +70,41 @@ Non-scope:
    - Include table footnotes, page notes, and caption-adjacent notes when available.
    - Verify the artifact can represent unresolved and ambiguous links.
    - Real-paper pass: 28 fixture PDFs parsed without CLI failures. Generated artifacts included resolved table-note links, unresolved p-value marker anchors, and ambiguous glyph-key matches.
+   - Follow-up fix: `metabolic` Table 1 p-value markers now resolve because PyMuPDF page-line harvesting keeps embedded definitions such as `significance. a Represents ... b Represents ...` when they classify as local table notes.
+   - Follow-up fix: `stroke` Table 1-3 statistical-significance asterisks now resolve because repeated asterisk runs are preserved on anchors and comma-separated footer definitions are split into `*`, `**`, and `***` records.
    - Review note: page-note candidates can include journal/download boilerplate and repeated marginal text; keep links review-only until pruning is improved.
 
 11. [x] Review before consuming links
    - Inspect R outputs on several real papers.
    - Only after review, decide whether any downstream parser stage should consume footnote links.
    - Decision: do not consume links downstream yet; keep `paper_footnotes.json` and `ObservedFootnotes` as review artifacts.
-   - Reviewed examples: `OPEandRA` showed resolved same-table note links; `metabolic` showed unresolved p-value marker anchors; the CKD paper showed ambiguous repeated `*` definitions; the Eke periodontitis paper showed noisy page-note candidates from journal/download boilerplate.
+   - Reviewed examples: `OPEandRA` showed resolved same-table note links; `metabolic` originally showed unresolved p-value marker anchors and now resolves its embedded `a`/`b` Table 1 notes; `stroke` originally showed unresolved statistical-significance stars and now resolves local `*`/`**`/`***` footer definitions; the CKD paper showed ambiguous repeated `*` definitions; the Eke periodontitis paper showed noisy page-note candidates from journal/download boilerplate.
+
+12. [x] Add pre-footnote math/unit notation rejection
+   - Before promoting cell-text annotations into `FootnoteAnchor` records,
+     reject obvious mathematical notation such as `10^9`, `10^6`, `m^2`,
+     `cm^3`, `kg/m^2`, and `×10^9/L`.
+   - Use structural text context only: numeric base, multiplication-by-ten
+     patterns, slash-separated units, or unit-like tokens adjacent to the
+     superscript/subscript.
+   - Keep the original evidence visible in `cell_text_annotations.json`; do not
+     erase the marker from extraction artifacts.
+   - Add focused tests from the `stroke` row-label unit-exponent pattern.
+   - Implemented: `paper_footnotes.json` metadata now records
+     `math_unit_anchor_suppression_count`; the 2026-07-01 stroke spot check
+     suppresses 7 unit/exponent candidates before footnote linking.
+
+13. [x] Add conventional p-value star fallback interpretation
+   - After math/unit rejection and explicit footnote linking, treat asterisks in
+     p-value context as statistical-significance markers even if no footer
+     definition exists.
+   - Explicit local definitions still take precedence.
+   - Fallback mapping: `*` -> p-value threshold `10^-1`, `**` -> `10^-2`,
+     `***` -> `10^-3`.
+   - Store the result as structured inferred evidence for R inspection; do not
+     rewrite table cell text or parsed values.
+   - Add focused tests for p-value-column anchors with no explicit footer and
+     non-p-value asterisks that must remain ordinary footnote candidates.
+   - Implemented: links can now have `link_status = "inferred"` with an
+     `inferred_meaning` object. Explicit definitions still override the
+     fallback, and R inspection helpers expose inference fields.

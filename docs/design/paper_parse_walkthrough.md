@@ -67,9 +67,15 @@ and glyph-key links as a paper-level review artifact. It is written even when no
 anchors or definitions are found.
 Definition candidates are fed by PyMuPDF page text lines with bbox and page-height
 provenance so table-local notes and page-bottom notes can be classified
-deterministically before glyph-key linking. Repeated page-furniture regions are
-used first to suppress overlapping table-cell anchors and definition candidate
-lines.
+deterministically before glyph-key linking. These lines may start with a marker
+or contain embedded marker definitions after nearby explanatory prose. A single
+table-footer line can yield several definition records, for example `*`, `**`,
+and `***` statistical-significance definitions. Repeated page-furniture regions
+are used first to suppress overlapping table-cell anchors and definition
+candidate lines. Numeric unit/exponent superscripts such as `10^9` and `m^2`
+are suppressed before footnote-anchor creation and counted in metadata.
+P-value asterisk markers without explicit definitions can be emitted as
+structured `inferred` links with conventional threshold meanings.
 
 ## Why There Are Multiple Versions Of A Table
 
@@ -963,7 +969,7 @@ When a parse looks wrong, inspect the outputs in this order.
    If the parse succeeded but the columns, p-values, headers, or row classifications look suspicious, inspect this artifact for deterministic quality warnings.
 
 13. `paper_footnotes.json`
-   If superscripts, subscripts, or note markers matter, inspect this artifact for anchors, candidate definitions, and resolved, ambiguous, or unresolved glyph-key links.
+   If superscripts, subscripts, or note markers matter, inspect this artifact for anchors, candidate definitions, math/unit suppression metadata, and resolved, ambiguous, inferred, or unresolved glyph-key links.
 
 14. `paper_page_furniture.json`
    If repeated page headers, footers, watermarks, or download notices may be contaminating note extraction, inspect this artifact for recurring clusters and ignored regions.

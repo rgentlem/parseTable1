@@ -79,6 +79,62 @@ For table cells and headers, use `source_scope = "table_cell"` and distinguish
 Table-cell anchors whose page-coordinate bbox overlaps repeated page furniture
 are suppressed before linking and counted in metadata.
 
+## Pre-Footnote Classification
+
+Footnote anchor detection should be downstream of a small set of stronger
+non-footnote classifications. The first required classification is mathematical
+or unit notation. If a superscript/subscript glyph is best explained as part of
+a number, formula, measurement unit, or exponent, it should not be promoted to a
+`FootnoteAnchor`.
+
+Initial math/unit exponent rule:
+
+- Apply before glyph-key matching and before unresolved-link creation.
+- Use only structural text evidence from the annotation and attached cell text,
+  not paper-specific vocabulary.
+- Treat a numeric superscript or subscript as math/unit notation when it is
+  directly attached to a numeric base or unit-like expression. Portable examples
+  include `10^9`, `10^6`, `m^2`, `cm^3`, `kg/m^2`, `mL/min/1.73m^2`, `x10^9/L`,
+  and `×10^9/L`.
+- Evidence can come from `attached_to_text` ending in a numeric base, a
+  multiplication-by-ten pattern, a slash-separated unit expression, or a
+  letter-unit token immediately before the superscript.
+- This classification should be conservative. If the same glyph has a local
+  table-note definition and the surrounding text is not unit/formula-like, keep
+  it as a footnote anchor.
+- Suppressed math/unit markers should remain inspectable through
+  `cell_text_annotations.json`; a future metadata counter or dedicated
+  annotation classification field may expose how many candidate anchors were
+  rejected for this reason.
+
+## P-Value Significance Stars
+
+After math/unit notation has been rejected, asterisks attached to p-value cells
+should be treated as statistical-significance markers even when no explicit
+footer definition is found.
+
+Initial p-value star rule:
+
+- Apply only when the anchor is attached to a p-value cell, p-value column, or
+  p-value-like text such as `<0.001`, `0.04`, `P value`, `_p_`, or a column
+  whose `ColumnHeaderSchema` leaf/header path identifies it as a p-value.
+- Preserve the ordinary footnote-linking path first. If a local table/footer
+  definition exists for `*`, `**`, or `***`, link to it and use the explicit
+  definition as the source of meaning.
+- If no explicit definition exists, emit a structured fallback interpretation
+  rather than leaving the marker as an unresolved footnote. The fallback should
+  record that the meaning is conventional and inferred from p-value context.
+- The conventional fallback is:
+  - `*`: p-value threshold at `10^-1`
+  - `**`: p-value threshold at `10^-2`
+  - `***`: p-value threshold at `10^-3`
+- Do not apply this fallback to asterisks attached to row labels, captions,
+  bibliography/source names, non-p-value numeric cells, or prose unless the
+  p-value context is explicit.
+- Keep the visual marker evidence unchanged in `cell_text_annotations.json`.
+  Any downstream R object should expose both the observed marker and whether its
+  meaning came from an explicit table definition or the conventional fallback.
+
 ## Definition Record
 
 A definition is a candidate explanatory note that may define one or more glyphs.
@@ -113,12 +169,22 @@ optional bbox and page height, source scope, source ID, table ID, visual ID, and
 source artifact. These input lines are not a persisted top-level artifact.
 The parse command now builds these source lines from PyMuPDF page text geometry,
 then classifies local candidates as table notes or page-bottom notes.
+Candidate source lines may start with a marker, or may contain embedded marker
+definitions after preceding abbreviation or significance prose, such as
+`significance. a Represents ... b Represents ...`. Bracketed and
+parenthesized markers such as `[a]` and `(a)` are canonicalized to the visible
+glyph before matching. Statistical-significance footer lines can define repeated
+asterisk runs such as `*`, `**`, and `***` in one comma-separated line; these are
+split into separate definition records with `asterisk:1`, `asterisk:2`, and
+`asterisk:3` glyph keys.
 Before candidate promotion, lines overlapping `paper_page_furniture.json`
 ignored regions are suppressed and counted in metadata.
 
 `raw_text` preserves extracted text. `clean_text` is normalized only enough to
 support matching and review. `definition_text` may drop the leading glyph when
-that split is unambiguous.
+that split is unambiguous. When multiple definitions come from one table footer
+line, each definition keeps the full footer line in `raw_text` and the marker
+specific meaning in `definition_text`.
 
 ## Link Record
 
@@ -138,6 +204,7 @@ Required fields:
 Optional fields:
 
 - `definition_id`
+- `inferred_meaning`
 - `scope_distance`
 - `notes`
 
@@ -145,11 +212,21 @@ Allowed `link_status` values:
 
 - `resolved`
 - `ambiguous`
+- `inferred`
 - `unresolved`
 
 `definition_id` is present only for resolved links. Ambiguous links keep all
 candidates in `candidate_definition_ids`. Unresolved links keep the anchor
-visible with an empty candidate list.
+visible with an empty candidate list. Inferred links have no definition ID and
+carry an `inferred_meaning` object.
+
+`inferred_meaning` is used only when a stronger non-footnote classification and
+explicit definition matching have already run. The first supported inference is
+`p_value_significance` from `conventional_p_value_star`, with fields for
+`meaning_text`, `marker_count`, numeric `p_value_threshold`,
+`threshold_notation`, and evidence strings. This preserves the observed marker
+while distinguishing conventional interpretation from explicit table-footer
+definitions.
 
 ## Glyph Fields
 
@@ -185,6 +262,12 @@ paper-level footnote fallback. They should link only to a local table/visual
 definition; otherwise leave them unresolved with a note that they may be
 bibliographic references. Bibliography matching should be handled by a separate
 citation/reference artifact, not by the footnote linker.
+
+If no explicit definition exists for `*`, `**`, or `***`, the linker may emit an
+`inferred` link only when the anchor is a body-cell asterisk in p-value context.
+The conventional thresholds are `10^-1`, `10^-2`, and `10^-3`, respectively.
+Explicit same-table, same-visual, same-page, or paper-level definitions always
+take precedence over this fallback.
 
 ## Current Consumption Status
 

@@ -17,6 +17,7 @@ from table1_parser.schemas import (
     FootnoteDefinition,
     FootnoteDefinitionCandidateLine,
     FootnoteGlyphKind,
+    FootnoteInferredMeaning,
     FootnoteLink,
     PaperFootnotes,
     PaperPageFurniture,
@@ -25,14 +26,23 @@ from table1_parser.text_cleaning import clean_text
 
 
 TEXT_MARKER_PATTERN = re.compile(r"(?P<glyph>[*﹡＊†‡§¶#|]|[⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉]+)(?=$|[\s.,;:)])")
+DEFINITION_GLYPH_PATTERN = r"[*﹡＊]+|[A-Za-z]|\d+(?!\.\d)|[†‡§¶#|]|[⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉]+"
+DEFINITION_MARKER_TOKEN_PATTERN = (
+    rf"\[\s*(?:{DEFINITION_GLYPH_PATTERN})\s*\]"
+    rf"|\(\s*(?:{DEFINITION_GLYPH_PATTERN})\s*\)"
+    rf"|(?:{DEFINITION_GLYPH_PATTERN})"
+)
 DEFINITION_LINE_START_PATTERN = re.compile(
-    r"^\s*(?:[A-Za-z]|\d+(?!\.\d)|[*﹡＊†‡§¶#|]|[⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉]+)[\s.)\]:;,\-–—]+\S"
+    rf"^\s*(?:{DEFINITION_MARKER_TOKEN_PATTERN})[\s.)\]:;,\-–—]+[A-Z0-9(*†‡§¶#]"
+)
+DEFINITION_LINE_EMBEDDED_PATTERN = re.compile(
+    rf"(?<=[.;:]\s)(?:{DEFINITION_MARKER_TOKEN_PATTERN})[\s.)\]:;,\-–—]+[A-Z0-9(*†‡§¶#]"
 )
 DEFINITION_MARKER_PATTERN = re.compile(
-    r"(?:^|(?<=[.;]\s))"
-    r"(?P<glyph>[A-Za-z]|\d+(?!\.\d)|[*﹡＊†‡§¶#|]|[⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉]+)"
+    r"(?:^|(?<=[.;:,]\s))"
+    rf"(?P<glyph>{DEFINITION_MARKER_TOKEN_PATTERN})"
     r"[\s.)\]:;,\-–—]+"
-    r"(?P<body>\S.*?)(?=(?:[.;]\s+(?:[A-Za-z]|\d+(?!\.\d)|[*﹡＊†‡§¶#|]|[⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉]+)[\s.)\]:;,\-–—]+\S)|$)"
+    rf"(?P<body>\S.*?)(?=(?:[.;,]\s+(?:{DEFINITION_MARKER_TOKEN_PATTERN})[\s.)\]:;,\-–—]+\S)|$)"
 )
 CANONICAL_SYMBOL_KEYS = {
     "†": "dagger",
@@ -43,6 +53,11 @@ CANONICAL_SYMBOL_KEYS = {
     "|": "vertical_bar",
 }
 PAGE_NOTE_FOOTER_HEIGHT = 60.0
+P_VALUE_STAR_THRESHOLDS: dict[int, tuple[float, str]] = {
+    1: (0.1, "10^-1"),
+    2: (0.01, "10^-2"),
+    3: (0.001, "10^-3"),
+}
 
 
 def build_paper_footnote_anchor_inventory(
@@ -58,6 +73,7 @@ def build_paper_footnote_anchor_inventory(
     diagnostics: list[str] = []
     suppressed_anchor_count = 0
     suppressed_anchor_cluster_ids: set[str] = set()
+    math_unit_suppressed_anchor_count = 0
     schemas_by_table_id = {schema.table_id: schema for schema in column_header_schemas or []}
     extracted_by_table_id = {table.table_id: table for table in extracted_tables or []}
     visual_id_by_table_id = _table_visual_ids(extracted_tables or [])
@@ -70,9 +86,21 @@ def build_paper_footnote_anchor_inventory(
             if schema.label_col_idx is not None:
                 row_label_cols.add(schema.label_col_idx)
             row_label_cols.update(leaf.col_idx for leaf in schema.leaves if leaf.is_row_label_column)
+        leaves_by_col_idx = {leaf.col_idx: leaf for leaf in schema.leaves} if schema is not None else {}
         for annotation_index, annotation in enumerate(annotation_table.annotations):
             glyph_raw = annotation.text.strip()
             if not glyph_raw:
+                continue
+            if glyph_raw in {"*", "﹡", "＊"} and annotation.attached_to_text:
+                trailing_asterisks = re.search(r"([*﹡＊]+)$", annotation.attached_to_text.strip())
+                if trailing_asterisks is not None:
+                    glyph_raw = trailing_asterisks.group(1) + glyph_raw
+            if _is_math_unit_notation_marker(
+                glyph_raw,
+                annotation.annotation_type,
+                annotation.attached_to_text,
+            ):
+                math_unit_suppressed_anchor_count += 1
                 continue
             page_num = annotation_table.page_num or (
                 extracted_by_table_id.get(annotation_table.table_id).page_num
@@ -116,6 +144,11 @@ def build_paper_footnote_anchor_inventory(
                     row_idx=annotation.row_idx,
                     col_idx=annotation.col_idx,
                     source_role=source_role,
+                    text_context=(
+                        leaves_by_col_idx[annotation.col_idx].leaf_label
+                        if annotation.col_idx in leaves_by_col_idx
+                        else None
+                    ),
                     attached_to_text=annotation.attached_to_text,
                     bbox=annotation.bbox,
                     coordinate_frame=str(annotation_table.metadata.get("coordinate_frame") or "page"),
@@ -168,6 +201,7 @@ def build_paper_footnote_anchor_inventory(
             "anchor_count": len(anchors),
             "page_furniture_anchor_suppression_count": suppressed_anchor_count,
             "page_furniture_suppressed_anchor_cluster_ids": sorted(suppressed_anchor_cluster_ids),
+            "math_unit_anchor_suppression_count": math_unit_suppressed_anchor_count,
             "definitions_status": "not_built",
             "links_status": "not_built",
         },
@@ -222,7 +256,14 @@ def build_paper_footnote_definition_lines_from_pdf(pdf_path: str) -> list[Footno
                     raw_text = " ".join(span_text_parts).strip()
                     current_line_index = line_index
                     line_index += 1
-                    if not raw_text or not bbox_parts or DEFINITION_LINE_START_PATTERN.search(raw_text) is None:
+                    if (
+                        not raw_text
+                        or not bbox_parts
+                        or (
+                            DEFINITION_LINE_START_PATTERN.search(raw_text) is None
+                            and DEFINITION_LINE_EMBEDDED_PATTERN.search(raw_text) is None
+                        )
+                    ):
                         continue
                     bbox = (
                         min(part[0] for part in bbox_parts),
@@ -313,6 +354,18 @@ def build_paper_footnote_definition_candidates(
                 if table.page_num != line.page_num:
                     continue
                 table_left, _, table_right, table_bottom = table_bbox
+                next_table_top = min(
+                    (
+                        other_bbox[1]
+                        for other_table_id, other_bbox in table_bboxes.items()
+                        if other_table_id != candidate_table_id
+                        and tables_by_id[other_table_id].page_num == line.page_num
+                        and other_bbox[1] > table_bottom
+                    ),
+                    default=None,
+                )
+                if next_table_top is not None and top >= next_table_top - 2.0:
+                    continue
                 overlap = max(0.0, min(right, table_right) - max(left, table_left))
                 line_width = max(right - left, 1.0)
                 if top >= table_bottom - 2.0 and top - table_bottom <= 96.0 and overlap / line_width >= 0.25:
@@ -334,7 +387,7 @@ def build_paper_footnote_definition_candidates(
             continue
         confidence = confidence if confidence is not None else 0.8
         for match in DEFINITION_MARKER_PATTERN.finditer(raw_text):
-            glyph_raw = match.group("glyph").strip()
+            glyph_raw = _definition_glyph_from_marker(match.group("glyph"))
             definition_text = clean_text(match.group("body"))
             if not glyph_raw or not definition_text:
                 continue
@@ -370,7 +423,7 @@ def build_paper_footnote_definition_candidates(
                 continue
             raw_text = text.strip()
             for match in DEFINITION_MARKER_PATTERN.finditer(raw_text):
-                glyph_raw = match.group("glyph").strip()
+                glyph_raw = _definition_glyph_from_marker(match.group("glyph"))
                 definition_text = clean_text(match.group("body"))
                 if not glyph_raw or not definition_text:
                     continue
@@ -435,6 +488,22 @@ def link_paper_footnotes(footnotes: PaperFootnotes) -> PaperFootnotes:
                 )
                 continue
         if not candidates:
+            inferred_meaning = _infer_p_value_star_meaning(anchor)
+            if inferred_meaning is not None:
+                links.append(
+                    FootnoteLink(
+                        link_id=f"link:{anchor_index}",
+                        anchor_id=anchor.anchor_id,
+                        glyph_key=anchor.glyph_key,
+                        link_status="inferred",
+                        candidate_definition_ids=[],
+                        link_basis=["no_matching_glyph_key", "conventional_p_value_star"],
+                        confidence=min(anchor.confidence, 0.72),
+                        inferred_meaning=inferred_meaning,
+                        notes=["no_explicit_definition_for_p_value_star"],
+                    )
+                )
+                continue
             links.append(
                 FootnoteLink(
                     link_id=f"link:{anchor_index}",
@@ -523,6 +592,7 @@ def link_paper_footnotes(footnotes: PaperFootnotes) -> PaperFootnotes:
                 "links_status": "built",
                 "resolved_link_count": sum(link.link_status == "resolved" for link in links),
                 "ambiguous_link_count": sum(link.link_status == "ambiguous" for link in links),
+                "inferred_link_count": sum(link.link_status == "inferred" for link in links),
                 "unresolved_link_count": sum(link.link_status == "unresolved" for link in links),
             },
         }
@@ -574,6 +644,85 @@ def glyph_fields(glyph_raw: str) -> tuple[FootnoteGlyphKind, str, list[str]]:
     if any(not char.isalnum() for char in glyph):
         return "symbol", "symbol:" + ",".join(codepoints), codepoints
     return "unknown", f"unknown:{normalized_key or glyph}", codepoints
+
+
+def _is_math_unit_notation_marker(
+    glyph_raw: str,
+    annotation_type: str | None,
+    attached_to_text: str | None,
+) -> bool:
+    """Return true for numeric super/subscripts that are better read as units or exponents."""
+    glyph_kind, _, _ = glyph_fields(glyph_raw)
+    if glyph_kind != "number" or annotation_type not in {"superscript", "subscript"} or not attached_to_text:
+        return False
+
+    context = unicodedata.normalize("NFKC", attached_to_text).strip()
+    if not context:
+        return False
+    compact = re.sub(r"\s+", "", context)
+    if re.search(r"(?:×|x|\*)?10$", compact, flags=re.IGNORECASE):
+        return True
+    if re.search(r"(?:^|[^A-Za-z0-9])(?:m|cm|mm|kg|g|mg|ug|μg|µg|l|dl|ml|mol|mmol|umol|μmol|µmol)$", compact, flags=re.IGNORECASE):
+        return True
+    if "/" in compact and re.search(r"[A-Za-zµμ][A-Za-zµμ0-9.]*$", compact):
+        return True
+    if re.search(r"\d+(?:\.\d+)?[A-Za-zµμ]+$", compact):
+        return True
+    return False
+
+
+def _infer_p_value_star_meaning(anchor: FootnoteAnchor) -> FootnoteInferredMeaning | None:
+    """Infer conventional p-value star thresholds when no explicit definition exists."""
+    if anchor.glyph_kind != "asterisk":
+        return None
+    marker_count_match = re.fullmatch(r"asterisk:(\d+)", anchor.glyph_key)
+    if marker_count_match is None:
+        return None
+    marker_count = int(marker_count_match.group(1))
+    threshold = P_VALUE_STAR_THRESHOLDS.get(marker_count)
+    if threshold is None:
+        return None
+
+    attached_text = unicodedata.normalize("NFKC", anchor.attached_to_text or "")
+    context_text = unicodedata.normalize("NFKC", anchor.text_context or "")
+    combined_context = " ".join(part for part in (attached_text, context_text, anchor.source_id) if part)
+    compact_attached = re.sub(r"\s+", "", attached_text)
+    evidence: list[str] = []
+    if anchor.source_role == "body_cell":
+        evidence.append("body_cell_anchor")
+    if re.search(r"(?i)\bp\s*[-_ ]?value\b|\bp\s*[<=>≤≥]", combined_context):
+        evidence.append("explicit_p_value_text")
+    if re.search(r"(?i)(?:^|[^A-Za-z])p(?:$|[^A-Za-z])", combined_context):
+        evidence.append("p_value_symbol_text")
+    if re.search(r"(?i)(?:^|[<=>≤≥])\s*0?\.\d+", compact_attached) or re.fullmatch(
+        r"0?\.\d+", compact_attached
+    ):
+        evidence.append("p_value_numeric_text")
+    if "body_cell_anchor" not in evidence:
+        return None
+    if not any(item in evidence for item in ("explicit_p_value_text", "p_value_symbol_text", "p_value_numeric_text")):
+        return None
+
+    p_value_threshold, threshold_notation = threshold
+    return FootnoteInferredMeaning(
+        inference_type="p_value_significance",
+        inference_source="conventional_p_value_star",
+        meaning_text=f"Conventional p-value significance marker: p < {threshold_notation}",
+        marker_count=marker_count,
+        p_value_threshold=p_value_threshold,
+        threshold_notation=threshold_notation,
+        evidence=evidence,
+    )
+
+
+def _definition_glyph_from_marker(marker_text: str) -> str:
+    """Return the visible footnote glyph from a bare, bracketed, or parenthesized marker."""
+    glyph = marker_text.strip()
+    if len(glyph) >= 2 and glyph[0] == "[" and glyph[-1] == "]":
+        return glyph[1:-1].strip()
+    if len(glyph) >= 2 and glyph[0] == "(" and glyph[-1] == ")":
+        return glyph[1:-1].strip()
+    return glyph
 
 
 def _table_visual_ids(extracted_tables: Sequence[ExtractedTable]) -> dict[str, str]:

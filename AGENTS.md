@@ -96,6 +96,12 @@ outputs/testpapers_batch_<timestamp>
 or another clearly named batch directory. Existing outputs may be from earlier
 runs and should not be assumed current unless just regenerated.
 
+After a fresh batch or focused real-paper output run succeeds and the user does
+not ask to preserve prior runs, remove older generated output directories so
+`outputs/` contains only the current run needed for inspection. Do not delete
+source PDFs, files under `/Users/robert/Projects/Epiconnector/testpapers`, or
+any non-generated project files.
+
 ## Commit Hygiene
 
 Do not stage or commit generated files under `outputs/`.
@@ -245,6 +251,9 @@ Normalized values must always preserve the original text.
 Use:
 
 Python 3.11+
+
+In this local environment, use `python3` for Python commands. `python` may not
+be available on `PATH`.
 
 ### Function Design & Patterns
 - **No Single-Use Helpers**: NEVER extract logic into a separate helper function if it is only used once within a single parent function.

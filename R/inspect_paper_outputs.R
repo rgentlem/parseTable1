@@ -832,6 +832,13 @@ footnote_links_df <- function(outputs, table_number = NULL, table_index = NULL) 
     candidate_definition_ids = character(),
     link_basis = character(),
     scope_distance = character(),
+    inference_type = character(),
+    inference_source = character(),
+    meaning_text = character(),
+    marker_count = integer(),
+    p_value_threshold = numeric(),
+    threshold_notation = character(),
+    inference_evidence = character(),
     confidence = numeric(),
     notes = character(),
     stringsAsFactors = FALSE
@@ -856,6 +863,7 @@ footnote_links_df <- function(outputs, table_number = NULL, table_index = NULL) 
     table_id <- if (is.na(anchor_table_id)) "" else as.character(unname(anchor_table_id))
     row_table_index <- table_index_for_table_id(outputs, table_id)
     row_table_number <- if (is.na(row_table_index)) NA_integer_ else table_number_for_outputs(outputs, row_table_index)
+    inferred_meaning <- link$inferred_meaning %||% list()
     data.frame(
       table_number = row_table_number,
       table_index = as.integer(row_table_index),
@@ -868,6 +876,13 @@ footnote_links_df <- function(outputs, table_number = NULL, table_index = NULL) 
       candidate_definition_ids = paste(character_vector(link$candidate_definition_ids), collapse = " | "),
       link_basis = paste(character_vector(link$link_basis), collapse = " | "),
       scope_distance = as.character(link$scope_distance %||% ""),
+      inference_type = as.character(inferred_meaning$inference_type %||% ""),
+      inference_source = as.character(inferred_meaning$inference_source %||% ""),
+      meaning_text = as.character(inferred_meaning$meaning_text %||% ""),
+      marker_count = as.integer(inferred_meaning$marker_count %||% NA_integer_),
+      p_value_threshold = as.numeric(inferred_meaning$p_value_threshold %||% NA_real_),
+      threshold_notation = as.character(inferred_meaning$threshold_notation %||% ""),
+      inference_evidence = paste(character_vector(inferred_meaning$evidence), collapse = " | "),
       confidence = as.numeric(link$confidence %||% NA_real_),
       notes = paste(character_vector(link$notes), collapse = " | "),
       stringsAsFactors = FALSE
@@ -904,6 +919,7 @@ show_paper_footnotes <- function(paper_dir, table_number = NULL, table_index = N
   cat(sprintf("link_count: %s\n", nrow(links)))
   cat(sprintf("resolved_link_count: %s\n", sum(links$link_status == "resolved", na.rm = TRUE)))
   cat(sprintf("ambiguous_link_count: %s\n", sum(links$link_status == "ambiguous", na.rm = TRUE)))
+  cat(sprintf("inferred_link_count: %s\n", sum(links$link_status == "inferred", na.rm = TRUE)))
   cat(sprintf("unresolved_link_count: %s\n", sum(links$link_status == "unresolved", na.rm = TRUE)))
 
   sections <- list(
@@ -932,6 +948,7 @@ show_paper_footnotes <- function(paper_dir, table_number = NULL, table_index = N
       "definition_id",
       "glyph_key",
       "link_status",
+      "meaning_text",
       "scope_distance",
       "confidence"
     ), drop = FALSE]

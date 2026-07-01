@@ -259,6 +259,7 @@ build_observed_footnotes <- function(
       link_count = length(links),
       resolved_link_count = sum(link_statuses == "resolved", na.rm = TRUE),
       ambiguous_link_count = sum(link_statuses == "ambiguous", na.rm = TRUE),
+      inferred_link_count = sum(link_statuses == "inferred", na.rm = TRUE),
       unresolved_link_count = sum(link_statuses == "unresolved", na.rm = TRUE)
     )
   )

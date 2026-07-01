@@ -141,6 +141,81 @@ def test_build_anchor_inventory_preserves_unclassified_cell_anchors_without_sche
     assert footnotes.anchors[0].notes == ["source_role_unclassified:no_column_header_schema"]
 
 
+def test_build_anchor_inventory_groups_trailing_asterisk_runs() -> None:
+    """A final detected asterisk should combine with attached trailing asterisks."""
+    annotation_table = CellTextAnnotationTable(
+        table_id="tbl-1",
+        page_num=1,
+        n_rows=1,
+        n_cols=1,
+        annotations=[
+            CellTextAnnotation(
+                row_idx=0,
+                col_idx=0,
+                text="*",
+                annotation_type="inline_marker",
+                attached_to_text="<0.001**",
+                confidence=0.65,
+            )
+        ],
+    )
+
+    footnotes = build_paper_footnote_anchor_inventory(
+        paper_id="paper",
+        source_pdf="paper.pdf",
+        cell_text_annotations=[annotation_table],
+    )
+
+    assert footnotes.anchors[0].glyph_raw == "***"
+    assert footnotes.anchors[0].glyph_key == "asterisk:3"
+
+
+def test_build_anchor_inventory_suppresses_math_unit_exponents() -> None:
+    """Numeric superscripts in unit notation should not become footnote anchors."""
+    annotation_table = CellTextAnnotationTable(
+        table_id="tbl-1",
+        page_num=1,
+        n_rows=2,
+        n_cols=2,
+        annotations=[
+            CellTextAnnotation(
+                row_idx=0,
+                col_idx=0,
+                text="9",
+                annotation_type="superscript",
+                attached_to_text="RBC, x10",
+                confidence=0.9,
+            ),
+            CellTextAnnotation(
+                row_idx=1,
+                col_idx=0,
+                text="2",
+                annotation_type="superscript",
+                attached_to_text="eGFR, ml/min/1.73m",
+                confidence=0.9,
+            ),
+            CellTextAnnotation(
+                row_idx=1,
+                col_idx=1,
+                text="1",
+                annotation_type="superscript",
+                attached_to_text="NHANES",
+                confidence=0.9,
+            ),
+        ],
+    )
+
+    footnotes = build_paper_footnote_anchor_inventory(
+        paper_id="paper",
+        source_pdf="paper.pdf",
+        cell_text_annotations=[annotation_table],
+    )
+
+    assert footnotes.metadata["math_unit_anchor_suppression_count"] == 2
+    assert [anchor.glyph_key for anchor in footnotes.anchors] == ["number:1"]
+    assert footnotes.anchors[0].attached_to_text == "NHANES"
+
+
 def test_build_anchor_inventory_suppresses_page_furniture_overlapping_cell_anchors() -> None:
     """Cell anchors inside repeated page furniture should not enter the inventory."""
     annotation_table = CellTextAnnotationTable(
@@ -239,6 +314,166 @@ def test_build_definition_candidates_from_table_local_and_caption_notes() -> Non
     assert definitions[1].glyph_key == "letter:b"
 
 
+def test_build_definition_candidates_from_embedded_table_note_markers() -> None:
+    """Table notes may define markers after abbreviation prose on the same physical line."""
+    extracted_table = ExtractedTable(
+        table_id="tbl-1",
+        source_pdf="paper.pdf",
+        page_num=5,
+        title="Table 1",
+        caption="Table 1 Baseline characteristics",
+        n_rows=2,
+        n_cols=2,
+        cells=[
+            TableCell(row_idx=0, col_idx=0, text="Variable", bbox=(50.0, 100.0, 120.0, 112.0)),
+            TableCell(row_idx=0, col_idx=1, text="p", bbox=(500.0, 100.0, 530.0, 112.0)),
+            TableCell(row_idx=1, col_idx=0, text="Age", bbox=(50.0, 480.0, 120.0, 492.0)),
+            TableCell(row_idx=1, col_idx=1, text="<0.001b", bbox=(500.0, 480.0, 535.0, 492.0)),
+        ],
+        extraction_backend="pymupdf4llm",
+        metadata={"table_number": 1},
+    )
+    lines = [
+        FootnoteDefinitionCandidateLine(
+            line_id="page-5-line-12",
+            page_num=5,
+            raw_text=(
+                "significance. a Represents the use of the Chi-square test. "
+                "b Represents the use of the Kruskal-Wallis test"
+            ),
+            source_scope="body_text",
+            bbox=(52.0, 540.0, 530.0, 552.0),
+            page_height=800.0,
+            source_artifact="pymupdf_page_text_lines",
+        )
+    ]
+
+    definitions = build_paper_footnote_definition_candidates(lines, [extracted_table])
+
+    assert [(definition.glyph_key, definition.definition_text) for definition in definitions] == [
+        ("letter:a", "Represents the use of the Chi-square test"),
+        ("letter:b", "Represents the use of the Kruskal-Wallis test"),
+    ]
+    assert {definition.source_scope for definition in definitions} == {"table_note"}
+    assert {definition.table_id for definition in definitions} == {"tbl-1"}
+
+
+def test_build_definition_candidates_from_bracketed_embedded_markers() -> None:
+    """Bracketed marker definitions should canonicalize to the visible marker glyph."""
+    definitions = build_paper_footnote_definition_candidates(
+        [
+            FootnoteDefinitionCandidateLine(
+                line_id="page-2-line-12",
+                page_num=2,
+                raw_text="Abbreviations. [a] Chi-square test. [b] Kruskal-Wallis test.",
+                source_scope="table_note",
+                bbox=(52.0, 540.0, 530.0, 552.0),
+            )
+        ]
+    )
+
+    assert [(definition.glyph_raw, definition.glyph_key) for definition in definitions] == [
+        ("a", "letter:a"),
+        ("b", "letter:b"),
+    ]
+    assert definitions[0].definition_text == "Chi-square test"
+    assert definitions[1].definition_text == "Kruskal-Wallis test."
+
+
+def test_build_definition_candidates_from_statistical_star_footer() -> None:
+    """Table footer star definitions may be comma-separated after abbreviation prose."""
+    extracted_table = ExtractedTable(
+        table_id="tbl-1",
+        source_pdf="paper.pdf",
+        page_num=6,
+        title="Table 1",
+        caption="Table 1 Baseline characteristics",
+        n_rows=2,
+        n_cols=2,
+        cells=[
+            TableCell(row_idx=0, col_idx=0, text="Variable", bbox=(50.0, 100.0, 120.0, 112.0)),
+            TableCell(row_idx=0, col_idx=1, text="P value", bbox=(500.0, 100.0, 530.0, 112.0)),
+            TableCell(row_idx=1, col_idx=0, text="Age", bbox=(50.0, 460.0, 120.0, 472.0)),
+            TableCell(row_idx=1, col_idx=1, text="<0.001***", bbox=(500.0, 460.0, 535.0, 472.0)),
+        ],
+        extraction_backend="pymupdf4llm",
+        metadata={"table_number": 1},
+    )
+    lines = [
+        FootnoteDefinitionCandidateLine(
+            line_id="page-6-line-20",
+            page_num=6,
+            raw_text=(
+                "WBC, white blood cell; PLT, platelet. "
+                "* P value < 0.05, ** P value < 0.01, *** P value < 0.001"
+            ),
+            source_scope="body_text",
+            bbox=(52.0, 506.0, 530.0, 516.0),
+            page_height=800.0,
+            source_artifact="pymupdf_page_text_lines",
+        )
+    ]
+
+    definitions = build_paper_footnote_definition_candidates(lines, [extracted_table])
+
+    assert [(definition.glyph_key, definition.definition_text) for definition in definitions] == [
+        ("asterisk:1", "P value < 0.05"),
+        ("asterisk:2", "P value < 0.01"),
+        ("asterisk:3", "P value < 0.001"),
+    ]
+    assert {definition.source_scope for definition in definitions} == {"table_note"}
+    assert {definition.table_id for definition in definitions} == {"tbl-1"}
+
+
+def test_table_note_candidate_does_not_steal_next_table_header() -> None:
+    """A next-table header inside the prior table note zone should not become a note."""
+    first_table = ExtractedTable(
+        table_id="tbl-1",
+        source_pdf="paper.pdf",
+        page_num=7,
+        title="Table 1",
+        caption="Table 1",
+        n_rows=1,
+        n_cols=2,
+        cells=[
+            TableCell(row_idx=0, col_idx=0, text="Variable", bbox=(50.0, 100.0, 120.0, 112.0)),
+            TableCell(row_idx=0, col_idx=1, text="Value", bbox=(500.0, 420.0, 530.0, 432.0)),
+        ],
+        extraction_backend="pymupdf4llm",
+        metadata={"table_number": 1},
+    )
+    next_table = ExtractedTable(
+        table_id="tbl-2",
+        source_pdf="paper.pdf",
+        page_num=7,
+        title="Table 2",
+        caption="Table 2",
+        n_rows=1,
+        n_cols=2,
+        cells=[
+            TableCell(row_idx=0, col_idx=0, text="Variable", bbox=(50.0, 480.0, 120.0, 492.0)),
+            TableCell(row_idx=0, col_idx=1, text="P value", bbox=(500.0, 490.0, 530.0, 502.0)),
+        ],
+        extraction_backend="pymupdf4llm",
+        metadata={"table_number": 2},
+    )
+    definitions = build_paper_footnote_definition_candidates(
+        [
+            FootnoteDefinitionCandidateLine(
+                line_id="page-7-line-30",
+                page_num=7,
+                raw_text="P value",
+                source_scope="body_text",
+                bbox=(500.0, 490.0, 530.0, 502.0),
+                page_height=800.0,
+            )
+        ],
+        [first_table, next_table],
+    )
+
+    assert definitions == []
+
+
 def test_build_definition_candidates_from_page_bottom_notes_and_skips_body_text() -> None:
     """Page-bottom notes should be preserved, while unrelated body text is ignored."""
     lines = [
@@ -323,6 +558,22 @@ def test_build_definition_lines_from_pdf_collects_positioned_marker_lines(monkey
                     {
                         "lines": [
                             {"spans": [{"text": "a Table note text.", "bbox": (50.0, 140.0, 180.0, 152.0)}]},
+                            {
+                                "spans": [
+                                    {
+                                        "text": "significance. a Represents the Chi-square test.",
+                                        "bbox": (50.0, 160.0, 260.0, 172.0),
+                                    }
+                                ]
+                            },
+                            {
+                                "spans": [
+                                    {
+                                        "text": "HbA1c: glycated hemoglobin. p -values in bold.",
+                                        "bbox": (50.0, 180.0, 260.0, 192.0),
+                                    }
+                                ]
+                            },
                             {"spans": [{"text": "Body prose without a marker.", "bbox": (50.0, 300.0, 220.0, 312.0)}]},
                             {"spans": [{"text": "112.0 [90.0, 138.0]", "bbox": (50.0, 400.0, 180.0, 412.0)}]},
                             {"spans": [{"text": "† Bottom note text.", "bbox": (40.0, 730.0, 240.0, 742.0)}]},
@@ -348,14 +599,16 @@ def test_build_definition_lines_from_pdf_collects_positioned_marker_lines(monkey
     lines = build_paper_footnote_definition_lines_from_pdf("paper.pdf")
 
     assert fake_document.closed is True
-    assert len(lines) == 2
+    assert len(lines) == 3
     assert lines[0].line_id == "page-1-line-0"
     assert lines[0].raw_text == "a Table note text."
     assert lines[0].bbox == (50.0, 140.0, 180.0, 152.0)
     assert lines[0].page_height == 800.0
     assert lines[0].source_artifact == "pymupdf_page_text_lines"
-    assert lines[1].line_id == "page-1-line-3"
-    assert lines[1].raw_text == "† Bottom note text."
+    assert lines[1].line_id == "page-1-line-1"
+    assert lines[1].raw_text == "significance. a Represents the Chi-square test."
+    assert lines[2].line_id == "page-1-line-5"
+    assert lines[2].raw_text == "† Bottom note text."
 
 
 def test_definition_candidates_do_not_split_decimal_values_as_numbered_notes() -> None:
@@ -557,6 +810,131 @@ def test_link_paper_footnotes_preserves_unresolved_anchors() -> None:
     assert linked.links[0].candidate_definition_ids == []
     assert linked.links[0].link_basis == ["no_matching_glyph_key"]
     assert linked.metadata["unresolved_link_count"] == 1
+
+
+def test_link_paper_footnotes_infers_conventional_p_value_star_without_definition() -> None:
+    """P-value star markers should have a conventional fallback when no footer definition exists."""
+    footnotes = PaperFootnotes(
+        paper_id="paper",
+        source_pdf="paper.pdf",
+        anchors=[
+            FootnoteAnchor(
+                anchor_id="anchor:pvalue",
+                glyph_raw="**",
+                glyph_key="asterisk:2",
+                glyph_kind="asterisk",
+                glyph_codepoints=["U+002A", "U+002A"],
+                source_scope="table_cell",
+                source_id="tbl-1:r4:c3",
+                page_num=2,
+                confidence=0.9,
+                table_id="tbl-1",
+                source_role="body_cell",
+                text_context="P value",
+                attached_to_text="<0.01",
+            )
+        ],
+        definitions=[],
+    )
+
+    linked = link_paper_footnotes(footnotes)
+
+    link = linked.links[0]
+    assert link.link_status == "inferred"
+    assert link.definition_id is None
+    assert link.candidate_definition_ids == []
+    assert link.link_basis == ["no_matching_glyph_key", "conventional_p_value_star"]
+    assert link.inferred_meaning is not None
+    assert link.inferred_meaning.inference_type == "p_value_significance"
+    assert link.inferred_meaning.inference_source == "conventional_p_value_star"
+    assert link.inferred_meaning.marker_count == 2
+    assert link.inferred_meaning.p_value_threshold == 0.01
+    assert link.inferred_meaning.threshold_notation == "10^-2"
+    assert linked.metadata["inferred_link_count"] == 1
+    assert linked.metadata["unresolved_link_count"] == 0
+
+
+def test_link_paper_footnotes_keeps_non_p_value_star_unresolved_without_definition() -> None:
+    """Non-p-value asterisk anchors should not receive the p-value fallback."""
+    footnotes = PaperFootnotes(
+        paper_id="paper",
+        source_pdf="paper.pdf",
+        anchors=[
+            FootnoteAnchor(
+                anchor_id="anchor:value",
+                glyph_raw="*",
+                glyph_key="asterisk:1",
+                glyph_kind="asterisk",
+                glyph_codepoints=["U+002A"],
+                source_scope="table_cell",
+                source_id="tbl-1:r4:c2",
+                page_num=2,
+                confidence=0.9,
+                table_id="tbl-1",
+                source_role="body_cell",
+                text_context="Mean",
+                attached_to_text="45.2",
+            )
+        ],
+        definitions=[],
+    )
+
+    linked = link_paper_footnotes(footnotes)
+
+    assert linked.links[0].link_status == "unresolved"
+    assert linked.links[0].inferred_meaning is None
+    assert linked.metadata["inferred_link_count"] == 0
+    assert linked.metadata["unresolved_link_count"] == 1
+
+
+def test_link_paper_footnotes_explicit_definition_overrides_p_value_star_fallback() -> None:
+    """A local footer definition should be preferred over the conventional fallback."""
+    footnotes = PaperFootnotes(
+        paper_id="paper",
+        source_pdf="paper.pdf",
+        anchors=[
+            FootnoteAnchor(
+                anchor_id="anchor:pvalue",
+                glyph_raw="***",
+                glyph_key="asterisk:3",
+                glyph_kind="asterisk",
+                glyph_codepoints=["U+002A", "U+002A", "U+002A"],
+                source_scope="table_cell",
+                source_id="tbl-1:r4:c3",
+                page_num=2,
+                confidence=0.9,
+                table_id="tbl-1",
+                source_role="body_cell",
+                text_context="P value",
+                attached_to_text="<0.001",
+            )
+        ],
+        definitions=[
+            FootnoteDefinition(
+                definition_id="definition:star3",
+                glyph_raw="***",
+                glyph_key="asterisk:3",
+                glyph_kind="asterisk",
+                glyph_codepoints=["U+002A", "U+002A", "U+002A"],
+                source_scope="table_note",
+                source_id="tbl-1:note:0",
+                page_num=2,
+                raw_text="*** P value < 0.001",
+                clean_text="*** P value < 0.001",
+                definition_text="P value < 0.001",
+                confidence=0.8,
+                table_id="tbl-1",
+            )
+        ],
+    )
+
+    linked = link_paper_footnotes(footnotes)
+
+    assert linked.links[0].link_status == "resolved"
+    assert linked.links[0].definition_id == "definition:star3"
+    assert linked.links[0].inferred_meaning is None
+    assert linked.metadata["resolved_link_count"] == 1
+    assert linked.metadata["inferred_link_count"] == 0
 
 
 def test_link_paper_footnotes_does_not_paper_level_link_numeric_row_label_citation() -> None:

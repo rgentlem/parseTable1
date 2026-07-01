@@ -25,7 +25,7 @@ Then use the documents below as needed.
   Extraction-side sidecar artifact for superscripts, subscripts, and small marker symbols attached to table cells.
 
 - `docs/design/paper_footnotes.md`
-  Contract for `paper_footnotes.json`: anchors, definitions, glyph-key links, source scopes, and R surface.
+  Contract for `paper_footnotes.json`: anchors, definitions, glyph-key links, inferred p-value-star meanings, source scopes, suppression metadata, and R surface.
 
 - `docs/design/paper_page_furniture.md`
   Contract for `paper_page_furniture.json`: repeated page text observations, clusters, ignored regions, and structural recurrence evidence.
