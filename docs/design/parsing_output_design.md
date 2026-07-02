@@ -1110,6 +1110,11 @@ Design intent:
 - record whether a table ended as `ok`, `rescued`, or `failed`
 - make empty descriptive-table parses explicit failures rather than silent success
 - treat broad newline-stacked value cells as rescued when `metadata.column_repairs.extra_wide_value_column` successfully expands them into visual value columns
+- do not label a structurally matrix-like real table as a non-table artifact
+  solely because the current Table 1 semantic parser cannot infer variables;
+  preserve it with an explicit unsupported-route note and let
+  `paper_table_inventory.json` categorize it as `data_presentation` when the
+  broader taxonomy evidence supports that category
 
 ## 13. `parse_quality_reports.json`
 

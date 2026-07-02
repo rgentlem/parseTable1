@@ -8,9 +8,10 @@ Corpus-Driven Hardening Of Extraction, Normalization, Semantics, Footnotes, And 
 
 The goal is to work through real papers in a reproducible order, identify the
 first artifact where structure goes wrong, and fix the earliest parser stage
-that owns the problem. The current priority is to review the remaining
-footnote/reference issues after the early page-furniture mask, trailing-trim
-retirement, and table-footer block finder.
+that owns the problem. The current priority is to continue failed-status and
+mixed-family review after footnote links reached a clean resolved/inferred
+state and obvious real-table `non_table_layout_candidate` false positives were
+removed.
 
 All paper paths below are relative to:
 
@@ -23,16 +24,18 @@ All paper paths below are relative to:
 Latest reference run:
 
 ```text
-outputs/testpapers_footer_blocks_20260701_final
+outputs/testpapers_batch_20260702_non_table_fix
 ```
 
 The current refreshed baseline is
-`outputs/testpapers_footer_blocks_20260701_final`. It was produced after
+`outputs/testpapers_batch_20260702_non_table_fix`. It was produced after
 building `paper_page_furniture.json` before extraction, applying ignored regions
 as an early mask, retiring broad trailing large-gap/text-spread row cleanup, and
 using contiguous PyMuPDF text blocks plus table geometry to identify complete
-table-local footer blocks. Older generated `outputs/` runs should not be
-treated as current.
+table-local footer blocks. It also includes the rotated Ethnic footnote-marker
+cleanup, improved OR/CI estimate-table routing, and a structural guard that
+keeps wide matrix-like real tables out of `non_table_layout_candidate` status.
+Older generated `outputs/` runs should not be treated as current.
 
 Current footnote summary:
 
@@ -40,15 +43,16 @@ Current footnote summary:
 PDFs: 27
 parse command failures: 0
 paper_footnotes:
-  anchors: 447
-  definitions: 739
-  links: 447
-  resolved links: 375
-  inferred links: 54
-  ambiguous links: 7
-  unresolved links: 11
-  math/unit anchors suppressed before footnote linking: 39
-  word-like subscript anchors suppressed before footnote linking: 2
+  anchors: 403
+  definitions: 196
+  links: 403
+  resolved links: 342
+  inferred links: 61
+  ambiguous links: 0
+  unresolved links: 0
+  math/unit anchors suppressed before footnote linking: 36
+  word-like subscript anchors suppressed before footnote linking: 0
+  citation-like anchors suppressed before footnote linking: 78
   PDF text blocks classified as table footers: 56
   page-furniture definition blocks suppressed: 48
 extraction page-furniture mask:
@@ -60,14 +64,7 @@ extraction page-furniture mask:
 
 Current papers with unresolved or ambiguous footnote links:
 
-- `Ethnic Differences in the Relationship Between Insulin Sensitivity and
-  Insulin Response` has 3 unresolved links: residual `letter:i`, `letter:x`,
-  and `letter:g` false markers on the rescued p5 table.
-- `Journal of Periodontology - 2015 - Eke` has 5 unresolved and 7 ambiguous
-  links. Remaining unresolved links are one residual small-letter false marker
-  and numeric citation-like markers; ambiguous links are repeated table/page
-  footer definitions with only paper-level scope.
-- `periodontis2` has 3 unresolved numeric body-cell links.
+- None in `outputs/testpapers_batch_20260702_non_table_fix`.
 
 Resolved since the prior baseline:
 
@@ -91,6 +88,13 @@ Resolved since the prior baseline:
   from 56 unresolved / 6 ambiguous links to 11 unresolved / 7 ambiguous links.
 - Eke drops from 529 unresolved / 11 ambiguous links to 6 unresolved / 2
   ambiguous links in the full-corpus baseline.
+- Rotated Ethnic table annotation cleanup and bibliography/citation suppression
+  reduce the latest full-corpus footnote issue count to 0 unresolved / 0
+  ambiguous links.
+- OR/CI estimate routing and matrix-like table status guards reduce table-level
+  failures from 9 to 4: 3 true `non_table_layout_candidate` narrative/reference
+  artifacts and 1 `insufficient_table_structure_after_extraction` general
+  reference table.
 
 ## Review Loop
 
@@ -222,40 +226,64 @@ supplement-only or out-of-scope references.
 
 ### C1. Actual Failed Table Statuses
 
-- [ ] **C1.1** Review failed statuses that may be correct non-target tables.
+- [x] **C1.1** Review failed statuses that may be correct non-target tables.
   1. `papers_from_laha/An environment-wide association study (EWAS) on type 2 diabetes mellitus.pdf`
      - `An environment-wide association study (EWAS) on type 2 diabetes mellitus-p6-t0`
-     - Status: `failed`, reason: `insufficient_table_structure_after_extraction`.
-     - Prior review: structurally plausible ENWAS data table with sparse left
-       descriptor columns; likely unsupported table family rather than missing
-       extraction.
+     - Current status in `outputs/testpapers_batch_20260702_non_table_fix`:
+       `ok`, categorized as `analysis_outputs`.
+     - Review result: structurally plausible ENWAS analysis-output table with
+       sparse left descriptor columns; not a Table 1 descriptive failure.
   2. `papers_from_laha/mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017.pdf`
      - `mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017-p3-t0`
-     - Status: `failed`, reason: `insufficient_table_structure_after_extraction`.
-     - Prior review: text/reference table comparing frailty definitions; likely
-       not a Table 1-style data table.
+     - Current status in `outputs/testpapers_batch_20260702_non_table_fix`:
+       `failed`, reason: `insufficient_table_structure_after_extraction`,
+       categorized as `general`.
+     - Review result: text/reference table comparing frailty definitions; a
+       correct non-target table for the current Table 1 descriptive parser.
 
-- [ ] **C1.2** Review `non_table_layout_candidate` failures.
+- [x] **C1.2** Review `non_table_layout_candidate` failures.
   1. `papers_from_laha/Asthma prevalence among United States population insights from NHANES data analysis.pdf`
      - `Asthma prevalence among United States population insights from NHANES data analysis-p6-t0`
+     - Current status: `ok`; `TableProfile.table_family` is
+       `estimate_results`, and `paper_table_inventory.table_category` is
+       `analysis_outputs`.
+     - Fix: repeated OR/CI headers and estimate-CI range cells now provide
+       enough deterministic evidence for estimate-result routing.
   2. `papers_from_laha/GOLD BioAge and depression- Associations with mortality among depressed NHANES participants (2005–2018).pdf`
      - `GOLD BioAge and depression- Associations with mortality among depressed NHANES participants (2005–2018)-p1-t0`
+     - Current status: still `failed`, reason `non_table_layout_candidate`.
+     - Review result: abstract/title-page text laid out as columns, not a table
+       artifact to route semantically.
   3. `papers_from_laha/Helicobacter pylori infection in the United States beyond NHANES- a scoping review of seroprevalence estimates by racial and ethnic groups.pdf`
      - `Helicobacter pylori infection in the United States beyond NHANES- a scoping review of seroprevalence estimates by racial and ethnic groups-p5-t0`
      - `Helicobacter pylori infection in the United States beyond NHANES- a scoping review of seroprevalence estimates by racial and ethnic groups-p6-t0`
      - `Helicobacter pylori infection in the United States beyond NHANES- a scoping review of seroprevalence estimates by racial and ethnic groups-p7-t0`
+     - Current status: `ok` with
+       `matrix_like_table_without_supported_semantic_route`; categorized as
+       `data_presentation`.
+     - Review result: real continued data/reference matrix, not a non-table
+       layout. It still needs future data-matrix semantics rather than Table 1
+       descriptive parsing.
   4. `papers_from_laha/periodontis2.pdf`
      - `periodontis2-p6-t0`
+     - Current status: still `failed`, reason `non_table_layout_candidate`.
+     - Review result: prose paragraph text reconstructed as a four-column
+       layout candidate, not a table artifact.
   5. `papers_from_johnny/periodontitis.pdf`
      - `periodontitis-p11-t0`
+     - Current status: still `failed`, reason `non_table_layout_candidate`.
+     - Review result: abbreviation glossary/reference block, not a table
+       artifact.
 
 - [x] **C1.3** Review the collapsed-grid failure.
   - PDF path: `papers_from_laha/Ethnic Differences in the Relationship Between Insulin Sensitivity and Insulin Response.pdf`
   - Table: `Ethnic Differences in the Relationship Between Insulin Sensitivity and Insulin Response-p5-t0`
   - Current status: `rescued`; the prior `collapsed_grid_unrecovered` failure is
-    no longer present in `outputs/testpapers_footer_blocks_20260701_final`.
-  - Remaining issue: 3 residual unresolved small-letter false footnote markers
-    on the rescued table.
+    no longer present in `outputs/testpapers_batch_20260702_non_table_fix`.
+  - Current footnote result: 2 resolved links and 0 unresolved links. The prior
+    residual `letter:i`, `letter:x`, and `letter:g` false-marker issue is no
+    longer present as unresolved footnote evidence; the remaining `letter:x`
+    marker is a resolved `xP < ...` table-note marker.
 
 Acceptance for C1: every failed table is classified as correct non-target table,
 extraction failure, normalization failure, unsupported table family, or ambiguous

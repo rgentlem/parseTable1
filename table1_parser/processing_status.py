@@ -147,9 +147,22 @@ def build_table_processing_statuses(
                 )
             )
         )
+        populated_trailing_cell_count = sum(
+            1
+            for row_view in normalized_table.row_views
+            for raw_value in row_view.raw_cells[1:]
+            if str(raw_value).strip()
+        )
+        matrix_like_layout_candidate = (
+            normalized_table.n_cols >= 5
+            and len(normalized_table.header_rows) >= 1
+            and len(normalized_table.body_rows) >= 3
+            and populated_trailing_cell_count >= max(8, len(normalized_table.body_rows))
+        )
         non_semantic_layout_candidate = (
             not has_table_signal
             and table_profile.table_family == "unknown"
+            and not matrix_like_layout_candidate
             and bool(
                 quality_error_codes.intersection(
                     {
@@ -312,6 +325,8 @@ def build_table_processing_statuses(
             failure_stage = "extraction"
             failure_reason = "non_table_layout_candidate"
             notes.append("non_semantic_table_candidate")
+        elif matrix_like_layout_candidate and table_profile.table_family == "unknown":
+            notes.append("matrix_like_table_without_supported_semantic_route")
         elif is_descriptive_candidate and extraction_inadequate:
             status = "failed"
             failure_stage = "extraction"

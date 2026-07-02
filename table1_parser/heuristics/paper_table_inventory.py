@@ -174,6 +174,13 @@ def build_paper_table_inventory(
         descriptive_fraction = descriptive_value_count / populated_value_count if populated_value_count else 0.0
         count_fraction = count_value_count / populated_value_count if populated_value_count else 0.0
         plain_numeric_fraction = plain_numeric_value_count / populated_value_count if populated_value_count else 0.0
+        data_matrix_layout_signal = (
+            normalized is not None
+            and normalized.n_cols >= 5
+            and len(normalized.header_rows) >= 1
+            and len(normalized.body_rows) >= 3
+            and populated_value_count >= max(8, len(normalized.body_rows))
+        )
 
         variable_count = len(definition.variables) if definition is not None else 0
         columns = definition.column_definition.columns if definition is not None else []
@@ -190,6 +197,13 @@ def build_paper_table_inventory(
             for diagnostic in (quality.table_diagnostics if quality is not None else [])
             if diagnostic.severity == "error"
         }
+        quality_failure_signal = bool(
+            {
+                "weak_variable_structure",
+                "unknown_row_fraction_likely_failure",
+            }
+            & quality_error_codes
+        )
         quality_warning_count = (
             quality.summary.row_warning_count + quality.summary.column_warning_count
             if quality is not None
@@ -209,26 +223,45 @@ def build_paper_table_inventory(
         }
 
         non_table_score, non_table_evidence = category_scores["non_table_artifact"]
-        explicit_non_table_status = status is not None and status.failure_reason == "non_table_layout_candidate"
-        if status is not None and status.failure_reason == "non_table_layout_candidate":
+        explicit_non_table_status = (
+            status is not None
+            and status.failure_reason == "non_table_layout_candidate"
+            and not data_matrix_layout_signal
+        )
+        if explicit_non_table_status:
             non_table_score += 0.85
             non_table_evidence.append("processing_status_non_table_layout_candidate")
         if not has_table_signal:
             non_table_score += 0.15
             non_table_evidence.append("no_detected_table_number_title_or_caption")
-        if (explicit_non_table_status or not has_table_signal) and profile is not None and profile.table_family == "unknown":
+        if (
+            (explicit_non_table_status or not has_table_signal)
+            and profile is not None
+            and profile.table_family == "unknown"
+            and not data_matrix_layout_signal
+        ):
             non_table_score += 0.10
             non_table_evidence.append("table_family_unknown")
-        if (explicit_non_table_status or not has_table_signal) and unknown_row_fraction >= 0.70:
+        if (
+            (explicit_non_table_status or not has_table_signal)
+            and unknown_row_fraction >= 0.70
+            and not data_matrix_layout_signal
+        ):
             non_table_score += 0.20
             non_table_evidence.append("very_high_unknown_row_fraction")
-        if (explicit_non_table_status or not has_table_signal) and recognized_value_fraction < 0.25 and populated_value_count >= 6:
+        if (
+            (explicit_non_table_status or not has_table_signal)
+            and recognized_value_fraction < 0.25
+            and populated_value_count >= 6
+            and not data_matrix_layout_signal
+        ):
             non_table_score += 0.15
             non_table_evidence.append("low_value_pattern_recognition")
-        if (explicit_non_table_status or not has_table_signal) and {
-            "weak_variable_structure",
-            "unknown_row_fraction_likely_failure",
-        } & quality_error_codes:
+        if (
+            (explicit_non_table_status or not has_table_signal)
+            and quality_failure_signal
+            and not data_matrix_layout_signal
+        ):
             non_table_score += 0.15
             non_table_evidence.append("parse_quality_table_error")
         category_scores["non_table_artifact"] = (min(non_table_score, 0.98), non_table_evidence)
@@ -297,6 +330,9 @@ def build_paper_table_inventory(
         if normalized is not None and normalized.n_cols >= 3 and len(normalized.body_rows) >= 3 and variable_count <= 2:
             data_score += 0.25
             data_evidence.append("matrix_like_rows_and_columns")
+        if data_matrix_layout_signal:
+            data_score += 0.20
+            data_evidence.append("wide_matrix_like_layout")
         if pattern_counts.get("mean_sd", 0) + pattern_counts.get("median_iqr", 0) == 0 and count_value_count >= 4:
             data_score += 0.10
             data_evidence.append("few_or_no_continuous_summary_rows")

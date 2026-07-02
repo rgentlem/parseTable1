@@ -10,7 +10,7 @@ Current corpus-driven hardening guide:
 `docs/implementation/real_paper_testing_guide.md`. Use it for the ordered
 real-paper review loop across extraction, normalization, continuation handling,
 table semantics, footnote/reference artifacts, and mixed-family routing. The
-current retained reference run is `outputs/testpapers_footer_blocks_20260701_final`.
+current retained reference run is `outputs/testpapers_batch_20260702_non_table_fix`.
 
 1. [x] Add a parser-native column header schema artifact.
    Build `ColumnHeaderSchema` between `NormalizedTable` and `TableDefinition` so leaf columns, higher spanning header groups, group-to-leaf relationships, raw cell evidence, and coordinates are explicit before any tableone-style projection.
@@ -64,9 +64,20 @@ current retained reference run is `outputs/testpapers_footer_blocks_20260701_fin
 
 5. [ ] Align parser route with table taxonomy.
    `table_category` should drive routing once it is available. Current `table_family` is better understood as an early provisional parser-route signal; decide whether to rename, replace, or derive it from the paper table inventory.
+   Recent update: obvious OR/CI estimate-result tables without title/caption
+   signals now route through `TableProfile.table_family = "estimate_results"`
+   when repeated effect+CI headers and estimate-CI range cells provide
+   structural support. In the latest corpus run, Asthma p6-t0 moved from
+   `non_table_layout_candidate` to `analysis_outputs`.
 
 6. [ ] Add first-class support for data matrices.
    Tables categorized as `data_presentation` need a sibling semantic model/parser instead of being forced through Table 1 descriptive semantics or left as only normalized grids.
+   Recent update: wide matrix-like real tables without title/caption signals are
+   no longer marked as `non_table_layout_candidate` solely because Table 1
+   variable semantics fail. They remain `ok` with
+   `matrix_like_table_without_supported_semantic_route` status notes and can be
+   categorized as `data_presentation`. Helicobacter p5-t0, p6-t0, and p7-t0 now
+   follow this path.
 
 7. [ ] Model value semantics beyond count/percent.
    Add explicit handling for weighted population sizes, prevalence/percent estimates, age-standardized estimates, standard errors, and `N/A`/not-estimable values where appropriate.
@@ -128,4 +139,20 @@ current retained reference run is `outputs/testpapers_footer_blocks_20260701_fin
 - Recent normalization update: header/body selection now uses validated full-width separator rules first, first value-region anchors second, and content scoring only as fallback. Full-width separator evidence is derived from stroked rule geometry so filled row highlighting/background shading does not create false hlines. Future work still needs a more principled model for data/estimate tables without clear separator or value-anchor evidence, rather than adding more ordered special cases.
 - Recent column-schema update: full-width hlines inside an already selected header band now split upper spanning-group rows from lower wrapped leaf-header rows. Cardiovascular Table 2 keeps body start row 7 while using rows 4-6 as leaf labels and rows 0-3 as training/testing cohort groups.
 - Recent normalization update: dense row-by-row full-width rules no longer disable hline separator detection. Fully ruled tables should still use hlines as boundary proposals, then choose the boundary that preserves a multicolumn group row plus its single-column leaf-label row above any row-label-only body parent. This fixes the Table 3 continuation in `Association between anthropometric indices and chronic kidney disease: Insights from NHANES 2009–2018`, where page 11 and page 12 now share the same `Model 1`/`Model 2`/`Model 3` column schema and integrate as one resolved table.
-- Recent review update: `docs/implementation/real_paper_testing_guide.md` now uses `outputs/testpapers_footer_blocks_20260701_final` as the current retained run: 27 PDF command successes, 447 footnote links, 375 resolved links, 54 inferred links, 7 ambiguous links, 11 unresolved links, 39 math/unit anchor suppressions, 2 word-like subscript suppressions, 56 PDF text blocks classified as table footers, and 48 page-furniture definition-block suppressions. `parse_quality_reports.json` reports `header_body_split_rule_disagreement` when the hline and value-anchor candidates both exist and disagree.
+- Earlier review update: `outputs/testpapers_footer_blocks_20260701_final`
+  recorded 27 PDF command successes, 447 footnote links, 375 resolved links, 54
+  inferred links, 7 ambiguous links, 11 unresolved links, 39 math/unit anchor
+  suppressions, 2 word-like subscript suppressions, 56 PDF text blocks
+  classified as table footers, and 48 page-furniture definition-block
+  suppressions. `parse_quality_reports.json` reports
+  `header_body_split_rule_disagreement` when the hline and value-anchor
+  candidates both exist and disagree.
+- Recent status-routing update: `docs/implementation/real_paper_testing_guide.md`
+  now uses `outputs/testpapers_batch_20260702_non_table_fix` as the current
+  retained run: 27 PDF command successes, 0 unresolved / 0 ambiguous footnote
+  links, 80 resolved semantic tables, 4 failed table records, 28
+  `analysis_outputs`, 13 `data_presentation`, and 3 `non_table_artifact`
+  inventory records. The failed records are now 3 true
+  `non_table_layout_candidate` narrative/reference artifacts plus one
+  non-target `general` reference table with
+  `insufficient_table_structure_after_extraction`.

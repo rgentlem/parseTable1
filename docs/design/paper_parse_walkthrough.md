@@ -994,6 +994,12 @@ This artifact records:
 
 If a broad extracted value cell was expanded into visual value columns during normalization, that repair is recorded as an `extra_wide_value_column_repair` attempt rather than treating the original newline-stacked extraction as an unrecovered collapsed grid.
 
+If a structurally wide matrix-like real table is outside the current
+descriptive/estimate parser routes, status should preserve it as a real table
+with an unsupported-route note instead of calling it a non-table layout
+artifact. The broader `paper_table_inventory.json` category can then expose it
+as `data_presentation` for later family-specific parsing work.
+
 For integrated continuations, status is resolved-table keyed. Source-fragment
 warnings remain inspectable through `source_table_ids` and
 `source_fragment_diagnostics` rather than becoming separate semantic table

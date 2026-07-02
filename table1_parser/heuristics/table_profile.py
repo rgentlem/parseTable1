@@ -28,6 +28,11 @@ ESTIMATE_HEADER_PATTERN = re.compile(
 INLINE_INTERVAL_PATTERN = re.compile(
     r"^-?\d+(?:\.\d+)?\s*[\(\[]\s*-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?\s*[\)\]]$"
 )
+ESTIMATE_CI_RANGE_PATTERN = re.compile(
+    r"^-?\d+(?:\.\d+)?\s*,?\s*[\(\[]\s*-?\d+(?:\.\d+)?\s*(?:,|-)\s*-?\d+(?:\.\d+)?\s*[\)\]]"
+    r"\s*(?:[*†‡§¶#{}|]+|[a-z])*$",
+    re.IGNORECASE,
+)
 
 
 def build_table_profile(table: NormalizedTable) -> TableProfile:
@@ -60,6 +65,15 @@ def build_table_profile(table: NormalizedTable) -> TableProfile:
     if MODEL_HEADER_PATTERN.search(header_text):
         estimate_score += 1
         evidence.append("header_mentions_model_or_adjustment")
+    effect_ci_header_count = sum(
+        1
+        for label in header_labels
+        if re.search(r"\b(?:OR|HR|RR|PR)\b", label)
+        and re.search(r"\b(?:95\s*%\s*CI|CI)\b", label)
+    )
+    if effect_ci_header_count >= 2:
+        estimate_score += 2
+        evidence.append("multiple_effect_ci_headers")
 
     pattern_counts: dict[str, int] = {}
     for row_view in table.row_views:
@@ -94,6 +108,8 @@ def build_table_profile(table: NormalizedTable) -> TableProfile:
     for row_view in table.row_views:
         for raw_value in row_view.raw_cells[1:]:
             if INLINE_INTERVAL_PATTERN.fullmatch(clean_text(raw_value)):
+                inline_interval_count += 1
+            elif ESTIMATE_CI_RANGE_PATTERN.fullmatch(clean_text(raw_value)):
                 inline_interval_count += 1
     if inline_interval_count >= 2:
         estimate_score += 2
