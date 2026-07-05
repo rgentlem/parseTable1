@@ -145,6 +145,12 @@ Non-scope:
    - Split distinctive symbol markers inside one footer block, including glued
      forms such as `†Education` and comma-separated forms such as `*`, `**`,
      `***`.
+   - Persist filtered PDF-classified table-footer blocks as unsplit
+     `footers` records before splitting them into definition records, so R
+     review can inspect the same footer region that supplied definitions.
+   - Filter R table-specific footnote review by visual ID as well as table ID,
+     so continued-table footers remain visible when reviewing the first
+     fragment's table number.
    - Implemented: the 2026-07-01 corpus run in
      `outputs/testpapers_footer_blocks_20260701_final` resolves the Planetary
      Health Table 1 `*`, `†`, `‡`, and `§` links and keeps stroke and

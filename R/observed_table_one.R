@@ -2,6 +2,10 @@ pt1_is_missing_scalar <- function(x) {
   length(x) == 1 && is.atomic(x) && is.na(x)
 }
 
+pt1_null_coalesce <- function(x, y) {
+  if (is.null(x) || length(x) == 0) y else x
+}
+
 pt1_clean_scalar <- function(x, default = NULL) {
   if (is.null(x) || length(x) == 0 || pt1_is_missing_scalar(x)) {
     return(default)
@@ -233,11 +237,23 @@ build_observed_footnotes <- function(
   }
 
   resolved_table_id <- pt1_character_or_null(table_id) %||% ""
+  resolved_table_number <- pt1_integer_or_null(table_number)
+  resolved_visual_id <- if (!is.null(resolved_table_number) && !is.na(resolved_table_number)) {
+    sprintf("paper_visual:table:%s", resolved_table_number)
+  } else {
+    ""
+  }
+  record_matches_scope <- function(record) {
+    record_table_id <- pt1_character_or_null(record$table_id) %||% ""
+    record_visual_id <- pt1_character_or_null(record$visual_id) %||% ""
+    (nzchar(resolved_table_id) && identical(record_table_id, resolved_table_id)) ||
+      (nzchar(resolved_visual_id) && identical(record_visual_id, resolved_visual_id))
+  }
   footers <- paper_footnotes$footers %||% list()
   anchors <- paper_footnotes$anchors %||% list()
-  if (nzchar(resolved_table_id)) {
-    footers <- Filter(function(footer) identical(pt1_character_or_null(footer$table_id) %||% "", resolved_table_id), footers)
-    anchors <- Filter(function(anchor) identical(pt1_character_or_null(anchor$table_id) %||% "", resolved_table_id), anchors)
+  if (nzchar(resolved_table_id) || nzchar(resolved_visual_id)) {
+    footers <- Filter(record_matches_scope, footers)
+    anchors <- Filter(record_matches_scope, anchors)
   }
   anchor_ids <- vapply(anchors, function(anchor) pt1_character_or_null(anchor$anchor_id) %||% "", character(1))
   links <- Filter(function(link) {
@@ -248,7 +264,7 @@ build_observed_footnotes <- function(
   }), use.names = FALSE))
   linked_definition_ids <- linked_definition_ids[nzchar(linked_definition_ids)]
   definitions <- Filter(function(definition) {
-    identical(pt1_character_or_null(definition$table_id) %||% "", resolved_table_id) ||
+    record_matches_scope(definition) ||
       (pt1_character_or_null(definition$definition_id) %||% "") %in% linked_definition_ids
   }, paper_footnotes$definitions %||% list())
   link_statuses <- vapply(links, function(link) pt1_character_or_null(link$link_status) %||% "", character(1))

@@ -533,6 +533,59 @@ def build_paper_footnote_footers_from_extracted_tables(
     return footers
 
 
+def build_paper_footnote_footers_from_pdf_blocks(
+    footer_blocks: Sequence[FootnoteDefinitionCandidateLine],
+    *,
+    existing_footers: Sequence[FootnoteFooter] | None = None,
+) -> list[FootnoteFooter]:
+    """Build reviewable table-footer regions from positioned PDF text blocks."""
+    existing_keys = {
+        (footer.table_id, clean_text(footer.raw_text).casefold())
+        for footer in existing_footers or []
+    }
+    footers: list[FootnoteFooter] = []
+    for block_index, block in enumerate(footer_blocks):
+        if block.source_scope != "table_note" or block.table_id is None:
+            continue
+        raw_text = clean_text(block.raw_text)
+        if not raw_text:
+            continue
+        footer_key = (block.table_id, raw_text.casefold())
+        if footer_key in existing_keys:
+            continue
+        block_row_idx = block.line_index if block.line_index is not None else block_index
+        notes = [
+            *block.notes,
+            "table_footer_block_detected_from_pdf_geometry",
+            f"source_line_id:{block.line_id}",
+        ]
+        if block.bbox is not None:
+            notes.append("bbox:" + ",".join(f"{part:.3f}" for part in block.bbox))
+        footers.append(
+            FootnoteFooter(
+                footer_id=f"footer:pdf:{block_index}",
+                table_id=block.table_id,
+                visual_id=block.visual_id,
+                page_num=block.page_num,
+                source_artifact=block.source_artifact or "pymupdf_page_text_blocks",
+                detection_basis="pdf_text_block_after_table_bbox",
+                start_row_idx=block_row_idx,
+                end_row_idx=block_row_idx,
+                raw_text=raw_text,
+                rows=[
+                    FootnoteFooterRow(
+                        row_idx=block_row_idx,
+                        raw_cells=[raw_text],
+                        text=raw_text,
+                    )
+                ],
+                notes=notes,
+            )
+        )
+        existing_keys.add(footer_key)
+    return footers
+
+
 def filter_footnote_definition_lines_for_page_furniture(
     definition_lines: Sequence[FootnoteDefinitionCandidateLine],
     paper_page_furniture: PaperPageFurniture | None,
@@ -542,7 +595,7 @@ def filter_footnote_definition_lines_for_page_furniture(
     suppressed_cluster_ids: set[str] = set()
     suppressed_count = 0
     for line in definition_lines:
-        if line.source_scope != "body_text":
+        if line.source_artifact == "extracted_tables.json":
             filtered_lines.append(line)
             continue
         overlapping_cluster_ids = page_furniture_cluster_ids_for_bbox(

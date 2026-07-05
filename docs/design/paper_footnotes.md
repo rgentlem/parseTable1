@@ -37,9 +37,11 @@ The parser should write a valid empty artifact when no candidates are found.
 
 ## Footer Record
 
-A footer is a table-local footer region detected from extracted table geometry.
+A footer is a table-local footer region detected from extracted table geometry
+or from positioned PDF text blocks that were classified as local table footers.
 It is persisted so R review can validate the footer boundary before reviewing
-definition splitting or anchor links.
+definition splitting or anchor links. Footer records preserve the unsplit raw
+region; definition records split marker meanings from that same region.
 
 Required fields:
 
@@ -72,7 +74,11 @@ row. This prevents header/body separators from being mistaken for footer
 boundaries. The region is accepted only when rows below the boundary contain at
 least one definition-like marker row. If rule evidence is unavailable, the
 fallback footer region starts after the last value-matrix row and is accepted
-only when it also contains definition-like rows.
+only when it also contains definition-like rows. If extracted table rows do not
+contain the footer but PyMuPDF block geometry classifies a complete text block
+as a table-local footer, the filtered PDF block is also persisted as a footer
+record with `source_artifact = "pymupdf_page_text_blocks"` and
+`detection_basis = "pdf_text_block_after_table_bbox"`.
 
 ## Anchor Record
 
@@ -229,6 +235,10 @@ PyMuPDF geometry is consumed as contiguous text blocks rather than isolated
 lines. `find_table_footer_definition_blocks()` classifies complete PDF text
 blocks as table-local footer blocks when they sit just below a table bbox,
 overlap the table horizontally, and do not cross into the next table region.
+After page-furniture filtering, those same PDF-classified table-footer blocks
+are persisted in `footers` as unsplit footer regions before they are split into
+definition records. This keeps review artifacts aligned when the extraction
+grid omits a visual table footer but positioned PDF text captures it.
 Continuation-group identity can supply the parent visual ID for an uncaptioned
 continued fragment, so a footer on the terminal fragment can resolve anchors on
 earlier fragments of the same visual table. Remaining page-text blocks can be
@@ -383,6 +393,11 @@ Current R helpers:
 - `footnote_definitions_df()`
 - `footnote_links_df()`
 - `show_paper_footnotes()`
+
+When filtered by `table_number` or `table_index`, R helpers match both the
+selected fragment `table_id` and the paper visual ID. This matters for
+continued tables: a footer may live on `Table 1. (continued)` while anchors or
+the public review request refer to the first Table 1 fragment.
 
 Tableone-aligned object:
 

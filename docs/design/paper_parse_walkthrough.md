@@ -81,7 +81,10 @@ in extracted row order. PyMuPDF contiguous page text blocks are the PDF fallback
 source, not isolated page lines. A table-footer finder uses table bboxes,
 horizontal overlap, vertical adjacency, and continuation-group visual identity
 to classify complete PDF text blocks as table-local footer blocks before
-glyph-key linking.
+glyph-key linking. After repeated page-furniture filtering, PDF-classified
+table-footer blocks are also persisted as unsplit `footers` records, so review
+can inspect the same raw footer region that later produces split definition
+records.
 Remaining PDF text blocks can still become page-bottom notes. Candidate blocks
 may start with a marker or contain embedded marker definitions after nearby
 explanatory prose. A single table-footer block can yield several definition
@@ -89,6 +92,10 @@ records, for example `*`, `†`, `‡`, `§`, `**`, and `***` definitions. Repea
 page-furniture regions remain a late footnote guardrail for overlapping
 table-cell anchors and page-text definition candidate blocks that survive early
 extraction masking.
+R footnote review helpers filter by table fragment ID and by paper visual ID,
+so a table-number review includes footer records found on continued fragments
+such as `Table 1. (continued)` without treating the continuation label itself as
+a footnote definition.
 Numeric table-cell bibliography markers are removed from table-footnote link
 counts when they have no local table-note definition and match the paper's
 bibliography entries; they are represented instead through

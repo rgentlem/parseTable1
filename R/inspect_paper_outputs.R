@@ -663,8 +663,16 @@ paper_footnote_filter_context <- function(outputs, table_number = NULL, table_in
   list(
     table_index = as.integer(resolved_table_index),
     table_number = table_number_for_outputs(outputs, resolved_table_index),
-    table_id = table_id_for_outputs(outputs, resolved_table_index)
+    table_id = table_id_for_outputs(outputs, resolved_table_index),
+    visual_id = table_visual_id_for_outputs(outputs, resolved_table_index)
   )
+}
+
+footnote_record_matches_context <- function(record, context) {
+  table_id <- as.character(record$table_id %||% "")
+  visual_id <- as.character(record$visual_id %||% "")
+  identical(table_id, context$table_id) ||
+    (nzchar(context$visual_id) && identical(visual_id, context$visual_id))
 }
 
 footnote_footers_df <- function(outputs, table_number = NULL, table_index = NULL) {
@@ -689,7 +697,7 @@ footnote_footers_df <- function(outputs, table_number = NULL, table_index = NULL
   context <- paper_footnote_filter_context(outputs, table_number = table_number, table_index = table_index)
   footers <- outputs$paper_footnotes$footers %||% list()
   if (!is.null(context)) {
-    footers <- Filter(function(footer) identical(as.character(footer$table_id %||% ""), context$table_id), footers)
+    footers <- Filter(function(footer) footnote_record_matches_context(footer, context), footers)
   }
 
   rows <- lapply(footers, function(footer) {
@@ -751,7 +759,7 @@ footnote_anchors_df <- function(outputs, table_number = NULL, table_index = NULL
   context <- paper_footnote_filter_context(outputs, table_number = table_number, table_index = table_index)
   anchors <- outputs$paper_footnotes$anchors %||% list()
   if (!is.null(context)) {
-    anchors <- Filter(function(anchor) identical(as.character(anchor$table_id %||% ""), context$table_id), anchors)
+    anchors <- Filter(function(anchor) footnote_record_matches_context(anchor, context), anchors)
   }
 
   rows <- lapply(anchors, function(anchor) {
@@ -820,7 +828,7 @@ footnote_definitions_df <- function(outputs, table_number = NULL, table_index = 
   if (!is.null(context)) {
     anchor_ids <- vapply(
       Filter(
-        function(anchor) identical(as.character(anchor$table_id %||% ""), context$table_id),
+        function(anchor) footnote_record_matches_context(anchor, context),
         outputs$paper_footnotes$anchors %||% list()
       ),
       function(anchor) as.character(anchor$anchor_id %||% ""),
@@ -834,7 +842,7 @@ footnote_definitions_df <- function(outputs, table_number = NULL, table_index = 
     }), use.names = FALSE))
     linked_definition_ids <- linked_definition_ids[nzchar(linked_definition_ids)]
     definitions <- Filter(function(definition) {
-      identical(as.character(definition$table_id %||% ""), context$table_id) ||
+      footnote_record_matches_context(definition, context) ||
         as.character(definition$definition_id %||% "") %in% linked_definition_ids
     }, definitions)
   }
@@ -905,11 +913,21 @@ footnote_links_df <- function(outputs, table_number = NULL, table_index = NULL) 
     vapply(anchors, function(anchor) as.character(anchor$table_id %||% ""), character(1)),
     vapply(anchors, function(anchor) as.character(anchor$anchor_id %||% ""), character(1))
   )
+  anchor_visual_ids <- setNames(
+    vapply(anchors, function(anchor) as.character(anchor$visual_id %||% ""), character(1)),
+    vapply(anchors, function(anchor) as.character(anchor$anchor_id %||% ""), character(1))
+  )
   links <- outputs$paper_footnotes$links %||% list()
   if (!is.null(context)) {
     links <- Filter(function(link) {
       anchor_table_id <- anchor_table_ids[as.character(link$anchor_id %||% "")]
-      !is.na(anchor_table_id) && identical(unname(anchor_table_id), context$table_id)
+      anchor_visual_id <- anchor_visual_ids[as.character(link$anchor_id %||% "")]
+      (!is.na(anchor_table_id) && identical(unname(anchor_table_id), context$table_id)) ||
+        (
+          nzchar(context$visual_id) &&
+            !is.na(anchor_visual_id) &&
+            identical(unname(anchor_visual_id), context$visual_id)
+        )
     }, links)
   }
 
@@ -1242,6 +1260,43 @@ table_id_for_outputs <- function(outputs, table_index) {
     (outputs$parsed_tables %||% list())[[idx]] %||%
     list()
   as.character(table$table_id %||% "")
+}
+
+table_visual_id_for_outputs <- function(outputs, table_index) {
+  table_id <- table_id_for_outputs(outputs, table_index)
+  if (!nzchar(table_id)) {
+    return("")
+  }
+
+  for (group in outputs$table1_continuation_groups %||% list()) {
+    source_table_ids <- character_vector(group$source_table_ids)
+    if (table_id %in% source_table_ids) {
+      table_number <- as.character(group$table_number %||% "")
+      if (nzchar(table_number)) {
+        return(sprintf("paper_visual:table:%s", table_number))
+      }
+    }
+  }
+
+  footnote_records <- c(
+    outputs$paper_footnotes$anchors %||% list(),
+    outputs$paper_footnotes$definitions %||% list(),
+    outputs$paper_footnotes$footers %||% list()
+  )
+  for (record in footnote_records) {
+    if (identical(as.character(record$table_id %||% ""), table_id)) {
+      visual_id <- as.character(record$visual_id %||% "")
+      if (nzchar(visual_id)) {
+        return(visual_id)
+      }
+    }
+  }
+
+  table_number <- table_number_for_outputs(outputs, table_index)
+  if (!is.na(table_number)) {
+    return(sprintf("paper_visual:table:%s", as.integer(table_number)))
+  }
+  ""
 }
 
 table_index_for_table_id <- function(outputs, table_id) {

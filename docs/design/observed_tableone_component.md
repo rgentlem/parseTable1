@@ -322,6 +322,10 @@ table. It preserves:
 
 These records come from `paper_footnotes.json`. They are review evidence for
 glyph anchors and candidate definitions, not rewritten table text.
+When a table has continued fragments, `ObservedFootnotes` scopes records by the
+paper visual ID as well as the current fragment table ID. This keeps footer
+definitions that appear on `Table 1. (continued)` visible in the Table 1 object
+without treating the continuation label itself as a footnote.
 
 ## `provenance`
 

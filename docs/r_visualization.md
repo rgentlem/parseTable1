@@ -165,7 +165,7 @@ What these are for:
 - `show_cell_text_annotations(...)`
   print the persisted cell-text annotations for one table without inferring marker meaning
 - `footnote_footers_df(...)`, `footnote_anchors_df(...)`, `footnote_definitions_df(...)`, and `footnote_links_df(...)`
-  return detected table-local footers, paper-footnote anchors, candidate definitions, and glyph-key links as review data frames, optionally filtered to one table
+  return detected table-local footers, paper-footnote anchors, candidate definitions, and glyph-key links as review data frames, optionally filtered to one table; table-specific filters match continuation fragments by paper visual ID as well as table ID
 - `show_paper_footnotes(...)`
   print a compact review of detected footers and footnote records for a paper or one table
 - `show_merged_table1(...)`
