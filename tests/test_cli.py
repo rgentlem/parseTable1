@@ -80,7 +80,11 @@ def _build_estimate_table() -> ExtractedTable:
 
 
 def _patch_paper_context(monkeypatch) -> None:
-    monkeypatch.setattr(cli, "extract_paper_markdown", lambda _: "# Methods\nExample study population.")
+    monkeypatch.setattr(
+        cli,
+        "extract_paper_markdown",
+        lambda _, paper_page_furniture=None: "# Methods\nExample study population.",
+    )
     monkeypatch.setattr(
         cli,
         "parse_markdown_sections",
@@ -176,6 +180,7 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     cell_text_annotations_path = tmp_path / "outputs" / "papers" / "paper" / "cell_text_annotations.json"
     paper_footnotes_path = tmp_path / "outputs" / "papers" / "paper" / "paper_footnotes.json"
     paper_page_furniture_path = tmp_path / "outputs" / "papers" / "paper" / "paper_page_furniture.json"
+    paper_text_stream_path = tmp_path / "outputs" / "papers" / "paper" / "paper_text_stream.json"
     paper_markdown_path = tmp_path / "outputs" / "papers" / "paper" / "paper_markdown.md"
     paper_sections_path = tmp_path / "outputs" / "papers" / "paper" / "paper_sections.json"
     paper_visual_inventory_path = tmp_path / "outputs" / "papers" / "paper" / "paper_visual_inventory.json"
@@ -203,6 +208,7 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     assert cell_text_annotations_path.exists()
     assert paper_footnotes_path.exists()
     assert paper_page_furniture_path.exists()
+    assert paper_text_stream_path.exists()
     assert paper_markdown_path.exists()
     assert paper_sections_path.exists()
     assert paper_visual_inventory_path.exists()
@@ -269,6 +275,8 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     assert paper_page_furniture_payload["clusters"] == []
     assert paper_page_furniture_payload["ignored_regions"] == []
     assert "thresholds" in paper_page_furniture_payload["metadata"]
+    paper_text_stream_payload = json.loads(paper_text_stream_path.read_text(encoding="utf-8"))
+    assert paper_text_stream_payload["metadata"]["diagnostics"] == ["pymupdf_open_failed"]
     assert paper_markdown_path.read_text(encoding="utf-8") == "# Methods\nExample study population."
     assert json.loads(paper_sections_path.read_text(encoding="utf-8"))[0]["section_id"] == "section_0"
     visual_payload = json.loads(paper_visual_inventory_path.read_text(encoding="utf-8"))

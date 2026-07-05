@@ -54,7 +54,13 @@ def build_paper_bibliography(
         entries=entries,
         reference_mentions=reference_mentions,
         metadata={
-            "source_artifacts": ["paper_sections.json", "cell_text_annotations.json", "paper_footnotes.json"],
+            "source_artifacts": [
+                "paper_sections.json",
+                "paper_text_stream.json",
+                "paper_page_furniture.json",
+                "cell_text_annotations.json",
+                "paper_footnotes.json",
+            ],
             "entry_count": len(entries),
             "reference_mention_count": len(reference_mentions),
             "resolved_reference_mention_count": sum(

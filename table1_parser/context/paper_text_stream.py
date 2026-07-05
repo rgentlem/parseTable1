@@ -1,0 +1,395 @@
+"""Build a layout-aware paper text stream from positioned PDF text."""
+
+from __future__ import annotations
+
+import re
+from pathlib import Path
+from typing import Any
+
+from table1_parser.extract.pymupdf_page_adapter import open_pymupdf_document
+from table1_parser.page_furniture_mask import page_furniture_cluster_ids_for_bbox
+from table1_parser.paper_page_furniture import normalize_page_furniture_text
+from table1_parser.reference_sections import INLINE_REFERENCE_START_PATTERN
+from table1_parser.schemas import PaperPageFurniture, PaperTextLine, PaperTextPage, PaperTextStream
+from table1_parser.text_cleaning import clean_text, repair_extractor_glyph_failures
+
+
+SECTION_HEADING_TEXTS = {
+    "abstract",
+    "introduction",
+    "methods",
+    "materials and methods",
+    "patients and methods",
+    "study population",
+    "healthy lifestyle score",
+    "covariates",
+    "assessment of the outcomes",
+    "statistical analysis",
+    "results",
+    "discussion",
+    "conclusion",
+    "conclusions",
+    "supplementary information",
+    "acknowledgements",
+    "acknowledgments",
+    "author contributions",
+    "funding",
+    "availability of data and materials",
+    "declarations",
+    "ethics approval and consent to participate",
+    "consent for publication",
+    "competing interests",
+    "author details",
+    "references",
+    "bibliography",
+    "works cited",
+    "literature cited",
+    "abbreviations",
+    "publisher's note",
+    "publisher’s note",
+}
+
+
+def build_paper_text_stream(
+    pdf_path: str,
+    *,
+    paper_page_furniture: PaperPageFurniture | None = None,
+    paper_id: str | None = None,
+) -> PaperTextStream:
+    """Build layout-aware full-paper text ordered by page, column, then y-position."""
+    try:
+        document = open_pymupdf_document(pdf_path)
+    except Exception:  # noqa: BLE001
+        return PaperTextStream(
+            paper_id=paper_id or Path(pdf_path).stem,
+            source_pdf=Path(pdf_path).name,
+            metadata={"diagnostics": ["pymupdf_open_failed"], "source_artifacts": ["pymupdf_page_text_lines"]},
+        )
+
+    stream_lines: list[PaperTextLine] = []
+    stream_pages: list[PaperTextPage] = []
+    removed_furniture_line_count = 0
+    furniture_text_keys, furniture_text_patterns = _page_furniture_text_matchers(paper_page_furniture)
+    try:
+        page_count = int(getattr(document, "page_count", 0))
+        for page_index in range(page_count):
+            page_num = page_index + 1
+            try:
+                page = document.load_page(page_index)
+                page_dict = page.get_text("dict") or {}
+            except Exception:  # noqa: BLE001
+                stream_pages.append(
+                    PaperTextPage(
+                        page_num=page_num,
+                        page_width=1.0,
+                        page_height=1.0,
+                        column_count=1,
+                        line_count=0,
+                        removed_page_furniture_line_count=0,
+                        diagnostics=["page_text_extraction_failed"],
+                    )
+                )
+                continue
+
+            page_width, page_height = _page_size(page)
+            page_line_records: list[dict[str, object]] = []
+            removed_on_page = 0
+            for block_index, block in enumerate(page_dict.get("blocks", [])):
+                for line_index, line in enumerate(block.get("lines", [])):
+                    line_record = _line_record_from_pymupdf_line(line, block_index, line_index)
+                    if line_record is None:
+                        continue
+                    if _is_page_furniture_text(line_record["text"], furniture_text_keys, furniture_text_patterns):
+                        removed_on_page += 1
+                        continue
+                    if page_furniture_cluster_ids_for_bbox(
+                        paper_page_furniture,
+                        page_num=page_num,
+                        bbox=line_record["bbox"],
+                        min_overlap_fraction=0.8,
+                    ):
+                        removed_on_page += 1
+                        continue
+                    page_line_records.append(line_record)
+
+            column_count, split_x, diagnostics = _detect_page_columns(page_line_records, page_width)
+            ordered_records = _order_page_lines(page_line_records, column_count, split_x, page_width)
+            for logical_index, record in enumerate(ordered_records):
+                text = str(record["text"])
+                role = "heading" if _looks_like_section_heading(text, bool(record.get("bold_like"))) else "body"
+                column_index = int(record.get("column_index", 0))
+                line_notes = list(record.get("notes", [])) if isinstance(record.get("notes"), list) else []
+                if role == "heading":
+                    line_notes.append("layout_section_heading")
+                stream_lines.append(
+                    PaperTextLine(
+                        line_id=f"page-{page_num}-line-{logical_index}",
+                        page_num=page_num,
+                        block_index=int(record["block_index"]) if isinstance(record.get("block_index"), int) else None,
+                        line_index=int(record["line_index"]) if isinstance(record.get("line_index"), int) else None,
+                        raw_text=str(record["raw_text"]),
+                        text=text,
+                        bbox=record["bbox"],
+                        column_index=column_index,
+                        column_count=column_count,
+                        role=role,
+                        confidence=0.86 if role == "heading" else 0.78,
+                        notes=line_notes,
+                    )
+                )
+            removed_furniture_line_count += removed_on_page
+            stream_pages.append(
+                PaperTextPage(
+                    page_num=page_num,
+                    page_width=page_width,
+                    page_height=page_height,
+                    column_count=column_count,
+                    split_x=split_x,
+                    line_count=len(ordered_records),
+                    removed_page_furniture_line_count=removed_on_page,
+                    diagnostics=diagnostics,
+                )
+            )
+    finally:
+        close = getattr(document, "close", None)
+        if callable(close):
+            close()
+
+    markdown = paper_text_stream_to_markdown(stream_lines)
+    return PaperTextStream(
+        paper_id=paper_id or Path(pdf_path).stem,
+        source_pdf=Path(pdf_path).name,
+        markdown=markdown,
+        lines=stream_lines,
+        pages=stream_pages,
+        metadata={
+            "source_artifacts": ["pymupdf_page_text_lines", "paper_page_furniture.json"],
+            "line_count": len(stream_lines),
+            "page_count": len(stream_pages),
+            "removed_page_furniture_line_count": removed_furniture_line_count,
+            "column_order": "page_then_column_then_y",
+        },
+    )
+
+
+def paper_text_stream_to_markdown(lines: list[PaperTextLine]) -> str:
+    """Render layout-ordered paper text lines as lightweight markdown for section parsing."""
+    markdown_lines: list[str] = []
+    previous_page_num: int | None = None
+    for line in lines:
+        if previous_page_num is not None and line.page_num != previous_page_num:
+            markdown_lines.append("")
+        previous_page_num = line.page_num
+        inline_match = INLINE_REFERENCE_START_PATTERN.match(line.text)
+        if inline_match is not None:
+            markdown_lines.append(f"## {inline_match.group('heading')}")
+            markdown_lines.append(inline_match.group("body"))
+            continue
+        if line.role == "heading":
+            if markdown_lines and markdown_lines[-1] != "":
+                markdown_lines.append("")
+            markdown_lines.append(f"## {line.text}")
+            markdown_lines.append("")
+            continue
+        markdown_lines.append(line.text)
+    return "\n".join(markdown_lines).strip() + ("\n" if markdown_lines else "")
+
+def _line_record_from_pymupdf_line(
+    line: dict[str, object],
+    block_index: int,
+    line_index: int,
+) -> dict[str, object] | None:
+    span_texts: list[str] = []
+    bbox_parts: list[tuple[float, float, float, float]] = []
+    bold_like = False
+    for span in line.get("spans", []):
+        if not isinstance(span, dict):
+            continue
+        span_text = repair_extractor_glyph_failures(str(span.get("text", ""))).strip()
+        if span_text:
+            span_texts.append(span_text)
+        bbox = _bbox_from_value(span.get("bbox"))
+        if bbox is not None:
+            bbox_parts.append(bbox)
+        font = str(span.get("font", "")).lower()
+        flags = span.get("flags")
+        if "bold" in font or "semibold" in font or (isinstance(flags, int) and flags & 16):
+            bold_like = True
+    raw_text = " ".join(span_texts).strip()
+    text = clean_text(raw_text)
+    if not text or not bbox_parts:
+        return None
+    return {
+        "raw_text": raw_text,
+        "text": text,
+        "bbox": (
+            min(part[0] for part in bbox_parts),
+            min(part[1] for part in bbox_parts),
+            max(part[2] for part in bbox_parts),
+            max(part[3] for part in bbox_parts),
+        ),
+        "block_index": block_index,
+        "line_index": line_index,
+        "bold_like": bold_like,
+        "notes": [],
+    }
+
+def _page_furniture_text_matchers(
+    paper_page_furniture: PaperPageFurniture | None,
+) -> tuple[set[str], list[re.Pattern[str]]]:
+    if paper_page_furniture is None:
+        return set(), []
+    exact_keys: set[str] = set()
+    wildcard_patterns: list[re.Pattern[str]] = []
+    for cluster in paper_page_furniture.clusters:
+        key = " ".join(cluster.normalized_text_key.split())
+        if not key:
+            continue
+        if "<page_num>" in key:
+            escaped_key = re.escape(key).replace(re.escape("<page_num>"), r"\d+")
+            wildcard_patterns.append(re.compile(rf"^{escaped_key}$"))
+            continue
+        exact_keys.add(key)
+    return exact_keys, wildcard_patterns
+
+
+def _is_page_furniture_text(
+    text: object,
+    exact_keys: set[str],
+    wildcard_patterns: list[re.Pattern[str]],
+) -> bool:
+    if not exact_keys and not wildcard_patterns:
+        return False
+    normalized_text = normalize_page_furniture_text(clean_text(str(text)))
+    return normalized_text in exact_keys or any(pattern.match(normalized_text) for pattern in wildcard_patterns)
+
+
+def _detect_page_columns(
+    line_records: list[dict[str, object]],
+    page_width: float,
+) -> tuple[int, float | None, list[str]]:
+    if len(line_records) < 8 or page_width <= 0.0:
+        return 1, None, []
+    split_x = page_width / 2.0
+    narrow_records = [
+        record
+        for record in line_records
+        if (_bbox_width(record["bbox"]) / page_width) <= 0.68
+    ]
+    x_starts = sorted(float(record["bbox"][0]) for record in narrow_records)
+    start_gaps = [
+        (x_starts[index + 1] - x_starts[index], x_starts[index], x_starts[index + 1])
+        for index in range(len(x_starts) - 1)
+    ]
+    best_gap = max(start_gaps, default=(0.0, 0.0, 0.0))
+    if not (
+        best_gap[0] >= page_width * 0.15
+        and best_gap[1] <= page_width * 0.45
+        and best_gap[2] >= page_width * 0.45
+    ):
+        return 1, None, []
+    split_x = (best_gap[1] + best_gap[2]) / 2.0
+    left_records = [record for record in narrow_records if float(record["bbox"][0]) < split_x]
+    right_records = [record for record in narrow_records if float(record["bbox"][0]) >= split_x]
+    if len(left_records) < 4 or len(right_records) < 4:
+        return 1, None, []
+    if best_gap[0] < page_width * 0.15:
+        return 1, None, []
+    return 2, split_x, ["two_column_layout_detected"]
+
+
+def _order_page_lines(
+    line_records: list[dict[str, object]],
+    column_count: int,
+    split_x: float | None,
+    page_width: float,
+) -> list[dict[str, object]]:
+    if column_count <= 1 or split_x is None:
+        ordered = sorted(line_records, key=lambda record: (float(record["bbox"][1]), float(record["bbox"][0])))
+        for record in ordered:
+            record["column_index"] = 0
+        return ordered
+
+    top_full_width: list[dict[str, object]] = []
+    bottom_full_width: list[dict[str, object]] = []
+    column_records: list[dict[str, object]] = []
+    non_full_records = [
+        record
+        for record in line_records
+        if not _is_full_width_record(record, page_width)
+    ]
+    min_column_top = min((float(record["bbox"][1]) for record in non_full_records), default=0.0)
+    max_column_bottom = max((float(record["bbox"][3]) for record in non_full_records), default=0.0)
+    for record in line_records:
+        if _is_full_width_record(record, page_width):
+            record["column_index"] = 0
+            record.setdefault("notes", []).append("full_width_line")
+            if float(record["bbox"][3]) <= min_column_top + 4.0:
+                top_full_width.append(record)
+            elif float(record["bbox"][1]) >= max_column_bottom - 4.0:
+                bottom_full_width.append(record)
+            else:
+                column_records.append(record)
+            continue
+        record["column_index"] = 0 if _bbox_center_x(record["bbox"]) < split_x else 1
+        column_records.append(record)
+
+    ordered_columns: list[dict[str, object]] = []
+    for column_index in range(column_count):
+        ordered_columns.extend(
+            sorted(
+                [record for record in column_records if int(record.get("column_index", 0)) == column_index],
+                key=lambda record: (float(record["bbox"][1]), float(record["bbox"][0])),
+            )
+        )
+    return [
+        *sorted(top_full_width, key=lambda record: (float(record["bbox"][1]), float(record["bbox"][0]))),
+        *ordered_columns,
+        *sorted(bottom_full_width, key=lambda record: (float(record["bbox"][1]), float(record["bbox"][0]))),
+    ]
+
+
+def _looks_like_section_heading(text: str, bold_like: bool) -> bool:
+    normalized = clean_text(text).strip(" :").lower()
+    if not normalized or len(normalized) > 120:
+        return False
+    if normalized in SECTION_HEADING_TEXTS:
+        return True
+    if bold_like and len(normalized.split()) <= 8 and not re.search(r"[.;,]\s", normalized):
+        return True
+    return False
+
+
+def _page_size(page: Any) -> tuple[float, float]:
+    page_rect = getattr(page, "rect", None)
+    if page_rect is not None and hasattr(page_rect, "width") and hasattr(page_rect, "height"):
+        return float(page_rect.width), float(page_rect.height)
+    if page_rect is not None and all(hasattr(page_rect, attr) for attr in ("x0", "y0", "x1", "y1")):
+        return float(page_rect.x1) - float(page_rect.x0), float(page_rect.y1) - float(page_rect.y0)
+    if isinstance(page_rect, (list, tuple)) and len(page_rect) == 4:
+        return float(page_rect[2]) - float(page_rect[0]), float(page_rect[3]) - float(page_rect[1])
+    return 1.0, 1.0
+
+
+def _bbox_from_value(value: object) -> tuple[float, float, float, float] | None:
+    if all(hasattr(value, attr) for attr in ("x0", "y0", "x1", "y1")):
+        return (float(value.x0), float(value.y0), float(value.x1), float(value.y1))
+    if isinstance(value, (list, tuple)) and len(value) == 4:
+        return (float(value[0]), float(value[1]), float(value[2]), float(value[3]))
+    return None
+
+
+def _bbox_width(bbox: object) -> float:
+    left, _top, right, _bottom = bbox
+    return float(right) - float(left)
+
+
+def _bbox_center_x(bbox: object) -> float:
+    left, _top, right, _bottom = bbox
+    return (float(left) + float(right)) / 2.0
+
+
+def _is_full_width_record(record: dict[str, object], page_width: float) -> bool:
+    bbox = record["bbox"]
+    width_fraction = _bbox_width(bbox) / page_width if page_width > 0.0 else 0.0
+    return width_fraction >= 0.72 and float(bbox[0]) <= page_width * 0.22 and float(bbox[2]) >= page_width * 0.78

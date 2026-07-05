@@ -40,17 +40,12 @@ from table1_parser.page_furniture_mask import (
     filter_table_rows_for_page_furniture,
     page_furniture_cluster_ids_for_bbox,
 )
+from table1_parser.reference_sections import text_has_reference_section_start
 from table1_parser.schemas import ExtractedTable, PaperPageFurniture, TableCell
 
 
 MODEL_HEADER_PATTERN = re.compile(r"\bmodel[_\s]*\d+\b", re.IGNORECASE)
 ESTIMATE_HEADER_PATTERN = re.compile(r"\b(?:or\b|95%\s*ci|p(?:-value)?\b)\b", re.IGNORECASE)
-REFERENCES_HEADING_PATTERN = re.compile(
-    r"(?m)^\s*(?:#{1,6}\s*)?(?:[*_`]+)?(?:references|bibliography)(?:[*_`]+)?\s*$",
-    re.IGNORECASE,
-)
-
-
 class PyMuPDF4LLMExtractor(BaseExtractor):
     """Extract raw table grids with PyMuPDF4LLM."""
 
@@ -172,7 +167,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                     extracted_page_text = extract_page_text(page)
                     if extracted_page_text and extracted_page_text not in page_text:
                         page_text = f"{page_text}\n{extracted_page_text}".strip()
-                if REFERENCES_HEADING_PATTERN.search(page_text):
+                if text_has_reference_section_start(page_text):
                     in_references_section = True
                     if references_start_page_num is None:
                         references_start_page_num = page_num
@@ -687,7 +682,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                     page_text = f"{page_text}\n{extracted_page_text}".strip()
                 if references_start_page_num is not None and page_num >= references_start_page_num:
                     continue
-                if REFERENCES_HEADING_PATTERN.search(page_text):
+                if text_has_reference_section_start(page_text):
                     references_start_page_num = page_num
                     continue
                 for candidate in build_text_layout_candidates(

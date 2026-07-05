@@ -26,6 +26,7 @@ from table1_parser.continued_variable_integration import (
 )
 from table1_parser.context import (
     annotate_visual_reference_checks,
+    build_paper_text_stream,
     build_paper_visual_inventory,
     build_table_contexts,
     build_paper_variable_inventory,
@@ -82,6 +83,7 @@ from table1_parser.schemas import (
     PaperBibliography,
     PaperPageFurniture,
     PaperSection,
+    PaperTextStream,
     PaperVariableInventory,
     PaperVisual,
     PaperVisualReference,
@@ -131,6 +133,7 @@ class PaperParseArtifacts:
     paper_footnotes: PaperFootnotes
     paper_bibliography: PaperBibliography
     paper_page_furniture: PaperPageFurniture
+    paper_text_stream: PaperTextStream
     paper_markdown: str
     paper_sections: list[PaperSection]
     paper_visual_inventory: list[PaperVisual]
@@ -436,11 +439,17 @@ def _handle_review_variable_plausibility(args: argparse.Namespace) -> int:
 def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     """Run the deterministic parse pipeline and build the paper-level context artifacts."""
     paper_stem = Path(pdf_path).stem
-    paper_markdown = extract_paper_markdown(pdf_path)
-    paper_sections = parse_markdown_sections(paper_markdown)
+    paper_page_furniture = build_paper_page_furniture(pdf_path, paper_id=paper_stem)
+    paper_markdown = extract_paper_markdown(pdf_path, paper_page_furniture=paper_page_furniture)
+    paper_text_stream = build_paper_text_stream(
+        pdf_path,
+        paper_page_furniture=paper_page_furniture,
+        paper_id=paper_stem,
+    )
+    section_markdown = paper_text_stream.markdown or paper_markdown
+    paper_sections = parse_markdown_sections(section_markdown)
     bibliography_entries = build_bibliography_entries_from_sections(paper_sections)
     extractor = _build_default_extractor()
-    paper_page_furniture = build_paper_page_furniture(pdf_path, paper_id=paper_stem)
     extracted_tables = extractor.extract(pdf_path, paper_page_furniture=paper_page_furniture)
     cell_text_annotations = build_cell_text_annotation_tables_from_pdf(
         pdf_path,
@@ -668,6 +677,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         paper_footnotes=paper_footnotes,
         paper_bibliography=paper_bibliography,
         paper_page_furniture=paper_page_furniture,
+        paper_text_stream=paper_text_stream,
         paper_markdown=paper_markdown,
         paper_sections=paper_sections,
         paper_visual_inventory=paper_visual_inventory,
@@ -742,6 +752,7 @@ def _write_parse_outputs(
     paper_footnotes_output_path = paper_dir / "paper_footnotes.json"
     paper_bibliography_output_path = paper_dir / "paper_bibliography.json"
     paper_page_furniture_output_path = paper_dir / "paper_page_furniture.json"
+    paper_text_stream_output_path = paper_dir / "paper_text_stream.json"
     paper_markdown_output_path = paper_dir / "paper_markdown.md"
     paper_sections_output_path = paper_dir / "paper_sections.json"
     paper_visual_inventory_output_path = paper_dir / "paper_visual_inventory.json"
@@ -847,6 +858,10 @@ def _write_parse_outputs(
     )
     paper_page_furniture_output_path.write_text(
         json.dumps(paper_page_furniture_to_payload(artifacts.paper_page_furniture), indent=2) + "\n",
+        encoding="utf-8",
+    )
+    paper_text_stream_output_path.write_text(
+        json.dumps(artifacts.paper_text_stream.model_dump(mode="json"), indent=2) + "\n",
         encoding="utf-8",
     )
     paper_markdown_output_path.write_text(artifacts.paper_markdown, encoding="utf-8")

@@ -4,7 +4,10 @@ This document defines the intent of `paper_markdown.md`, the paper-level markdow
 
 ## Purpose
 
-`paper_markdown.md` is the document-context view of the paper.
+`paper_markdown.md` is the raw backend markdown view of the paper. The
+canonical ordered document-context source for sections, bibliography extraction,
+visual references, variable inventory, and table-context retrieval is
+`paper_text_stream.json` when PyMuPDF positioned text is available.
 
 It exists to support:
 
@@ -23,7 +26,12 @@ The file is produced from:
 
 - `pymupdf4llm.to_markdown(...)`
 
-No other PDF backend should be used for this artifact.
+The parser builds `paper_page_furniture.json` before this artifact and removes
+markdown lines that match repeated page-furniture clusters. The same furniture
+artifact is also applied to `paper_text_stream.json`, which is the preferred
+source for downstream document order.
+
+No other PDF backend should be used for the markdown extraction itself.
 
 ## Output Path
 
@@ -33,11 +41,13 @@ outputs/papers/<paper_stem>/paper_markdown.md
 
 ## Design Rules
 
-- Preserve the full-paper markdown structure as extracted.
+- Preserve the full-paper markdown structure as extracted, except for repeated
+  page-furniture lines identified in `paper_page_furniture.json`.
 - Allow only conservative repair of a small set of known extractor glyph-to-Unicode failures in text, such as a replacement character standing in for a threshold comparator.
 - Do not rewrite it into a table-specific format.
 - Do not use it as a replacement for `ExtractedTable` or `NormalizedTable`.
 - Keep it paired with:
+  - `paper_text_stream.json`
   - `paper_sections.json`
   - `paper_visual_inventory.json`
   - `paper_references.json`
@@ -59,7 +69,8 @@ The pipeline should therefore:
 
 - preserve the extracted markdown structure with only conservative glyph repair
 - treat these repairs as extractor-symbol recovery, not as a general-purpose file-encoding pass
-- derive structure in `paper_sections.json`
+- derive layout-aware structure in `paper_text_stream.json` and
+  `paper_sections.json`
 - derive actual in-paper table/figure objects in `paper_visual_inventory.json`
 - derive anchored prose mentions in `paper_references.json`, resolving them against the visual inventory rather than assuming every `Figure X` mention belongs to this paper
 - tolerate section-name variation
@@ -69,8 +80,12 @@ The pipeline should therefore:
 
 ## Relationship To Section Parsing
 
-`paper_markdown.md` is the persisted document-context artifact.
+`paper_markdown.md` is persisted backend evidence.
 
-`paper_sections.json` is the structured interpretation of that markdown.
+`paper_text_stream.json` is the layout-aware document-context artifact.
+
+`paper_sections.json` is the structured interpretation of that layout-aware
+stream when available, falling back to markdown only when positioned text cannot
+be read.
 
 If section-parsing logic changes, this document and the section-parsing design notes should be updated in the same change.

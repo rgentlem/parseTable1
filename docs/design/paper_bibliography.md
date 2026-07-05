@@ -27,7 +27,9 @@ The implemented flow is:
 
 ```text
 PDF
+-> paper_page_furniture.json
 -> paper_markdown.md
+-> paper_text_stream.json
 -> paper_sections.json
 -> bibliography entries
 -> table extraction and cell text annotations

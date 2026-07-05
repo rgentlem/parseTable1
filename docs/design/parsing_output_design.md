@@ -82,7 +82,7 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Table definition | `TableDefinition` | Written now as `table_definitions.json` by `parse` | Persist value-free row-variable, level, and column semantics |
 | Continued variable integration | `TableDefinition` | Written now as `continued_variable_integrations.json` by `parse` | Persist a source-fragment review view for compatible continued Table 1 fragments; this is not consumed by canonical semantic parsing now that `resolved_tables.json` feeds `TableDefinition` and `ParsedTable` |
 | Parsed source-cell values | `ParsedCellValue` | Written now as `parsed_cell_values.json` by `parse` | Persist source-grid cell value components keyed by table and row/column indices before semantic row/column value joins |
-| Paper context | `PaperSection`, `PaperVisual`, `PaperVisualReference`, `TableContext` | Written now as `paper_markdown.md`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, and `table_contexts/*.json` by `parse` | Persist markdown sections, actual in-paper visual objects, anchored table/figure references, and per-table retrieval bundles, with only conservative glyph repair in the markdown text |
+| Paper context | `PaperTextStream`, `PaperSection`, `PaperVisual`, `PaperVisualReference`, `TableContext` | Written now as `paper_markdown.md`, `paper_text_stream.json`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, and `table_contexts/*.json` by `parse` | Persist raw backend markdown, layout-aware column-ordered paper text, sections, actual in-paper visual objects, anchored table/figure references, and per-table retrieval bundles |
 | Paper bibliography | `PaperBibliography`, `BibliographyEntry`, `BibliographyReferenceMention` | Written now as `paper_bibliography.json` by `parse` | Persist the paper's own numbered bibliography entries and observed numeric reference markers linked to those entries without creating a cross-paper citation-management layer |
 | Paper variable inventory | `PaperVariableInventory`, `VariableMention`, `VariableCandidate` | Written now as `paper_variable_inventory.json` by `parse` | Persist the paper-level candidate variable reference list with explicit text/table provenance |
 | Variable-plausibility LLM review | `LLMVariablePlausibilityTableReview` | Written now as `table_variable_plausibility_llm.json` by `review-variable-plausibility` when LLM config is available | Persist table-local QA scores for variable label/type/level plausibility without rewriting the deterministic definition |
@@ -92,7 +92,7 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Table processing status | `TableProcessingStatus`, `TableProcessingAttempt` | Written now as `table_processing_status.json` by `parse` | Persist resolved-table rescue attempts, source fragment IDs and diagnostics, terminal failure stage, and failure reason without overloading semantic artifacts |
 | Parse quality diagnostics | `ParseQualityReport` | Written now as `parse_quality_reports.json` by `parse` | Persist deterministic row, column, and value-pattern diagnostics without changing parse behavior |
 | Paper footnotes | `PaperFootnotes` | Written now as `paper_footnotes.json` by `parse` | Persist detected table-local footer regions, footnote anchors, PyMuPDF text-block definition candidates, table-footer block classification, page-furniture and math/unit suppression metadata, explicit glyph-key links, and structured conventional p-value-star inferences as reviewable evidence without rewriting table text or parsed values |
-| Paper page furniture | `PaperPageFurniture` | Written now as `paper_page_furniture.json` by `parse` | Persist repeated page text observations, clusters, and ignored regions used as an early extraction mask and as a late footnote guardrail |
+| Paper page furniture | `PaperPageFurniture` | Written now as `paper_page_furniture.json` by `parse` | Persist repeated page text observations, clusters, and ignored regions used to mask whole-paper markdown/context parsing, as an early extraction mask, and as a late footnote guardrail |
 
 Design note for future multitable support:
 
@@ -684,6 +684,7 @@ Current CLI paths:
 
 ```text
 outputs/papers/<paper_stem>/paper_markdown.md
+outputs/papers/<paper_stem>/paper_text_stream.json
 outputs/papers/<paper_stem>/paper_sections.json
 outputs/papers/<paper_stem>/paper_bibliography.json
 outputs/papers/<paper_stem>/paper_visual_inventory.json
@@ -695,6 +696,8 @@ outputs/papers/<paper_stem>/table_contexts/table_<n>_context.json
 Canonical models:
 
 - `PaperSection`
+- `PaperTextStream`
+- child models: `PaperTextLine`, `PaperTextPage`
 - `PaperBibliography`
 - child models: `BibliographyEntry`, `BibliographyReferenceMention`
 - `PaperVisual`
@@ -707,9 +710,11 @@ Canonical models:
 Design components:
 
 - `paper_markdown.md`
-  raw markdown extracted from the full paper
+  raw backend markdown extracted from the full paper, with repeated page-furniture lines filtered out for inspection
+- `paper_text_stream.json`
+  layout-aware full-paper text from positioned PyMuPDF lines, with repeated page-furniture lines removed and two-column pages ordered by page, column, then vertical position
 - `paper_sections.json`
-  markdown-derived sections with heading level and simple role hints
+  sections derived from the layout-aware text stream when available, with heading level and simple role hints
 - `paper_bibliography.json`
   per-paper bibliography entries extracted before table extraction, plus
   table-cell numeric reference markers linked to those entries after cell-text

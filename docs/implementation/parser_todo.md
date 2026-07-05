@@ -42,13 +42,19 @@ current retained reference run is `outputs/testpapers_batch_20260702_non_table_f
    Verification G1.28-G1.33 is in place: focused resolved-table regressions cover accepted explicit continuations, schema-rejected continuation candidates, continuation level attachment to a base-fragment parent, and unrelated same-column tables remaining separate. The latest retained full 27-PDF run is `outputs/testpapers_footer_blocks_20260701_final`; use that output for current footnote inspection and rerun the corpus before relying on older continuation/status counts.
 
 3. [x] Move paper-page-furniture masking before extraction.
-   `paper_page_furniture.json` is now built before extraction and supplied to
-   the extractor as explicit ignore regions. Repeated page-furniture words and
-   chars are removed before text-position, rescue, rotated, or sideways
-   reconstruction consumes them, and explicit-grid rows are removed only when
-   most populated cell bboxes are mostly inside ignored regions. Extraction
-   records `metadata.page_furniture_overlap` when a candidate touches ignored
-   regions and `metadata.page_furniture_mask` when evidence was removed.
+   `paper_page_furniture.json` is now built before paper markdown,
+   layout-aware text streaming, section parsing, bibliography extraction, and
+   table extraction. Repeated page-furniture lines are removed from
+   `paper_markdown.md` and `paper_text_stream.json`; `paper_sections.json` and
+   `paper_bibliography.json` entries are derived from the layout-aware stream
+   when available, and the artifact is supplied to the extractor as explicit
+   ignore regions.
+   Repeated page-furniture words and chars are removed before text-position,
+   rescue, rotated, or sideways reconstruction consumes them, and explicit-grid
+   rows are removed only when most populated cell bboxes are mostly inside
+   ignored regions. Extraction records `metadata.page_furniture_overlap` when a
+   candidate touches ignored regions and `metadata.page_furniture_mask` when
+   evidence was removed.
    Implementation plan: `docs/implementation/paper_page_furniture_implementation_plan.md`.
    Design contract, Pydantic schemas, positioned page-text collection,
    matching-text normalization, edge-band recurrence clustering,
@@ -134,6 +140,11 @@ current retained reference run is `outputs/testpapers_batch_20260702_non_table_f
   been retired. `metadata.trailing_non_table_rows` now records only explicit
   trailing continuation-page notes.
 - Recent extraction guardrail: reference/bibliography section detection now combines backend payload text with PyMuPDF page text before table detection and carries the section stop into fallback extraction, so bibliography pages cannot enter the table pipeline just because the primary JSON payload missed the section heading.
+- Recent paper-context update: `paper_text_stream.json` now records
+  layout-aware, page-furniture-filtered PyMuPDF text lines and orders simple
+  two-column pages as page, column, then y-position. `paper_sections.json` and
+  bibliography entry extraction consume this stream when available, while
+  `paper_markdown.md` remains a filtered backend-markdown evidence artifact.
 - Recent extraction guardrail: sparse trailing table-continuation notes such as `(Table 1 continues on next page)` are removed and recorded in `metadata.trailing_non_table_rows`; post-header notes such as `(Continued from previous page)` remain provenance rows but are excluded from normalized `body_rows`.
 - Recent extraction update: rotated word-position refinement fails closed when a small backend grid would expand into an implausibly wide table. More than 30 columns is rejected for rotated collapsed-grid recovery, and 13-30 columns requires separator-rule support. Newer PyMuPDF4LLM can emit a mixed-orientation table box containing both upright article text and a rotated table; extraction now derives a separate rotated-block candidate from the contiguous vertical PyMuPDF text block inside that box and lets candidate deduplication choose the recovered table region. A focused Ethnic Differences run now recovers the rotated Table 1 region and resolves its prior subscript/marker-font false footnote issues; rerun the full corpus before replacing the retained guide counts.
 - Recent normalization update: header/body selection now uses validated full-width separator rules first, first value-region anchors second, and content scoring only as fallback. Full-width separator evidence is derived from stroked rule geometry so filled row highlighting/background shading does not create false hlines. Future work still needs a more principled model for data/estimate tables without clear separator or value-anchor evidence, rather than adding more ordered special cases.

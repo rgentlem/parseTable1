@@ -128,7 +128,7 @@ Then use the documents below as needed.
 ## Supporting References
 
 - `docs/design/paper_markdown_spec.md`
-  Design intent for `paper_markdown.md`, including expected variation in section naming and heading structure.
+  Design intent for raw `paper_markdown.md` and layout-aware `paper_text_stream.json`, including expected variation in section naming, heading structure, and two-column paper order.
 
 - `docs/design/paper_visual_references.md`
   Planned paper-level visual-object and visual-reference artifacts for resolving table/figure mentions to actual in-paper tables and figures, preserving stable anchors for nearby text access, and later linking figure-image artifacts.

@@ -34,6 +34,7 @@ from table1_parser.schemas.paper_bibliography import (
     PaperBibliography,
 )
 from table1_parser.schemas.paper_table_inventory import PaperTableInventory, PaperTableRecord, TableCategory
+from table1_parser.schemas.paper_text_stream import PaperTextLine, PaperTextLineRole, PaperTextPage, PaperTextStream
 from table1_parser.schemas.paper_footnotes import (
     FootnoteAnchor,
     FootnoteDefinition,
@@ -126,6 +127,10 @@ __all__ = [
     "PaperPageFurniture",
     "PaperTableInventory",
     "PaperTableRecord",
+    "PaperTextLine",
+    "PaperTextLineRole",
+    "PaperTextPage",
+    "PaperTextStream",
     "PaperVariableInventory",
     "PageFurnitureCluster",
     "PageFurnitureRecurrenceScope",
