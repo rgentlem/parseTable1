@@ -52,6 +52,14 @@ Public functions:
 - `show_merged_table1(paper_dir, group_index = 0L, max_rows = 30L)`
 - `show_paper_variable_mentions(paper_dir, role_hint = NULL, source_type = NULL, mention_role = NULL)`
 - `show_paper_variable_candidates(paper_dir, min_priority = NULL)`
+- `paper_style_dimensions_df(outputs)`
+- `paper_style_checks_df(outputs)`
+- `paper_style_evidence_df(outputs, dimension = NULL)`
+- `paper_style_dimensions_list(papers_dir = file.path("outputs", "papers"))`
+- `paper_style_checks_list(papers_dir = file.path("outputs", "papers"))`
+- `paper_style_profiles_summary_df(papers_dir = file.path("outputs", "papers"))`
+- `show_paper_style_profile(paper_dir, include_evidence = FALSE)`
+- `show_paper_style_profiles(papers_dir = file.path("outputs", "papers"))`
 - `show_paper_visuals(paper_dir, visual_kind = NULL)`
 - `show_paper_references(paper_dir, reference_kind = NULL, reference_label = NULL, resolution_status = NULL)`
 - `show_table_structure(paper_dir, table_number = 1L, max_rows = NULL, include_raw_header_rows = FALSE)`
@@ -100,6 +108,7 @@ show_table_continuation_column_check("outputs/papers/cobaltpaper", check_index =
 show_merged_table1("outputs/papers/cobaltpaper", group_index = 0L, max_rows = 20L)
 show_paper_variable_candidates("outputs/papers/cobaltpaper")
 show_paper_variable_mentions("outputs/papers/cobaltpaper", source_type = "text_based", mention_role = "variable")
+show_paper_style_profile("outputs/papers/cobaltpaper")
 show_paper_visuals("outputs/papers/cobaltpaper", visual_kind = "figure")
 show_paper_references("outputs/papers/cobaltpaper", resolution_status = "resolved")
 show_table_structure("outputs/papers/cobaltpaper", table_number = 1L)
@@ -120,6 +129,9 @@ source("R/inspect_paper_outputs.R")
 taxonomy_by_paper <- paper_table_inventory_list("outputs/papers")
 names(taxonomy_by_paper)
 taxonomy_by_paper[["cobaltpaper"]]
+
+style_summary <- paper_style_profiles_summary_df("outputs/papers")
+style_summary[, c("paper", "bibliography_style", "bibliography_alignment_status")]
 ```
 
 Each list element is the same data frame returned by `paper_table_inventory_df(load_paper_outputs(paper_dir))`.
@@ -138,6 +150,9 @@ Filter(
   function(x) any(!is.na(x$continuation_of_table_number)),
   taxonomy_by_paper
 )
+
+# Check whether inferred bibliography numbering agrees with extracted entries.
+style_summary[style_summary$bibliography_alignment_status != "pass", , drop = FALSE]
 ```
 
 What these are for:
@@ -174,6 +189,15 @@ What these are for:
   print actual in-paper table and figure objects, including captions, reference-check status, text reference IDs, and future figure artifact paths when available
 - `show_paper_references(...)`
   print anchored table and figure mentions, including whether each mention resolved to an in-paper visual
+- `paper_style_dimensions_df(...)`, `paper_style_checks_df(...)`, and `paper_style_evidence_df(...)`
+  return the style-profile dimensions, consistency checks, and example evidence as data frames
+- `paper_style_profiles_summary_df(...)`
+  returns one row per parsed paper with bibliography numbering alignment,
+  footnote-link status, caption-placement status, and visual-reference status
+- `show_paper_style_profile(...)`
+  print likely footnote-marker, bibliography, caption, and visual-reference styles, plus checks such as whether a predicted numbered bibliography actually contains numbered entries
+- `show_paper_style_profiles(...)`
+  prints the corpus-level style summary returned by `paper_style_profiles_summary_df(...)`
 - `llm_variable_plausibility_df(...)`
   convert the saved variable-plausibility review into one row per variable
 - `show_llm_variable_plausibility(...)`
@@ -200,6 +224,7 @@ What these are for:
 - `table_variable_plausibility_llm`
 - `paper_visual_inventory`
 - `paper_references`
+- `paper_style_profile`
 
 ## Example Workflow
 

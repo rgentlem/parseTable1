@@ -51,6 +51,7 @@ outputs/papers/<paper_stem>/paper_markdown.md
   - `paper_sections.json`
   - `paper_visual_inventory.json`
   - `paper_references.json`
+  - `paper_style_profile.json`
   - `table_contexts/table_<n>_context.json`
 
 ## Expected Variation
@@ -73,6 +74,8 @@ The pipeline should therefore:
   `paper_sections.json`
 - derive actual in-paper table/figure objects in `paper_visual_inventory.json`
 - derive anchored prose mentions in `paper_references.json`, resolving them against the visual inventory rather than assuming every `Figure X` mention belongs to this paper
+- derive paper-level marker, caption, and reference-style summaries in
+  `paper_style_profile.json` from the structured paper artifacts
 - tolerate section-name variation
 - avoid hardcoding exact heading names as the only way to find methods-like or results-like content
 - avoid using the references or bibliography as a primary source for paper-level variable inventory

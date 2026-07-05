@@ -84,6 +84,7 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Parsed source-cell values | `ParsedCellValue` | Written now as `parsed_cell_values.json` by `parse` | Persist source-grid cell value components keyed by table and row/column indices before semantic row/column value joins |
 | Paper context | `PaperTextStream`, `PaperSection`, `PaperVisual`, `PaperVisualReference`, `TableContext` | Written now as `paper_markdown.md`, `paper_text_stream.json`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, and `table_contexts/*.json` by `parse` | Persist raw backend markdown, layout-aware column-ordered paper text, sections, actual in-paper visual objects, anchored table/figure references, and per-table retrieval bundles |
 | Paper bibliography | `PaperBibliography`, `BibliographyEntry`, `BibliographyReferenceMention` | Written now as `paper_bibliography.json` by `parse` | Persist the paper's own bibliography entries, numbered or unnumbered, and link observed numeric reference markers to numbered entries without creating a cross-paper citation-management layer |
+| Paper style profile | `PaperStyleProfile`, `PaperStyleDimension`, `PaperStyleCheck`, `PaperStyleEvidence` | Written now as `paper_style_profile.json` by `parse` | Persist document-level counts, examples, and consistency checks for footnote-marker, bibliography, caption-placement, and visual-reference conventions without changing extraction or link decisions |
 | Paper variable inventory | `PaperVariableInventory`, `VariableMention`, `VariableCandidate` | Written now as `paper_variable_inventory.json` by `parse` | Persist the paper-level candidate variable reference list with explicit text/table provenance |
 | Variable-plausibility LLM review | `LLMVariablePlausibilityTableReview` | Written now as `table_variable_plausibility_llm.json` by `review-variable-plausibility` when LLM config is available | Persist table-local QA scores for variable label/type/level plausibility without rewriting the deterministic definition |
 | Variable-plausibility debug monitoring | `LLMVariablePlausibilityMonitoringReport`, `LLMVariablePlausibilityCallRecord` | Written only when `LLM_DEBUG=true` as `llm_variable_plausibility_debug/<timestamp>/llm_variable_plausibility_monitoring.json` plus per-table trace files | Persist per-table timing, payload-size, status, and raw-response debug evidence for the standalone review command |
@@ -689,6 +690,7 @@ outputs/papers/<paper_stem>/paper_markdown.md
 outputs/papers/<paper_stem>/paper_text_stream.json
 outputs/papers/<paper_stem>/paper_sections.json
 outputs/papers/<paper_stem>/paper_bibliography.json
+outputs/papers/<paper_stem>/paper_style_profile.json
 outputs/papers/<paper_stem>/paper_visual_inventory.json
 outputs/papers/<paper_stem>/paper_references.json
 outputs/papers/<paper_stem>/paper_variable_inventory.json
@@ -702,6 +704,8 @@ Canonical models:
 - child models: `PaperTextLine`, `PaperTextPage`
 - `PaperBibliography`
 - child models: `BibliographyEntry`, `BibliographyReferenceMention`
+- `PaperStyleProfile`
+- child models: `PaperStyleDimension`, `PaperStyleCheck`, `PaperStyleEvidence`
 - `PaperVisual`
 - `PaperVisualReference`
 - `PaperVariableInventory`
@@ -721,6 +725,12 @@ Design components:
   per-paper bibliography entries extracted from the positioned text stream
   before table extraction, plus table-cell numeric reference markers linked to
   those entries after cell-text annotations are available
+- `paper_style_profile.json`
+  per-paper style summary built from existing text, footnote, bibliography,
+  visual-inventory, and visual-reference artifacts; this records likely marker,
+  reference-list, caption, and table/figure mention conventions as counts and
+  examples for review, plus consistency checks such as numbered-bibliography
+  alignment
 - `paper_visual_inventory.json`
   paper-level inventory of actual in-paper tables and figure captions, keyed by stable visual IDs such as `paper_visual:table:1`, with reference-check status fields showing whether the visual has at least one non-self text reference
 - `paper_references.json`

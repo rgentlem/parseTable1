@@ -43,6 +43,7 @@ Today that directory may contain:
 - `parse_quality_reports.json`
 - `paper_footnotes.json`
 - `paper_bibliography.json`
+- `paper_style_profile.json`
 - `paper_page_furniture.json`
 - `paper_markdown.md`
 - `paper_text_stream.json`
@@ -112,6 +113,14 @@ or at the first author/organization text in a hanging-indent list; keep indented
 rows as continuations across column and page boundaries. Table-cell
 reference-marker links are added later after cell text annotations are
 available.
+
+`paper_style_profile.json` summarizes the document's observed conventions for
+footnote markers, bibliography/reference-list style, table caption placement,
+figure caption evidence, and table/figure prose references. It is built from
+the existing text-stream, table, footnote, bibliography, visual-inventory, and
+visual-reference artifacts. It also records consistency checks, such as whether
+a predicted numbered bibliography actually has numbered entries. It is review
+evidence only; it does not rewrite footnote links or bibliography entries.
 Numeric unit/exponent superscripts and subscripts such as `10^9`, `m^2`,
 `CO₂`, and `I²` are suppressed before footnote-anchor creation and counted in
 metadata. Multi-letter subscript words such as `P_Begg` and `P_Egger` are also
@@ -887,7 +896,7 @@ This is separate from table extraction.
 The current paper-context path is:
 
 ```text
-PDF -> paper_page_furniture.json -> paper_text_stream.json -> paper_markdown.md -> paper_sections.json -> paper_bibliography.json -> paper_visual_inventory.json -> paper_references.json -> paper_variable_inventory.json -> table_contexts/*.json
+PDF -> paper_page_furniture.json -> paper_text_stream.json -> paper_markdown.md -> paper_sections.json -> paper_bibliography.json -> paper_visual_inventory.json -> paper_references.json -> paper_style_profile.json -> paper_variable_inventory.json -> table_contexts/*.json
 ```
 
 ### `paper_markdown.md`
@@ -943,6 +952,30 @@ look like bibliography references can be linked to those bibliography entries.
 For example, numeric superscripts attached to study/source row labels should be
 represented here rather than counted as unresolved table footnotes when no local
 table-note definition exists.
+
+### `paper_style_profile.json`
+
+The parser builds a compact style summary from existing paper-level artifacts.
+
+It records:
+
+- likely footnote marker family, with counts by numeric, letter, symbol,
+  asterisk, and unknown markers
+- likely bibliography/reference-list style, including numbered versus
+  unnumbered/hanging-indent lists
+- likely table caption placement, using extracted-table caption metadata and
+  nearby positioned text lines
+- figure caption text evidence, with an explicit note that figure geometry is
+  not extracted yet
+- prose table/figure reference wording and resolution-status counts
+
+Each dimension keeps `likely_style`, `confidence`, count dictionaries, compact
+evidence examples, and notes. The profile also has `checks` that compare the
+style inference with parsed artifact reality, including bibliography numbering,
+footnote link coverage, caption-placement coverage, figure-geometry
+availability, and visual-reference resolution. This gives later
+footnote/linking work an inspectable document-style signal without embedding
+journal-specific rules in the link resolver.
 
 ### `paper_visual_inventory.json`
 

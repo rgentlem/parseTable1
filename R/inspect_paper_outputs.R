@@ -42,6 +42,7 @@ paper_output_paths <- function(paper_dir) {
     variable_plausibility_debug_dir = file.path(paper_dir, "llm_variable_plausibility_debug"),
     paper_markdown = file.path(paper_dir, "paper_markdown.md"),
     paper_sections = file.path(paper_dir, "paper_sections.json"),
+    paper_style_profile = file.path(paper_dir, "paper_style_profile.json"),
     paper_visual_inventory = file.path(paper_dir, "paper_visual_inventory.json"),
     paper_references = file.path(paper_dir, "paper_references.json"),
     paper_variable_inventory = file.path(paper_dir, "paper_variable_inventory.json"),
@@ -75,6 +76,31 @@ table_definition_header_spans <- function(definition) {
 character_vector <- function(x) {
   values <- as.character(unlist(x %||% list(), use.names = FALSE))
   values[!is.na(values)]
+}
+
+named_count_text <- function(x) {
+  if (is.null(x) || length(x) == 0L) {
+    return("")
+  }
+  values <- unlist(x, use.names = TRUE)
+  if (length(values) == 0L) {
+    return("")
+  }
+  paste(sprintf("%s=%s", names(values), as.character(values)), collapse = " | ")
+}
+
+secondary_count_text <- function(x) {
+  if (is.null(x) || length(x) == 0L) {
+    return("")
+  }
+  parts <- vapply(names(x), function(name) {
+    counts <- named_count_text(x[[name]])
+    if (!nzchar(counts)) {
+      return("")
+    }
+    sprintf("%s{%s}", name, counts)
+  }, character(1))
+  paste(parts[nzchar(parts)], collapse = " | ")
 }
 
 column_header_path_text <- function(column) {
@@ -222,6 +248,7 @@ load_paper_outputs <- function(paper_dir) {
     table_variable_plausibility_llm = read_optional_json(paths$variable_plausibility),
     paper_markdown = read_text_file(paths$paper_markdown),
     paper_sections = read_json_file(paths$paper_sections),
+    paper_style_profile = read_optional_json(paths$paper_style_profile) %||% list(),
     paper_visual_inventory = read_optional_json(paths$paper_visual_inventory) %||% list(),
     paper_references = read_optional_json(paths$paper_references) %||% list(),
     paper_variable_inventory = read_optional_json(paths$paper_variable_inventory),
@@ -447,6 +474,245 @@ show_paper_variable_candidates <- function(paper_dir, min_priority = NULL) {
   }
   print(candidates_df, row.names = FALSE, right = FALSE)
   invisible(candidates_df)
+}
+
+paper_style_dimensions_df <- function(outputs) {
+  profile <- outputs$paper_style_profile %||% list()
+  dimension_names <- c(
+    "footnote_marker_style",
+    "bibliography_reference_style",
+    "table_caption_placement",
+    "figure_caption_evidence",
+    "visual_reference_style"
+  )
+  rows <- lapply(dimension_names, function(name) {
+    dimension <- profile[[name]] %||% list()
+    data.frame(
+      dimension = as.character(dimension$dimension %||% name),
+      likely_style = as.character(dimension$likely_style %||% ""),
+      confidence = as.numeric(dimension$confidence %||% NA_real_),
+      count_by_style = named_count_text(dimension$count_by_style),
+      count_by_source = named_count_text(dimension$count_by_source),
+      secondary_counts = secondary_count_text(dimension$secondary_counts),
+      evidence_count = length(dimension$evidence %||% list()),
+      notes = paste(character_vector(dimension$notes), collapse = " | "),
+      stringsAsFactors = FALSE
+    )
+  })
+  do.call(rbind, rows)
+}
+
+paper_style_checks_df <- function(outputs) {
+  checks <- outputs$paper_style_profile$checks %||% list()
+  rows <- lapply(checks, function(check) {
+    data.frame(
+      check_id = as.character(check$check_id %||% ""),
+      check_type = as.character(check$check_type %||% ""),
+      status = as.character(check$status %||% ""),
+      message = as.character(check$message %||% ""),
+      evidence_count = length(check$evidence %||% list()),
+      notes = paste(character_vector(check$notes), collapse = " | "),
+      stringsAsFactors = FALSE
+    )
+  })
+  if (length(rows) == 0L) {
+    return(data.frame(
+      check_id = character(),
+      check_type = character(),
+      status = character(),
+      message = character(),
+      evidence_count = integer(),
+      notes = character(),
+      stringsAsFactors = FALSE
+    ))
+  }
+  do.call(rbind, rows)
+}
+
+paper_style_evidence_df <- function(outputs, dimension = NULL) {
+  profile <- outputs$paper_style_profile %||% list()
+  dimension_names <- c(
+    "footnote_marker_style",
+    "bibliography_reference_style",
+    "table_caption_placement",
+    "figure_caption_evidence",
+    "visual_reference_style"
+  )
+  if (!is.null(dimension)) {
+    dimension_names <- dimension_names[dimension_names %in% as.character(dimension)]
+  }
+  rows <- list()
+  for (name in dimension_names) {
+    dim_record <- profile[[name]] %||% list()
+    for (evidence in dim_record$evidence %||% list()) {
+      rows[[length(rows) + 1L]] <- data.frame(
+        dimension = as.character(dim_record$dimension %||% name),
+        evidence_id = as.character(evidence$evidence_id %||% ""),
+        style = as.character(evidence$style %||% ""),
+        source_artifact = as.character(evidence$source_artifact %||% ""),
+        source_id = as.character(evidence$source_id %||% ""),
+        page_num = as.integer(evidence$page_num %||% NA_integer_),
+        table_id = as.character(evidence$table_id %||% ""),
+        text = as.character(evidence$text %||% ""),
+        notes = paste(character_vector(evidence$notes), collapse = " | "),
+        stringsAsFactors = FALSE
+      )
+    }
+  }
+  if (length(rows) == 0L) {
+    return(data.frame(
+      dimension = character(),
+      evidence_id = character(),
+      style = character(),
+      source_artifact = character(),
+      source_id = character(),
+      page_num = integer(),
+      table_id = character(),
+      text = character(),
+      notes = character(),
+      stringsAsFactors = FALSE
+    ))
+  }
+  do.call(rbind, rows)
+}
+
+show_paper_style_profile <- function(paper_dir, include_evidence = FALSE) {
+  outputs <- load_paper_outputs(paper_dir)
+  dimensions <- paper_style_dimensions_df(outputs)
+  checks <- paper_style_checks_df(outputs)
+
+  cat(sprintf("Paper style profile for %s\n\n", normalizePath(paper_dir, winslash = "/", mustWork = TRUE)))
+  if (nrow(dimensions) == 0L) {
+    cat("[No style dimensions]\n")
+  } else {
+    print(dimensions, row.names = FALSE, right = FALSE)
+  }
+  cat("\nStyle consistency checks\n")
+  if (nrow(checks) == 0L) {
+    cat("[No checks]\n")
+  } else {
+    print(checks, row.names = FALSE, right = FALSE)
+  }
+  if (isTRUE(include_evidence)) {
+    evidence <- paper_style_evidence_df(outputs)
+    cat("\nStyle evidence examples\n")
+    if (nrow(evidence) == 0L) {
+      cat("[No evidence]\n")
+    } else {
+      print(evidence, row.names = FALSE, right = FALSE)
+    }
+    return(invisible(list(dimensions = dimensions, checks = checks, evidence = evidence)))
+  }
+  invisible(list(dimensions = dimensions, checks = checks))
+}
+
+paper_style_dimensions_list <- function(papers_dir = file.path("outputs", "papers")) {
+  paper_dirs <- sort(list.dirs(papers_dir, full.names = TRUE, recursive = FALSE))
+  dimensions <- lapply(paper_dirs, function(paper_dir) {
+    outputs <- load_paper_outputs(paper_dir)
+    paper_style_dimensions_df(outputs)
+  })
+  names(dimensions) <- basename(paper_dirs)
+  dimensions
+}
+
+paper_style_checks_list <- function(papers_dir = file.path("outputs", "papers")) {
+  paper_dirs <- sort(list.dirs(papers_dir, full.names = TRUE, recursive = FALSE))
+  checks <- lapply(paper_dirs, function(paper_dir) {
+    outputs <- load_paper_outputs(paper_dir)
+    paper_style_checks_df(outputs)
+  })
+  names(checks) <- basename(paper_dirs)
+  checks
+}
+
+paper_style_profiles_summary_df <- function(papers_dir = file.path("outputs", "papers")) {
+  paper_dirs <- sort(list.dirs(papers_dir, full.names = TRUE, recursive = FALSE))
+  rows <- lapply(paper_dirs, function(paper_dir) {
+    outputs <- load_paper_outputs(paper_dir)
+    dimensions <- paper_style_dimensions_df(outputs)
+    checks <- paper_style_checks_df(outputs)
+    dimension_row <- function(name) {
+      match <- dimensions[dimensions$dimension == name, , drop = FALSE]
+      if (nrow(match) == 0L) {
+        return(list(likely_style = NA_character_, confidence = NA_real_, count_by_style = NA_character_))
+      }
+      list(
+        likely_style = as.character(match$likely_style[[1]]),
+        confidence = as.numeric(match$confidence[[1]]),
+        count_by_style = as.character(match$count_by_style[[1]])
+      )
+    }
+    check_row <- function(check_id) {
+      match <- checks[checks$check_id == check_id, , drop = FALSE]
+      if (nrow(match) == 0L) {
+        return(list(status = NA_character_, message = NA_character_))
+      }
+      list(status = as.character(match$status[[1]]), message = as.character(match$message[[1]]))
+    }
+    bibliography <- dimension_row("bibliography_reference_style")
+    footnote <- dimension_row("footnote_marker_style")
+    table_caption <- dimension_row("table_caption_placement")
+    figure_caption <- dimension_row("figure_caption_evidence")
+    visual_reference <- dimension_row("visual_reference_style")
+    bibliography_check <- check_row("bibliography_numbering_alignment")
+    footnote_check <- check_row("footnote_link_coverage")
+    table_caption_check <- check_row("table_caption_placement_coverage")
+    figure_caption_check <- check_row("figure_caption_geometry_availability")
+    visual_reference_check <- check_row("visual_reference_resolution_coverage")
+    data.frame(
+      paper = basename(paper_dir),
+      bibliography_style = bibliography$likely_style,
+      bibliography_confidence = bibliography$confidence,
+      bibliography_counts = bibliography$count_by_style,
+      bibliography_alignment_status = bibliography_check$status,
+      bibliography_alignment_message = bibliography_check$message,
+      footnote_style = footnote$likely_style,
+      footnote_confidence = footnote$confidence,
+      footnote_counts = footnote$count_by_style,
+      footnote_link_status = footnote_check$status,
+      table_caption_style = table_caption$likely_style,
+      table_caption_status = table_caption_check$status,
+      figure_caption_style = figure_caption$likely_style,
+      figure_caption_status = figure_caption_check$status,
+      visual_reference_style = visual_reference$likely_style,
+      visual_reference_status = visual_reference_check$status,
+      stringsAsFactors = FALSE
+    )
+  })
+  if (length(rows) == 0L) {
+    return(data.frame(
+      paper = character(),
+      bibliography_style = character(),
+      bibliography_confidence = numeric(),
+      bibliography_counts = character(),
+      bibliography_alignment_status = character(),
+      bibliography_alignment_message = character(),
+      footnote_style = character(),
+      footnote_confidence = numeric(),
+      footnote_counts = character(),
+      footnote_link_status = character(),
+      table_caption_style = character(),
+      table_caption_status = character(),
+      figure_caption_style = character(),
+      figure_caption_status = character(),
+      visual_reference_style = character(),
+      visual_reference_status = character(),
+      stringsAsFactors = FALSE
+    ))
+  }
+  do.call(rbind, rows)
+}
+
+show_paper_style_profiles <- function(papers_dir = file.path("outputs", "papers")) {
+  summary_df <- paper_style_profiles_summary_df(papers_dir)
+  cat(sprintf("Paper style profiles for %s\n\n", normalizePath(papers_dir, winslash = "/", mustWork = TRUE)))
+  if (nrow(summary_df) == 0L) {
+    cat("[No papers]\n")
+    return(invisible(summary_df))
+  }
+  print(summary_df, row.names = FALSE, right = FALSE)
+  invisible(summary_df)
 }
 
 paper_table_inventory_df <- function(outputs) {

@@ -55,6 +55,12 @@ from table1_parser.schemas.paper_page_furniture import (
     PageFurnitureTextObservation,
     PaperPageFurniture,
 )
+from table1_parser.schemas.paper_style_profile import (
+    PaperStyleCheck,
+    PaperStyleDimension,
+    PaperStyleEvidence,
+    PaperStyleProfile,
+)
 from table1_parser.schemas.paper_visual_references import PaperVisual, PaperVisualReference
 from table1_parser.schemas.parsed_cell_value import (
     ParsedCellValue,
@@ -125,6 +131,10 @@ __all__ = [
     "PaperBibliography",
     "PaperFootnotes",
     "PaperPageFurniture",
+    "PaperStyleCheck",
+    "PaperStyleDimension",
+    "PaperStyleEvidence",
+    "PaperStyleProfile",
     "PaperTableInventory",
     "PaperTableRecord",
     "PaperTextLine",

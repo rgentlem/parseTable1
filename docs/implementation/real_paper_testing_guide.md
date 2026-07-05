@@ -133,7 +133,7 @@ For each checklist item:
    `column_header_schemas.json`, `resolved_tables.json`,
    `table_definitions.json`, `parsed_cell_values.json`,
    `parsed_tables.json`, `paper_footnotes.json`, `paper_bibliography.json`,
-   `paper_references.json`.
+   `paper_style_profile.json`, `paper_references.json`.
 3. Record whether the issue belongs to extraction, normalization, continuation,
    table semantics, footnote detection/linking, or visual-reference resolution.
 4. Fix only the earliest responsible stage.
@@ -224,10 +224,10 @@ For each checklist item:
   - Current result:
     `outputs/testpapers_batch_20260705_bibliography_workflow` has 3 unresolved
     symbol links (`†`, `‡`, `§`) on Table 1 row labels.
-  - Desired fix direction: infer the paper/table footnote style from observed
-    anchors, definitions, and footer regions first, then use that style summary
-    to decide whether row-label symbol markers should link to table-local
-    continuation footers or remain unresolved.
+  - Desired fix direction: inspect `paper_style_profile.json`, which summarizes
+    observed anchors, definitions, footer regions, and caption/reference
+    conventions, before deciding whether row-label symbol markers should link to
+    table-local continuation footers or remain unresolved.
 
 - [x] **C0.5** Resolve symbol-marker footer definitions that start with
   lowercase or arbitrary explanatory text.
@@ -259,8 +259,8 @@ For each checklist item:
     `outputs/testpapers_batch_20260705_bibliography_workflow` has 12
     unresolved `letter:b` markers attached to `Tertile 1`, `Tertile 2`, and
     `Tertile 3` column labels across the continued Table 1.
-  - Desired fix direction: handle through a paper-level footnote-style summary
-    and continuation-aware table-local definition scope, not by hard-coding the
+  - Desired fix direction: handle through `paper_style_profile.json` and
+    continuation-aware table-local definition scope, not by hard-coding the
     words in the column labels.
 
 - [ ] **C0.7** Review unresolved table-reference resolution before worrying

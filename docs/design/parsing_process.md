@@ -98,7 +98,7 @@ This separation keeps the parser safer and easier to debug.
 
 If you are looking at parser outputs:
 
-- `table1-parser parse path/to/paper.pdf` is the main entry point and currently writes `extracted_tables.json`, `normalized_tables.json`, `column_header_schemas.json`, `resolved_tables.json`, `table_profiles.json`, `paper_table_inventory.json`, `table_definitions.json`, `parsed_cell_values.json`, `parsed_tables.json`, `paper_page_furniture.json`, `paper_markdown.md`, `paper_text_stream.json`, `paper_sections.json`, `paper_footnotes.json`, `paper_bibliography.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and per-table context JSON files
+- `table1-parser parse path/to/paper.pdf` is the main entry point and currently writes `extracted_tables.json`, `normalized_tables.json`, `column_header_schemas.json`, `resolved_tables.json`, `table_profiles.json`, `paper_table_inventory.json`, `table_definitions.json`, `parsed_cell_values.json`, `parsed_tables.json`, `paper_page_furniture.json`, `paper_markdown.md`, `paper_text_stream.json`, `paper_sections.json`, `paper_footnotes.json`, `paper_bibliography.json`, `paper_style_profile.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and per-table context JSON files
 - `extract` and `normalize` remain useful for inspecting a single stage in isolation
 
 - raw extraction output answers: "What table did the PDF extractor recover?"
@@ -108,5 +108,6 @@ If you are looking at parser outputs:
 - paper-table-inventory output answers: "What broad table category did the deterministic taxonomy assign to each paper table number?"
 - table-definition output answers: "What row variables, levels, and columns did the deterministic parser infer?"
 - paper-context output answers: "What document sections, visual references, and passages are relevant to this table?"
+- paper-style output answers: "What marker, bibliography, caption, and visual-reference conventions does this paper appear to use?"
 - paper-variable-inventory output answers: "What candidate variables recur across the paper text and tables?"
 - parsed output answers: "What variables, levels, columns, and values did the system finally infer?"

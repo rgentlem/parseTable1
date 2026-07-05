@@ -72,6 +72,7 @@ from table1_parser.paper_bibliography import (
     paper_bibliography_to_payload,
 )
 from table1_parser.paper_page_furniture import build_paper_page_furniture, paper_page_furniture_to_payload
+from table1_parser.paper_style_profile import build_paper_style_profile, paper_style_profile_to_payload
 from table1_parser.processing_status import build_table_processing_statuses
 from table1_parser.resolved_tables import build_resolved_table_set
 from table1_parser.schemas import (
@@ -85,6 +86,7 @@ from table1_parser.schemas import (
     PaperBibliography,
     PaperPageFurniture,
     PaperSection,
+    PaperStyleProfile,
     PaperTextStream,
     PaperVariableInventory,
     PaperVisual,
@@ -135,6 +137,7 @@ class PaperParseArtifacts:
     paper_footnotes: PaperFootnotes
     paper_bibliography: PaperBibliography
     paper_page_furniture: PaperPageFurniture
+    paper_style_profile: PaperStyleProfile
     paper_text_stream: PaperTextStream
     paper_markdown: str
     paper_sections: list[PaperSection]
@@ -674,6 +677,16 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     paper_visual_inventory = build_paper_visual_inventory(extracted_tables, table_definitions, paper_sections)
     paper_references = collect_paper_visual_references(paper_sections, paper_visual_inventory)
     paper_visual_inventory = annotate_visual_reference_checks(paper_visual_inventory, paper_references)
+    paper_style_profile = build_paper_style_profile(
+        paper_id=paper_stem,
+        source_pdf=pdf_path,
+        paper_text_stream=paper_text_stream,
+        extracted_tables=extracted_tables,
+        paper_footnotes=paper_footnotes,
+        paper_bibliography=paper_bibliography,
+        paper_visual_inventory=paper_visual_inventory,
+        paper_references=paper_references,
+    )
     paper_variable_inventory = build_paper_variable_inventory(paper_stem, paper_sections, table_definitions)
     table_contexts = build_table_contexts(paper_sections, table_definitions, paper_visual_inventory, paper_references)
     return PaperParseArtifacts(
@@ -699,6 +712,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         paper_footnotes=paper_footnotes,
         paper_bibliography=paper_bibliography,
         paper_page_furniture=paper_page_furniture,
+        paper_style_profile=paper_style_profile,
         paper_text_stream=paper_text_stream,
         paper_markdown=paper_markdown,
         paper_sections=paper_sections,
@@ -774,6 +788,7 @@ def _write_parse_outputs(
     paper_footnotes_output_path = paper_dir / "paper_footnotes.json"
     paper_bibliography_output_path = paper_dir / "paper_bibliography.json"
     paper_page_furniture_output_path = paper_dir / "paper_page_furniture.json"
+    paper_style_profile_output_path = paper_dir / "paper_style_profile.json"
     paper_text_stream_output_path = paper_dir / "paper_text_stream.json"
     paper_markdown_output_path = paper_dir / "paper_markdown.md"
     paper_sections_output_path = paper_dir / "paper_sections.json"
@@ -880,6 +895,10 @@ def _write_parse_outputs(
     )
     paper_page_furniture_output_path.write_text(
         json.dumps(paper_page_furniture_to_payload(artifacts.paper_page_furniture), indent=2) + "\n",
+        encoding="utf-8",
+    )
+    paper_style_profile_output_path.write_text(
+        json.dumps(paper_style_profile_to_payload(artifacts.paper_style_profile), indent=2) + "\n",
         encoding="utf-8",
     )
     paper_text_stream_output_path.write_text(

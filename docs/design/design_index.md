@@ -137,6 +137,11 @@ Then use the documents below as needed.
   Contract for `paper_bibliography.json`: per-paper bibliography entries plus
   observed numeric reference markers linked to those entries.
 
+- `docs/design/paper_style_profile.md`
+  Contract for `paper_style_profile.json`: per-paper summary of observed
+  footnote-marker, bibliography, caption-placement, and visual-reference style
+  conventions.
+
 - `docs/implementation/paper_visual_references_implementation_plan.md`
   Stepwise implementation plan for visual-reference schemas, visual inventory, deterministic reference scanning and resolution, CLI artifacts, table-context links, and R inspection helpers.
 
