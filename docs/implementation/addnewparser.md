@@ -80,16 +80,21 @@ Keep extraction aligned with the current `pymupdf4llm`-based path.
 # Extraction Strategy by Content Type
 
 ## Narrative text extraction
-Use **PyMuPDF4LLM Markdown output** as the default extracted artifact for document text and sections.
+Use **positioned PyMuPDF text** as the default parser document-order source for
+document text and sections. Keep **PyMuPDF4LLM Markdown output** as a raw
+backend evidence artifact and fallback context.
 
-Preferred API:
+Preferred parser document-order API:
+- PyMuPDF page text lines with bboxes
+
+Persisted backend evidence API:
 - `pymupdf4llm.to_markdown(...)`
 
-Markdown is the correct default for document narrative because it is useful for:
-- preserving section structure
-- chunking
-- embedding
-- RAG
+The parser should derive `paper_text_stream.json` from positioned PyMuPDF text,
+apply page-furniture filtering, detect page column bands, and order text as
+page, column, then vertical position. Markdown can still be useful for
+inspection, chunking, embedding, or fallback context, but it should not be the
+authoritative source for parser document order.
 
 ## Table extraction
 Use **structured JSON** as the default extracted artifact for tables.

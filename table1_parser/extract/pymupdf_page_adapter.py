@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from table1_parser.text_cleaning import repair_extractor_glyph_failures
+
 
 SYMBOL_FONT_CHAR_MAPS: dict[str, dict[str, str]] = {
     "AdvPS586B": {
@@ -26,6 +28,55 @@ def open_pymupdf_document(pdf_path: str) -> Any:
     except ModuleNotFoundError as exc:
         raise ModuleNotFoundError("pymupdf is required for PyMuPDF geometry extraction.") from exc
     return pymupdf.open(path)
+
+
+def bbox_from_pymupdf_value(value: Any) -> tuple[float, float, float, float] | None:
+    """Convert a PyMuPDF bbox-like value to a plain tuple."""
+    if all(hasattr(value, attr) for attr in ("x0", "y0", "x1", "y1")):
+        return (float(value.x0), float(value.y0), float(value.x1), float(value.y1))
+    if isinstance(value, (list, tuple)) and len(value) == 4:
+        return (float(value[0]), float(value[1]), float(value[2]), float(value[3]))
+    return None
+
+
+def join_pymupdf_line_spans(spans: Any, *, gap_tolerance: float = 1.0) -> str:
+    """Join same-line PyMuPDF spans without adding spaces inside split words."""
+    if not isinstance(spans, list):
+        return ""
+    positioned_parts: list[tuple[float, float, str]] = []
+    raw_parts: list[str] = []
+    for span in spans:
+        if not isinstance(span, dict):
+            continue
+        span_text = repair_extractor_glyph_failures(str(span.get("text", "")))
+        if not span_text:
+            continue
+        raw_parts.append(span_text)
+        bbox = bbox_from_pymupdf_value(span.get("bbox"))
+        if bbox is not None:
+            positioned_parts.append((bbox[0], bbox[2], span_text))
+    if not positioned_parts or len(positioned_parts) != len(raw_parts):
+        text_parts: list[str] = []
+        for span_text in raw_parts:
+            if text_parts and not text_parts[-1][-1].isspace() and not span_text[0].isspace():
+                text_parts.append(" ")
+            text_parts.append(span_text)
+        return "".join(text_parts).strip()
+
+    text_parts: list[str] = []
+    previous_x1: float | None = None
+    for x0, x1, span_text in sorted(positioned_parts, key=lambda part: part[0]):
+        if (
+            previous_x1 is not None
+            and x0 - previous_x1 > gap_tolerance
+            and text_parts
+            and not text_parts[-1][-1].isspace()
+            and not span_text[0].isspace()
+        ):
+            text_parts.append(" ")
+        text_parts.append(span_text)
+        previous_x1 = x1 if previous_x1 is None else max(previous_x1, x1)
+    return "".join(text_parts).strip()
 
 
 def extract_page_text(page: Any) -> str:
@@ -91,14 +142,7 @@ def extract_page_chars(page: Any, page_num: int | None = None) -> list[dict[str,
                 span_flags = span.get("flags")
                 for char in span.get("chars", []):
                     bbox_value = char.get("bbox")
-                    if bbox_value is None:
-                        bbox = None
-                    elif all(hasattr(bbox_value, attr) for attr in ("x0", "y0", "x1", "y1")):
-                        bbox = (float(bbox_value.x0), float(bbox_value.y0), float(bbox_value.x1), float(bbox_value.y1))
-                    elif isinstance(bbox_value, (list, tuple)) and len(bbox_value) == 4:
-                        bbox = tuple(float(part) for part in bbox_value)
-                    else:
-                        bbox = None
+                    bbox = bbox_from_pymupdf_value(bbox_value)
                     if bbox is None:
                         continue
                     raw_text = str(char.get("c", ""))

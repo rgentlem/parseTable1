@@ -8,7 +8,11 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from table1_parser.context.visual_references import parse_visual_label, visual_id_for
-from table1_parser.extract.pymupdf_page_adapter import open_pymupdf_document
+from table1_parser.extract.pymupdf_page_adapter import (
+    bbox_from_pymupdf_value,
+    join_pymupdf_line_spans,
+    open_pymupdf_document,
+)
 from table1_parser.page_furniture_mask import page_furniture_cluster_ids_for_bbox as _page_furniture_cluster_ids_for_bbox
 from table1_parser.schemas import (
     CellTextAnnotationTable,
@@ -281,25 +285,15 @@ def build_paper_footnote_definition_blocks_from_pdf(pdf_path: str) -> list[Footn
                 block_text_parts: list[str] = []
                 bbox_parts: list[tuple[float, float, float, float]] = []
                 for page_line in block.get("lines", []):
-                    line_text_parts: list[str] = []
                     for span in page_line.get("spans", []):
-                        span_text = str(span.get("text", "")).strip()
-                        bbox_value = span.get("bbox")
-                        if span_text:
-                            line_text_parts.append(span_text)
-                        if all(hasattr(bbox_value, attr) for attr in ("x0", "y0", "x1", "y1")):
-                            bbox_parts.append(
-                                (
-                                    float(bbox_value.x0),
-                                    float(bbox_value.y0),
-                                    float(bbox_value.x1),
-                                    float(bbox_value.y1),
-                                )
-                            )
-                        elif isinstance(bbox_value, (list, tuple)) and len(bbox_value) == 4:
-                            bbox_parts.append(tuple(float(part) for part in bbox_value))
-                    if line_text_parts:
-                        block_text_parts.append(" ".join(line_text_parts))
+                        if not isinstance(span, dict):
+                            continue
+                        bbox = bbox_from_pymupdf_value(span.get("bbox"))
+                        if bbox is not None:
+                            bbox_parts.append(bbox)
+                    line_text = join_pymupdf_line_spans(page_line.get("spans", []))
+                    if line_text:
+                        block_text_parts.append(line_text)
                 raw_text = " ".join(block_text_parts).strip()
                 current_block_index = block_index
                 block_index += 1

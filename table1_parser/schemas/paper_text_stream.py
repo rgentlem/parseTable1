@@ -34,7 +34,8 @@ class PaperTextPage(BaseModel):
     page_width: float = Field(gt=0.0)
     page_height: float = Field(gt=0.0)
     column_count: int = Field(ge=1)
-    split_x: float | None = None
+    column_boundaries: list[float] = Field(default_factory=list)
+    column_bands: list[tuple[float, float]] = Field(default_factory=list)
     line_count: int = Field(ge=0)
     removed_page_furniture_line_count: int = Field(ge=0)
     diagnostics: list[str] = Field(default_factory=list)

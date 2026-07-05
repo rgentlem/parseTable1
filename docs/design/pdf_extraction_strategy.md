@@ -75,19 +75,36 @@ PyMuPDF4LLM supports:
 - image and vector extraction
 - structured output useful for LLM/RAG workflows
 
+The current parser does not use PyMuPDF4LLM markdown as the authoritative
+document-order source. `paper_markdown.md` is retained as raw backend evidence
+and fallback/inspection material; `paper_text_stream.json` is built from
+positioned PyMuPDF text lines and is the canonical source for section parsing,
+bibliography extraction, visual-reference scanning, variable inventory, and
+table-context retrieval when available.
+
 ---
 
 # Extraction Strategy by Content Type
 
 ## 1. Narrative text extraction
-Preferred path:
+Persisted backend evidence:
 
 PDF
 → `pymupdf4llm.to_markdown(...)`
-→ Markdown narrative output
-→ chunking / embedding / RAG
+→ `paper_markdown.md`
 
-This is the default for document body extraction.
+Parser document-context path:
+
+PDF
+→ positioned PyMuPDF text lines
+→ `paper_text_stream.json`
+→ `paper_sections.json`
+→ bibliography, visual-reference, variable-inventory, and table-context
+artifacts
+
+The positioned stream is the source of truth for parser document order. It
+records page-level column boundaries/bands and orders text as page, column, then
+vertical position for any detected column count.
 
 ## 2. Table extraction
 Preferred path:
@@ -212,9 +229,10 @@ Do not spread extractor-specific logic through unrelated parsing modules.
 
 Add or maintain tests that confirm:
 
-1. PyMuPDF4LLM is the default extractor
-2. `pymupdf4llm` is the only supported extractor
-3. narrative extraction produces Markdown
+1. PyMuPDF4LLM remains the default table extraction backend
+2. positioned PyMuPDF text produces layout-aware document order
+3. `paper_markdown.md` remains a raw backend evidence artifact, not the
+   authoritative parser document-order source
 4. table extraction preserves JSON / structured output
 5. figure extraction produces image artifacts when applicable
 6. diagnostics record extractor choice and output type
@@ -239,9 +257,9 @@ This strategy does not require:
 
 The extraction strategy is:
 
-- **PyMuPDF4LLM is the default extractor**
-- `pymupdf4llm` remains the single extraction backend
-- **Markdown is primary for narrative text**
+- **PyMuPDF4LLM remains the default table extraction backend**
+- **Positioned PyMuPDF text is primary for parser document order**
+- **Markdown is retained as raw backend evidence and fallback context**
 - **JSON is primary for tables**
 - **PNG/image artifacts are primary for figures**
 - **the representation is chosen by downstream purpose, not forced globally**

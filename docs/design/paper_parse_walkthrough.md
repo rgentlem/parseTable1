@@ -101,12 +101,17 @@ counts when they have no local table-note definition and match the paper's
 bibliography entries; they are represented instead through
 `paper_bibliography.json`.
 
-`paper_bibliography.json` records the paper's own numbered bibliography entries
-and observed reference markers linked to those entries. Bibliography entries are
-extracted from layout-aware, page-furniture-filtered
-`paper_text_stream.json`/`paper_sections.json` before table extraction;
-table-cell reference-marker links are added later after cell text annotations
-are available.
+`paper_bibliography.json` records the paper's own bibliography entries,
+numbered or unnumbered, and observed numeric reference markers linked to
+numbered entries. Bibliography entries are extracted from layout-aware,
+page-furniture-filtered `paper_text_stream.json` before table extraction, with
+markdown-derived sections retained as fallback. The layout reader uses one
+entry-boundary workflow: read page, column, then vertical position; start a new
+entry when the row returns to the column's left edge, either at a numeric label
+or at the first author/organization text in a hanging-indent list; keep indented
+rows as continuations across column and page boundaries. Table-cell
+reference-marker links are added later after cell text annotations are
+available.
 Numeric unit/exponent superscripts and subscripts such as `10^9`, `m^2`,
 `CO₂`, and `I²` are suppressed before footnote-anchor creation and counted in
 metadata. Multi-letter subscript words such as `P_Begg` and `P_Egger` are also
@@ -882,7 +887,7 @@ This is separate from table extraction.
 The current paper-context path is:
 
 ```text
-PDF -> paper_page_furniture.json -> paper_markdown.md -> paper_text_stream.json -> paper_sections.json -> paper_bibliography.json -> paper_visual_inventory.json -> paper_references.json -> paper_variable_inventory.json -> table_contexts/*.json
+PDF -> paper_page_furniture.json -> paper_text_stream.json -> paper_markdown.md -> paper_sections.json -> paper_bibliography.json -> paper_visual_inventory.json -> paper_references.json -> paper_variable_inventory.json -> table_contexts/*.json
 ```
 
 ### `paper_markdown.md`
@@ -905,10 +910,10 @@ model.
 ### `paper_text_stream.json`
 
 This is the layout-aware full-paper text stream. It is built from positioned
-PyMuPDF lines, applies `paper_page_furniture.json`, detects simple one- versus
-two-column page layouts, and orders text as page, column, then vertical
-position. It also records per-line bbox, page, column, role, and page-level
-column diagnostics.
+PyMuPDF lines, applies `paper_page_furniture.json`, detects page-level column
+bands, and orders text as page, column, then vertical position for any detected
+column count. It also records per-line bbox, page, column, role, and page-level
+column diagnostics plus `column_boundaries` and `column_bands`.
 
 ### `paper_sections.json`
 
@@ -921,11 +926,17 @@ This gives the parser a document structure that is easier to retrieve from than 
 
 ### `paper_bibliography.json`
 
-The parser extracts the paper's numbered bibliography entries from the
-layout-stream-derived sections before table extraction begins. This artifact is
-per-paper only: it keeps labels and raw/clean entry text as separate entities
-without DOI lookup, author normalization, cross-paper deduplication, or any
-corpus-level reference store.
+The parser extracts the paper's bibliography entries from the positioned text
+stream before table extraction begins, falling back to layout-stream-derived
+sections only when the positioned stream cannot produce entries. Reference-list
+pages are read as page, column, then vertical position; entries remain open
+across column and page breaks until the next left-edge entry start is found.
+For numbered lists that start may be a bracketed, dotted, or bare numeric label;
+for author-year lists it may be the first author/organization line with
+following hanging-indent continuations. This artifact is per-paper only: it
+keeps labels and raw/clean entry text as separate entities without DOI lookup,
+author normalization, cross-paper deduplication, or any corpus-level reference
+store.
 
 After table extraction and cell text annotation, numeric table-cell markers that
 look like bibliography references can be linked to those bibliography entries.

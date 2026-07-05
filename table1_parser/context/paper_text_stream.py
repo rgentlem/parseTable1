@@ -6,12 +6,16 @@ import re
 from pathlib import Path
 from typing import Any
 
-from table1_parser.extract.pymupdf_page_adapter import open_pymupdf_document
+from table1_parser.extract.pymupdf_page_adapter import (
+    bbox_from_pymupdf_value,
+    join_pymupdf_line_spans,
+    open_pymupdf_document,
+)
 from table1_parser.page_furniture_mask import page_furniture_cluster_ids_for_bbox
 from table1_parser.paper_page_furniture import normalize_page_furniture_text
 from table1_parser.reference_sections import INLINE_REFERENCE_START_PATTERN
 from table1_parser.schemas import PaperPageFurniture, PaperTextLine, PaperTextPage, PaperTextStream
-from table1_parser.text_cleaning import clean_text, repair_extractor_glyph_failures
+from table1_parser.text_cleaning import clean_text
 
 
 SECTION_HEADING_TEXTS = {
@@ -84,6 +88,8 @@ def build_paper_text_stream(
                         page_width=1.0,
                         page_height=1.0,
                         column_count=1,
+                        column_boundaries=[],
+                        column_bands=[(0.0, 1.0)],
                         line_count=0,
                         removed_page_furniture_line_count=0,
                         diagnostics=["page_text_extraction_failed"],
@@ -112,8 +118,11 @@ def build_paper_text_stream(
                         continue
                     page_line_records.append(line_record)
 
-            column_count, split_x, diagnostics = _detect_page_columns(page_line_records, page_width)
-            ordered_records = _order_page_lines(page_line_records, column_count, split_x, page_width)
+            column_count, column_boundaries, column_bands, diagnostics = _detect_page_columns(
+                page_line_records,
+                page_width,
+            )
+            ordered_records = _order_page_lines(page_line_records, column_boundaries, page_width)
             for logical_index, record in enumerate(ordered_records):
                 text = str(record["text"])
                 role = "heading" if _looks_like_section_heading(text, bool(record.get("bold_like"))) else "body"
@@ -144,7 +153,8 @@ def build_paper_text_stream(
                     page_width=page_width,
                     page_height=page_height,
                     column_count=column_count,
-                    split_x=split_x,
+                    column_boundaries=column_boundaries,
+                    column_bands=column_bands,
                     line_count=len(ordered_records),
                     removed_page_furniture_line_count=removed_on_page,
                     diagnostics=diagnostics,
@@ -199,23 +209,19 @@ def _line_record_from_pymupdf_line(
     block_index: int,
     line_index: int,
 ) -> dict[str, object] | None:
-    span_texts: list[str] = []
     bbox_parts: list[tuple[float, float, float, float]] = []
     bold_like = False
     for span in line.get("spans", []):
         if not isinstance(span, dict):
             continue
-        span_text = repair_extractor_glyph_failures(str(span.get("text", ""))).strip()
-        if span_text:
-            span_texts.append(span_text)
-        bbox = _bbox_from_value(span.get("bbox"))
+        bbox = bbox_from_pymupdf_value(span.get("bbox"))
         if bbox is not None:
             bbox_parts.append(bbox)
         font = str(span.get("font", "")).lower()
         flags = span.get("flags")
         if "bold" in font or "semibold" in font or (isinstance(flags, int) and flags & 16):
             bold_like = True
-    raw_text = " ".join(span_texts).strip()
+    raw_text = join_pymupdf_line_spans(line.get("spans", []))
     text = clean_text(raw_text)
     if not text or not bbox_parts:
         return None
@@ -246,8 +252,6 @@ def _page_furniture_text_matchers(
         if not key:
             continue
         if "<page_num>" in key:
-            escaped_key = re.escape(key).replace(re.escape("<page_num>"), r"\d+")
-            wildcard_patterns.append(re.compile(rf"^{escaped_key}$"))
             continue
         exact_keys.add(key)
     return exact_keys, wildcard_patterns
@@ -267,44 +271,64 @@ def _is_page_furniture_text(
 def _detect_page_columns(
     line_records: list[dict[str, object]],
     page_width: float,
-) -> tuple[int, float | None, list[str]]:
+) -> tuple[int, list[float], list[tuple[float, float]], list[str]]:
     if len(line_records) < 8 or page_width <= 0.0:
-        return 1, None, []
-    split_x = page_width / 2.0
-    narrow_records = [
+        return 1, [], [(0.0, max(page_width, 1.0))], []
+    candidate_records = [
         record
         for record in line_records
-        if (_bbox_width(record["bbox"]) / page_width) <= 0.68
+        if (
+            page_width * 0.15 <= _bbox_width(record["bbox"]) <= page_width * 0.68
+            and not _is_full_width_record(record, page_width)
+        )
     ]
-    x_starts = sorted(float(record["bbox"][0]) for record in narrow_records)
-    start_gaps = [
-        (x_starts[index + 1] - x_starts[index], x_starts[index], x_starts[index + 1])
-        for index in range(len(x_starts) - 1)
+    if len(candidate_records) < 8:
+        return 1, [], [(0.0, page_width)], []
+
+    x_starts = sorted(float(record["bbox"][0]) for record in candidate_records)
+    gap_threshold = max(45.0, page_width * 0.07)
+    x_start_groups: list[list[float]] = []
+    active_group: list[float] = []
+    for x_start in x_starts:
+        if active_group and x_start - active_group[-1] >= gap_threshold:
+            x_start_groups.append(active_group)
+            active_group = []
+        active_group.append(x_start)
+    if active_group:
+        x_start_groups.append(active_group)
+    if len(x_start_groups) <= 1 or any(len(group) < 4 for group in x_start_groups):
+        return 1, [], [(0.0, page_width)], []
+
+    column_boundaries = [
+        (max(left_group) + min(right_group)) / 2.0
+        for left_group, right_group in zip(x_start_groups, x_start_groups[1:])
     ]
-    best_gap = max(start_gaps, default=(0.0, 0.0, 0.0))
-    if not (
-        best_gap[0] >= page_width * 0.15
-        and best_gap[1] <= page_width * 0.45
-        and best_gap[2] >= page_width * 0.45
-    ):
-        return 1, None, []
-    split_x = (best_gap[1] + best_gap[2]) / 2.0
-    left_records = [record for record in narrow_records if float(record["bbox"][0]) < split_x]
-    right_records = [record for record in narrow_records if float(record["bbox"][0]) >= split_x]
-    if len(left_records) < 4 or len(right_records) < 4:
-        return 1, None, []
-    if best_gap[0] < page_width * 0.15:
-        return 1, None, []
-    return 2, split_x, ["two_column_layout_detected"]
+    column_groups: list[list[dict[str, object]]] = [[] for _ in x_start_groups]
+    for record in candidate_records:
+        column_index = sum(float(record["bbox"][0]) >= boundary for boundary in column_boundaries)
+        column_groups[column_index].append(record)
+    if any(len(group) < 4 for group in column_groups):
+        return 1, [], [(0.0, page_width)], []
+
+    column_bands: list[tuple[float, float]] = []
+    band_left = 0.0
+    for boundary in column_boundaries:
+        column_bands.append((band_left, boundary))
+        band_left = boundary
+    column_bands.append((band_left, page_width))
+
+    column_count = len(column_bands)
+    diagnostics = [f"{column_count}_column_layout_detected"]
+    return column_count, column_boundaries, column_bands, diagnostics
 
 
 def _order_page_lines(
     line_records: list[dict[str, object]],
-    column_count: int,
-    split_x: float | None,
+    column_boundaries: list[float],
     page_width: float,
 ) -> list[dict[str, object]]:
-    if column_count <= 1 or split_x is None:
+    column_count = len(column_boundaries) + 1
+    if column_count <= 1:
         ordered = sorted(line_records, key=lambda record: (float(record["bbox"][1]), float(record["bbox"][0])))
         for record in ordered:
             record["column_index"] = 0
@@ -331,7 +355,7 @@ def _order_page_lines(
             else:
                 column_records.append(record)
             continue
-        record["column_index"] = 0 if _bbox_center_x(record["bbox"]) < split_x else 1
+        record["column_index"] = sum(float(record["bbox"][0]) >= boundary for boundary in column_boundaries)
         column_records.append(record)
 
     ordered_columns: list[dict[str, object]] = []
@@ -371,22 +395,9 @@ def _page_size(page: Any) -> tuple[float, float]:
     return 1.0, 1.0
 
 
-def _bbox_from_value(value: object) -> tuple[float, float, float, float] | None:
-    if all(hasattr(value, attr) for attr in ("x0", "y0", "x1", "y1")):
-        return (float(value.x0), float(value.y0), float(value.x1), float(value.y1))
-    if isinstance(value, (list, tuple)) and len(value) == 4:
-        return (float(value[0]), float(value[1]), float(value[2]), float(value[3]))
-    return None
-
-
 def _bbox_width(bbox: object) -> float:
     left, _top, right, _bottom = bbox
     return float(right) - float(left)
-
-
-def _bbox_center_x(bbox: object) -> float:
-    left, _top, right, _bottom = bbox
-    return (float(left) + float(right)) / 2.0
 
 
 def _is_full_width_record(record: dict[str, object], page_width: float) -> bool:

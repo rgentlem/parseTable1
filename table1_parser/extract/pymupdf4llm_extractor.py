@@ -25,6 +25,7 @@ from table1_parser.extract.pymupdf_page_adapter import (
     extract_page_rule_segments,
     extract_page_text,
     extract_page_words,
+    join_pymupdf_line_spans,
     open_pymupdf_document,
 )
 from table1_parser.extract.table_detector import (
@@ -1830,26 +1831,7 @@ def _extract_box_text(box: dict[str, Any]) -> str:
     textlines = box.get("textlines") or []
     lines: list[str] = []
     for line in textlines:
-        spans = line.get("spans") or []
-        pieces: list[str] = []
-        for part in (str(span.get("text", "")) for span in spans):
-            if not part:
-                continue
-            if pieces:
-                previous = pieces[-1]
-                if (
-                    previous
-                    and not previous[-1].isspace()
-                    and not part[0].isspace()
-                    and (
-                        (previous[-1].isalnum() and part[0].isalnum())
-                        or (previous[-1].isalnum() and part[0] == "(")
-                        or (previous[-1] in {")", "]"} and part[0].isalnum())
-                    )
-                ):
-                    pieces.append(" ")
-            pieces.append(part)
-        line_text = "".join(pieces).strip()
+        line_text = join_pymupdf_line_spans(line.get("spans") or [])
         if line_text:
             lines.append(line_text)
     return " ".join(lines).strip()

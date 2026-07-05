@@ -10,7 +10,7 @@ Current corpus-driven hardening guide:
 `docs/implementation/real_paper_testing_guide.md`. Use it for the ordered
 real-paper review loop across extraction, normalization, continuation handling,
 table semantics, footnote/reference artifacts, and mixed-family routing. The
-current retained reference run is `outputs/testpapers_batch_20260702_non_table_fix`.
+current retained reference run is `outputs/testpapers_batch_20260705_bibliography_workflow`.
 
 1. [x] Add a parser-native column header schema artifact.
    Build `ColumnHeaderSchema` between `NormalizedTable` and `TableDefinition` so leaf columns, higher spanning header groups, group-to-leaf relationships, raw cell evidence, and coordinates are explicit before any tableone-style projection.
@@ -45,10 +45,9 @@ current retained reference run is `outputs/testpapers_batch_20260702_non_table_f
    `paper_page_furniture.json` is now built before paper markdown,
    layout-aware text streaming, section parsing, bibliography extraction, and
    table extraction. Repeated page-furniture lines are removed from
-   `paper_markdown.md` and `paper_text_stream.json`; `paper_sections.json` and
-   `paper_bibliography.json` entries are derived from the layout-aware stream
-   when available, and the artifact is supplied to the extractor as explicit
-   ignore regions.
+   `paper_markdown.md` and `paper_text_stream.json`; `paper_sections.json` are
+   derived from the PyMuPDF layout-aware stream when available, and the artifact
+   is supplied to the extractor as explicit ignore regions.
    Repeated page-furniture words and chars are removed before text-position,
    rescue, rotated, or sideways reconstruction consumes them, and explicit-grid
    rows are removed only when most populated cell bboxes are mostly inside
@@ -114,8 +113,9 @@ current retained reference run is `outputs/testpapers_batch_20260702_non_table_f
    Recent math/unit update: numeric superscripts and subscripts in expressions like `10^9`, `10^6`, `m^2`, `kg/m^2`, `CO₂`, `I²`, and `×10^9/L` are rejected before `FootnoteAnchor` creation. Subscript annotations are now generally suppressed as non-footnote anchors, including single-letter notation such as `S_I`/`AIR_g` and multi-letter subscript words such as `P_Begg`/`P_Egger`. They remain visible in `cell_text_annotations.json` with original glyph case; `paper_footnotes.json` records suppression counts in `math_unit_anchor_suppression_count`, `subscript_anchor_suppression_count`, and `word_like_subscript_anchor_suppression_count`.
    Recent symbol-font update: PyMuPDF char extraction now applies font-qualified Unicode normalization before word/grid reconstruction for known embedded symbol-font codes such as `±`, `×`, `−`, and `<`. Inline marker detection accepts same-height trailing glyphs attached to numeric/comparator text including `±` values and preserves marker font metadata. In the focused Ethnic Differences run, `S_I` and `AIR_g` remain suppressed subscript annotations, while the marker-font `x` resolves against the local `xP < ...` footer definition.
    Recent p-value-star update: after math/unit rejection and explicit local footnote linking, `*`, `**`, and `***` attached to p-value cells/columns receive structured conventional fallback meanings with thresholds `10^-1`, `10^-2`, and `10^-3`. Explicit footer definitions override the fallback, and R-facing output exposes whether the interpretation was explicit or conventional.
-   Bibliographic reference follow-up: `paper_bibliography.json` now preserves the paper's own numbered bibliography entries and links numeric table-cell study/source/header markers to those entries when no local table-note definition exists. The footnote linker suppresses citation-like numeric table-cell markers with matching bibliography entries from table-footnote link counts, while the original marker evidence remains visible in `cell_text_annotations.json` and linked in `paper_bibliography.json`.
-   Future work: harvest numeric bibliography reference markers from body text and captions into the same per-paper artifact, then validate one-to-one coverage: every observed reference marker should resolve to a bibliography entry, and every bibliography entry should have at least one observed marker. Record coverage gaps as diagnostics without introducing any cross-paper citation-management layer.
+   Bibliographic reference follow-up: `paper_bibliography.json` now preserves the paper's own bibliography entries, numbered or unnumbered, from the PyMuPDF layout-aware text stream and links numeric table-cell study/source/header markers to numbered entries when no local table-note definition exists. The footnote linker suppresses citation-like numeric table-cell markers with matching numbered bibliography entries from table-footnote link counts, while the original marker evidence remains visible in `cell_text_annotations.json` and linked in `paper_bibliography.json`. Reference-list extraction uses one layout stream: read page, then column, then vertical position; start entries at the column left edge, with either a numeric label or the first author/organization line; keep indented rows open across column and page breaks; and fall back to markdown-derived sections only when the positioned text stream cannot produce entries. The current full 27-PDF run, `outputs/testpapers_batch_20260705_bibliography_workflow`, has 0 empty bibliographies, 0 bibliography diagnostics, 22 numbered bibliography papers, and 5 unnumbered bibliography papers.
+   Future work: harvest numeric bibliography reference markers from body text and captions into the same per-paper artifact, then validate one-to-one coverage for numbered lists: every observed numeric reference marker should resolve to a numbered bibliography entry, and every numbered bibliography entry should have at least one observed marker. Add author-year body citation harvesting separately against preserved unnumbered entries. Record coverage gaps as diagnostics without introducing any cross-paper citation-management layer.
+   Footnote-style follow-up: the current bibliography baseline has 30 unresolved footnote links in three papers (`metabolic`, Systemic inflammation markers, and Planetary Health). Before adding more link exceptions, add a paper-level deterministic style summary that infers likely footnote marker conventions, bibliography/citation conventions, visual caption placement, and table/figure reference wording from existing artifacts. Use that summary as review evidence for the next footnote-linking changes.
    Treat these as normalization follow-ups, not emergency parser changes. Preserve raw extraction, add focused repairs with provenance, and avoid broad rules that could merge real value columns into labels.
 
 10. [ ] Add known-failure regression fixtures.
@@ -142,10 +142,18 @@ current retained reference run is `outputs/testpapers_batch_20260702_non_table_f
   trailing continuation-page notes.
 - Recent extraction guardrail: reference/bibliography section detection now combines backend payload text with PyMuPDF page text before table detection and carries the section stop into fallback extraction, so bibliography pages cannot enter the table pipeline just because the primary JSON payload missed the section heading.
 - Recent paper-context update: `paper_text_stream.json` now records
-  layout-aware, page-furniture-filtered PyMuPDF text lines and orders simple
-  two-column pages as page, column, then y-position. `paper_sections.json` and
+  layout-aware, page-furniture-filtered PyMuPDF text lines, page-level
+  `column_boundaries` and `column_bands`, and orders pages as page, column, then
+  y-position for any detected column count. `paper_sections.json` and
   bibliography entry extraction consume this stream when available, while
-  `paper_markdown.md` remains a filtered backend-markdown evidence artifact.
+  `paper_markdown.md` remains a filtered backend-markdown evidence artifact and
+  is no longer authoritative for document order.
+- Recent document-structure follow-up: page furniture should remove repeated
+  running headers, footers, watermarks, and other recurring non-content. It
+  should not classify one-off section headings. Add a coarse document-outline
+  layer that preserves original headings while mapping them into broad roles
+  such as abstract, introduction/background, methods, results, discussion,
+  conclusion, references, and other.
 - Recent extraction guardrail: sparse trailing table-continuation notes such as `(Table 1 continues on next page)` are removed and recorded in `metadata.trailing_non_table_rows`; post-header notes such as `(Continued from previous page)` remain provenance rows but are excluded from normalized `body_rows`.
 - Recent extraction update: rotated word-position refinement fails closed when a small backend grid would expand into an implausibly wide table. More than 30 columns is rejected for rotated collapsed-grid recovery, and 13-30 columns requires separator-rule support. Newer PyMuPDF4LLM can emit a mixed-orientation table box containing both upright article text and a rotated table; extraction now derives a separate rotated-block candidate from the contiguous vertical PyMuPDF text block inside that box and lets candidate deduplication choose the recovered table region. A focused Ethnic Differences run now recovers the rotated Table 1 region and resolves its prior subscript/marker-font false footnote issues; rerun the full corpus before replacing the retained guide counts.
 - Recent normalization update: header/body selection now uses validated full-width separator rules first, first value-region anchors second, and content scoring only as fallback. Full-width separator evidence is derived from stroked rule geometry so filled row highlighting/background shading does not create false hlines. Future work still needs a more principled model for data/estimate tables without clear separator or value-anchor evidence, rather than adding more ordered special cases.
@@ -159,12 +167,12 @@ current retained reference run is `outputs/testpapers_batch_20260702_non_table_f
   suppressions. `parse_quality_reports.json` reports
   `header_body_split_rule_disagreement` when the hline and value-anchor
   candidates both exist and disagree.
-- Recent status-routing update: `docs/implementation/real_paper_testing_guide.md`
-  now uses `outputs/testpapers_batch_20260702_non_table_fix` as the current
-  retained run: 27 PDF command successes, 0 unresolved / 0 ambiguous footnote
-  links, 80 resolved semantic tables, 4 failed table records, 28
-  `analysis_outputs`, 13 `data_presentation`, and 3 `non_table_artifact`
-  inventory records. The failed records are now 3 true
-  `non_table_layout_candidate` narrative/reference artifacts plus one
-  non-target `general` reference table with
-  `insufficient_table_structure_after_extraction`.
+- Recent bibliography baseline update:
+  `docs/implementation/real_paper_testing_guide.md` now uses
+  `outputs/testpapers_batch_20260705_bibliography_workflow` as the current
+  retained run: 27 PDF command successes, 0 empty bibliographies, 0
+  bibliography diagnostics, 1370 bibliography entries, 22 numbered
+  bibliography papers, 5 unnumbered bibliography papers, and 0 mixed
+  numbering-style papers. The same run has 30 unresolved / 0 ambiguous
+  footnote links, so the next footnote work should start with document-level
+  style inference rather than another local patch.

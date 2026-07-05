@@ -1,7 +1,8 @@
 # Paper Bibliography Artifact
 
 `paper_bibliography.json` preserves the fixed bibliography/reference list for
-one parsed paper and links observed numeric reference markers back to that list.
+one parsed paper and links observed numeric reference markers back to numbered
+entries in that list.
 
 This is not a citation-management layer. It does not look up DOIs, normalize
 authors, deduplicate across papers, or maintain a corpus-level reference store.
@@ -19,23 +20,34 @@ reference markers are found.
 ## Pipeline Position
 
 Bibliography entry extraction should run before table extraction because it
-depends on the whole-paper markdown/section representation, not on table grids.
-Later table-cell annotation and footnote processing can then link numeric table
-markers to the already-known bibliography entries.
+depends on the whole-paper document stream, not on table grids. The primary
+source is `paper_text_stream.json`: positioned PyMuPDF lines filtered through
+`paper_page_furniture.json` and ordered by page, column, then vertical position.
+Markdown-derived sections are retained only as a fallback when the positioned
+stream cannot produce entries. Later table-cell annotation and footnote
+processing can then link numeric table markers to already-known numbered
+bibliography entries.
 
 The implemented flow is:
 
 ```text
 PDF
 -> paper_page_furniture.json
--> paper_markdown.md
 -> paper_text_stream.json
+-> paper_markdown.md
 -> paper_sections.json
--> bibliography entries
+-> bibliography entries from positioned text
 -> table extraction and cell text annotations
 -> bibliography reference-marker links
 -> paper_bibliography.json
 ```
+
+The reference-list reader is column-count agnostic. For each reference-list
+page, it identifies local reference columns from aligned entry starts and
+fallback x-start bands, reads column 1 top-to-bottom, then column 2
+top-to-bottom, and continues for however many columns are present. Entries stay
+open across column and page boundaries until the next left-edge entry start is
+seen, so a reference split across pages remains one entry.
 
 ## Top-Level Shape
 
@@ -54,23 +66,37 @@ PDF
 
 ## Entry Record
 
-An entry is one numbered item from the paper's own bibliography.
+An entry is one item from the paper's own bibliography. Bibliographies may be
+numbered, unnumbered author-year lists, or a mix produced by the source layout.
 
 Important fields:
 
-- `entry_id`: stable per-paper ID such as `bib:33`
-- `label_raw`: visible bibliography label
-- `label_key`: canonical label key such as `number:33`
-- `reference_number`: numeric label
+- `entry_id`: stable per-paper ID such as `bib:33` or `bib:unnum:7`
+- `label_raw`: visible bibliography label; empty for unnumbered entries
+- `label_key`: canonical label key such as `number:33` or `unnumbered:7`
+- `reference_number`: numeric label when present; `null` for unnumbered
 - `raw_text`: extracted entry text
 - `clean_text`: lightly cleaned text for inspection and matching
 - `source_section_id`, `heading`, `role_hint`: section provenance
-- `source_artifact`: usually `paper_sections.json`
+- `source_artifact`: usually `paper_text_stream.json`, with
+  `paper_sections.json` used for fallback entries
+- `source_line_ids`: positioned text lines that contributed to the entry
+- `page_nums`: PDF pages spanned by the entry
+- `bbox`: bounding box when all contributing lines are on one page
+- `visual_line_count`: number of visual text rows assembled into the entry
 - `confidence`
 - `notes`
 
-Initial extraction supports ordinary numbered lists and simple two-column
-markdown tables that contain numbered bibliography entries.
+Extraction uses the same layout stream for numbered and unnumbered lists:
+reference-list pages are read as page, column, then vertical position; a new
+entry begins at the column's left edge, either with a visible numeric label or
+with the first author/organization text in a hanging-indent list. Continuation
+rows remain indented and entries can span column and page boundaries. Inline
+starts such as `References 1. Author...`, bracketed/dotted/bare numeric labels,
+and simple markdown-table fallback entries are supported when positioned text is
+unavailable. Extraction metadata records numbering style, low entry counts,
+nonsequential numeric labels, unusually long entries, and observed reference
+markers whose numbers exceed the extracted numbered bibliography.
 
 ## Reference Mention Record
 
@@ -81,7 +107,9 @@ The initial implemented source is numeric table-cell markers that were detected
 as cell text annotations, including numeric superscripts attached to row-label
 study/source names and column-header citation phrases. These are bibliography
 references, not table footnotes, when they have no local table-note definition
-and match an entry in the paper's own bibliography.
+and match a numbered entry in the paper's own bibliography. Author-year body
+citations are not linked yet, but their unnumbered bibliography entries are
+preserved as first-class records.
 
 Important fields:
 

@@ -76,16 +76,29 @@ The pipeline should therefore:
 - tolerate section-name variation
 - avoid hardcoding exact heading names as the only way to find methods-like or results-like content
 - avoid using the references or bibliography as a primary source for paper-level variable inventory
-- treat references/bibliography as a separate document section, not as table content; if reference extraction is added later, each citation should remain an atomic reference record rather than being tokenized into table rows or variable mentions
+- treat references/bibliography as a separate document section, not as table
+  content; bibliography extraction should keep each citation as an atomic
+  `BibliographyEntry` rather than tokenizing references into table rows or
+  variable mentions
 
 ## Relationship To Section Parsing
 
 `paper_markdown.md` is persisted backend evidence.
 
-`paper_text_stream.json` is the layout-aware document-context artifact.
+`paper_text_stream.json` is the layout-aware document-context artifact. It
+records page-level column boundaries and bands and orders text as page, column,
+then vertical position. This column-order model is independent of whether a page
+has one, two, three, or more detected text columns.
 
 `paper_sections.json` is the structured interpretation of that layout-aware
 stream when available, falling back to markdown only when positioned text cannot
 be read.
+
+Page furniture filtering removes repeated running headers, footers, watermarks,
+and similar recurring non-content lines. It should not be used as the semantic
+section classifier for arbitrary one-off headings. Section parsing should
+preserve the original heading text while mapping headings into broad paper roles
+such as abstract, introduction/background, methods, results, discussion,
+conclusion, references, and other.
 
 If section-parsing logic changes, this document and the section-parsing design notes should be updated in the same change.

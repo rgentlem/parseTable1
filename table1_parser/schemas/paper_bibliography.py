@@ -17,13 +17,17 @@ class BibliographyEntry(BaseModel):
     entry_id: str
     label_raw: str
     label_key: str
-    reference_number: int = Field(ge=1)
+    reference_number: int | None = Field(default=None, ge=1)
     raw_text: str
     clean_text: str
     source_section_id: str | None = None
     heading: str | None = None
     role_hint: str | None = None
     source_artifact: str = "paper_sections.json"
+    source_line_ids: list[str] = Field(default_factory=list)
+    page_nums: list[int] = Field(default_factory=list)
+    bbox: tuple[float, float, float, float] | None = None
+    visual_line_count: int = Field(default=0, ge=0)
     confidence: float = Field(ge=0.0, le=1.0)
     notes: list[str] = Field(default_factory=list)
 

@@ -8,10 +8,9 @@ Corpus-Driven Hardening Of Extraction, Normalization, Semantics, Footnotes, And 
 
 The goal is to work through real papers in a reproducible order, identify the
 first artifact where structure goes wrong, and fix the earliest parser stage
-that owns the problem. The current priority is to continue failed-status and
-mixed-family review after footnote links reached a clean resolved/inferred
-state and obvious real-table `non_table_layout_candidate` false positives were
-removed.
+that owns the problem. The current priority is to keep the new layout-aware
+bibliography baseline stable while re-reviewing the remaining footnote-link
+cases and continuing failed-status and mixed-family review.
 
 All paper paths below are relative to:
 
@@ -24,18 +23,38 @@ All paper paths below are relative to:
 Latest reference run:
 
 ```text
-outputs/testpapers_batch_20260702_non_table_fix
+outputs/testpapers_batch_20260705_bibliography_workflow
 ```
 
 The current refreshed baseline is
-`outputs/testpapers_batch_20260702_non_table_fix`. It was produced after
-building `paper_page_furniture.json` before extraction, applying ignored regions
-as an early mask, retiring broad trailing large-gap/text-spread row cleanup, and
-using contiguous PyMuPDF text blocks plus table geometry to identify complete
-table-local footer blocks. It also includes the rotated Ethnic footnote-marker
-cleanup, improved OR/CI estimate-table routing, and a structural guard that
-keeps wide matrix-like real tables out of `non_table_layout_candidate` status.
+`outputs/testpapers_batch_20260705_bibliography_workflow`. It was produced after
+the PyMuPDF layout-aware text stream became the source of document order for
+sections and reference lists; page text is ordered page, column, then
+y-position, with page furniture removed before bibliography and table
+extraction. The bibliography extractor now reads numbered and hanging-indent
+reference lists through one positioned stream, supports references split across
+columns and pages, treats numbered offset labels as the same entry-start
+structure as unnumbered hanging-indent entries, and no longer requires
+bibliographies to be numbered.
+
 Older generated `outputs/` runs should not be treated as current.
+
+Current bibliography summary:
+
+```text
+PDFs: 27
+parse command failures: 0
+paper_bibliography:
+  papers with bibliography entries: 27
+  papers with empty bibliographies: 0
+  papers with bibliography diagnostics: 0
+  total bibliography entries: 1370
+  numbered entries: 1092
+  unnumbered entries: 278
+  numbered bibliography papers: 22
+  unnumbered bibliography papers: 5
+  mixed numbering-style papers: 0
+```
 
 Current footnote summary:
 
@@ -43,17 +62,17 @@ Current footnote summary:
 PDFs: 27
 parse command failures: 0
 paper_footnotes:
-  anchors: 403
-  definitions: 196
-  links: 403
-  resolved links: 342
+  anchors: 349
+  definitions: 154
+  links: 349
+  resolved links: 258
   inferred links: 61
   ambiguous links: 0
-  unresolved links: 0
-  math/unit anchors suppressed before footnote linking: 36
+  unresolved links: 30
+  math/unit anchors suppressed before footnote linking: 35
   word-like subscript anchors suppressed before footnote linking: 0
   citation-like anchors suppressed before footnote linking: 78
-  PDF text blocks classified as table footers: 56
+  PDF text blocks classified as table footers: 42
   page-furniture definition blocks suppressed: 48
 extraction page-furniture mask:
   extracted tables with mask metadata: 77
@@ -64,7 +83,13 @@ extraction page-furniture mask:
 
 Current papers with unresolved or ambiguous footnote links:
 
-- None in `outputs/testpapers_batch_20260702_non_table_fix`.
+- `metabolic`: 15 unresolved `letter:a` / `letter:b` p-value markers on
+  Table 1.
+- `Systemic inflammation markers and the prevalence of hypertension- A NHANES cross-sectional study`:
+  12 unresolved `letter:b` markers on tertile column labels across the
+  continued Table 1.
+- `Science-Advanaced-Planetary Health Diet and risk of mortality and chronic diseases- Results from US NHANES, UK Biobank, and a meta-analysis`:
+  3 unresolved symbol markers (`†`, `‡`, `§`) in Table 1 row labels.
 
 Resolved since the prior baseline:
 
@@ -89,8 +114,10 @@ Resolved since the prior baseline:
 - Eke drops from 529 unresolved / 11 ambiguous links to 6 unresolved / 2
   ambiguous links in the full-corpus baseline.
 - Rotated Ethnic table annotation cleanup and bibliography/citation suppression
-  reduce the latest full-corpus footnote issue count to 0 unresolved / 0
-  ambiguous links.
+  resolved the prior Ethnic false-marker issue. The current baseline has 30
+  unresolved footnote links in the three papers listed above; these should be
+  handled through a general document/table footnote-style pass rather than
+  paper-specific link patches.
 - OR/CI estimate routing and matrix-like table status guards reduce table-level
   failures from 9 to 4: 3 true `non_table_layout_candidate` narrative/reference
   artifacts and 1 `insufficient_table_structure_after_extraction` general
@@ -105,7 +132,8 @@ For each checklist item:
    `extracted_tables.json`, `normalized_tables.json`,
    `column_header_schemas.json`, `resolved_tables.json`,
    `table_definitions.json`, `parsed_cell_values.json`,
-   `parsed_tables.json`, `paper_footnotes.json`, `paper_references.json`.
+   `parsed_tables.json`, `paper_footnotes.json`, `paper_bibliography.json`,
+   `paper_references.json`.
 3. Record whether the issue belongs to extraction, normalization, continuation,
    table semantics, footnote detection/linking, or visual-reference resolution.
 4. Fix only the earliest responsible stage.
@@ -118,16 +146,21 @@ For each checklist item:
 
 ### C0. Footnotes And References First
 
-- [x] **C0.0** Resolve embedded Table 1 p-value footnote definitions in
+- [ ] **C0.0** Re-review embedded Table 1 p-value footnote definitions in
   `metabolic`.
   - PDF path: `papers_from_johnny/metabolic.pdf`
   - Previous artifact issue: Table 1 had detected `a`/`b` p-value superscript
     anchors but no definitions, because the definition line started with
     explanatory prose rather than a marker.
-  - Current result: fixed in
-    `outputs/testpapers_footer_blocks_20260701_final`; Table 1
-    `a`/`b` links are resolved, and Table 2 asterisk p-value markers are now
-    conventional `inferred` links rather than unresolved footnotes.
+  - Earlier result: fixed in
+    `outputs/testpapers_footer_blocks_20260701_final`; Table 1 `a`/`b` links
+    were resolved, and Table 2 asterisk p-value markers became conventional
+    `inferred` links rather than unresolved footnotes.
+  - Current result: reopened in
+    `outputs/testpapers_batch_20260705_bibliography_workflow`; Table 1 has 15
+    unresolved `letter:a` / `letter:b` p-value markers. Re-review this through
+    a general document/table footnote-style pass rather than another
+    paper-specific definition exception.
 
 - [x] **C0.1** Review false-positive footnote marker detection in Eke.
   - PDF path: `papers_from_laha/Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009.pdf`
@@ -185,6 +218,17 @@ For each checklist item:
     `math_unit_anchor_suppression_count`, so this paper is now a clean resolved
     footnote baseline for the local statistical-star-footer case.
 
+- [ ] **C0.4a** Re-review unresolved symbol footnote markers in Planetary
+  Health Table 1 row labels.
+  - PDF path: `papers_from_laha/Science-Advanaced-Planetary Health Diet and risk of mortality and chronic diseases- Results from US NHANES, UK Biobank, and a meta-analysis.pdf`
+  - Current result:
+    `outputs/testpapers_batch_20260705_bibliography_workflow` has 3 unresolved
+    symbol links (`†`, `‡`, `§`) on Table 1 row labels.
+  - Desired fix direction: infer the paper/table footnote style from observed
+    anchors, definitions, and footer regions first, then use that style summary
+    to decide whether row-label symbol markers should link to table-local
+    continuation footers or remain unresolved.
+
 - [x] **C0.5** Resolve symbol-marker footer definitions that start with
   lowercase or arbitrary explanatory text.
   - PDF paths:
@@ -209,6 +253,16 @@ For each checklist item:
   - Current result: `outputs/testpapers_footer_blocks_20260701_final` has 0
     unresolved and 0 ambiguous footnote links for this paper.
 
+- [ ] **C0.6a** Re-review repeated letter markers on continued tertile headers.
+  - PDF path: `papers_from_laha/Systemic inflammation markers and the prevalence of hypertension- A NHANES cross-sectional study.pdf`
+  - Current result:
+    `outputs/testpapers_batch_20260705_bibliography_workflow` has 12
+    unresolved `letter:b` markers attached to `Tertile 1`, `Tertile 2`, and
+    `Tertile 3` column labels across the continued Table 1.
+  - Desired fix direction: handle through a paper-level footnote-style summary
+    and continuation-aware table-local definition scope, not by hard-coding the
+    words in the column labels.
+
 - [ ] **C0.7** Review unresolved table-reference resolution before worrying
   about figures.
   - Highest unresolved table-reference counts:
@@ -229,13 +283,13 @@ supplement-only or out-of-scope references.
 - [x] **C1.1** Review failed statuses that may be correct non-target tables.
   1. `papers_from_laha/An environment-wide association study (EWAS) on type 2 diabetes mellitus.pdf`
      - `An environment-wide association study (EWAS) on type 2 diabetes mellitus-p6-t0`
-     - Current status in `outputs/testpapers_batch_20260702_non_table_fix`:
+     - Current status in `outputs/testpapers_batch_20260705_bibliography_workflow`:
        `ok`, categorized as `analysis_outputs`.
      - Review result: structurally plausible ENWAS analysis-output table with
        sparse left descriptor columns; not a Table 1 descriptive failure.
   2. `papers_from_laha/mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017.pdf`
      - `mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017-p3-t0`
-     - Current status in `outputs/testpapers_batch_20260702_non_table_fix`:
+     - Current status in `outputs/testpapers_batch_20260705_bibliography_workflow`:
        `failed`, reason: `insufficient_table_structure_after_extraction`,
        categorized as `general`.
      - Review result: text/reference table comparing frailty definitions; a
@@ -279,7 +333,7 @@ supplement-only or out-of-scope references.
   - PDF path: `papers_from_laha/Ethnic Differences in the Relationship Between Insulin Sensitivity and Insulin Response.pdf`
   - Table: `Ethnic Differences in the Relationship Between Insulin Sensitivity and Insulin Response-p5-t0`
   - Current status: `rescued`; the prior `collapsed_grid_unrecovered` failure is
-    no longer present in `outputs/testpapers_batch_20260702_non_table_fix`.
+    no longer present in `outputs/testpapers_batch_20260705_bibliography_workflow`.
   - Current footnote result: 2 resolved links and 0 unresolved links. The prior
     residual `letter:i`, `letter:x`, and `letter:g` false-marker issue is no
     longer present as unresolved footnote evidence; the remaining `letter:x`

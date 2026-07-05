@@ -67,6 +67,7 @@ from table1_parser.paper_footnotes import (
 )
 from table1_parser.paper_bibliography import (
     build_bibliography_entries_from_sections,
+    build_bibliography_entries_from_text_stream,
     build_paper_bibliography,
     paper_bibliography_to_payload,
 )
@@ -441,15 +442,20 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     """Run the deterministic parse pipeline and build the paper-level context artifacts."""
     paper_stem = Path(pdf_path).stem
     paper_page_furniture = build_paper_page_furniture(pdf_path, paper_id=paper_stem)
-    paper_markdown = extract_paper_markdown(pdf_path, paper_page_furniture=paper_page_furniture)
     paper_text_stream = build_paper_text_stream(
         pdf_path,
         paper_page_furniture=paper_page_furniture,
         paper_id=paper_stem,
     )
+    try:
+        paper_markdown = extract_paper_markdown(pdf_path, paper_page_furniture=paper_page_furniture)
+    except Exception:  # noqa: BLE001
+        paper_markdown = ""
     section_markdown = paper_text_stream.markdown or paper_markdown
     paper_sections = parse_markdown_sections(section_markdown)
-    bibliography_entries = build_bibliography_entries_from_sections(paper_sections)
+    bibliography_entries = build_bibliography_entries_from_text_stream(paper_text_stream)
+    if not bibliography_entries:
+        bibliography_entries = build_bibliography_entries_from_sections(paper_sections)
     extractor = _build_default_extractor()
     extracted_tables = extractor.extract(pdf_path, paper_page_furniture=paper_page_furniture)
     cell_text_annotations = build_cell_text_annotation_tables_from_pdf(
