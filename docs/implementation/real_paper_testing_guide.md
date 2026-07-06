@@ -115,8 +115,8 @@ Resolved since the prior baseline:
   56 unresolved / 6 ambiguous links.
 - The footer-block finder reduces the current full-corpus footnote issue count
   from 56 unresolved / 6 ambiguous links to 11 unresolved / 7 ambiguous links.
-- Eke drops from 529 unresolved / 11 ambiguous links to 6 unresolved / 2
-  ambiguous links in the full-corpus baseline.
+- Eke drops from 529 unresolved / 11 ambiguous links to 0 unresolved / 0
+  ambiguous links in the current full-corpus baseline.
 - Rotated Ethnic table annotation cleanup and bibliography/citation suppression
   resolved the prior Ethnic false-marker issue. Caption/footer footnote parsing
   now resolves the remaining metabolic, Systemic inflammation, Planetary Health,
@@ -183,10 +183,9 @@ For each checklist item:
     `outputs/testpapers_batch_20260706_page_furniture_front` extracts page
     7 with no `letter:t`, `letter:r`, or `letter:l` anchors.
     `paper_footnotes.json` builds the page 7 `†` and `‡` definitions from
-    extracted footer row blocks, including their continuation rows. Remaining
-    links are 5 unresolved and 7 ambiguous: mostly numeric citation-like markers
-    and repeated table/page footer definitions that currently only link at
-    paper-level scope.
+    extracted footer row blocks, including their continuation rows. No
+    unresolved or ambiguous footnote links remain for this paper in the current
+    baseline.
 
 - [x] **C0.2** Review bibliographic superscripts versus table footnotes.
   - PDF path: `papers_from_laha/Helicobacter pylori infection in the United States beyond NHANES- a scoping review of seroprevalence estimates by racial and ethnic groups.pdf`
