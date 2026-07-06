@@ -25,9 +25,9 @@ is found.
 Current status: `table1-parser parse` builds this artifact before table
 extraction and writes it for every paper. R inspection helpers can load and
 display clusters and ignored regions. Extraction uses ignored regions to mask
-repeated page-furniture words, chars, and explicit-grid rows; footnote filtering
-uses the same regions as a late guardrail for overlapping table-cell anchors and
-definition candidate lines.
+repeated page-furniture words, chars, and explicit-grid rows. Paper text,
+markdown, cell text annotation, and footnote PDF-block collection must consume
+the same ignored regions before they build downstream artifacts.
 
 ## Top-Level Shape
 
@@ -161,6 +161,7 @@ headers. In that case `page_fraction` may be low across the full paper, but
 Extraction uses this artifact before candidate refinement. It records
 `page_furniture_overlap` metadata when a candidate bbox touches ignored regions
 and `page_furniture_mask` metadata when positioned words, chars, or explicit-grid
-rows are removed. Cell-text annotation and footnote code consume the same
-regions as guardrails so repeated page furniture is not reintroduced as small
-markers or definition lines.
+rows are removed. Cell-text annotation and footnote PDF-block code consume the
+same regions before grouping characters into annotations or definition blocks,
+so repeated page furniture is not reintroduced as small markers or definition
+lines.

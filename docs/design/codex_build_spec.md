@@ -56,6 +56,26 @@ normalized tables or accepted integrated continuations before semantic parsing.
 feeds resolved tables into table profiles, table definitions, and parsed table
 assembly. Existing continuation outputs remain review/provenance artifacts.
 
+## Mandatory Page-Furniture Filtering Rule
+
+`paper_page_furniture.json` must be built near the front of document
+processing, immediately after the parser has opened the PDF and before any
+stage derives paper text, markdown, sections, bibliography entries, visual
+references, table candidates, cell text annotations, footnote definition
+blocks, style profiles, variable inventories, or table contexts.
+
+Every stage that consumes positioned PDF text, words, characters, or extracted
+grid rows must receive the paper-page-furniture artifact and apply its ignored
+regions before deriving downstream artifacts. Page-furniture filtering is an
+early document-processing invariant, not a late cleanup path.
+
+If a new source path reads PDF text directly, thread `PaperPageFurniture` into
+that path and filter the source geometry before grouping, classification,
+linking, or artifact construction. Do not add downstream exceptions that remove
+headers, footers, download notices, marginal text, or other repeated furniture
+after those strings have already entered bibliography, section, table,
+footnote, or annotation artifacts.
+
 ## Mandatory Column-Header Rule
 
 `ColumnHeaderSchema` is the only parser-approved mechanism for comparing or

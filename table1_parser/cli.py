@@ -61,7 +61,6 @@ from table1_parser.paper_footnotes import (
     build_paper_footnote_footers_from_extracted_tables,
     build_paper_footnote_footers_from_pdf_blocks,
     find_table_footer_definition_blocks,
-    filter_footnote_definition_lines_for_page_furniture,
     link_paper_footnotes,
     paper_footnotes_to_payload,
 )
@@ -539,7 +538,6 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         cell_text_annotations=cell_text_annotations,
         extracted_tables=extracted_tables,
         column_header_schemas=column_header_schemas,
-        paper_page_furniture=paper_page_furniture,
         table1_continuation_groups=table1_continuation_groups,
     )
     paper_footnote_anchors_before_linking = list(paper_footnotes.anchors)
@@ -553,7 +551,10 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
             table1_continuation_groups=table1_continuation_groups,
         )
     )
-    pdf_footnote_definition_blocks = build_paper_footnote_definition_blocks_from_pdf(pdf_path)
+    pdf_footnote_definition_blocks = build_paper_footnote_definition_blocks_from_pdf(
+        pdf_path,
+        paper_page_furniture=paper_page_furniture,
+    )
     table_footer_pdf_definition_blocks = find_table_footer_definition_blocks(
         pdf_footnote_definition_blocks,
         extracted_tables,
@@ -568,24 +569,13 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         *table_footer_pdf_definition_blocks,
         *page_footnote_definition_lines,
     ]
-    filtered_footnote_definition_lines, footnote_page_furniture_metadata = (
-        filter_footnote_definition_lines_for_page_furniture(
-            paper_footnote_definition_lines,
-            paper_page_furniture,
-        )
-    )
-    filtered_table_footer_pdf_definition_blocks = [
-        line
-        for line in filtered_footnote_definition_lines
-        if line.line_id in table_footer_pdf_block_ids and line.source_scope == "table_note"
-    ]
     pdf_table_footers = build_paper_footnote_footers_from_pdf_blocks(
-        filtered_table_footer_pdf_definition_blocks,
+        table_footer_pdf_definition_blocks,
         existing_footers=extracted_table_footers,
     )
     table_footers = [*extracted_table_footers, *pdf_table_footers]
     paper_footnote_definitions = build_paper_footnote_definition_candidates(
-        filtered_footnote_definition_lines,
+        paper_footnote_definition_lines,
         extracted_tables,
         table1_continuation_groups=table1_continuation_groups,
     )
@@ -603,19 +593,15 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
                             "paper_page_furniture.json",
                         }
                     ),
-                    **footnote_page_furniture_metadata,
+                    "page_furniture_filter_stage": "before_pdf_definition_block_construction",
                     "footer_count": len(table_footers),
                     "footer_count_from_extracted_tables": len(extracted_table_footers),
                     "footer_count_from_pdf_blocks": len(pdf_table_footers),
                     "definition_line_count_from_extracted_tables": len(table_local_footnote_definition_lines),
                     "definition_block_count_from_pdf": len(pdf_footnote_definition_blocks),
                     "definition_footer_block_count_from_pdf": len(table_footer_pdf_definition_blocks),
-                    "definition_footer_block_count_from_pdf_after_page_furniture": len(
-                        filtered_table_footer_pdf_definition_blocks
-                    ),
                     "definition_line_count_from_pdf": len(pdf_footnote_definition_blocks),
                     "definition_line_count": len(paper_footnote_definition_lines),
-                    "definition_line_count_after_page_furniture": len(filtered_footnote_definition_lines),
                     "definition_count": len(paper_footnote_definitions),
                     "definitions_status": "built",
                 },

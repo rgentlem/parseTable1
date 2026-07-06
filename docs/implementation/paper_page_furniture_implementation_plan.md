@@ -63,11 +63,10 @@ Non-scope:
    - Review found repeated interior table values/model-note lines; clustering now requires an edge-band location to avoid suppressing body/table-note text later.
 
 8. [x] Integrate into footnote finding
-   - Pass page-furniture regions into footnote definition-line harvesting.
-   - Exclude definition candidate lines whose bbox overlaps repeated furniture regions.
-   - Suppress table-cell footnote anchors whose annotation bbox overlaps furniture pulled into an extracted table.
-   - Record suppression counts and source furniture cluster IDs in `paper_footnotes.json` metadata.
-   - Implementation: `paper_footnotes.json` metadata now records page-furniture suppression counts and cluster IDs for table-cell anchors and definition candidate lines.
+   - Pass page-furniture regions into cell text annotation and footnote PDF-block harvesting before those artifacts are built.
+   - Remove repeated-furniture characters before grouping table-cell markers or PyMuPDF definition blocks.
+   - Do not keep separate late footnote cleanup paths for overlapping table-cell anchors or definition lines.
+   - Implementation: `paper_footnotes.json` records `page_furniture_filter_stage`, while the source character and table-row filtering happens before anchor and definition construction.
 
 9. [x] Integrate before table extraction
    - Build `paper_page_furniture.json` before `extract()` in the `parse`,

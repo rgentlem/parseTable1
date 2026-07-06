@@ -92,8 +92,8 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Final parsed output | `ParsedTable` | Written now as `parsed_tables.json` by `parse` | Validated downstream structured table data |
 | Table processing status | `TableProcessingStatus`, `TableProcessingAttempt` | Written now as `table_processing_status.json` by `parse` | Persist resolved-table rescue attempts, source fragment IDs and diagnostics, terminal failure stage, and failure reason without overloading semantic artifacts |
 | Parse quality diagnostics | `ParseQualityReport` | Written now as `parse_quality_reports.json` by `parse` | Persist deterministic row, column, and value-pattern diagnostics without changing parse behavior |
-| Paper footnotes | `PaperFootnotes` | Written now as `paper_footnotes.json` by `parse` | Persist detected table-local footer regions from extracted rows and filtered PDF text blocks, footnote anchors, PyMuPDF text-block definition candidates, table-footer block classification, page-furniture and math/unit suppression metadata, explicit glyph-key links, and structured conventional p-value-star inferences as reviewable evidence without rewriting table text or parsed values |
-| Paper page furniture | `PaperPageFurniture` | Written now as `paper_page_furniture.json` by `parse` | Persist repeated page text observations, clusters, and ignored regions used to mask whole-paper markdown/context parsing, as an early extraction mask, and as a late footnote guardrail |
+| Paper footnotes | `PaperFootnotes` | Written now as `paper_footnotes.json` by `parse` | Persist detected table-local footer regions from extracted rows and page-furniture-filtered PDF text blocks, footnote anchors, PyMuPDF text-block definition candidates with marker evidence, table-footer block classification, page-furniture filter-stage metadata, math/unit suppression metadata, explicit glyph-key links, and structured conventional p-value-star inferences as reviewable evidence without rewriting table text or parsed values |
+| Paper page furniture | `PaperPageFurniture` | Written now as `paper_page_furniture.json` by `parse` | Persist repeated page text observations, clusters, and ignored regions used near the front of document processing to mask whole-paper markdown/context parsing, extraction, cell annotations, and footnote PDF-block collection before downstream artifacts are built |
 
 Design note for future multitable support:
 
@@ -1234,10 +1234,10 @@ Current status:
 
 - canonical paper-level page-furniture schema exists now
 - written by the `parse` CLI command as `paper_page_furniture.json`
-- built before table extraction and passed to the extractor as page-coordinate
-  ignored regions
-- still suppresses overlapping footnote candidate lines and table-cell anchors
-  as a late guardrail when extraction-side masking did not eliminate the text
+- built before paper context parsing, table extraction, cell text annotation,
+  and footnote PDF-block collection
+- passed to positioned-text consumers as page-coordinate ignored regions before
+  they group, classify, or persist downstream artifacts
 
 Current CLI path:
 

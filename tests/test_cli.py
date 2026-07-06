@@ -142,7 +142,7 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     monkeypatch.setattr(
         cli,
         "build_paper_footnote_definition_blocks_from_pdf",
-        lambda _: [
+        lambda _pdf_path, **_kwargs: [
             FootnoteDefinitionCandidateLine(
                 line_id="page-1-block-99",
                 page_num=1,
@@ -265,10 +265,10 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     assert paper_footnotes_payload["definitions"][0]["definition_text"] == "Page-bottom note."
     assert paper_footnotes_payload["links"] == []
     assert paper_footnotes_payload["metadata"]["definition_line_count"] == 1
-    assert paper_footnotes_payload["metadata"]["definition_line_count_after_page_furniture"] == 1
+    assert paper_footnotes_payload["metadata"]["page_furniture_filter_stage"] == (
+        "before_pdf_definition_block_construction"
+    )
     assert paper_footnotes_payload["metadata"]["definition_count"] == 1
-    assert paper_footnotes_payload["metadata"]["page_furniture_anchor_suppression_count"] == 0
-    assert paper_footnotes_payload["metadata"]["page_furniture_definition_line_suppression_count"] == 0
     assert paper_footnotes_payload["metadata"]["links_status"] == "built"
     paper_page_furniture_payload = json.loads(paper_page_furniture_path.read_text(encoding="utf-8"))
     assert PaperPageFurniture.model_validate(paper_page_furniture_payload).paper_id == "paper"

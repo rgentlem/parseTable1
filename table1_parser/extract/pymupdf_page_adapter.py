@@ -134,13 +134,13 @@ def extract_page_chars(page: Any, page_num: int | None = None) -> list[dict[str,
     except Exception:
         return []
     chars: list[dict[str, object]] = []
-    for block in raw.get("blocks", []):
-        for line in block.get("lines", []):
-            for span in line.get("spans", []):
+    for block_index, block in enumerate(raw.get("blocks", [])):
+        for line_index, line in enumerate(block.get("lines", [])):
+            for span_index, span in enumerate(line.get("spans", [])):
                 span_font_size = span.get("size")
                 span_font = span.get("font")
                 span_flags = span.get("flags")
-                for char in span.get("chars", []):
+                for char_in_span_index, char in enumerate(span.get("chars", [])):
                     bbox_value = char.get("bbox")
                     bbox = bbox_from_pymupdf_value(bbox_value)
                     if bbox is None:
@@ -155,6 +155,10 @@ def extract_page_chars(page: Any, page_num: int | None = None) -> list[dict[str,
                         "bottom": bbox[3],
                         "char_height": bbox[3] - bbox[1],
                         "char_index": len(chars),
+                        "block_index": block_index,
+                        "line_index": line_index,
+                        "span_index": span_index,
+                        "char_in_span_index": char_in_span_index,
                     }
                     if normalized_text != raw_text:
                         char_record["raw_text"] = raw_text

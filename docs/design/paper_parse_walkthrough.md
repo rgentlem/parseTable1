@@ -67,8 +67,9 @@ layout-aware text streaming, section parsing, bibliography extraction, and
 table extraction. Repeated page-furniture lines are removed from
 `paper_markdown.md` and `paper_text_stream.json`; `paper_sections.json` and
 bibliography entries are derived from the layout-aware text stream when
-available. The same artifact is passed into table extraction as an early
-geometry mask. It is written even when no repeated page furniture is found.
+available. The same artifact is passed into table extraction, cell text
+annotation, and footnote PDF-block collection as an early geometry mask. It is
+written even when no repeated page furniture is found.
 
 `paper_footnotes.json` records detected table-local footer regions, footnote
 anchors, candidate definitions, and glyph-key links as a paper-level review
@@ -78,21 +79,30 @@ Definition candidates are fed first by footer rows preserved in
 bottom table rule that is itself below the last value-matrix row, then falls
 back to rows after the last value-matrix row when rule evidence is unavailable.
 Rows that start a marker definition are grouped with adjacent continuation rows
-in extracted row order. PyMuPDF contiguous page text blocks are the PDF fallback
-source, not isolated page lines. A table-footer finder uses table bboxes,
-horizontal overlap, vertical adjacency, and continuation-group visual identity
-to classify complete PDF text blocks as table-local footer blocks before
-glyph-key linking. After repeated page-furniture filtering, PDF-classified
+in extracted row order. Confirmed footer rows can carry marker-start evidence
+from footer-cell boundaries and marker-shaped prefixes.
+
+PyMuPDF contiguous page text blocks are the positioned PDF source, not isolated
+page lines. These blocks are built from normalized positioned characters after
+page-furniture filtering, so font-qualified Unicode recovery and glyph geometry
+are still available when a visual marker is collapsed into neighboring text.
+A table-footer finder uses table bboxes, horizontal overlap, vertical
+adjacency, and continuation-group visual identity to classify complete PDF text
+blocks as table-local footer blocks before glyph-key linking. PDF-classified
 table-footer blocks are also persisted as unsplit `footers` records, so review
 can inspect the same raw footer region that later produces split definition
 records.
 Remaining PDF text blocks can still become page-bottom notes. Candidate blocks
 may start with a marker or contain embedded marker definitions after nearby
-explanatory prose. A single table-footer block can yield several definition
-records, for example `*`, `†`, `‡`, `§`, `**`, and `***` definitions. Repeated
-page-furniture regions remain a late footnote guardrail for overlapping
-table-cell anchors and page-text definition candidate blocks that survive early
-extraction masking.
+explanatory prose. If extracted text shows a collapsed form such as
+`aRepresents`, the definition split is based on the smaller raised marker glyph
+recorded in PyMuPDF character geometry, not on the malformed word itself.
+Textual marker definitions such as `The asterisk indicates ...` remain valid
+local definition evidence. A single table-footer block can yield several
+definition records, for example `*`, `†`, `‡`, `§`, `**`, and `***`
+definitions. Repeated page furniture should not enter this stage: table rows,
+cell-character annotations, and PDF definition blocks are all derived from
+early-filtered geometry.
 R footnote review helpers filter by table fragment ID and by paper visual ID,
 so a table-number review includes footer records found on continued fragments
 such as `Table 1. (continued)` without treating the continuation label itself as
@@ -150,6 +160,7 @@ The current implemented flow for `parse` is:
 ```text
 PDF
   -> paper page furniture
+  -> paper text stream / markdown / sections / bibliography
   -> extracted tables
   -> cell text annotations
   -> normalized tables
@@ -163,10 +174,6 @@ PDF
   -> parsed tables
   -> table processing statuses over resolved tables
   -> parse quality reports
-
-PDF
-  -> paper markdown
-  -> paper sections
   -> paper variable inventory
   -> per-table context bundles
 
@@ -883,9 +890,9 @@ paper context parsing and table extraction.
 
 This paper-level artifact collects PyMuPDF page text lines, normalizes text only
 for matching, clusters repeated text in stable page-relative positions, and emits
-generic ignored regions. Paper text streaming and extraction use those regions
-as early masks, and the footnote stage uses them as a late guardrail for
-overlapping definition candidate lines and table-cell anchors before linking.
+generic ignored regions. Paper text streaming, markdown filtering, table
+extraction, cell text annotation, and footnote PDF-block collection use those
+regions before downstream artifacts are built.
 
 ## Step 12: Build Paper-Level Document Context
 

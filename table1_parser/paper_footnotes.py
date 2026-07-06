@@ -4,16 +4,16 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
+from statistics import median
 
 from table1_parser.context.visual_references import parse_visual_label, visual_id_for
 from table1_parser.extract.pymupdf_page_adapter import (
-    bbox_from_pymupdf_value,
-    join_pymupdf_line_spans,
+    extract_page_chars,
     open_pymupdf_document,
 )
-from table1_parser.page_furniture_mask import page_furniture_cluster_ids_for_bbox as _page_furniture_cluster_ids_for_bbox
+from table1_parser.page_furniture_mask import filter_positioned_items_for_page_furniture
 from table1_parser.schemas import (
     CellTextAnnotationTable,
     ColumnHeaderSchema,
@@ -21,6 +21,7 @@ from table1_parser.schemas import (
     FootnoteAnchor,
     FootnoteDefinition,
     FootnoteDefinitionCandidateLine,
+    FootnoteDefinitionMarkerEvidence,
     FootnoteFooter,
     FootnoteFooterRow,
     FootnoteGlyphKind,
@@ -41,7 +42,7 @@ DEFINITION_MARKER_TOKEN_PATTERN = (
     rf"|\(\s*(?:{DEFINITION_GLYPH_PATTERN})\s*\)"
     rf"|(?:{DEFINITION_GLYPH_PATTERN})"
 )
-DEFINITION_SYMBOL_GLYPH_PATTERN = r"[*﹡＊]+|[†‡§¶#|{}]"
+DEFINITION_SYMBOL_GLYPH_PATTERN = r"[*﹡＊]+|\|+|[†‡§¶#{}]"
 DEFINITION_SYMBOL_MARKER_TOKEN_PATTERN = (
     rf"\[\s*(?:{DEFINITION_SYMBOL_GLYPH_PATTERN})\s*\]"
     rf"|\(\s*(?:{DEFINITION_SYMBOL_GLYPH_PATTERN})\s*\)"
@@ -72,11 +73,19 @@ DEFINITION_MARKER_PATTERN = re.compile(
     rf"(?P<body>\S.*?)(?=(?:[.;,]\s+(?:{DEFINITION_MARKER_TOKEN_PATTERN})[\s.)\]:;,\-–—]+\S)|$)"
 )
 DEFINITION_BLOCK_MARKER_PATTERN = re.compile(
-    rf"(?:^|(?<=[.;:,]\s)|(?<=\)\s)|(?<=\]\s))"
-    rf"(?P<glyph>{DEFINITION_SYMBOL_MARKER_TOKEN_PATTERN}|[a-z](?=[A-Z]))"
+    rf"(?P<prefix>^|[.;:,]\s+|[)\]]\s+)"
+    rf"(?P<glyph>{DEFINITION_SYMBOL_MARKER_TOKEN_PATTERN})"
     rf"\s*(?=\S)"
 )
-TABLE_FOOTER_ATTACHED_MARKER_PATTERN = re.compile(r"^\s*(?P<glyph>[a-z])(?P<body>[A-Z]\S.*)$")
+EXTRACTED_FOOTER_MARKER_EVIDENCE_PATTERN = re.compile(
+    rf"(?P<prefix>^|[.;:,]\s+|[)\]]\s+)"
+    rf"(?P<glyph>{DEFINITION_SYMBOL_MARKER_TOKEN_PATTERN}|[a-z](?=(?:[A-Z][a-z]|P\s*[<=>≤≥])))"
+    rf"\s*(?=\S)"
+)
+TEXTUAL_ASTERISK_DEFINITION_PATTERN = re.compile(
+    r"\b(?:the\s+)?(?:asterisk|star)\s+(?:indicates?|denotes?|represents?|marks?)\b",
+    re.IGNORECASE,
+)
 TABLE_CAPTION_ROW_PATTERN = re.compile(r"^\s*(?:Table|Figure)\s+[A-Za-z]?\d+[A-Za-z]?\s*[:.]", re.IGNORECASE)
 CANONICAL_SYMBOL_KEYS = {
     "†": "dagger",
@@ -100,14 +109,11 @@ def build_paper_footnote_anchor_inventory(
     cell_text_annotations: Sequence[CellTextAnnotationTable],
     extracted_tables: Sequence[ExtractedTable] | None = None,
     column_header_schemas: Sequence[ColumnHeaderSchema] | None = None,
-    paper_page_furniture: PaperPageFurniture | None = None,
     table1_continuation_groups: Sequence[Table1ContinuationGroup] | None = None,
 ) -> PaperFootnotes:
     """Build a paper-level footnote artifact populated with anchor records only."""
     anchors: list[FootnoteAnchor] = []
     diagnostics: list[str] = []
-    suppressed_anchor_count = 0
-    suppressed_anchor_cluster_ids: set[str] = set()
     math_unit_suppressed_anchor_count = 0
     subscript_suppressed_anchor_count = 0
     word_like_subscript_suppressed_anchor_count = 0
@@ -151,16 +157,6 @@ def build_paper_footnote_anchor_inventory(
                 if annotation_table.table_id in extracted_by_table_id
                 else 1
             )
-            if str(annotation_table.metadata.get("coordinate_frame") or "page") == "page":
-                overlapping_cluster_ids = page_furniture_cluster_ids_for_bbox(
-                    paper_page_furniture,
-                    page_num,
-                    annotation.bbox,
-                )
-                if overlapping_cluster_ids:
-                    suppressed_anchor_count += 1
-                    suppressed_anchor_cluster_ids.update(overlapping_cluster_ids)
-                    continue
             source_role = None
             notes: list[str] = []
             if schema is None:
@@ -230,8 +226,6 @@ def build_paper_footnote_anchor_inventory(
                 )
 
     source_artifacts = ["cell_text_annotations.json", "extracted_tables.json"]
-    if paper_page_furniture is not None:
-        source_artifacts.append("paper_page_furniture.json")
     return PaperFootnotes(
         paper_id=paper_id,
         source_pdf=Path(source_pdf).name,
@@ -243,8 +237,6 @@ def build_paper_footnote_anchor_inventory(
             "source_artifacts": source_artifacts,
             "diagnostics": diagnostics,
             "anchor_count": len(anchors),
-            "page_furniture_anchor_suppression_count": suppressed_anchor_count,
-            "page_furniture_suppressed_anchor_cluster_ids": sorted(suppressed_anchor_cluster_ids),
             "math_unit_anchor_suppression_count": math_unit_suppressed_anchor_count,
             "subscript_anchor_suppression_count": subscript_suppressed_anchor_count,
             "word_like_subscript_anchor_suppression_count": word_like_subscript_suppressed_anchor_count,
@@ -254,7 +246,11 @@ def build_paper_footnote_anchor_inventory(
     )
 
 
-def build_paper_footnote_definition_blocks_from_pdf(pdf_path: str) -> list[FootnoteDefinitionCandidateLine]:
+def build_paper_footnote_definition_blocks_from_pdf(
+    pdf_path: str,
+    *,
+    paper_page_furniture: PaperPageFurniture | None = None,
+) -> list[FootnoteDefinitionCandidateLine]:
     """Collect positioned contiguous page text blocks that may contain footnote definitions."""
     try:
         document = open_pymupdf_document(pdf_path)
@@ -268,7 +264,6 @@ def build_paper_footnote_definition_blocks_from_pdf(pdf_path: str) -> list[Footn
             page_num = page_index + 1
             try:
                 page = document.load_page(page_index)
-                page_dict = page.get_text("dict") or {}
             except Exception:  # noqa: BLE001
                 continue
             page_rect = getattr(page, "rect", None)
@@ -278,52 +273,17 @@ def build_paper_footnote_definition_blocks_from_pdf(pdf_path: str) -> list[Footn
                     page_height = float(page_rect.height)
                 elif all(hasattr(page_rect, attr) for attr in ("y0", "y1")):
                     page_height = float(page_rect.y1) - float(page_rect.y0)
-            block_index = 0
-            for block in page_dict.get("blocks", []):
-                if block.get("type", 0) != 0:
-                    continue
-                block_text_parts: list[str] = []
-                bbox_parts: list[tuple[float, float, float, float]] = []
-                for page_line in block.get("lines", []):
-                    for span in page_line.get("spans", []):
-                        if not isinstance(span, dict):
-                            continue
-                        bbox = bbox_from_pymupdf_value(span.get("bbox"))
-                        if bbox is not None:
-                            bbox_parts.append(bbox)
-                    line_text = join_pymupdf_line_spans(page_line.get("spans", []))
-                    if line_text:
-                        block_text_parts.append(line_text)
-                raw_text = " ".join(block_text_parts).strip()
-                current_block_index = block_index
-                block_index += 1
-                if (
-                    not raw_text
-                    or not bbox_parts
-                    or (
-                        DEFINITION_LINE_START_PATTERN.search(raw_text) is None
-                        and DEFINITION_LINE_EMBEDDED_PATTERN.search(raw_text) is None
-                    )
-                ):
-                    continue
-                bbox = (
-                    min(part[0] for part in bbox_parts),
-                    min(part[1] for part in bbox_parts),
-                    max(part[2] for part in bbox_parts),
-                    max(part[3] for part in bbox_parts),
-                )
-                blocks.append(
-                    FootnoteDefinitionCandidateLine(
-                        line_id=f"page-{page_num}-block-{current_block_index}",
+            page_chars, _mask_metadata = filter_positioned_items_for_page_furniture(
+                extract_page_chars(page, page_num=page_num),
+                paper_page_furniture,
+                page_num=page_num,
+            )
+            if page_chars:
+                blocks.extend(
+                    _definition_blocks_from_positioned_chars(
+                        page_chars,
                         page_num=page_num,
-                        raw_text=raw_text,
-                        source_scope="body_text",
-                        source_id=f"page-{page_num}-block-{current_block_index}",
-                        bbox=bbox,
                         page_height=page_height,
-                        line_index=current_block_index,
-                        source_artifact="pymupdf_page_text_blocks",
-                        notes=["contiguous_pdf_text_block"],
                     )
                 )
     finally:
@@ -333,9 +293,187 @@ def build_paper_footnote_definition_blocks_from_pdf(pdf_path: str) -> list[Footn
     return blocks
 
 
-def build_paper_footnote_definition_lines_from_pdf(pdf_path: str) -> list[FootnoteDefinitionCandidateLine]:
+def _definition_blocks_from_positioned_chars(
+    page_chars: Sequence[Mapping[str, object]],
+    *,
+    page_num: int,
+    page_height: float | None,
+) -> list[FootnoteDefinitionCandidateLine]:
+    """Build definition candidate blocks from normalized PyMuPDF character records."""
+    chars_by_block: dict[int, list[Mapping[str, object]]] = {}
+    for char in page_chars:
+        block_index_value = char.get("block_index")
+        if not isinstance(block_index_value, int):
+            continue
+        chars_by_block.setdefault(block_index_value, []).append(char)
+
+    blocks: list[FootnoteDefinitionCandidateLine] = []
+    for block_index, block_chars in sorted(chars_by_block.items()):
+        raw_text, positioned_chars = _text_and_positioned_chars_for_block(block_chars)
+        if not raw_text or not positioned_chars:
+            continue
+        marker_evidence = _definition_marker_evidence_from_positioned_chars(raw_text, positioned_chars)
+        if not marker_evidence and not _has_definition_candidate_text(raw_text):
+            continue
+        bbox = (
+            min(float(char["x0"]) for char in positioned_chars),
+            min(float(char["top"]) for char in positioned_chars),
+            max(float(char["x1"]) for char in positioned_chars),
+            max(float(char["bottom"]) for char in positioned_chars),
+        )
+        blocks.append(
+            FootnoteDefinitionCandidateLine(
+                line_id=f"page-{page_num}-block-{block_index}",
+                page_num=page_num,
+                raw_text=raw_text,
+                source_scope="body_text",
+                source_id=f"page-{page_num}-block-{block_index}",
+                bbox=bbox,
+                page_height=page_height,
+                line_index=block_index,
+                source_artifact="pymupdf_page_text_blocks",
+                marker_evidence=marker_evidence,
+                notes=["contiguous_pdf_text_block"],
+            )
+        )
+    return blocks
+
+
+def _text_and_positioned_chars_for_block(
+    block_chars: Sequence[Mapping[str, object]],
+) -> tuple[str, list[dict[str, object]]]:
+    """Return block text plus character records with text offsets."""
+    chars_by_line: dict[int, list[Mapping[str, object]]] = {}
+    for char in block_chars:
+        line_index_value = char.get("line_index")
+        line_index = line_index_value if isinstance(line_index_value, int) else 0
+        chars_by_line.setdefault(line_index, []).append(char)
+
+    text_parts: list[str] = []
+    positioned_chars: list[dict[str, object]] = []
+    offset = 0
+    for line_chars in (chars_by_line[line_index] for line_index in sorted(chars_by_line)):
+        ordered_line_chars = sorted(line_chars, key=lambda char: int(char.get("char_index", 0)))
+        while ordered_line_chars and not str(ordered_line_chars[0].get("text", "")).strip():
+            ordered_line_chars = ordered_line_chars[1:]
+        while ordered_line_chars and not str(ordered_line_chars[-1].get("text", "")).strip():
+            ordered_line_chars = ordered_line_chars[:-1]
+        if not ordered_line_chars:
+            continue
+        if text_parts:
+            text_parts.append(" ")
+            offset += 1
+        for char in ordered_line_chars:
+            text = str(char.get("text", ""))
+            if not text:
+                continue
+            text_parts.append(text)
+            positioned_char = dict(char)
+            positioned_char["text_start"] = offset
+            offset += len(text)
+            positioned_char["text_end"] = offset
+            positioned_chars.append(positioned_char)
+    return "".join(text_parts).strip(), positioned_chars
+
+
+def _definition_marker_evidence_from_positioned_chars(
+    raw_text: str,
+    positioned_chars: Sequence[Mapping[str, object]],
+) -> list[FootnoteDefinitionMarkerEvidence]:
+    """Find raised/smaller marker glyphs that start local definition text."""
+    chars_by_line: dict[int, list[Mapping[str, object]]] = {}
+    for char in positioned_chars:
+        line_index_value = char.get("line_index")
+        line_index = line_index_value if isinstance(line_index_value, int) else 0
+        chars_by_line.setdefault(line_index, []).append(char)
+
+    evidence: list[FootnoteDefinitionMarkerEvidence] = []
+    for line_chars in chars_by_line.values():
+        visible_chars = [char for char in line_chars if str(char.get("text", "")).strip()]
+        if len(visible_chars) < 2:
+            continue
+        heights = [float(char.get("char_height", float(char["bottom"]) - float(char["top"]))) for char in visible_chars]
+        main_height = median(heights)
+        if main_height <= 0.0:
+            continue
+        main_centers = [
+            (float(char["top"]) + float(char["bottom"])) / 2.0
+            for char, height in zip(visible_chars, heights, strict=True)
+            if height >= main_height * 0.9
+        ]
+        if not main_centers:
+            continue
+        main_center = median(main_centers)
+        for char, height in zip(visible_chars, heights, strict=True):
+            glyph_raw = str(char.get("text", "")).strip()
+            if len(glyph_raw) != 1 or not (glyph_raw.isalnum() or glyph_raw in "*﹡＊†‡§¶#|{}"):
+                continue
+            center = (float(char["top"]) + float(char["bottom"])) / 2.0
+            if not (height <= main_height * 0.86 and center <= main_center - main_height * 0.16):
+                continue
+            start = int(char.get("text_start", 0))
+            end = int(char.get("text_end", start + len(glyph_raw)))
+            prefix = raw_text[:start].rstrip()
+            suffix = raw_text[end:].lstrip()
+            if prefix and prefix[-1] not in ".;:,)]":
+                continue
+            if not suffix:
+                continue
+            evidence.append(
+                FootnoteDefinitionMarkerEvidence(
+                    glyph_raw=glyph_raw,
+                    evidence_type="superscript_definition_marker",
+                    text_start=start,
+                    text_end=end,
+                    confidence=0.9,
+                    bbox=(
+                        float(char["x0"]),
+                        float(char["top"]),
+                        float(char["x1"]),
+                        float(char["bottom"]),
+                    ),
+                    metadata={
+                        "font": char.get("font"),
+                        "font_size": char.get("font_size"),
+                        "char_height": height,
+                        "line_main_height": main_height,
+                        "line_main_center": main_center,
+                    },
+                    notes=["smaller_raised_glyph_at_definition_boundary"],
+                )
+            )
+    return sorted(evidence, key=lambda item: (item.text_start, item.text_end))
+
+
+def build_paper_footnote_definition_lines_from_pdf(
+    pdf_path: str,
+    *,
+    paper_page_furniture: PaperPageFurniture | None = None,
+) -> list[FootnoteDefinitionCandidateLine]:
     """Collect positioned page text blocks that may contain footnote definitions."""
-    return build_paper_footnote_definition_blocks_from_pdf(pdf_path)
+    return build_paper_footnote_definition_blocks_from_pdf(
+        pdf_path,
+        paper_page_furniture=paper_page_furniture,
+    )
+
+
+def _has_definition_candidate_text(raw_text: str) -> bool:
+    """Return true when flattened text has a portable definition-start signal."""
+    return (
+        DEFINITION_LINE_START_PATTERN.search(raw_text) is not None
+        or DEFINITION_LINE_EMBEDDED_PATTERN.search(raw_text) is not None
+        or DEFINITION_BLOCK_MARKER_PATTERN.search(raw_text) is not None
+        or TEXTUAL_ASTERISK_DEFINITION_PATTERN.search(raw_text) is not None
+    )
+
+
+def _has_extracted_footer_definition_start(row_text: str) -> bool:
+    """Return true when a confirmed footer row can open a definition block."""
+    return (
+        DEFINITION_LINE_START_PATTERN.search(row_text) is not None
+        or DEFINITION_LINE_EMBEDDED_PATTERN.search(row_text) is not None
+        or EXTRACTED_FOOTER_MARKER_EVIDENCE_PATTERN.search(row_text) is not None
+    )
 
 
 def find_table_footer_definition_blocks(
@@ -422,7 +560,7 @@ def build_paper_footnote_definition_lines_from_extracted_tables(
 
         current_start_row_idx: int | None = None
         current_end_row_idx: int | None = None
-        current_text_parts: list[str] = []
+        current_rows: list[tuple[int, list[TableCell]]] = []
 
         for row_idx, row_cells in footer_rows:
             row_text = _row_text(row_cells)
@@ -435,45 +573,43 @@ def build_paper_footnote_definition_lines_from_extracted_tables(
                         visual_id=visual_id_by_table_id.get(table.table_id),
                         start_row_idx=current_start_row_idx,
                         end_row_idx=current_end_row_idx or current_start_row_idx,
-                        text_parts=current_text_parts,
+                        rows=current_rows,
                     )
                 )
                 current_start_row_idx = None
                 current_end_row_idx = None
-                current_text_parts = []
+                current_rows = []
                 continue
             starts_definition = (
-                DEFINITION_LINE_START_PATTERN.search(row_text) is not None
-                or DEFINITION_LINE_EMBEDDED_PATTERN.search(row_text) is not None
-                or TABLE_FOOTER_ATTACHED_MARKER_PATTERN.match(row_text) is not None
+                _has_extracted_footer_definition_start(row_text)
             )
             if starts_definition:
-                if current_start_row_idx is not None and current_text_parts:
+                if current_start_row_idx is not None and current_rows:
                     lines.append(
                         _table_footer_definition_line(
                             table=table,
                             visual_id=visual_id_by_table_id.get(table.table_id),
                             start_row_idx=current_start_row_idx,
                             end_row_idx=current_end_row_idx or current_start_row_idx,
-                            text_parts=current_text_parts,
+                            rows=current_rows,
                         )
                     )
                 current_start_row_idx = row_idx
                 current_end_row_idx = row_idx
-                current_text_parts = [row_text]
+                current_rows = [(row_idx, row_cells)]
                 continue
             if current_start_row_idx is not None:
                 current_end_row_idx = row_idx
-                current_text_parts.append(row_text)
+                current_rows.append((row_idx, row_cells))
 
-        if current_start_row_idx is not None and current_text_parts:
+        if current_start_row_idx is not None and current_rows:
             lines.append(
                 _table_footer_definition_line(
                     table=table,
                     visual_id=visual_id_by_table_id.get(table.table_id),
                     start_row_idx=current_start_row_idx,
                     end_row_idx=current_end_row_idx or current_start_row_idx,
-                    text_parts=current_text_parts,
+                    rows=current_rows,
                 )
             )
     return lines
@@ -580,34 +716,6 @@ def build_paper_footnote_footers_from_pdf_blocks(
     return footers
 
 
-def filter_footnote_definition_lines_for_page_furniture(
-    definition_lines: Sequence[FootnoteDefinitionCandidateLine],
-    paper_page_furniture: PaperPageFurniture | None,
-) -> tuple[list[FootnoteDefinitionCandidateLine], dict[str, object]]:
-    """Drop candidate definition lines that overlap repeated page furniture."""
-    filtered_lines: list[FootnoteDefinitionCandidateLine] = []
-    suppressed_cluster_ids: set[str] = set()
-    suppressed_count = 0
-    for line in definition_lines:
-        if line.source_artifact == "extracted_tables.json":
-            filtered_lines.append(line)
-            continue
-        overlapping_cluster_ids = page_furniture_cluster_ids_for_bbox(
-            paper_page_furniture,
-            line.page_num,
-            line.bbox,
-        )
-        if overlapping_cluster_ids:
-            suppressed_count += 1
-            suppressed_cluster_ids.update(overlapping_cluster_ids)
-            continue
-        filtered_lines.append(line)
-    return filtered_lines, {
-        "page_furniture_definition_line_suppression_count": suppressed_count,
-        "page_furniture_suppressed_definition_cluster_ids": sorted(suppressed_cluster_ids),
-    }
-
-
 def build_paper_footnote_definition_candidates(
     definition_lines: Sequence[FootnoteDefinitionCandidateLine],
     extracted_tables: Sequence[ExtractedTable] | None = None,
@@ -683,20 +791,12 @@ def build_paper_footnote_definition_candidates(
             notes.append("definition_line_skipped:not_local_note_scope")
             continue
         confidence = confidence if confidence is not None else 0.8
-        parsed_definitions = _parse_definition_markers(raw_text)
-        if (
-            not parsed_definitions
-            and source_scope == "table_note"
-            and line.source_artifact == "extracted_tables.json"
-        ):
-            attached_marker_match = TABLE_FOOTER_ATTACHED_MARKER_PATTERN.match(raw_text)
-            if attached_marker_match is not None:
-                glyph_raw = attached_marker_match.group("glyph").strip()
-                definition_text = clean_text(attached_marker_match.group("body"))
-                if glyph_raw and definition_text:
-                    parsed_definitions.append((glyph_raw, definition_text))
-        for glyph_raw, definition_text in parsed_definitions:
+        parsed_definitions = _parse_definition_markers(raw_text, line.marker_evidence)
+        for glyph_raw, definition_text, marker_evidence in parsed_definitions:
             glyph_kind, glyph_key, glyph_codepoints = glyph_fields(glyph_raw)
+            definition_notes = [*notes]
+            if marker_evidence is not None:
+                definition_notes.append("definition_marker_from_structured_evidence")
             definitions.append(
                 FootnoteDefinition(
                     definition_id=f"definition:{definition_index}",
@@ -710,13 +810,17 @@ def build_paper_footnote_definition_candidates(
                     raw_text=raw_text,
                     clean_text=clean_text(raw_text),
                     definition_text=definition_text,
+                    marker_evidence_type=marker_evidence.evidence_type if marker_evidence is not None else None,
+                    marker_bbox=marker_evidence.bbox if marker_evidence is not None else None,
+                    marker_confidence=marker_evidence.confidence if marker_evidence is not None else None,
+                    marker_metadata=marker_evidence.metadata if marker_evidence is not None else {},
                     confidence=confidence,
                     table_id=table_id,
                     visual_id=visual_id,
                     bbox=line.bbox,
                     line_index=line.line_index if line.line_index is not None else line_index,
                     source_artifact=line.source_artifact,
-                    notes=notes,
+                    notes=definition_notes,
                 )
             )
             definition_index += 1
@@ -969,19 +1073,6 @@ def paper_footnotes_to_payload(footnotes: PaperFootnotes) -> dict[str, object]:
     return footnotes.model_dump(mode="json")
 
 
-def page_furniture_cluster_ids_for_bbox(
-    paper_page_furniture: PaperPageFurniture | None,
-    page_num: int | None,
-    bbox: tuple[float, float, float, float] | None,
-) -> list[str]:
-    """Return repeated page-furniture cluster IDs whose page bbox overlaps `bbox`."""
-    return _page_furniture_cluster_ids_for_bbox(
-        paper_page_furniture,
-        page_num=page_num,
-        bbox=bbox,
-    )
-
-
 def glyph_fields(glyph_raw: str) -> tuple[FootnoteGlyphKind, str, list[str]]:
     """Return normalized glyph fields for anchor and definition records."""
     glyph = glyph_raw.strip()
@@ -1089,11 +1180,7 @@ def _last_value_matrix_row_idx(
 
 def _row_starts_footnote_definition(row_cells: Sequence[TableCell]) -> bool:
     row_text = _row_text(row_cells)
-    return (
-        DEFINITION_LINE_START_PATTERN.search(row_text) is not None
-        or DEFINITION_LINE_EMBEDDED_PATTERN.search(row_text) is not None
-        or TABLE_FOOTER_ATTACHED_MARKER_PATTERN.match(row_text) is not None
-    )
+    return _has_extracted_footer_definition_start(row_text)
 
 
 def _row_text(row_cells: Sequence[TableCell]) -> str:
@@ -1107,7 +1194,7 @@ def _table_footer_definition_line(
     visual_id: str | None,
     start_row_idx: int,
     end_row_idx: int,
-    text_parts: Sequence[str],
+    rows: Sequence[tuple[int, Sequence[TableCell]]],
 ) -> FootnoteDefinitionCandidateLine:
     """Build one logical table-footer source line from one or more extracted rows."""
     row_range = (
@@ -1115,10 +1202,11 @@ def _table_footer_definition_line(
         if start_row_idx == end_row_idx
         else f"r{start_row_idx}-r{end_row_idx}"
     )
+    raw_text, marker_evidence = _text_and_marker_evidence_for_extracted_footer_rows(rows)
     return FootnoteDefinitionCandidateLine(
         line_id=f"{table.table_id}:footer:{row_range}",
         page_num=table.page_num,
-        raw_text=clean_text(" ".join(text_parts)),
+        raw_text=raw_text,
         source_scope="table_note",
         source_id=f"{table.table_id}:footer:{row_range}",
         table_id=table.table_id,
@@ -1126,8 +1214,55 @@ def _table_footer_definition_line(
         line_index=start_row_idx,
         source_artifact="extracted_tables.json",
         confidence=0.9,
+        marker_evidence=marker_evidence,
         notes=["table_footer_rows_after_value_matrix"],
     )
+
+
+def _text_and_marker_evidence_for_extracted_footer_rows(
+    rows: Sequence[tuple[int, Sequence[TableCell]]],
+) -> tuple[str, list[FootnoteDefinitionMarkerEvidence]]:
+    """Build footer text and marker evidence from confirmed table-footer rows."""
+    text_parts: list[str] = []
+    cell_offsets: list[tuple[int, str, TableCell]] = []
+    offset = 0
+    for _row_idx, row_cells in rows:
+        ordered_cells = sorted(row_cells, key=lambda cell: cell.col_idx)
+        row_text_parts: list[str] = []
+        for cell in ordered_cells:
+            cell_text = clean_text(cell.text)
+            if not cell_text:
+                continue
+            if text_parts or row_text_parts:
+                text_parts.append(" ")
+                offset += 1
+            cell_offsets.append((offset, cell_text, cell))
+            text_parts.append(cell_text)
+            row_text_parts.append(cell_text)
+            offset += len(cell_text)
+
+    raw_text = clean_text("".join(text_parts))
+    marker_evidence: list[FootnoteDefinitionMarkerEvidence] = []
+    for cell_offset, cell_text, cell in cell_offsets:
+        for match in EXTRACTED_FOOTER_MARKER_EVIDENCE_PATTERN.finditer(cell_text):
+            glyph_raw = _definition_glyph_from_marker(match.group("glyph"))
+            if not glyph_raw:
+                continue
+            start = cell_offset + match.start("glyph")
+            end = cell_offset + match.end("glyph")
+            marker_evidence.append(
+                FootnoteDefinitionMarkerEvidence(
+                    glyph_raw=glyph_raw,
+                    evidence_type="extracted_footer_marker_text",
+                    text_start=start,
+                    text_end=end,
+                    confidence=0.72,
+                    bbox=cell.bbox,
+                    metadata={"row_idx": cell.row_idx, "col_idx": cell.col_idx},
+                    notes=["marker_prefix_inside_confirmed_table_footer_cell"],
+                )
+            )
+    return raw_text, sorted(marker_evidence, key=lambda item: (item.text_start, item.text_end))
 
 
 def _is_math_unit_notation_marker(
@@ -1213,32 +1348,65 @@ def _definition_glyph_from_marker(marker_text: str) -> str:
     return glyph
 
 
-def _parse_definition_markers(raw_text: str) -> list[tuple[str, str]]:
+def _parse_definition_markers(
+    raw_text: str,
+    marker_evidence: Sequence[FootnoteDefinitionMarkerEvidence] | None = None,
+) -> list[tuple[str, str, FootnoteDefinitionMarkerEvidence | None]]:
     """Parse explicit footnote definitions from one local note block."""
-    symbol_matches = list(DEFINITION_BLOCK_MARKER_PATTERN.finditer(raw_text))
-    if symbol_matches:
-        parsed_definitions: list[tuple[str, str]] = []
-        for match_index, match in enumerate(symbol_matches):
-            glyph_raw = _definition_glyph_from_marker(match.group("glyph"))
-            body_start = match.end()
+    evidence_items = sorted(marker_evidence or [], key=lambda item: (item.text_start, item.text_end))
+    marker_candidates: list[tuple[int, int, int, int, str, FootnoteDefinitionMarkerEvidence | None]] = []
+    for evidence in evidence_items:
+        glyph_raw = _definition_glyph_from_marker(evidence.glyph_raw)
+        if glyph_raw:
+            marker_candidates.append(
+                (
+                    evidence.text_start,
+                    evidence.text_end,
+                    evidence.text_start,
+                    evidence.text_end,
+                    glyph_raw,
+                    evidence,
+                )
+            )
+
+    for match in DEFINITION_BLOCK_MARKER_PATTERN.finditer(raw_text):
+        glyph_start = match.start("glyph")
+        glyph_end = match.end("glyph")
+        if any(
+            candidate_evidence is not None
+            and max(glyph_start, candidate_glyph_start) < min(glyph_end, candidate_glyph_end)
+            for candidate_glyph_start, candidate_glyph_end, _, _, _, candidate_evidence in marker_candidates
+        ):
+            continue
+        glyph_raw = _definition_glyph_from_marker(match.group("glyph"))
+        if glyph_raw:
+            marker_candidates.append((glyph_start, glyph_end, match.start("prefix"), match.end(), glyph_raw, None))
+
+    if marker_candidates:
+        parsed_definitions: list[tuple[str, str, FootnoteDefinitionMarkerEvidence | None]] = []
+        sorted_markers = sorted(marker_candidates, key=lambda item: (item[0], item[1]))
+        for match_index, marker in enumerate(sorted_markers):
+            _glyph_start, _glyph_end, _boundary_start, body_start, glyph_raw, evidence = marker
             body_end = (
-                symbol_matches[match_index + 1].start()
-                if match_index + 1 < len(symbol_matches)
+                sorted_markers[match_index + 1][2]
+                if match_index + 1 < len(sorted_markers)
                 else len(raw_text)
             )
             body_text = raw_text[body_start:body_end].strip().lstrip(".)]:;,–—- ")
             definition_text = clean_text(body_text.rstrip(" \t\n\r,;"))
             if glyph_raw and definition_text:
-                parsed_definitions.append((glyph_raw, definition_text))
+                parsed_definitions.append((glyph_raw, definition_text, evidence))
         return parsed_definitions
 
-    parsed_definitions: list[tuple[str, str]] = []
+    parsed_definitions: list[tuple[str, str, FootnoteDefinitionMarkerEvidence | None]] = []
     for match in DEFINITION_MARKER_PATTERN.finditer(raw_text):
         glyph_raw = _definition_glyph_from_marker(match.group("glyph"))
         definition_text = clean_text(match.group("body"))
         if not glyph_raw or not definition_text:
             continue
-        parsed_definitions.append((glyph_raw, definition_text))
+        parsed_definitions.append((glyph_raw, definition_text, None))
+    if not parsed_definitions and TEXTUAL_ASTERISK_DEFINITION_PATTERN.search(raw_text):
+        parsed_definitions.append(("*", clean_text(raw_text), None))
     return parsed_definitions
 
 

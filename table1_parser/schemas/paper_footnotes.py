@@ -19,6 +19,10 @@ FootnoteGlyphKind = Literal["letter", "number", "symbol", "asterisk", "unknown"]
 FootnoteLinkStatus = Literal["resolved", "ambiguous", "unresolved", "inferred"]
 FootnoteInferenceType = Literal["p_value_significance"]
 FootnoteInferenceSource = Literal["conventional_p_value_star"]
+FootnoteDefinitionMarkerEvidenceType = Literal[
+    "superscript_definition_marker",
+    "extracted_footer_marker_text",
+]
 
 
 class FootnoteAnchor(BaseModel):
@@ -61,11 +65,28 @@ class FootnoteDefinition(BaseModel):
     clean_text: str
     confidence: float = Field(ge=0.0, le=1.0)
     definition_text: str | None = None
+    marker_evidence_type: FootnoteDefinitionMarkerEvidenceType | None = None
+    marker_bbox: tuple[float, float, float, float] | None = None
+    marker_confidence: float | None = Field(default=None, ge=0.0, le=1.0)
+    marker_metadata: dict[str, Any] = Field(default_factory=dict)
     table_id: str | None = None
     visual_id: str | None = None
     bbox: tuple[float, float, float, float] | None = None
     line_index: int | None = Field(default=None, ge=0)
     source_artifact: str | None = None
+    notes: list[str] = Field(default_factory=list)
+
+
+class FootnoteDefinitionMarkerEvidence(BaseModel):
+    """Positioned or structurally scoped evidence for a definition-start marker."""
+
+    glyph_raw: str
+    evidence_type: FootnoteDefinitionMarkerEvidenceType
+    text_start: int = Field(ge=0)
+    text_end: int = Field(ge=0)
+    confidence: float = Field(ge=0.0, le=1.0)
+    bbox: tuple[float, float, float, float] | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
     notes: list[str] = Field(default_factory=list)
 
 
@@ -84,6 +105,7 @@ class FootnoteDefinitionCandidateLine(BaseModel):
     line_index: int | None = Field(default=None, ge=0)
     source_artifact: str | None = None
     confidence: float | None = Field(default=None, ge=0.0, le=1.0)
+    marker_evidence: list[FootnoteDefinitionMarkerEvidence] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
 
 

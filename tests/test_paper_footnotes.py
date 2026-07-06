@@ -7,7 +7,6 @@ from table1_parser.paper_footnotes import (
     build_paper_footnote_definition_candidates,
     build_paper_footnote_definition_lines_from_extracted_tables,
     build_paper_footnote_definition_lines_from_pdf,
-    filter_footnote_definition_lines_for_page_furniture,
     glyph_fields,
     link_paper_footnotes,
 )
@@ -20,9 +19,7 @@ from table1_parser.schemas import (
     FootnoteAnchor,
     FootnoteDefinition,
     FootnoteDefinitionCandidateLine,
-    PageFurnitureRegion,
     PaperFootnotes,
-    PaperPageFurniture,
     TableCell,
 )
 
@@ -215,60 +212,6 @@ def test_build_anchor_inventory_suppresses_math_unit_exponents() -> None:
     assert footnotes.metadata["math_unit_anchor_suppression_count"] == 2
     assert [anchor.glyph_key for anchor in footnotes.anchors] == ["number:1"]
     assert footnotes.anchors[0].attached_to_text == "NHANES"
-
-
-def test_build_anchor_inventory_suppresses_page_furniture_overlapping_cell_anchors() -> None:
-    """Cell anchors inside repeated page furniture should not enter the inventory."""
-    annotation_table = CellTextAnnotationTable(
-        table_id="tbl-1",
-        page_num=1,
-        n_rows=1,
-        n_cols=2,
-        annotations=[
-            CellTextAnnotation(
-                row_idx=0,
-                col_idx=0,
-                text="a",
-                annotation_type="superscript",
-                bbox=(50.0, 10.0, 54.0, 14.0),
-                confidence=0.9,
-            ),
-            CellTextAnnotation(
-                row_idx=0,
-                col_idx=1,
-                text="b",
-                annotation_type="superscript",
-                bbox=(150.0, 120.0, 154.0, 124.0),
-                confidence=0.9,
-            ),
-        ],
-        metadata={"coordinate_frame": "page"},
-    )
-    page_furniture = PaperPageFurniture(
-        paper_id="paper",
-        source_pdf="paper.pdf",
-        ignored_regions=[
-            PageFurnitureRegion(
-                region_id="region:header:1",
-                cluster_id="cluster:header",
-                page_num=1,
-                bbox=(40.0, 0.0, 200.0, 30.0),
-                relative_bbox=(0.05, 0.0, 0.25, 0.04),
-                confidence=0.9,
-            )
-        ],
-    )
-
-    footnotes = build_paper_footnote_anchor_inventory(
-        paper_id="paper",
-        source_pdf="paper.pdf",
-        cell_text_annotations=[annotation_table],
-        paper_page_furniture=page_furniture,
-    )
-
-    assert [anchor.glyph_raw for anchor in footnotes.anchors] == ["b"]
-    assert footnotes.metadata["page_furniture_anchor_suppression_count"] == 1
-    assert footnotes.metadata["page_furniture_suppressed_anchor_cluster_ids"] == ["cluster:header"]
 
 
 def test_build_definition_candidates_from_table_local_and_caption_notes() -> None:
@@ -613,44 +556,6 @@ def test_build_definition_candidates_from_page_bottom_notes_and_skips_body_text(
     assert definitions[0].definition_text == "Page-bottom note text."
 
 
-def test_filter_footnote_definition_lines_for_page_furniture() -> None:
-    """Definition lines overlapping repeated page furniture should be filtered out."""
-    lines = [
-        FootnoteDefinitionCandidateLine(
-            line_id="page-1-header",
-            page_num=1,
-            raw_text="a Repeated header boilerplate.",
-            bbox=(50.0, 10.0, 220.0, 22.0),
-        ),
-        FootnoteDefinitionCandidateLine(
-            line_id="page-1-bottom",
-            page_num=1,
-            raw_text="b Real page note.",
-            bbox=(50.0, 730.0, 220.0, 742.0),
-        ),
-    ]
-    page_furniture = PaperPageFurniture(
-        paper_id="paper",
-        source_pdf="paper.pdf",
-        ignored_regions=[
-            PageFurnitureRegion(
-                region_id="region:header:1",
-                cluster_id="cluster:header",
-                page_num=1,
-                bbox=(40.0, 0.0, 240.0, 30.0),
-                relative_bbox=(0.05, 0.0, 0.3, 0.04),
-                confidence=0.9,
-            )
-        ],
-    )
-
-    filtered_lines, metadata = filter_footnote_definition_lines_for_page_furniture(lines, page_furniture)
-
-    assert [line.line_id for line in filtered_lines] == ["page-1-bottom"]
-    assert metadata["page_furniture_definition_line_suppression_count"] == 1
-    assert metadata["page_furniture_suppressed_definition_cluster_ids"] == ["cluster:header"]
-
-
 def test_build_definition_lines_from_pdf_collects_positioned_marker_blocks(monkeypatch) -> None:
     """PyMuPDF page text blocks should remain contiguous definition candidates."""
 
@@ -659,37 +564,6 @@ def test_build_definition_lines_from_pdf_collects_positioned_marker_blocks(monke
 
     class FakePage:
         rect = FakeRect()
-
-        def get_text(self, mode: str) -> dict[str, object]:
-            assert mode == "dict"
-            return {
-                "blocks": [
-                    {
-                        "lines": [
-                            {"spans": [{"text": "a Table note text.", "bbox": (50.0, 140.0, 180.0, 152.0)}]},
-                            {
-                                "spans": [
-                                    {
-                                        "text": "significance. a Represents the Chi-square test.",
-                                        "bbox": (50.0, 160.0, 260.0, 172.0),
-                                    }
-                                ]
-                            },
-                            {
-                                "spans": [
-                                    {
-                                        "text": "HbA1c: glycated hemoglobin. p -values in bold.",
-                                        "bbox": (50.0, 180.0, 260.0, 192.0),
-                                    }
-                                ]
-                            },
-                            {"spans": [{"text": "Body prose without a marker.", "bbox": (50.0, 300.0, 220.0, 312.0)}]},
-                            {"spans": [{"text": "112.0 [90.0, 138.0]", "bbox": (50.0, 400.0, 180.0, 412.0)}]},
-                            {"spans": [{"text": "† Bottom note text.", "bbox": (40.0, 730.0, 240.0, 742.0)}]},
-                        ]
-                    }
-                ]
-            }
 
     class FakeDocument:
         page_count = 1
@@ -703,7 +577,34 @@ def test_build_definition_lines_from_pdf_collects_positioned_marker_blocks(monke
             self.closed = True
 
     fake_document = FakeDocument()
+    positioned_chars: list[dict[str, object]] = []
+    text_lines = [
+        ("a Table note text.", 50.0, 140.0),
+        ("significance. a Represents the Chi-square test.", 50.0, 160.0),
+        ("HbA1c: glycated hemoglobin. p -values in bold.", 50.0, 180.0),
+        ("Body prose without a marker.", 50.0, 300.0),
+        ("112.0 [90.0, 138.0]", 50.0, 400.0),
+        ("† Bottom note text.", 40.0, 730.0),
+    ]
+    for line_index, (line_text, x0, top) in enumerate(text_lines):
+        for char_offset, char_text in enumerate(line_text):
+            positioned_chars.append(
+                {
+                    "text": char_text,
+                    "x0": x0 + char_offset * 5.0,
+                    "x1": x0 + char_offset * 5.0 + 4.0,
+                    "top": top,
+                    "bottom": top + 12.0,
+                    "char_height": 12.0,
+                    "char_index": len(positioned_chars),
+                    "block_index": 0,
+                    "line_index": line_index,
+                    "span_index": 0,
+                    "char_in_span_index": char_offset,
+                }
+            )
     monkeypatch.setattr("table1_parser.paper_footnotes.open_pymupdf_document", lambda _: fake_document)
+    monkeypatch.setattr("table1_parser.paper_footnotes.extract_page_chars", lambda *_args, **_kwargs: positioned_chars)
 
     lines = build_paper_footnote_definition_lines_from_pdf("paper.pdf")
 
@@ -715,7 +616,7 @@ def test_build_definition_lines_from_pdf_collects_positioned_marker_blocks(monke
         "HbA1c: glycated hemoglobin. p -values in bold. Body prose without a marker. "
         "112.0 [90.0, 138.0] † Bottom note text."
     )
-    assert lines[0].bbox == (40.0, 140.0, 260.0, 742.0)
+    assert lines[0].bbox == (40.0, 140.0, 284.0, 742.0)
     assert lines[0].page_height == 800.0
     assert lines[0].source_artifact == "pymupdf_page_text_blocks"
 

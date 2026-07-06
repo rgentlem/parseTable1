@@ -122,8 +122,8 @@ Allowed `source_scope` values:
 
 For table cells and headers, use `source_scope = "table_cell"` and distinguish
 `source_role` values such as `body_cell`, `row_label`, or `column_header`.
-Table-cell anchors whose page-coordinate bbox overlaps repeated page furniture
-are suppressed before linking and counted in metadata.
+Table-cell anchors should come from cell text annotations that were already
+built from page-furniture-filtered character geometry.
 
 ## Pre-Footnote Classification
 
@@ -211,6 +211,10 @@ Required fields:
 Optional fields:
 
 - `definition_text`
+- `marker_evidence_type`
+- `marker_bbox`
+- `marker_confidence`
+- `marker_metadata`
 - `table_id`
 - `visual_id`
 - `bbox`
@@ -231,23 +235,31 @@ value-matrix row when rule evidence is unavailable. Within that region, a row
 that starts or embeds a definition marker opens a table-note block, and adjacent
 following rows without a new marker are appended as continuation text until the
 next marker block.
-PyMuPDF geometry is consumed as contiguous text blocks rather than isolated
-lines. `find_table_footer_definition_blocks()` classifies complete PDF text
-blocks as table-local footer blocks when they sit just below a table bbox,
-overlap the table horizontally, and do not cross into the next table region.
-After page-furniture filtering, those same PDF-classified table-footer blocks
-are persisted in `footers` as unsplit footer regions before they are split into
-definition records. This keeps review artifacts aligned when the extraction
-grid omits a visual table footer but positioned PDF text captures it.
+PyMuPDF geometry is consumed as normalized positioned characters grouped into
+contiguous text blocks rather than isolated flattened page lines. The character
+stream is filtered with `paper_page_furniture.json` ignored regions before it is
+grouped into candidate blocks.
+`find_table_footer_definition_blocks()` classifies complete PDF text blocks as
+table-local footer blocks when they sit just below a table bbox, overlap the
+table horizontally, and do not cross into the next table region. Those same
+PDF-classified table-footer blocks are persisted in `footers` as unsplit footer
+regions before they are split into definition records. This keeps review
+artifacts aligned when the extraction grid omits a visual table footer but
+positioned PDF text captures it.
 Continuation-group identity can supply the parent visual ID for an uncaptioned
 continued fragment, so a footer on the terminal fragment can resolve anchors on
 earlier fragments of the same visual table. Remaining page-text blocks can be
 classified as page-bottom notes.
 Candidate source blocks may start with a marker, or may contain embedded marker
 definitions after preceding abbreviation or significance prose, such as
-`significance. a Represents ... b Represents ...`. Bracketed and
-parenthesized markers such as `[a]` and `(a)` are canonicalized to the visible
-glyph before matching.
+`significance. a Represents ... b Represents ...`. When PyMuPDF text collapses
+a visual superscript marker into the following word, such as
+`aRepresents ... bRepresents ...`, the split is driven by positioned character
+evidence: a smaller raised glyph at a definition boundary. Extracted-table
+footer rows can also contribute weaker marker evidence when a confirmed footer
+cell starts or embeds a marker-shaped prefix such as a symbol run or a letter
+before a statistical expression. Bracketed and parenthesized markers such as
+`[a]` and `(a)` are canonicalized to the visible glyph before matching.
 
 Known symbol markers such as `†`, `‡`, `§`, `¶`, `#`, `|`, brace-like marker
 glyphs, and asterisk runs are structural footnote-definition evidence when they
@@ -262,16 +274,23 @@ fails.
 Distinct symbol markers in one contiguous footer block, such as `* Race ...
 †Education ... ‡Smoking ... §Income ...`, are split into separate definition
 records without requiring whitespace between the glyph and definition body.
-Before candidate promotion, page-text blocks overlapping
-`paper_page_furniture.json` ignored regions are suppressed and counted in
-metadata. Extracted-table footer rows are already table-local source evidence
-and are not suppressed by page-furniture geometry.
+Textual marker definitions such as `The asterisk indicates ...` are canonical
+definition evidence for a single `*` marker when they appear in a local footer
+block.
+Page-furniture filtering is not a late definition-candidate cleanup step:
+PDF-derived definition blocks must be built from already filtered positioned
+characters. Extracted-table footer rows are already table-local source evidence;
+they come from extracted tables that have received the same page-furniture mask
+before grid construction.
 
 `raw_text` preserves extracted text. `clean_text` is normalized only enough to
 support matching and review. `definition_text` may drop the leading glyph when
 that split is unambiguous. When multiple definitions come from one table footer
 block, each definition keeps the full footer block in `raw_text` and the marker
-specific meaning in `definition_text`.
+specific meaning in `definition_text`. When a split came from structured marker
+evidence, the definition record carries `marker_evidence_type`, marker bbox,
+marker confidence, and available marker metadata such as font size or footer
+row/column position.
 
 ## Link Record
 
@@ -366,15 +385,12 @@ Real-paper review showed useful same-table resolved links, but also unresolved
 p-value markers, ambiguous repeated glyph definitions, and noisy page-note
 candidates from journal/download boilerplate and repeated marginal text. The
 page-furniture artifact now suppresses repeated page-region noise before
-linking, but links remain inspectable evidence rather than downstream parse
-inputs.
+table-cell annotations and PDF definition blocks are built, but links remain
+inspectable evidence rather than downstream parse inputs.
 
-Metadata records the page-furniture filter:
+Metadata records the page-furniture filter stage:
 
-- `page_furniture_anchor_suppression_count`
-- `page_furniture_suppressed_anchor_cluster_ids`
-- `page_furniture_definition_line_suppression_count`
-- `page_furniture_suppressed_definition_cluster_ids`
+- `page_furniture_filter_stage`
 
 Metadata also records pre-footnote suppression counts:
 
