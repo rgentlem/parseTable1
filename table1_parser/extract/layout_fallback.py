@@ -390,6 +390,7 @@ def build_row_grid_from_lines(
     lines: list[dict[str, object]],
     page_chars: list[dict[str, object]] | None = None,
     column_start_boundaries: list[float] | None = None,
+    geometry_out: dict[str, object] | None = None,
 ) -> tuple[list[list[str]], list[list[tuple[float, float, float, float] | None]]]:
     """Convert text lines into a row-major grid and cell bounding boxes."""
     explicit_boundaries = sorted(
@@ -402,6 +403,7 @@ def build_row_grid_from_lines(
     if explicit_boundaries:
         boundaries = explicit_boundaries
         row_width = len(boundaries) + 1
+        value_column_anchors: list[float] = []
     else:
         broad_numeric_positions = sorted(
             float(word["x0"])
@@ -485,8 +487,18 @@ def build_row_grid_from_lines(
             for index in range(len(numeric_anchors) - 1)
         ]
         row_width = len(numeric_anchors) if has_left_label_anchor else len(numeric_anchors) + 1
+        value_column_anchors = numeric_anchors[1:] if has_left_label_anchor else numeric_anchors
     if not boundaries and row_width <= 1:
         return ([], [])
+    if geometry_out is not None:
+        geometry_out.update(
+            {
+                "column_start_boundaries": boundaries,
+                "value_column_anchors": value_column_anchors,
+                "row_width": row_width,
+                "has_left_label_anchor": has_left_label_anchor,
+            }
+        )
     rows: list[list[str]] = []
     bbox_rows: list[list[tuple[float, float, float, float] | None]] = []
     for line in lines:
@@ -599,6 +611,171 @@ def build_row_grid_from_lines(
     return (normalized_rows, normalized_bboxes)
 
 
+def apply_header_column_band_geometry(
+    *,
+    rows: list[list[str]],
+    bbox_rows: list[list[tuple[float, float, float, float] | None]],
+    lines: list[dict[str, object]],
+    header_line_count: int,
+    boundaries: list[float],
+    value_anchors: list[float],
+) -> list[str]:
+    """Rebuild ruled-table header rows from body-derived column bands."""
+    if header_line_count <= 0 or not boundaries or not value_anchors:
+        return []
+    row_width = len(boundaries) + 1
+    value_col_count = row_width - 1
+    if value_col_count <= 1 or len(value_anchors) != value_col_count:
+        return []
+    anchor_gaps = [
+        value_anchors[index + 1] - value_anchors[index]
+        for index in range(len(value_anchors) - 1)
+        if value_anchors[index + 1] > value_anchors[index]
+    ]
+    median_anchor_gap = sorted(anchor_gaps)[len(anchor_gaps) // 2] if anchor_gaps else 48.0
+    anchor_tolerance = max(10.0, min(18.0, median_anchor_gap * 0.25))
+    cluster_gap_threshold = max(18.0, median_anchor_gap * 0.45)
+
+    roles: list[str] = []
+    previous_leaf_header = False
+    for row_idx in range(min(header_line_count, len(rows), len(bbox_rows), len(lines))):
+        words = [
+            word
+            for word in sorted(lines[row_idx].get("words", []), key=lambda item: float(item["x0"]))
+            if str(word.get("text", "")).strip()
+        ]
+        if not words:
+            roles.append("empty_header")
+            continue
+        aligned_value_cols: set[int] = set()
+        for word in words:
+            word_x0 = float(word["x0"])
+            if word_x0 < boundaries[0] - 2.0:
+                continue
+            nearest_anchor_idx = min(
+                range(len(value_anchors)),
+                key=lambda index: abs(word_x0 - value_anchors[index]),
+            )
+            if abs(word_x0 - value_anchors[nearest_anchor_idx]) <= anchor_tolerance:
+                aligned_value_cols.add(nearest_anchor_idx + 1)
+        words_by_aligned_col: dict[int, int] = {col_idx: 0 for col_idx in aligned_value_cols}
+        for word in words:
+            word_x0 = float(word["x0"])
+            if word_x0 < boundaries[0] - 2.0 or not aligned_value_cols:
+                continue
+            nearest_col = min(
+                aligned_value_cols,
+                key=lambda col_idx: abs(word_x0 - value_anchors[col_idx - 1]),
+            )
+            if abs(word_x0 - value_anchors[nearest_col - 1]) <= anchor_tolerance:
+                words_by_aligned_col[nearest_col] += 1
+        average_words_per_aligned_col = (
+            sum(words_by_aligned_col.values()) / max(1, len(words_by_aligned_col))
+        )
+        dense_leaf_header = len(aligned_value_cols) >= value_col_count or (
+            len(aligned_value_cols) >= value_col_count - 1
+            and average_words_per_aligned_col <= 2.5
+        )
+        if value_col_count <= 4:
+            dense_leaf_header = dense_leaf_header or len(aligned_value_cols) >= max(2, value_col_count - 1)
+        is_leaf_header = dense_leaf_header or (previous_leaf_header and bool(aligned_value_cols))
+
+        rebuilt_row = [""] * row_width
+        rebuilt_bboxes: list[tuple[float, float, float, float] | None] = [None] * row_width
+        if is_leaf_header:
+            for word in words:
+                col_idx = _header_leaf_column_index(
+                    float(word["x0"]),
+                    boundaries,
+                    row_width,
+                )
+                _append_word_to_grid_cell(rebuilt_row, rebuilt_bboxes, col_idx, word)
+            roles.append("leaf_header")
+            previous_leaf_header = True
+        else:
+            label_words = [word for word in words if float(word["x0"]) < boundaries[0] - 2.0]
+            for word in label_words:
+                _append_word_to_grid_cell(rebuilt_row, rebuilt_bboxes, 0, word)
+            value_words = [word for word in words if word not in label_words]
+            clusters: list[list[dict[str, object]]] = []
+            for word in value_words:
+                if not clusters:
+                    clusters.append([word])
+                    continue
+                previous_word = clusters[-1][-1]
+                gap = float(word["x0"]) - float(previous_word["x1"])
+                if gap > cluster_gap_threshold:
+                    clusters.append([word])
+                else:
+                    clusters[-1].append(word)
+            single_value_cluster = len(clusters) == 1 and not label_words
+            for cluster in clusters:
+                start_x = min(float(word["x0"]) for word in cluster)
+                end_x = max(float(word["x1"]) for word in cluster)
+                if single_value_cluster:
+                    start_col = 1
+                else:
+                    start_col = _word_column_index(start_x, boundaries, row_width)
+                    start_col = max(1, min(start_col, row_width - 1))
+                end_col = _word_column_index(max(start_x, end_x - 0.5), boundaries, row_width)
+                end_col = max(start_col, min(end_col, row_width - 1))
+                for word in cluster:
+                    _append_word_to_grid_cell(rebuilt_row, rebuilt_bboxes, start_col, word)
+                for col_idx in range(start_col + 1, end_col + 1):
+                    rebuilt_row[col_idx] = ""
+                    rebuilt_bboxes[col_idx] = None
+            roles.append("group_header")
+            previous_leaf_header = False
+        rows[row_idx] = rebuilt_row
+        bbox_rows[row_idx] = rebuilt_bboxes
+    return roles
+
+
+def _append_word_to_grid_cell(
+    row: list[str],
+    bbox_row: list[tuple[float, float, float, float] | None],
+    col_idx: int,
+    word: dict[str, object],
+) -> None:
+    text = str(word.get("text", "")).strip()
+    if not text:
+        return
+    row[col_idx] = f"{row[col_idx]} {text}".strip()
+    word_bbox = (
+        float(word["x0"]),
+        float(word["top"]),
+        float(word["x1"]),
+        float(word["bottom"]),
+    )
+    existing_bbox = bbox_row[col_idx]
+    if existing_bbox is None:
+        bbox_row[col_idx] = word_bbox
+    else:
+        bbox_row[col_idx] = (
+            min(existing_bbox[0], word_bbox[0]),
+            min(existing_bbox[1], word_bbox[1]),
+            max(existing_bbox[2], word_bbox[2]),
+            max(existing_bbox[3], word_bbox[3]),
+        )
+
+
+def _header_leaf_column_index(
+    word_x0: float,
+    boundaries: list[float],
+    row_width: int,
+) -> int:
+    if word_x0 < boundaries[0] - 2.0:
+        return 0
+    return max(1, _word_column_index(word_x0, boundaries, row_width))
+
+
+def _word_column_index(x0: float, boundaries: list[float], row_width: int) -> int:
+    column_index = 0
+    while column_index < len(boundaries) and x0 >= boundaries[column_index] - 1.0:
+        column_index += 1
+    return min(column_index, row_width - 1)
+
+
 def _build_rows_from_line_segment(
     lines: list[dict[str, object]],
     page_chars: list[dict[str, object]] | None = None,
@@ -674,9 +851,65 @@ def build_text_layout_candidates(
                 continue
             break
         content_lines = segment_lines[content_start:]
-        rows, cell_bboxes = build_row_grid_from_lines(content_lines, page_chars=page_chars)
+        if not content_lines:
+            continue
+        left = min(float(word["x0"]) for line in content_lines for word in line["words"])
+        right = max(float(word["x1"]) for line in content_lines for word in line["words"])
+        bbox = (
+            left,
+            float(segment_lines[0]["top"]),
+            right,
+            max(float(line["bottom"]) for line in content_lines),
+        )
+        horizontal_rules = detect_horizontal_rules(rule_segments, bbox)
+        grid_geometry: dict[str, object] = {}
+        rows, cell_bboxes = build_row_grid_from_lines(
+            content_lines,
+            page_chars=page_chars,
+            geometry_out=grid_geometry,
+        )
         if not rows:
             continue
+        header_row_geometry_roles: list[str] = []
+        boundaries = grid_geometry.get("column_start_boundaries")
+        value_anchors = grid_geometry.get("value_column_anchors")
+        row_width = grid_geometry.get("row_width")
+        if (
+            isinstance(boundaries, list)
+            and isinstance(value_anchors, list)
+            and isinstance(row_width, int)
+            and len(value_anchors) == row_width - 1
+            and len(boundaries) == row_width - 1
+            and horizontal_rules
+        ):
+            first_value_row_idx: int | None = None
+            for row_idx, row in enumerate(rows):
+                value_cell_threshold = max(2, min(4, max(1, (len(row) - 1) // 2)))
+                if row and row[0].strip() and _table_value_cell_count(row) >= value_cell_threshold:
+                    first_value_row_idx = row_idx
+                    break
+            if first_value_row_idx is not None and first_value_row_idx < len(content_lines):
+                first_value_top = float(content_lines[first_value_row_idx]["top"])
+                candidate_separator_rules = [
+                    float(rule)
+                    for rule in horizontal_rules
+                    if float(rule) < first_value_top - 0.5
+                ]
+                if candidate_separator_rules:
+                    separator_rule = max(candidate_separator_rules)
+                    header_line_count = sum(
+                        float(line["bottom"]) <= separator_rule + 2.0
+                        for line in content_lines
+                    )
+                    if 0 < header_line_count < len(rows):
+                        header_row_geometry_roles = apply_header_column_band_geometry(
+                            rows=rows,
+                            bbox_rows=cell_bboxes,
+                            lines=content_lines,
+                            header_line_count=header_line_count,
+                            boundaries=[float(boundary) for boundary in boundaries],
+                            value_anchors=[float(anchor) for anchor in value_anchors],
+                        )
         initial_row_bounds = [(float(line["top"]), float(line["bottom"])) for line in content_lines]
         trimmed = trim_trailing_non_table_rows(
             rows,
@@ -696,14 +929,6 @@ def build_text_layout_candidates(
         strong_geometry = _has_strong_uncaptioned_table_geometry(rows)
         if not caption_signal and not strong_geometry:
             continue
-        left = min(float(word["x0"]) for line in content_lines for word in line["words"])
-        right = max(float(word["x1"]) for line in content_lines for word in line["words"])
-        bbox = (
-            left,
-            float(segment_lines[0]["top"]),
-            right,
-            max(float(line["bottom"]) for line in content_lines),
-        )
         table_bbox_cluster_ids = page_furniture_cluster_ids_for_bbox(
             paper_page_furniture,
             page_num=page_num,
@@ -719,6 +944,9 @@ def build_text_layout_candidates(
                 "rows": rows,
                 "cell_bboxes": cell_bboxes,
                 "row_bounds": trimmed.row_bounds,
+                "horizontal_rules": horizontal_rules,
+                "header_row_geometry_roles": header_row_geometry_roles,
+                "value_matrix_column_anchors": grid_geometry.get("value_column_anchors"),
                 "bbox": bbox,
                 "trailing_non_table_rows": trimmed.metadata,
                 "value_region_prose_density": prose_density,
@@ -755,9 +983,19 @@ def build_text_layout_candidates(
                     metadata={
                         "is_rectangular": _is_rectangular(table_rows),
                         "layout_source": layout_source,
+                        "grid_refinement_source": "text_position_column_geometry",
+                        "geometry_source": "pymupdf_positioned_words",
+                        "geometry_coordinate_frame": "page",
                         "table_cells": segment.get("cell_bboxes", []),
                         "row_bounds": segment["row_bounds"],
-                        "horizontal_rules": detect_horizontal_rules(rule_segments, bbox),
+                        "horizontal_rules": segment["horizontal_rules"],
+                        "header_row_geometry_roles": segment["header_row_geometry_roles"],
+                        "header_row_geometry_source": (
+                            "pymupdf_positioned_words_and_horizontal_rules"
+                            if segment["header_row_geometry_roles"]
+                            else None
+                        ),
+                        "value_matrix_column_anchors": segment["value_matrix_column_anchors"],
                         "caption_signal": segment["caption_signal"],
                         "strong_uncaptioned_table_geometry": segment["strong_uncaptioned_table_geometry"],
                         "trailing_non_table_rows": segment["trailing_non_table_rows"],

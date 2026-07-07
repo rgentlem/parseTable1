@@ -223,6 +223,28 @@ LLM usage should be limited to semantic disambiguation, not raw extraction.
 Paper-level candidate variable inventories are a first-class design artifact for later cross-table consistency.
 Keep them explicit, inspectable, and easy to consume from R.
 
+### No new fallback tools
+
+Do not add fallback tools, rescue passes, downstream repair layers, or alternate
+inference paths to compensate for weak extraction. The project direction is
+accurate, layout-aware extraction first: page furniture, captions, table
+regions, row/column geometry, horizontal rules, cell bounding boxes, and
+structured artifacts should be correct near the front of the pipeline.
+
+When extraction is wrong, improve the canonical extraction or region-ownership
+stage. Do not add a later patch that guesses around the defect from cleaned
+strings, paper-specific words, or semantic expectations. If a table cannot be
+extracted accurately, fail closed with structured diagnostics and preserved raw
+evidence.
+
+Any temporary fallback that remains necessary must have a clearly documented
+non-overlapping purpose, provenance metadata, real-paper evidence, and a
+retirement criterion in:
+
+```text
+docs/implementation/fallback_inventory.md
+```
+
 ### No paper-specific parsing shortcuts
 
 Parser behavior must be designed to generalize across papers, journals, diseases, cohorts, exposures, surveys, and statistical presentations. Do not solve a failing paper by inventing a vocabulary shortcut.

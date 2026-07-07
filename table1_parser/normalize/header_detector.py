@@ -4,19 +4,6 @@ from __future__ import annotations
 
 import re
 
-
-NUMERIC_PATTERN = re.compile(r"\d")
-HEADER_KEYWORD_PATTERN = re.compile(r"\b(overall|p[\s-]?value|total|n|%)\b", re.IGNORECASE)
-COUNT_ROW_LABEL_PATTERN = re.compile(r"^(n|N|no\.?|number)$")
-RANGE_LABEL_PATTERN = re.compile(r"^(?:[<>]=?\s*)?-?\d+(?:\.\d+)?(?:\s*-\s*-?\d+(?:\.\d+)?)?$")
-COLUMN_THRESHOLD_HEADER_PATTERN = re.compile(
-    r"^(?:(?:[<>]=?|[≤≥‡])\s*)?\d+(?:\.\d+)?\s*(?:mm|cm|m|kg|g|mg|ug|µg|years?|yr|yrs|%)$",
-    re.IGNORECASE,
-)
-STATISTIC_HEADER_PATTERN = re.compile(
-    r"^(?:%|se|sd|ci|iqr|mean(?:\s+[A-Za-z]+)?(?:,\s*[A-Za-z]+)?)$",
-    re.IGNORECASE,
-)
 SAMPLE_SIZE_HEADER_CELL_PATTERN = re.compile(r"^n\s*=", re.IGNORECASE)
 DASH_VALUE_PATTERN = re.compile(r"^[\-–—]+$")
 INTERVAL_VALUE_PATTERN = re.compile(r"^\d+(?:\.\d+)?%?\s*\([^)]*\d[^)]*\)$")
@@ -27,60 +14,10 @@ CONTINUATION_NOTE_PATTERN = re.compile(
     r"\bfrom\s+(?:the\s+)?previous\s+page\b",
     re.IGNORECASE,
 )
-TOP_RULE_GAP = 12.0
 BOUNDARY_RULE_TOLERANCE = 3.0
-MAX_HEADER_ROWS = 3
 SEPARATOR_MAX_HEADER_ROWS = 8
 POST_SEPARATOR_NOTE_MAX_ROWS = 2
 POST_SEPARATOR_NOTE_MAX_GAP = 30.0
-
-
-def _numeric_density(row: list[str]) -> float:
-    """Compute the fraction of populated cells containing numeric content."""
-    populated = [cell for cell in row if cell]
-    if not populated:
-        return 0.0
-    numeric = [cell for cell in populated if NUMERIC_PATTERN.search(cell)]
-    return len(numeric) / len(populated)
-
-
-def header_score(row: list[str], row_idx: int) -> float:
-    """Score a row for header-likeness using simple deterministic signals."""
-    joined = " ".join(cell for cell in row if cell)
-    first_cell = next((cell for cell in row if cell), "")
-    populated = [cell for cell in row if cell]
-    score = 0.0
-    if row_idx < 2:
-        score += 0.25
-    if HEADER_KEYWORD_PATTERN.search(joined):
-        score += 0.4
-    if (
-        row_idx < 2
-        and len(populated) >= 2
-        and all(any(char.isalpha() for char in cell) for cell in populated)
-        and max(len(cell.strip()) for cell in populated) <= 4
-    ):
-        score += 0.35
-    text_density = (
-        len([cell for cell in populated if any(char.isalpha() for char in cell)]) / len(populated)
-        if populated
-        else 0.0
-    )
-    threshold_header_cells = sum(bool(COLUMN_THRESHOLD_HEADER_PATTERN.fullmatch(cell.strip())) for cell in populated)
-    statistic_header_cells = sum(bool(STATISTIC_HEADER_PATTERN.fullmatch(cell.strip())) for cell in populated)
-    if text_density >= 0.75:
-        score += 0.2
-    if _numeric_density(row) <= 0.25:
-        score += 0.2
-    if (
-        row_idx < MAX_HEADER_ROWS
-        and populated
-        and threshold_header_cells + statistic_header_cells >= max(2, len(populated) // 2)
-    ):
-        score += 0.35
-    if row_idx > 0 and COUNT_ROW_LABEL_PATTERN.fullmatch(first_cell.strip()) and _numeric_density(row) >= 0.75:
-        score -= 0.45
-    return min(score, 1.0)
 
 
 def _clean_cell(value: str) -> str:
@@ -108,11 +45,13 @@ def _is_value_like_cell(value: str) -> bool:
 
 def _is_value_matrix_row(row: list[str]) -> bool:
     populated = [_clean_cell(cell) for cell in row if _clean_cell(cell)]
-    if len(populated) < 3:
+    if len(populated) < 2:
         return False
     trailing = [_clean_cell(cell) for cell in row[1:] if _clean_cell(cell)]
     value_like = sum(_is_value_like_cell(cell) for cell in populated)
     trailing_value_like = sum(_is_value_like_cell(cell) for cell in trailing)
+    if len(row) <= 3:
+        return trailing_value_like >= 1
     return (
         value_like >= max(3, int(len(populated) * 0.55))
         or trailing_value_like >= max(2, int(len(trailing) * 0.55))
@@ -228,14 +167,11 @@ def _detect_separator_rule_headers(
         first_body_has_left_label = bool(_clean_cell(first_body_row[0]))
         first_body_trailing = [_clean_cell(cell) for cell in first_body_row[1:] if _clean_cell(cell)]
         if _is_value_matrix_row(first_body_row):
-            first_body_alpha_trailing_count = sum(bool(re.search(r"[A-Za-z]", cell)) for cell in first_body_trailing)
             first_body_sample_size_cells = sum(
                 bool(SAMPLE_SIZE_HEADER_CELL_PATTERN.search(cell))
                 for cell in first_body_trailing
             )
             if first_body_sample_size_cells >= max(2, len(first_body_trailing) // 2):
-                continue
-            if not first_body_has_left_label and first_body_alpha_trailing_count:
                 continue
         else:
             first_body_numeric_trailing_count = sum(bool(re.search(r"\d", cell)) for cell in first_body_trailing)
@@ -306,7 +242,7 @@ def _detect_separator_rule_headers(
             multicolumn_leaf_candidates.append(candidate)
     if multicolumn_leaf_candidates:
         return min(multicolumn_leaf_candidates, key=lambda item: int(item["first_body_row_idx"]))
-    return max(candidates, key=lambda item: int(item["first_body_row_idx"]))
+    return min(candidates, key=lambda item: int(item["first_body_row_idx"]))
 
 
 def _looks_like_generated_row_boundary_rules(
@@ -335,20 +271,8 @@ def _detect_value_region_anchor(rows: list[list[str]]) -> dict[str, object] | No
         if not trailing:
             continue
         value_like_count, _ = _count_trailing_value_like_cells(row)
-        header_value_like_count = sum(
-            bool(COLUMN_THRESHOLD_HEADER_PATTERN.fullmatch(cell))
-            or (bool(RANGE_LABEL_PATTERN.fullmatch(cell)) and any(char in cell for char in "-–—<>≤≥"))
-            or bool(STATISTIC_HEADER_PATTERN.fullmatch(cell))
-            or bool(HEADER_KEYWORD_PATTERN.search(cell))
-            for cell in trailing
-        )
-        if (
-            row_idx < MAX_HEADER_ROWS
-            and not COUNT_ROW_LABEL_PATTERN.fullmatch(_clean_cell(row[0]))
-            and header_value_like_count >= max(2, len(trailing) // 2)
-        ):
-            continue
-        if value_like_count >= max(2, int(len(trailing) * 0.6)):
+        required_value_cells = 1 if len(row) <= 3 else max(2, int(len(trailing) * 0.6))
+        if value_like_count >= required_value_cells:
             direct_value_row_idx = row_idx
             direct_value_like_count = value_like_count
             direct_nonempty_value_count = len(trailing)
@@ -365,12 +289,12 @@ def _detect_value_region_anchor(rows: list[list[str]]) -> dict[str, object] | No
         if not trailing:
             body_start = row_idx
             continue
+        value_like_count, _ = _count_trailing_value_like_cells(row)
         if len(trailing) <= 1:
+            if value_like_count == 0:
+                break
             body_start = row_idx
             continue
-        value_like_count, _ = _count_trailing_value_like_cells(row)
-        if value_like_count == 0 and header_score(row, row_idx) >= 0.55:
-            break
         repeated_text_values = len(set(trailing)) <= max(1, len(trailing) // 2)
         if value_like_count == 0 and repeated_text_values:
             body_start = row_idx
@@ -420,17 +344,6 @@ def detect_header_rows_with_metadata(
     separator_horizontal_rules: list[float] | None = None,
 ) -> tuple[list[int], list[int], dict[str, object]]:
     """Identify likely header rows and expose how the decision was made."""
-    content_headers: list[int] = []
-    scan_limit = min(len(rows), MAX_HEADER_ROWS)
-    for row_idx in range(scan_limit):
-        score = header_score(rows[row_idx], row_idx)
-        if score >= 0.55:
-            content_headers.append(row_idx)
-        elif row_idx == 0 and HEADER_KEYWORD_PATTERN.search(" ".join(rows[row_idx])):
-            content_headers.append(row_idx)
-        elif content_headers:
-            break
-
     separator_rules = separator_horizontal_rules if separator_horizontal_rules is not None else horizontal_rules
     if (
         separator_horizontal_rules is None
@@ -446,64 +359,6 @@ def detect_header_rows_with_metadata(
     )
     value_anchor_detection = _detect_value_region_anchor(rows)
 
-    if not rows or not row_bounds or not horizontal_rules or len(row_bounds) != len(rows):
-        rule_based_headers, rule_strength = [], None
-    else:
-        sorted_rules = sorted(horizontal_rules)
-        first_top = row_bounds[0][0]
-        top_rule_candidates = [
-            rule_y
-            for rule_y in sorted_rules
-            if -BOUNDARY_RULE_TOLERANCE <= first_top - rule_y <= TOP_RULE_GAP
-        ]
-        top_rule = max(top_rule_candidates) if top_rule_candidates else None
-        if top_rule is None:
-            rule_based_headers, rule_strength = [], None
-        else:
-            rule_based_headers, rule_strength = [], None
-            first_boundary_candidates = [
-                rule_y
-                for rule_y in sorted_rules
-                if rule_y > top_rule + BOUNDARY_RULE_TOLERANCE
-                and rule_y - first_top <= 60.0
-            ]
-            if first_boundary_candidates:
-                first_boundary_rule = first_boundary_candidates[0]
-                boundary_header_count = sum(
-                    row_bottom <= first_boundary_rule + BOUNDARY_RULE_TOLERANCE
-                    for _, row_bottom in row_bounds[:MAX_HEADER_ROWS]
-                )
-                if boundary_header_count:
-                    rule_based_headers = list(range(boundary_header_count))
-                    rule_strength = "strong" if boundary_header_count <= 2 else "moderate"
-            max_header_idx = min(len(rows) - 2, MAX_HEADER_ROWS - 1)
-            for row_idx in range(max_header_idx + 1):
-                if rule_based_headers:
-                    break
-                current_bottom = row_bounds[row_idx][1]
-                next_top = row_bounds[row_idx + 1][0]
-                boundary_candidates = [
-                    rule_y
-                    for rule_y in sorted_rules
-                    if current_bottom - BOUNDARY_RULE_TOLERANCE <= rule_y <= next_top + BOUNDARY_RULE_TOLERANCE
-                ]
-                if boundary_candidates:
-                    gap_midpoint = (current_bottom + next_top) / 2.0
-                    boundary_rule = min(boundary_candidates, key=lambda rule_y: abs(rule_y - gap_midpoint))
-                else:
-                    boundary_rule = None
-                if boundary_rule is None:
-                    continue
-                header_count = row_idx + 1
-                if header_count <= 2:
-                    rule_based_headers, rule_strength = list(range(header_count)), "strong"
-                    break
-                candidate_rows = rows[:header_count]
-                average_score = sum(header_score(row, index) for index, row in enumerate(candidate_rows)) / len(candidate_rows)
-                if average_score >= 0.5:
-                    rule_based_headers, rule_strength = list(range(header_count)), "moderate"
-                    break
-
     use_separator_detection = separator_detection is not None
 
     if use_separator_detection:
@@ -513,50 +368,26 @@ def detect_header_rows_with_metadata(
     elif value_anchor_detection is not None:
         header_rows = list(value_anchor_detection["header_rows"])
         source = "value_region_anchor"
-    elif rule_strength == "strong":
-        header_rows = rule_based_headers
-        source = "horizontal_rules"
-    elif rule_strength == "moderate" and (
-        not content_headers or len(rule_based_headers) <= len(content_headers)
-    ):
-        header_rows = rule_based_headers
-        source = "horizontal_rules"
+        rule_strength = None
     else:
-        header_rows = content_headers
-        source = "content"
-
-    promoted_header_rows: list[int] = []
-    next_row_idx = len(header_rows)
-    if (
-        source not in {"horizontal_rule_separator", "value_region_anchor"}
-        and header_rows == list(range(len(header_rows)))
-        and next_row_idx < min(len(rows), MAX_HEADER_ROWS)
-    ):
-        next_row = rows[next_row_idx]
-        joined = " ".join(cell for cell in next_row if cell)
-        populated = [cell for cell in next_row if cell]
-        range_like_cells = sum(bool(RANGE_LABEL_PATTERN.fullmatch(cell.strip())) for cell in populated)
-        if header_score(next_row, next_row_idx) >= 0.45 and (
-            HEADER_KEYWORD_PATTERN.search(joined) or range_like_cells >= 2
-        ):
-            header_rows = [*header_rows, next_row_idx]
-            promoted_header_rows = [next_row_idx]
-            source = f"{source}+promotion"
+        header_rows = []
+        source = "unclassified_no_separator_or_value_anchor"
+        rule_strength = None
 
     body_rows = (
         list(separator_detection["body_rows"])
         if use_separator_detection and separator_detection is not None
         else list(value_anchor_detection["body_rows"])
         if source == "value_region_anchor" and value_anchor_detection is not None
-        else [row_idx for row_idx in range(len(rows)) if row_idx not in header_rows]
+        else [row_idx for row_idx in range(len(rows)) if any(_clean_cell(cell) for cell in rows[row_idx])]
     )
     metadata = {
         "source": source,
         "rule_strength": rule_strength,
-        "rule_based_headers": rule_based_headers,
-        "content_based_headers": content_headers,
-        "promoted_header_rows": promoted_header_rows,
-        "rule_content_disagreement": bool(rule_based_headers and rule_based_headers != content_headers),
+        "rule_based_headers": list(separator_detection["header_rows"]) if separator_detection is not None else [],
+        "content_based_headers": [],
+        "promoted_header_rows": [],
+        "rule_content_disagreement": False,
     }
     if use_separator_detection and separator_detection is not None:
         metadata.update(

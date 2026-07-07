@@ -44,7 +44,7 @@ def build_table_region(table: ExtractedTable, *, footer_marker_rows: set[int] | 
     row_bounds = _row_bounds(table)
     horizontal_rules = _rules(table.metadata.get("horizontal_rules"))
     full_width_rules = _rules(table.metadata.get("full_width_horizontal_rules"))
-    rule_source = sorted({*horizontal_rules, *full_width_rules})
+    boundary_rules = full_width_rules or horizontal_rules
     diagnostics: list[str] = []
 
     caption_rows: list[int] = []
@@ -56,8 +56,8 @@ def build_table_region(table: ExtractedTable, *, footer_marker_rows: set[int] | 
     header_body_rule_y: float | None = None
     body_footer_rule_y: float | None = None
 
-    if row_bounds is not None and rule_source:
-        preamble_candidates, start_rule_y = _rows_before_first_table_rule(grid, row_bounds, rule_source, table)
+    if row_bounds is not None and boundary_rules:
+        preamble_candidates, start_rule_y = _rows_before_first_table_rule(grid, row_bounds, boundary_rules, table)
         caption_rows = (
             list(preamble_candidates)
             if _rows_match_caption([grid[row_idx] for row_idx in preamble_candidates], table)
@@ -68,7 +68,7 @@ def build_table_region(table: ExtractedTable, *, footer_marker_rows: set[int] | 
         header_rows, body_rows, header_body_rule_y = _header_body_from_rules(
             grid,
             row_bounds,
-            rule_source,
+            boundary_rules,
             content_start_row_idx=content_start,
             start_rule_y=start_rule_y,
         )
@@ -86,7 +86,7 @@ def build_table_region(table: ExtractedTable, *, footer_marker_rows: set[int] | 
         confidence = 0.72 if header_rows and body_rows else 0.35
 
     if row_bounds is not None and body_rows:
-        footer_rule_source = full_width_rules or rule_source
+        footer_rule_source = full_width_rules or boundary_rules
         footer_rows, body_footer_rule_y, footer_basis = _footer_rows(
             grid,
             row_bounds,

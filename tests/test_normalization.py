@@ -209,27 +209,6 @@ def test_header_detector_keeps_leaf_header_above_first_value_row() -> None:
     assert metadata["value_anchor_body_start"] == 9
 
 
-def test_header_detector_keeps_sample_size_row_above_model_values() -> None:
-    """N rows below group labels should remain header rows."""
-    rows = [
-        ["", "", "aMED Score 1", "Low 1", "Moderate 1", "High 1"],
-        ["Frail vs.", "Robust/Pre-frail 2", "N = 610 (7.1%)", "N = 220 (10.6%)", "N = 276 (7.0%)", "N = 114 (4.3%)"],
-        ["", "Model 1", "0.79 (0.73, 0.84)", "Ref.", "0.64 (0.50, 0.82)", "0.38 (0.26, 0.54)"],
-        ["", "Model 2", "0.81 (0.75, 0.87)", "Ref.", "0.64 (0.50, 0.82)", "0.42 (0.29, 0.61)"],
-    ]
-
-    header_rows, body_rows, metadata = detect_header_rows_with_metadata(
-        rows,
-        row_bounds=[(96.0, 110.4), (110.4, 127.6), (127.6, 142.4), (142.4, 154.3)],
-        horizontal_rules=[93.1, 110.4, 127.6, 180.5],
-        separator_horizontal_rules=[93.1, 110.4, 127.6, 180.5],
-    )
-
-    assert header_rows == [0, 1]
-    assert body_rows == [2, 3]
-    assert metadata["source"] == "horizontal_rules+promotion"
-
-
 def test_header_detector_accepts_sparse_categorical_parent_below_header_rule() -> None:
     """A categorical parent row can start the body even when it is not value-dense."""
     rows = [
@@ -434,20 +413,6 @@ def test_header_detector_does_not_treat_count_row_as_header() -> None:
 
     assert header_rows == [0]
     assert body_rows == [1, 2]
-
-
-def test_header_detector_promotes_strong_header_like_first_body_row() -> None:
-    """A top row of ranges and trailing statistic labels should be promoted into the header."""
-    rows = [
-        ["", "Q1", "Q2", "Q3", "Q4"],
-        ["Cobalt quartiles (mg/l)", "<=0.12", "0.13-0.14", "0.15-0.18", "P value"],
-        ["Age (yrs), mean±SD", "58.1±11.2", "60.0±11.4", "61.4±11.6", "<.001"],
-    ]
-
-    header_rows, body_rows = detect_header_rows(rows)
-
-    assert header_rows == [0, 1]
-    assert body_rows == [2]
 
 
 def test_fragmented_horizontal_rules_do_not_override_content_fallback() -> None:
@@ -755,61 +720,6 @@ def test_normalization_repairs_split_left_label_columns() -> None:
     ]
 
 
-def test_normalization_expands_extra_wide_stacked_value_column() -> None:
-    """A visually wide upright table collapsed into one value stack should regain its value columns."""
-    rows = [
-        ["", "Severity of AL, %"],
-        ["Characteristics", "‡3 mm\nSE\n‡4 mm\nSE\n‡5 mm\nSE\n‡6 mm\nSE\n‡7 mm\nSE\nMean AL, mm\nSE"],
-        ["Total", "88.1\n0.8\n60.8\n1.6\n40.9\n1.4\n24.2\n1.0\n14.7\n0.6\n1.72\n0.03"],
-        ["Age (mean: 24 teeth)", ""],
-        ["30 to 34 years", "72.3\n1.8\n32.6\n2.3\n16.4\n1.8\n8.3\n1.0\n3.2\n0.7\n1.23\n0.04"],
-        ["35 to 49 years", "85.7\n1.1\n51.8\n2.2\n32.4\n1.9\n17.0\n1.2\n10.4\n0.8\n1.52\n0.04"],
-    ]
-    extracted = ExtractedTable(
-        table_id="tbl-extra-wide",
-        source_pdf="paper.pdf",
-        page_num=1,
-        n_rows=len(rows),
-        n_cols=2,
-        cells=[
-            TableCell(row_idx=row_idx, col_idx=col_idx, text=value)
-            for row_idx, row in enumerate(rows)
-            for col_idx, value in enumerate(row)
-        ],
-        extraction_backend="pymupdf4llm",
-        metadata={
-            "row_bounds": [(float(idx * 10), float(idx * 10 + 8)) for idx in range(len(rows))],
-            "horizontal_rules": [float(idx * 10) for idx in range(len(rows) + 1)],
-        },
-    )
-
-    normalized = normalize_extracted_table(extracted)
-
-    repair = normalized.metadata["column_repairs"]["extra_wide_value_column"]
-    assert normalized.n_cols == 13
-    assert normalized.header_rows == [0, 1]
-    assert normalized.metadata["header_detection"]["source"] == "extra_wide_value_column_boundary"
-    assert normalized.metadata["cleaned_rows"][0][1:] == ["Severity of AL, %"] * 12
-    assert normalized.metadata["cleaned_rows"][1][1:5] == ["‡3 mm", "SE", "‡4 mm", "SE"]
-    assert normalized.metadata["cleaned_rows"][2][1:] == [
-        "88.1",
-        "0.8",
-        "60.8",
-        "1.6",
-        "40.9",
-        "1.4",
-        "24.2",
-        "1.0",
-        "14.7",
-        "0.6",
-        "1.72",
-        "0.03",
-    ]
-    assert repair["created_value_columns"] == 12
-    assert repair["first_value_row_idx"] == 2
-    assert repair["header_stack_row_indices"] == [0, 1]
-
-
 def test_normalization_expands_grouped_extra_wide_header_stack() -> None:
     """Coarser header stacks should repeat over paired value/statistic leaf columns."""
     rows = [
@@ -847,50 +757,6 @@ def test_normalization_expands_grouped_extra_wide_header_stack() -> None:
     assert repair["created_value_columns"] == 10
     assert repair["header_stack_row_indices"] == [0, 1, 2]
     assert repair["repeated_header_row_indices"] == [0, 1]
-
-
-def test_normalization_chunks_multi_line_extra_wide_leaf_headers() -> None:
-    """Dense stacked header rows can carry several lines per visual value column."""
-    rows = [
-        ["Characteristic", "US NHANES\nUS NHANES\nUKB\nUKB"],
-        [
-            "",
-            "Quintile 1\n(10-35)\nN = 10\nQuintile 2\n(35-43)\nN = 11\n"
-            "Quintile 1\n(17-52)\nN = 20\nQuintile 2\n(52-60)\nN = 21",
-        ],
-        ["Age", "1\n2\n3\n4"],
-        ["Male", "5\n6\n7\n8"],
-        ["Female", "9\n10\n11\n12"],
-    ]
-    extracted = ExtractedTable(
-        table_id="tbl-extra-wide-chunked-headers",
-        source_pdf="paper.pdf",
-        page_num=1,
-        n_rows=len(rows),
-        n_cols=2,
-        cells=[
-            TableCell(row_idx=row_idx, col_idx=col_idx, text=value)
-            for row_idx, row in enumerate(rows)
-            for col_idx, value in enumerate(row)
-        ],
-        extraction_backend="pymupdf4llm",
-    )
-
-    normalized = normalize_extracted_table(extracted)
-
-    repair = normalized.metadata["column_repairs"]["extra_wide_value_column"]
-    assert normalized.n_cols == 5
-    assert normalized.header_rows == [0, 1]
-    assert normalized.metadata["cleaned_rows"][0][1:] == ["US NHANES", "US NHANES", "UKB", "UKB"]
-    assert normalized.metadata["cleaned_rows"][1][1:] == [
-        "Quintile 1 (10-35) N = 10",
-        "Quintile 2 (35-43) N = 11",
-        "Quintile 1 (17-52) N = 20",
-        "Quintile 2 (52-60) N = 21",
-    ]
-    assert repair["created_value_columns"] == 4
-    assert repair["header_stack_row_indices"] == [0, 1]
-    assert repair["padded_or_truncated_row_indices"] == []
 
 
 def test_normalization_trims_sparse_caption_tail_before_value_matrix_header() -> None:
@@ -1191,59 +1057,6 @@ def test_normalization_uses_rotated_local_rule_metadata_after_extraction_refinem
     assert normalized.body_rows == [3, 4]
 
 
-def test_normalization_repairs_split_count_percent_columns_and_promotes_following_header_row() -> None:
-    """Count-plus-percent fragments should merge left and enable stronger header interpretation."""
-    extracted = ExtractedTable(
-        table_id="tbl-repair",
-        source_pdf="paper.pdf",
-        page_num=1,
-        n_rows=6,
-        n_cols=8,
-        cells=[
-            TableCell(row_idx=0, col_idx=2, text="Q1"),
-            TableCell(row_idx=0, col_idx=3, text="Q2"),
-            TableCell(row_idx=0, col_idx=4, text="Q3"),
-            TableCell(row_idx=0, col_idx=6, text="Q4"),
-            TableCell(row_idx=1, col_idx=0, text="Cobalt quartiles (mg/l)"),
-            TableCell(row_idx=1, col_idx=1, text="All"),
-            TableCell(row_idx=1, col_idx=2, text="<=0.12"),
-            TableCell(row_idx=1, col_idx=3, text="0.13-0.14"),
-            TableCell(row_idx=1, col_idx=4, text="0.15-0.18"),
-            TableCell(row_idx=1, col_idx=5, text=">=0.19"),
-            TableCell(row_idx=1, col_idx=7, text="P value"),
-            TableCell(row_idx=2, col_idx=0, text="Education level, n (%)"),
-            TableCell(row_idx=2, col_idx=7, text=".046"),
-            TableCell(row_idx=3, col_idx=0, text="<High school"),
-            TableCell(row_idx=3, col_idx=1, text="849 (12.4%)"),
-            TableCell(row_idx=3, col_idx=2, text="220 (11.4%)"),
-            TableCell(row_idx=3, col_idx=3, text="182 (12.9%)"),
-            TableCell(row_idx=3, col_idx=4, text="248 (13.9%)"),
-            TableCell(row_idx=3, col_idx=5, text="199"),
-            TableCell(row_idx=3, col_idx=6, text="(11.5%)"),
-            TableCell(row_idx=4, col_idx=0, text="High school"),
-            TableCell(row_idx=4, col_idx=1, text="2364 (34.5%)"),
-            TableCell(row_idx=4, col_idx=2, text="706 (36.6%)"),
-            TableCell(row_idx=4, col_idx=3, text="467 (33.3%)"),
-            TableCell(row_idx=4, col_idx=4, text="618 (34.6%)"),
-            TableCell(row_idx=4, col_idx=5, text="573"),
-            TableCell(row_idx=4, col_idx=6, text="(33.2%)"),
-            TableCell(row_idx=5, col_idx=0, text=">High school"),
-            TableCell(row_idx=5, col_idx=1, text="3640 (53.1%)"),
-            TableCell(row_idx=5, col_idx=2, text="1002 (52.0%)"),
-            TableCell(row_idx=5, col_idx=3, text="765 (54.1%)"),
-            TableCell(row_idx=5, col_idx=4, text="921 (51.5%)"),
-            TableCell(row_idx=5, col_idx=5, text="952"),
-            TableCell(row_idx=5, col_idx=6, text="(55.2%)"),
-        ],
-        extraction_backend="pymupdf4llm",
-    )
-
-    normalized = normalize_extracted_table(extracted)
-
-    assert normalized.header_rows == [0, 1]
-    assert normalized.n_cols == 7
-
-
 def test_normalization_repairs_broken_replacement_char_threshold_in_headers() -> None:
     """A broken replacement character before a numeric threshold should normalize to <=."""
     extracted = ExtractedTable(
@@ -1272,7 +1085,7 @@ def test_normalization_repairs_broken_replacement_char_threshold_in_headers() ->
     normalized = normalize_extracted_table(extracted)
 
     assert normalized.metadata["cleaned_rows"][1][1] == "<=0.12"
-    assert normalized.header_rows == [0, 1]
+    assert normalized.header_rows == [0]
     assert normalized.metadata["text_cleaning_provenance"] == {
         "observed_symbol_counts": {"<": 1, "<=": 0, ">": 0, ">=": 1},
         "reconstructed_symbol_counts": {"<": 0, "<=": 1, ">": 0, ">=": 0},
@@ -1281,75 +1094,6 @@ def test_normalization_repairs_broken_replacement_char_threshold_in_headers() ->
         "extractor_glyph_repair_rule_counts": {"replacement_char_le_threshold": 1},
         "cells_with_extractor_glyph_repairs": 1,
     }
-
-
-def test_count_percent_column_merge_preserves_raw_text_for_provenance() -> None:
-    """Column repair should keep raw text raw enough for later provenance accounting."""
-    extracted = ExtractedTable(
-        table_id="tbl-merge-provenance",
-        source_pdf="paper.pdf",
-        page_num=1,
-        n_rows=6,
-        n_cols=8,
-        cells=[
-            TableCell(row_idx=0, col_idx=2, text="Q1"),
-            TableCell(row_idx=0, col_idx=3, text="Q2"),
-            TableCell(row_idx=0, col_idx=4, text="Q3"),
-            TableCell(row_idx=0, col_idx=6, text="Q4"),
-            TableCell(row_idx=1, col_idx=0, text="Cobalt quartiles (mg/l)"),
-            TableCell(row_idx=1, col_idx=1, text="All"),
-            TableCell(row_idx=1, col_idx=2, text="<=0.12"),
-            TableCell(row_idx=1, col_idx=3, text="0.13-0.14"),
-            TableCell(row_idx=1, col_idx=4, text="0.15-0.18"),
-            TableCell(row_idx=1, col_idx=5, text=">=0.19"),
-            TableCell(row_idx=1, col_idx=7, text="P value"),
-            TableCell(row_idx=2, col_idx=0, text="Education level, n (%)"),
-            TableCell(row_idx=2, col_idx=7, text=".046"),
-            TableCell(row_idx=3, col_idx=0, text="<High school"),
-            TableCell(row_idx=3, col_idx=1, text="849 (12.4%)"),
-            TableCell(row_idx=3, col_idx=2, text="220 (11.4%)"),
-            TableCell(row_idx=3, col_idx=3, text="182 (12.9%)"),
-            TableCell(row_idx=3, col_idx=4, text="248 (13.9%)"),
-            TableCell(row_idx=3, col_idx=5, text="199"),
-            TableCell(row_idx=3, col_idx=6, text="(11.5%)"),
-            TableCell(row_idx=4, col_idx=0, text="High school"),
-            TableCell(row_idx=4, col_idx=1, text="2364 (34.5%)"),
-            TableCell(row_idx=4, col_idx=2, text="706 (36.6%)"),
-            TableCell(row_idx=4, col_idx=3, text="467 (33.3%)"),
-            TableCell(row_idx=4, col_idx=4, text="618 (34.6%)"),
-            TableCell(row_idx=4, col_idx=5, text="573"),
-            TableCell(row_idx=4, col_idx=6, text="(33.2%)"),
-            TableCell(row_idx=5, col_idx=0, text=">High school"),
-            TableCell(row_idx=5, col_idx=1, text="3640 (53.1%)"),
-            TableCell(row_idx=5, col_idx=2, text="1002 (52.0%)"),
-            TableCell(row_idx=5, col_idx=3, text="765 (54.1%)"),
-            TableCell(row_idx=5, col_idx=4, text="921 (51.5%)"),
-            TableCell(row_idx=5, col_idx=5, text="952"),
-            TableCell(row_idx=5, col_idx=6, text="(55.2%)"),
-        ],
-        extraction_backend="pymupdf4llm",
-    )
-
-    normalized = normalize_extracted_table(extracted)
-
-    assert normalized.metadata["cleaned_rows"][3] == [
-        "<High school",
-        "849 (12.4%)",
-        "220 (11.4%)",
-        "182 (12.9%)",
-        "248 (13.9%)",
-        "199 (11.5%)",
-        "",
-    ]
-    assert normalized.row_views[1].raw_cells == [
-        "<High school",
-        "849 (12.4%)",
-        "220 (11.4%)",
-        "182 (12.9%)",
-        "248 (13.9%)",
-        "199 (11.5%)",
-        "",
-    ]
 
 
 def test_normalization_keeps_sparse_footnoted_p_value_column() -> None:

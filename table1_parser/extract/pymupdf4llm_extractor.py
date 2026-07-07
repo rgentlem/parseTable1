@@ -13,6 +13,7 @@ from typing import Any
 from table1_parser.config import Settings
 from table1_parser.extract.base import BaseExtractor
 from table1_parser.extract.layout_fallback import (
+    apply_header_column_band_geometry,
     build_row_grid_from_lines,
     build_text_layout_candidates,
     build_word_lines,
@@ -53,6 +54,8 @@ INTRODUCTION_HEADING_PATTERN = re.compile(
     r"^(?:\d+(?:\.\d+)*\.?\s+)?introduction\b",
     re.IGNORECASE,
 )
+CAPTION_LINK_MAX_DISTANCE = 120.0
+CAPTION_BOUNDARY_TOLERANCE = 2.0
 
 
 class PyMuPDF4LLMExtractor(BaseExtractor):
@@ -243,6 +246,51 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                     if not caption_lines:
                         continue
                     caption_boxes.append((candidate_bbox, caption_lines[-1]))
+                caption_assignments: dict[int, tuple[tuple[float, float, float, float], str, str, float]] = {}
+                caption_pair_candidates: list[tuple[float, int, int, str]] = []
+                for caption_index, (caption_bbox, _) in enumerate(caption_boxes):
+                    caption_left, caption_top, caption_right, caption_bottom = caption_bbox
+                    for table_box_index, table_bbox in enumerate(table_box_bboxes):
+                        if table_bbox is None:
+                            continue
+                        table_left, table_top, table_right, table_bottom = table_bbox
+                        horizontal_overlap = min(table_right, caption_right) - max(table_left, caption_left)
+                        if horizontal_overlap <= 0.0:
+                            continue
+                        if caption_bottom <= table_top + CAPTION_BOUNDARY_TOLERANCE:
+                            placement = "above"
+                            distance = table_top - caption_bottom
+                            has_intervening_table = any(
+                                other_index != table_box_index
+                                and other_bbox is not None
+                                and other_bbox[1] > caption_bottom + CAPTION_BOUNDARY_TOLERANCE
+                                and other_bbox[1] < table_top - CAPTION_BOUNDARY_TOLERANCE
+                                for other_index, other_bbox in enumerate(table_box_bboxes)
+                            )
+                        elif caption_top >= table_bottom - CAPTION_BOUNDARY_TOLERANCE:
+                            placement = "below"
+                            distance = caption_top - table_bottom
+                            has_intervening_table = any(
+                                other_index != table_box_index
+                                and other_bbox is not None
+                                and other_bbox[1] > table_bottom + CAPTION_BOUNDARY_TOLERANCE
+                                and other_bbox[1] < caption_top - CAPTION_BOUNDARY_TOLERANCE
+                                for other_index, other_bbox in enumerate(table_box_bboxes)
+                            )
+                        else:
+                            continue
+                        if distance > CAPTION_LINK_MAX_DISTANCE or has_intervening_table:
+                            continue
+                        caption_pair_candidates.append((distance, caption_index, table_box_index, placement))
+                used_caption_indices: set[int] = set()
+                used_table_indices: set[int] = set()
+                for distance, caption_index, table_box_index, placement in sorted(caption_pair_candidates):
+                    if caption_index in used_caption_indices or table_box_index in used_table_indices:
+                        continue
+                    caption_bbox, caption_text = caption_boxes[caption_index]
+                    caption_assignments[table_box_index] = (caption_bbox, caption_text, placement, distance)
+                    used_caption_indices.add(caption_index)
+                    used_table_indices.add(table_box_index)
                 for table_index, box in enumerate(table_boxes):
                     table = box.get("table") or {}
                     original_raw_rows = _normalize_rows(table.get("extract") or [])
@@ -254,45 +302,14 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                         if table_index < len(table_box_bboxes)
                         else None
                     )
-                    nearby_caption_candidates: list[tuple[float, tuple[float, float, float, float], str]] = []
-                    table_top = bbox[1] if bbox else float("inf")
-                    for candidate_bbox, caption_line in caption_boxes:
-                        if candidate_bbox[3] > table_top + 2.0:
-                            continue
-                        intervening_table = any(
-                            other_index != table_index
-                            and other_bbox is not None
-                            and other_bbox[1] > candidate_bbox[3] + 2.0
-                            and other_bbox[1] < table_top - 2.0
-                            for other_index, other_bbox in enumerate(table_box_bboxes)
-                        )
-                        if intervening_table:
-                            continue
-                        nearby_caption_candidates.append(
-                            (table_top - candidate_bbox[3], candidate_bbox, caption_line)
-                        )
-                    if nearby_caption_candidates:
-                        _, nearby_caption_bbox, nearby_caption = min(
-                            nearby_caption_candidates,
-                            key=lambda item: item[0],
-                        )
-                        caption_lines = [nearby_caption]
-                        for text_box in page_boxes:
-                            if text_box.get("boxclass") in {"table", "page-header", "page-footer"}:
-                                continue
-                            text_bbox = _box_bbox(text_box)
-                            if text_bbox is None:
-                                continue
-                            if text_bbox[1] < nearby_caption_bbox[3] - 2.0 or text_bbox[3] > table_top + 2.0:
-                                continue
-                            text = _extract_box_text(text_box)
-                            if not text or _find_table_caption_lines(text):
-                                continue
-                            caption_lines.append(text)
-                        nearby_caption = "\n".join(caption_lines)
+                    caption_assignment = caption_assignments.get(table_index)
+                    if caption_assignment is not None:
+                        nearby_caption_bbox, nearby_caption, caption_placement, caption_distance = caption_assignment
                     else:
                         nearby_caption_bbox = None
                         nearby_caption = None
+                        caption_placement = None
+                        caption_distance = None
                     cell_bboxes = _coerce_cell_bboxes(table.get("cells") or [])
                     orientation_metadata = _infer_table_orientation_metadata(page, bbox)
                     refinement = _refine_explicit_table_candidate_grid(
@@ -401,9 +418,18 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                             metadata={
                                 "layout_source": "pymupdf4llm_json",
                                 "caption_source": (
-                                    "nearby_above_table"
+                                    f"nearby_{caption_placement}_table"
                                     if nearby_caption is not None and caption == nearby_caption
                                     else "page_text_fallback" if caption is not None else None
+                                ),
+                                "caption_binding": (
+                                    {
+                                        "placement": caption_placement,
+                                        "distance": round(caption_distance, 3),
+                                        "caption_bbox": nearby_caption_bbox,
+                                    }
+                                    if nearby_caption is not None and caption_placement is not None and caption_distance is not None
+                                    else None
                                 ),
                                 "primary_representation": "json",
                                 "extractor_used": self.backend_name,
@@ -412,6 +438,14 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                                 "col_count": table.get("col_count"),
                                 "explicit_grid_refined_from_words": raw_rows != original_raw_rows,
                                 "grid_refinement_source": refinement["grid_refinement_source"],
+                                "geometry_source": (
+                                    "pymupdf_positioned_words_and_rules"
+                                    if refinement.get("grid_refinement_source")
+                                    else "pymupdf4llm_json_table_cells"
+                                ),
+                                "caption_contaminated_backend_row_removed": refinement.get(
+                                    "caption_contaminated_backend_row_removed"
+                                ),
                                 "geometry_coordinate_frame": geometry_coordinate_frame,
                                 "geometry_transform_source_bbox": refinement.get(
                                     "geometry_transform_source_bbox"
@@ -424,6 +458,14 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                                 ),
                                 "value_matrix_column_anchors": refinement.get(
                                     "value_matrix_column_anchors"
+                                ),
+                                "header_row_geometry_roles": refinement.get(
+                                    "header_row_geometry_roles"
+                                ),
+                                "header_row_geometry_source": (
+                                    "pymupdf_positioned_words_and_horizontal_rules"
+                                    if refinement.get("header_row_geometry_roles")
+                                    else None
                                 ),
                                 "table_markdown": table.get("markdown"),
                                 "table_cells": cell_bboxes,
@@ -954,10 +996,18 @@ def _build_rotated_block_candidate_from_mixed_table_box(
                 "col_count": source_table.get("col_count"),
                 "explicit_grid_refined_from_words": True,
                 "grid_refinement_source": refinement["grid_refinement_source"],
+                "geometry_source": "pymupdf_positioned_words_and_rules",
                 "geometry_coordinate_frame": refinement["geometry_coordinate_frame"],
                 "geometry_transform_source_bbox": refinement.get("geometry_transform_source_bbox"),
                 "geometry_transform_transposed": refinement.get("geometry_transform_transposed"),
                 "geometry_transform_applied": refinement.get("geometry_transform_applied"),
+                "value_matrix_column_anchors": refinement.get("value_matrix_column_anchors"),
+                "header_row_geometry_roles": refinement.get("header_row_geometry_roles"),
+                "header_row_geometry_source": (
+                    "pymupdf_positioned_words_and_horizontal_rules"
+                    if refinement.get("header_row_geometry_roles")
+                    else None
+                ),
                 "table_markdown": source_table.get("markdown"),
                 "table_cells": refinement["table_cells"],
                 "first_column_text_x0_by_row": {},
@@ -1216,11 +1266,25 @@ def _infer_first_column_text_x0_by_row(
     return x0_by_row
 
 
+REFERENCE_BASELINE_VALUE_PATTERN = re.compile(
+    r"^(?:\d+(?:\.\d+)?|0?\.\d+)\(?ref(?:erence)?\.?\)?$|"
+    r"^(?:\d+(?:\.\d+)?|0?\.\d+)\(\s*ref(?:erence)?\.?\s*\)$",
+    re.IGNORECASE,
+)
+
+
+def _is_reference_baseline_value_word(text: str) -> bool:
+    compact = re.sub(r"[\s,\u00a0\u2009\u202f,]+", "", clean_text(text))
+    return bool(REFERENCE_BASELINE_VALUE_PATTERN.fullmatch(compact))
+
+
 def _looks_like_value_matrix_word(text: str) -> bool:
     """Return whether a positioned word is numeric enough to define a value column."""
     compact = re.sub(r"[\s,\u00a0\u2009\u202f]+", "", clean_text(text))
     if not compact or not re.search(r"\d", compact):
         return False
+    if _is_reference_baseline_value_word(compact):
+        return True
     if re.search(r"[A-Za-z]", compact):
         return False
     return bool(re.fullmatch(r"(?:[<>]=?)?[\d./%()\-+±*†‡§¶#]+", compact))
@@ -1389,19 +1453,33 @@ def _value_matrix_words_after_label_region(
         return [], None
     best_start_index = numeric_indices[0]
     best_gap = float("-inf")
-    for numeric_index in numeric_indices:
-        trailing_numeric_count = sum(index >= numeric_index for index in numeric_indices)
-        if trailing_numeric_count < 3:
-            continue
-        previous_x1 = (
-            float(sorted_words[numeric_index - 1]["x1"])
-            if numeric_index > 0
-            else float(sorted_words[numeric_index]["x0"])
+    reference_start_indices = [
+        numeric_index
+        for numeric_index in numeric_indices
+        if numeric_index > 0
+        and _is_reference_baseline_value_word(str(sorted_words[numeric_index].get("text", "")))
+        and sum(index >= numeric_index for index in numeric_indices) >= 3
+        and any(
+            re.search(r"[A-Za-z]", str(word.get("text", "")))
+            for word in sorted_words[:numeric_index]
         )
-        gap = float(sorted_words[numeric_index]["x0"]) - previous_x1
-        if gap > best_gap:
-            best_gap = gap
-            best_start_index = numeric_index
+    ]
+    if reference_start_indices:
+        best_start_index = reference_start_indices[0]
+    else:
+        for numeric_index in numeric_indices:
+            trailing_numeric_count = sum(index >= numeric_index for index in numeric_indices)
+            if trailing_numeric_count < 3:
+                continue
+            previous_x1 = (
+                float(sorted_words[numeric_index - 1]["x1"])
+                if numeric_index > 0
+                else float(sorted_words[numeric_index]["x0"])
+            )
+            gap = float(sorted_words[numeric_index]["x0"]) - previous_x1
+            if gap > best_gap:
+                best_gap = gap
+                best_start_index = numeric_index
     first_value_boundary = None
     if best_start_index > 0:
         first_value_boundary = (
@@ -1540,16 +1618,30 @@ def _refine_grid_from_hline_word_positions(
             continue
         best_start_index: int | None = None
         best_gap = float("-inf")
-        for value_index in value_like_indices:
-            if value_index == 0:
-                continue
-            trailing_value_count = sum(index >= value_index for index in value_like_indices)
-            if trailing_value_count < 2:
-                continue
-            gap = float(words[value_index]["x0"]) - float(words[value_index - 1]["x1"])
-            if gap > best_gap:
-                best_gap = gap
-                best_start_index = value_index
+        reference_start_indices = [
+            value_index
+            for value_index in value_like_indices
+            if value_index > 0
+            and _is_reference_baseline_value_word(str(words[value_index].get("text", "")))
+            and sum(index >= value_index for index in value_like_indices) >= 2
+            and any(
+                re.search(r"[A-Za-z]", str(word.get("text", "")))
+                for word in words[:value_index]
+            )
+        ]
+        if reference_start_indices:
+            best_start_index = reference_start_indices[0]
+        else:
+            for value_index in value_like_indices:
+                if value_index == 0:
+                    continue
+                trailing_value_count = sum(index >= value_index for index in value_like_indices)
+                if trailing_value_count < 2:
+                    continue
+                gap = float(words[value_index]["x0"]) - float(words[value_index - 1]["x1"])
+                if gap > best_gap:
+                    best_gap = gap
+                    best_start_index = value_index
         if best_start_index is None:
             continue
         first_value_boundaries.append(
@@ -1594,30 +1686,17 @@ def _refine_grid_from_hline_word_positions(
     )
     if not refined_rows:
         return None
+    header_row_geometry_roles = apply_header_column_band_geometry(
+        rows=refined_rows,
+        bbox_rows=refined_cell_bboxes,
+        lines=lines,
+        header_line_count=len(header_lines),
+        boundaries=boundaries,
+        value_anchors=value_anchors,
+    )
     refined_col_count = max((len(row) for row in refined_rows), default=0)
     if refined_col_count < 3:
         return None
-
-    leaf_header_row_idx = max(0, len(header_lines) - 1)
-    for row_idx in range(leaf_header_row_idx):
-        row = refined_rows[row_idx]
-        bbox_row = refined_cell_bboxes[row_idx]
-        run_start: int | None = None
-        for col_idx in range(1, refined_col_count + 1):
-            is_populated = col_idx < refined_col_count and bool(row[col_idx].strip())
-            if is_populated and run_start is None:
-                run_start = col_idx
-            if (not is_populated or col_idx == refined_col_count) and run_start is not None:
-                run_end = col_idx - 1
-                if run_end > run_start:
-                    merged_text = clean_text(" ".join(row[index] for index in range(run_start, run_end + 1)))
-                    merged_bbox = _merge_bboxes(bbox_row[run_start : run_end + 1])
-                    row[run_start] = merged_text
-                    bbox_row[run_start] = merged_bbox
-                    for blank_idx in range(run_start + 1, run_end + 1):
-                        row[blank_idx] = ""
-                        bbox_row[blank_idx] = None
-                run_start = None
 
     value_row_count = sum(
         sum(
@@ -1626,7 +1705,7 @@ def _refine_grid_from_hline_word_positions(
             if cell.strip()
         )
         >= 1
-        for row in refined_rows[leaf_header_row_idx + 1 :]
+        for row in refined_rows[len(header_lines) :]
     )
     if value_row_count < max(2, min(3, len(body_lines))):
         return None
@@ -1647,6 +1726,7 @@ def _refine_grid_from_hline_word_positions(
         "geometry_transform_transposed": False,
         "geometry_transform_applied": False,
         "value_matrix_column_anchors": [round(anchor, 4) for anchor in value_anchors],
+        "header_row_geometry_roles": header_row_geometry_roles,
     }
 
 
@@ -1657,20 +1737,6 @@ def _looks_like_hline_table_value_word(text: str) -> bool:
     if cleaned in {"-", "–", "—"}:
         return True
     return _looks_like_value_matrix_word(cleaned)
-
-
-def _merge_bboxes(
-    bboxes: list[tuple[float, float, float, float] | None],
-) -> tuple[float, float, float, float] | None:
-    populated = [bbox for bbox in bboxes if bbox is not None]
-    if not populated:
-        return None
-    return (
-        min(bbox[0] for bbox in populated),
-        min(bbox[1] for bbox in populated),
-        max(bbox[2] for bbox in populated),
-        max(bbox[3] for bbox in populated),
-    )
 
 
 def _refine_explicit_table_candidate_grid(
@@ -1748,6 +1814,95 @@ def _refine_explicit_table_candidate_grid(
         if bottom_rule > bbox[3] and bottom_rule - bbox[3] <= 20.0:
             clip_bottom = bottom_rule
         word_clip_bbox = (bbox[0], clip_top, bbox[2], clip_bottom)
+
+    caption_boundary_rule: float | None = None
+    if caption_bbox is not None and full_width_rules and row_bounds:
+        first_row_top, first_row_bottom = row_bounds[0]
+        caption_left, caption_top, caption_right, caption_bottom = caption_bbox
+        table_left, table_top, table_right, table_bottom = word_clip_bbox
+        caption_horizontal_overlap = min(table_right, caption_right) - max(
+            table_left,
+            caption_left,
+        )
+        caption_touches_first_row = (
+            caption_horizontal_overlap > 0.0
+            and caption_top <= first_row_bottom + 2.0
+            and caption_bottom >= first_row_top - 2.0
+        )
+        first_rule_after_caption = next(
+            (
+                float(rule)
+                for rule in sorted(float(rule) for rule in full_width_rules)
+                if float(rule) >= caption_bottom - 2.0
+                and first_row_top - 2.0 <= float(rule) <= first_row_bottom + 4.0
+            ),
+            None,
+        )
+        if caption_touches_first_row and first_rule_after_caption is not None:
+            caption_boundary_rule = first_rule_after_caption
+
+    if (
+        caption_boundary_rule is not None
+        and len(raw_rows) >= 3
+        and len(cell_bboxes) == len(raw_rows)
+        and len(row_bounds) == len(raw_rows)
+    ):
+        dropped_raw_rows = [list(row) for row in raw_rows[1:]]
+        dropped_table_cells = [list(row) for row in cell_bboxes[1:]]
+        dropped_row_bounds = list(row_bounds[1:])
+        first_kept_populated = sum(
+            bool(str(cell).strip())
+            for cell in dropped_raw_rows[0]
+        )
+        later_value_rows = 0
+        for row in dropped_raw_rows[1:]:
+            value_like_cells = sum(
+                _looks_like_hline_table_value_word(str(cell))
+                for cell in row[1:]
+                if str(cell).strip()
+            )
+            if value_like_cells >= 1:
+                later_value_rows += 1
+        required_value_rows = min(2, max(1, len(dropped_raw_rows) - 1))
+        if first_kept_populated >= 2 and later_value_rows >= required_value_rows:
+            kept_top = min(float(caption_boundary_rule), dropped_row_bounds[0][0])
+            kept_bottom = dropped_row_bounds[-1][1]
+            kept_horizontal_rules = [
+                rule
+                for rule in horizontal_rules
+                if kept_top - 2.0 <= float(rule) <= kept_bottom + 2.0
+            ]
+            if not any(
+                abs(float(rule) - caption_boundary_rule) <= 1.5
+                for rule in kept_horizontal_rules
+            ):
+                kept_horizontal_rules.append(float(caption_boundary_rule))
+                kept_horizontal_rules.sort()
+            kept_full_width_rules = [
+                rule
+                for rule in full_width_rules
+                if kept_top - 2.0 <= float(rule) <= kept_bottom + 2.0
+            ]
+            if not any(
+                abs(float(rule) - caption_boundary_rule) <= 1.5
+                for rule in kept_full_width_rules
+            ):
+                kept_full_width_rules.append(float(caption_boundary_rule))
+                kept_full_width_rules.sort()
+            return {
+                "raw_rows": dropped_raw_rows,
+                "table_cells": dropped_table_cells,
+                "refined_table_cells": dropped_table_cells,
+                "row_bounds": dropped_row_bounds,
+                "horizontal_rules": kept_horizontal_rules,
+                "full_width_horizontal_rules": kept_full_width_rules,
+                "grid_refinement_source": "caption_contaminated_backend_row_drop",
+                "geometry_coordinate_frame": geometry_coordinate_frame,
+                "geometry_transform_source_bbox": None,
+                "geometry_transform_transposed": False,
+                "geometry_transform_applied": False,
+                "caption_contaminated_backend_row_removed": True,
+            }
 
     clipped_words = [
         word

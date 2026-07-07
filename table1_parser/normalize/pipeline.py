@@ -844,6 +844,7 @@ def normalize_extracted_table(
         raw_rows = [row[:-dropped_trailing_cols] for row in rows_after_leading] if dropped_trailing_cols else rows_after_leading
     source_col_indices: list[int | None] = list(range(dropped_leading_cols, table.n_cols - dropped_trailing_cols))
     cleaned_rows = [[clean_text(cell) for cell in row] for row in raw_rows]
+    has_header_band_roles = isinstance(table.metadata.get("header_row_geometry_roles"), list)
     embedded_label_count_repair: dict[str, object] | None = None
     raw_rows, cleaned_rows, embedded_label_count_repair = _repair_embedded_label_count_cells(
         raw_rows,
@@ -859,7 +860,7 @@ def normalize_extracted_table(
             dropped_leading_cols = 1
             source_col_indices = [None, *source_col_indices[2:]]
     split_row_label_field_repair: dict[str, object] | None = None
-    if sparse_stub_label_column_repair is None:
+    if sparse_stub_label_column_repair is None and not has_header_band_roles:
         raw_rows, cleaned_rows, split_row_label_field_repair = _repair_split_row_label_field_columns(
             raw_rows,
             cleaned_rows,

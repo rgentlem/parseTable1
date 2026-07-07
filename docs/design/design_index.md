@@ -72,6 +72,10 @@ Then use the documents below as needed.
 - `docs/design/split_label_column_repair_design_spec.md`
   Normalization-stage design for merging left-side row-label fragments that were split into two adjacent columns.
 
+- `docs/implementation/fallback_inventory.md`
+  Inventory of fallback, rescue, and downstream repair paths targeted for
+  retirement as extraction becomes more accurate.
+
 - `docs/design/value_parsing_spec.md`
   Planned symbol canonicalization and Table 1 `n (%)` parsing heuristics for the later value-parsing path.
 

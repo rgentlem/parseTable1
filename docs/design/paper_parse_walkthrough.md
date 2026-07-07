@@ -238,6 +238,24 @@ Conceptually, this stage does four things:
 
 The current extractor uses `pymupdf4llm` as the main backend. It tries to recover explicit table boxes and table cell grids from the backend JSON output. When that is not enough, it can fall back to text-position-based layout reconstruction.
 
+For explicit table boxes, caption candidates are structural evidence, not just
+review text. The extractor collects table-caption text boxes on the page and
+binds each caption to at most one nearby table by geometry, considering both
+captions above and captions below the table. A below-table caption therefore
+belongs to the table immediately above it when that is the nearest compatible
+table, rather than being shifted onto the next table by page order. Strong
+table boxes that remain uncaptained are preserved as possible continuation
+fragments; they are not given a fallback caption just because another caption
+appears elsewhere on the page.
+
+Caption binding also protects the grid itself. If the backend grid's first row
+overlaps the bound caption and a full-width horizontal rule separates that
+caption text from the remaining table rows, extraction removes only that
+contaminated first backend row before normalization. This preserves the
+backend's existing column geometry for the actual table and records the removed
+row in extraction metadata, instead of rebuilding a wide table from scratch just
+because a caption tail entered the grid.
+
 Extraction also uses early, coarse document-structure landmarks when available.
 If positioned page text identifies an Abstract heading followed by an
 Introduction heading, the y-interval between them is treated as front matter.
@@ -247,7 +265,34 @@ article-info/abstract page layouts from entering the table pipeline as pseudo
 tables while keeping the decision at the extraction stage where candidate
 ownership belongs.
 
-For some explicit tables, the backend cell grid is too coarse even though the page still contains enough geometry to do better. When a table has credible full-width horizontal rules, extraction can treat the backend grid as a rough table region, rebuild the row grid from positioned PyMuPDF words inside the ruled band, and let the rules define the header/body split. If the backend table box starts just below a true full-width top rule or ends just above a true bottom rule, extraction may expand the word clip to those rules so header or final body rows are not lost before column-header schema construction. This hline-led path is not limited by table size; it is meant for small ruled tables as well as larger grids when the rule geometry is stronger than the backend cell grid.
+For some explicit tables, the backend cell grid is too coarse even though the
+page still contains enough geometry to do better. When a table has credible
+full-width horizontal rules, extraction can treat the backend grid as a rough
+table region, rebuild the row grid from positioned PyMuPDF words inside the
+ruled band, and let the rules define the header/body split. If the backend
+table box starts just below a true full-width top rule or ends just above a
+true bottom rule, extraction may expand the word clip to those rules so header
+or final body rows are not lost before column-header schema construction. This
+hline-led path is not limited by table size; it is meant for small ruled tables
+as well as larger grids when the rule geometry is stronger than the backend
+cell grid.
+
+Ruled explicit tables and text-position fallback share the same upper-header
+span repair. Sparse word clusters in upper header rows are represented as
+spanning group cells over adjacent lower leaf columns, while dense repeated
+clusters stay as separate leaf-header cells. This keeps a continuation page
+that entered through a backend table box and a base page that entered through
+text-position fallback in the same document-order grid shape when the visible
+table geometry is the same.
+
+Geometry provenance is explicit in extraction metadata. A candidate may have
+`layout_source = "pymupdf4llm_json"` because PyMuPDF4LLM supplied the rough
+table box, while `geometry_source`,
+`grid_refinement_source`, and `header_row_geometry_source` show whether the
+actual row/column/header geometry came from positioned PyMuPDF words and
+horizontal rules. Text-position fallback candidates use PyMuPDF geometry from
+the start and record `grid_refinement_source =
+"text_position_column_geometry"`.
 
 When a table shows strong grouped-header signals, such as repeated `Model 1`, `Model 2`, `Model 3` blocks plus wide horizontal boundaries, extraction can also refine the explicit backend grid using word positions inside the table bounding box.
 
@@ -268,6 +313,11 @@ The extractor still scores candidates, but the score is now diagnostic rather th
 - deduplicate exact candidate collisions
 - preserve explicit extracted table candidates in stable page/index order
 - record confidence and caption signals in metadata instead of silently dropping low-scoring tables
+- bind explicit-table captions one-to-one by page geometry, above or below the
+  table, before using caption text as table-number identity
+- drop a caption-contaminated first backend row when bound-caption geometry and
+  a full-width rule show that the row belongs to the caption, while preserving
+  the remaining backend column geometry
 - suppress weak unnumbered candidates when their document position is impossible relative to confirmed numbered tables, such as before Table 1 or between consecutive Table 3 and Table 4 candidates, while preserving adjacent possible continuations for later schema checks
 - allow explicit-table grid refinement when rule and word geometry clearly support a better internal column structure
 - suppress backend table-like boxes once the document has entered a `References` or bibliography section, because reference lists are document metadata rather than epidemiology tables; any future reference parser should consume them as atomic citation records, not tokenized table cells
@@ -652,6 +702,10 @@ row-label column is allowed to sit outside value-region group headers, since
 those group headers often describe only subsets of the data columns. If a
 value-region group header is extracted as adjacent text fragments, a large
 horizontal gap can split those fragments into separate groups.
+When an upper header row mixes a standalone leaf column with a spanning group,
+for example a `Total` column followed by a multi-column grouped exposure band,
+the schema builder uses the lower leaf-header stack to split those runs rather
+than treating the whole row as one title-like span.
 
 For dense multirow headers, sparse rows after an internal rule are not
 automatically treated as leaf labels. The schema builder trims sparse group
@@ -709,6 +763,14 @@ working list. For an integrated continuation, the parent headers are carried
 forward only after the schema compatibility decision is accepted, continuation
 body rows are appended in source order, and dropped continuation header or
 non-body rows are recorded in the integration boundary.
+
+Continuation integration is not limited to captions that appear above the first
+fragment. If a strong uncaptained table fragment is immediately followed by a
+captioned fragment whose column schema matches, the captioned terminal fragment
+can supply the logical table identity for the earlier fragment. In that case
+the earlier fragment's headers are carried forward, the repeated terminal
+header row is dropped, and the below-captioned fragment's body rows are
+appended with source-row provenance.
 
 The parser still writes the older continuation inspection artifacts for review.
 Those artifacts remain useful for checking source-fragment continuation
