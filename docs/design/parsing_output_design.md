@@ -199,8 +199,8 @@ Design intent:
 - literal displayed captions should be preserved even for continuations such as `Table 1 (continued)`
 - continuation linkage belongs in metadata, not in synthetic renamed titles such as `Table 1a`
 - numbering audits are for inspection only; they must not be used to silently drop extracted tables
-- explicit PyMuPDF4LLM table boxes are rough region hints; the canonical extracted grid should come from positioned PyMuPDF words, characters, and rule geometry whenever that geometry is available
-- extraction may refine a coarse explicit backend grid when word geometry inside the table bbox, together with strong horizontal boundaries, supports a better row/column structure, but the backend cell grid itself is noncanonical diagnostic debt when it survives as `geometry_source = "pymupdf4llm_json_table_cells"`
+- explicit PyMuPDF4LLM table boxes are rough region hints; the canonical extracted grid must come from positioned PyMuPDF words, characters, and rule geometry
+- extraction may refine a coarse explicit backend grid when word geometry inside the table bbox, together with strong horizontal boundaries, supports a better row/column structure; if positioned PyMuPDF geometry cannot rebuild the grid, the backend cell grid is not emitted as a normal extracted table
 - full-width horizontal-rule metadata should be based on stroked line/rule geometry, not filled row highlighting or background shading
 - collapsed-grid word-position refinement chooses value-column anchors from repeated value-like numeric positions rather than one-off digit-bearing label tokens; when needed, it preserves a left label anchor and pulls nonnumeric label fragments back from value columns on rows whose only right-side value is a trailing statistic such as a p-value
 - when explicit column boundaries are absent, the first row-label/value boundary should come from the observed physical gap before the repeated first value-column anchor; parenthesized numeric expressions remain intact from open parenthesis through matching close parenthesis during anchor selection and cell assignment

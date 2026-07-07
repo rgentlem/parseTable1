@@ -87,10 +87,9 @@ canonical extraction logic with explicit provenance.
   - Code: `table1_parser/extract/pymupdf4llm_extractor.py`
   - Metadata: `grid_refinement_source = "caption_contaminated_backend_row_drop"`.
   - Latest usage: 0 tables.
-  - Status: replace with caption/table-region ownership. It now remains after
-    positioned rebuild attempts and is explicitly marked with
-    `geometry_source = "pymupdf4llm_json_table_cells"`, so any usage is
-    noncanonical extraction debt.
+  - Status: retired. Caption/table-region ownership and positioned-grid
+    reconstruction now own this case; backend row dropping is no longer an
+    emitted extraction path.
 
 - Collapsed explicit-grid word-position rescue
   - Metadata: `grid_refinement_source = "collapsed_explicit_grid_word_positions"`.
@@ -106,12 +105,14 @@ canonical extraction logic with explicit provenance.
 - Backend JSON cell grid survival
   - Metadata: `geometry_source = "pymupdf4llm_json_table_cells"`,
     `canonical_extraction_layer = "pymupdf4llm_backend_grid_noncanonical"`.
-  - Latest usage: 1 candidate, `periodontitis-p11-t0`, which is a known
-    non-table box-like region rather than a real Table 1 grid.
-  - Status: retire. PyMuPDF4LLM may still supply a rough table box, but rows,
-    columns, cell bboxes, and row bounds should come from PyMuPDF positioned
-    extraction. Any surviving backend-grid table should be reviewed as a
-    failed canonical extraction case.
+  - Latest usage: 0 tables in
+    `outputs/testpapers_batch_20260707_no_backend_grid`. The previous survivor,
+    `periodontitis-p11-t0`, is no longer emitted because positioned PyMuPDF
+    reconstruction cannot build a credible grid from that rough box.
+  - Status: retired. PyMuPDF4LLM may still supply a rough table box, but rows,
+    columns, cell bboxes, and row bounds must come from PyMuPDF positioned
+    extraction. If positioned reconstruction fails, the backend grid is not
+    emitted as a normal extracted table.
 
 - Strong uncaptioned table geometry
   - Code: `table1_parser/extract/layout_fallback.py::_has_strong_uncaptioned_table_geometry`
@@ -251,8 +252,8 @@ passes:
 2. Move `extra_wide_value_column` responsibility into positioned extraction.
 3. Remove `split_uncertainty_columns` once value components can represent
    estimate/uncertainty fragments without grid mutation.
-4. Replace `caption_contaminated_backend_row_drop` with earlier caption/table
-   region ownership.
+4. Verify that retired `caption_contaminated_backend_row_drop` and backend JSON
+   cell-grid survival remain absent in real-paper runs.
 5. Gate schema header/group fallback logic on missing extraction geometry.
 
 Each pass should run the real-paper corpus and report exactly which real tables

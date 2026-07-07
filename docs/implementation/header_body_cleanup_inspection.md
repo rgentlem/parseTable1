@@ -4,7 +4,26 @@ This note records the real-paper header/body row changes observed after
 removing brittle content-scoring header detection from the normalization
 fallback path.
 
-Comparison runs:
+Current reference run:
+
+- `outputs/testpapers_batch_20260707_no_backend_grid`
+- PDFs parsed: 27/27
+- Extracted tables: 66
+- Extraction geometry: 64 `pymupdf_positioned_words_and_rules`, 2
+  `pymupdf_positioned_words`, 0 `pymupdf4llm_json_table_cells`
+- Canonical extraction layer: 66 `pymupdf_positioned_geometry`
+- Table processing statuses: ok 16, rescued 43, failed 0
+- Bibliography extraction: 27 papers, 0 empty bibliographies, 1370 entries
+- Footnote links: 387 links, 387 resolved
+- Previous backend-grid survivor `periodontitis-p11-t0` is no longer emitted.
+
+The current parser no longer uses the caption-contaminated backend-row-drop
+path. PyMuPDF4LLM may still provide rough table boxes, but emitted rows,
+columns, cell boxes, row bounds, and header geometry must come from positioned
+PyMuPDF reconstruction. If a rough backend box cannot be reconstructed from
+positioned geometry, it is not emitted as an extracted table.
+
+Historical comparison runs:
 
 - Previous baseline: `outputs/testpapers_batch_20260707_caption_binding`
 - Cleanup run: `outputs/testpapers_batch_20260707_header_cleanup`
@@ -17,7 +36,7 @@ Corpus-level results from the cleanup run:
 - Bibliography extraction unchanged: 27 papers, 0 empty bibliographies, 1370 entries
 - Footnote links unchanged: 370 links, 370 resolved
 
-Follow-up extraction run:
+Historical follow-up extraction run:
 
 - Caption-row-drop run: `outputs/testpapers_batch_20260707_caption_row_drop`
 - PDFs parsed: 27/27
@@ -28,12 +47,12 @@ Follow-up extraction run:
   1370 entries.
 - Footnote links remain stable: 370 links, 370 resolved.
 
-Seven extracted tables used the caption-contaminated backend-row correction in
-the follow-up run. The correction drops only a first backend row that overlaps
-the bound caption and is separated from the table by a full-width rule; it does
-not rebuild already-correct wide tables from word positions.
+Seven extracted tables used the now-retired caption-contaminated backend-row
+correction in that historical follow-up run. The current parser should solve
+these cases through positioned PyMuPDF reconstruction and `TableRegion`
+ownership, not by dropping backend rows.
 
-Changed extracted tables in the follow-up run:
+Changed extracted tables in the historical follow-up run:
 
 - Anthropometric CKD page 8 Table 1 continuation: `17x5 -> 16x5`; removed a
   continued-caption row and kept the 5-column header/body structure.
@@ -41,8 +60,8 @@ Changed extracted tables in the follow-up run:
   and kept `Anthropometric indices | AUC | 95% CI` as row 0.
 - Lead page 7 Table 4: `15x5 -> 15x4`; improved the table from split model/CI
   fragments into the visible row-label plus three-model layout.
-- eGDR CKM page 4 Table 1: kept `48x7`; removed only the caption-contaminated
-  first backend row and preserved `Characteristics | All | Q1 | Q2 | Q3 | Q4 | P`.
+- eGDR CKM page 4 Table 1: kept `48x7`; removed the caption-contaminated first
+  backend row and preserved `Characteristics | All | Q1 | Q2 | Q3 | Q4 | P`.
 - Sarcopenia page 5 Table 1: `49x5 -> 48x5`; removed `2011-2018` from the
   extracted grid and preserved the wrapped `Non-sarco-/penia` and
   `Sarcope-/nia` headers. Visual review confirmed this is correct.
@@ -51,9 +70,10 @@ Changed extracted tables in the follow-up run:
 - Hypertension page 6 Table 2: kept `13x7`; removed the caption tail and
   preserved the `Model 1/Model 2/Model 3a` two-column OR/P-value blocks.
 
-`periodontitis-p11-t0` is currently accepted as a failure. Visual review
-indicates it is not a data table; it is a boxed note describing supplementary
-tables. Do not prioritize fixing this as a table extraction case now.
+`periodontitis-p11-t0` is no longer emitted in the current reference run.
+Visual review indicated it was not a data table; it was a boxed note describing
+supplementary tables. Do not prioritize recovering it as a table extraction
+case.
 
 ## Changed Tables
 
@@ -101,12 +121,12 @@ row 3: Height | 0.546 | 0.555-0.565
 row 4: Weight | 0.504 | 0.514-0.524
 ```
 
-Follow-up result: confirmed extraction fix. In
-`outputs/testpapers_batch_20260707_caption_row_drop`, row 0 is removed from the
-extracted grid with
+Historical follow-up result: the retired
+`outputs/testpapers_batch_20260707_caption_row_drop` run removed row 0 with
 `metadata.grid_refinement_source = "caption_contaminated_backend_row_drop"`.
-The current first row is `Anthropometric indices | AUC | 95% CI`, followed by
-the AUC body rows.
+That backend-row-drop path is no longer current parser behavior; caption/table
+ownership now must come from positioned PyMuPDF reconstruction and
+`TableRegion`.
 
 ### 3. Metabolic, page 5 table 0
 

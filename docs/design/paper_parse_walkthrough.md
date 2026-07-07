@@ -297,9 +297,9 @@ specific `grid_refinement_source` records which structural path built the
 grid, such as `hline_word_positions`, `value_matrix_word_positions`, or
 `pymupdf_positioned_bbox_words`. Text-position fallback candidates use
 PyMuPDF geometry from the start and record `grid_refinement_source =
-"text_position_column_geometry"`. Any table still marked with
-`geometry_source = "pymupdf4llm_json_table_cells"` is a noncanonical diagnostic
-case to retire, not the normal source of table geometry.
+"text_position_column_geometry"`. A PyMuPDF4LLM table box that cannot be
+rebuilt from positioned PyMuPDF geometry is not emitted as a normal extracted
+table.
 
 When positioned word rows do not already have explicit column boundaries, the
 first label/value split is derived from the repeated first value-column anchor

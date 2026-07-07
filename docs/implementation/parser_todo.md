@@ -104,14 +104,6 @@ insufficient.
    and bbox evidence. `TableRegion` still owns row regions inside each
    extracted table, while extracted-table title/caption fields carry the visual
    table identity.
-   Caption-contaminated backend grid rows are now corrected at extraction when
-   the first backend row overlaps a bound caption and a full-width rule marks
-   the start of the real table. The correction drops only that first backend
-   row, preserves the existing backend column geometry, records
-   `metadata.caption_contaminated_backend_row_removed`, and stores the original
-   backend rows for provenance. This fixes the CKD Table 6 caption-tail row
-   without using a broader hline word-grid rebuild on already-correct wide
-   tables.
    Current canonical extraction update: explicit PyMuPDF4LLM table boxes are
    treated only as rough table-region hints. The extracted grid is rebuilt from
    positioned PyMuPDF words, characters, and full-width rules through the
@@ -119,9 +111,14 @@ insufficient.
    the table. `layout_source = "pymupdf4llm_json"` may still identify the
    source of the rough box, but `canonical_extraction_layer =
    "pymupdf_positioned_geometry"` marks tables whose rows/cells/header geometry
-   are owned by PyMuPDF positioned extraction. Any remaining
-   `geometry_source = "pymupdf4llm_json_table_cells"` table is noncanonical
-   diagnostic debt, not the intended grid source.
+   are owned by PyMuPDF positioned extraction. If positioned reconstruction
+   cannot build a credible grid from the rough box, the explicit backend table
+   is not emitted as an extracted table.
+   Current verification run:
+   `outputs/testpapers_batch_20260707_no_backend_grid` parsed 27/27 PDFs,
+   emitted 66 extracted tables, used `pymupdf_positioned_geometry` for all 66,
+   and had 0 backend JSON grid survivors. The test suite no longer keeps
+   backend-grid survival fixtures as acceptable parser behavior.
    Positioned row-grid construction now keeps parenthesized numeric expressions
    together from open parenthesis through matching close parenthesis and derives
    the first row-label/value boundary from the observed gap before the repeated
