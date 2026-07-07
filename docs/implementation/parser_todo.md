@@ -112,14 +112,23 @@ insufficient.
    backend rows for provenance. This fixes the CKD Table 6 caption-tail row
    without using a broader hline word-grid rebuild on already-correct wide
    tables.
-   Current header-column geometry update: explicit ruled-table refinement and
-   text-position fallback now both assign header rows from positioned PyMuPDF
-   words plus horizontal rules. The source table may still record
-   `layout_source = "pymupdf4llm_json"` when PyMuPDF4LLM supplied the rough
-   table box, but `geometry_source`, `grid_refinement_source`, and
-   `header_row_geometry_source` distinguish the actual geometry owner. This
-   fixed the Planetary Health p2 -> p3 continuation and the MDPI p5 -> p6
-   continuation without schema-level continuation enrichment.
+   Current canonical extraction update: explicit PyMuPDF4LLM table boxes are
+   treated only as rough table-region hints. The extracted grid is rebuilt from
+   positioned PyMuPDF words, characters, and full-width rules through the
+   hline, value-matrix, or bbox-word geometry paths before normalization sees
+   the table. `layout_source = "pymupdf4llm_json"` may still identify the
+   source of the rough box, but `canonical_extraction_layer =
+   "pymupdf_positioned_geometry"` marks tables whose rows/cells/header geometry
+   are owned by PyMuPDF positioned extraction. Any remaining
+   `geometry_source = "pymupdf4llm_json_table_cells"` table is noncanonical
+   diagnostic debt, not the intended grid source.
+   Positioned row-grid construction now keeps parenthesized numeric expressions
+   together from open parenthesis through matching close parenthesis and derives
+   the first row-label/value boundary from the observed gap before the repeated
+   first value-column anchor, rather than from a fake midpoint between the
+   leftmost row-label text and the first value column.
+   This preserves the Planetary Health p2 -> p3 continuation and the MDPI p5
+   -> p6 continuation without schema-level continuation enrichment.
    Follow-up: migrate column-header schema rescue logic and remaining
    continuation/header compatibility review paths to trust `TableRegion`
    rather than repairing title/caption contamination locally. Harden column
@@ -269,7 +278,9 @@ insufficient.
   filters positioned text before footnote definition blocks are built.
   `parse_quality_reports.json` reports
   `header_body_split_rule_disagreement` when the hline and value-anchor
-  candidates both exist and disagree.
+  candidates both exist and disagree, except when the hline body start only
+  precedes the first value row by expected variable/section-header rows with no
+  recognized value pattern.
 - Recent bibliography baseline update:
   `docs/implementation/real_paper_testing_guide.md` now uses
   `outputs/testpapers_batch_20260707_shared_header_geometry_schema` as the current

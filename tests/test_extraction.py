@@ -2060,11 +2060,11 @@ def test_text_layout_fallback_detects_unruled_table(tmp_path, monkeypatch) -> No
     assert tables[0].metadata["layout_source"] == "pymupdf_text_positions"
 
 
-def test_pymupdf4llm_extractor_rescues_low_quality_explicit_table_with_text_layout(
+def test_pymupdf4llm_extractor_rebuilds_low_quality_explicit_table_from_positioned_words(
     tmp_path,
     monkeypatch,
 ) -> None:
-    """A collapsed explicit table box should be replaced by a stronger same-page text-layout rescue."""
+    """A low-quality explicit table box should use positioned PyMuPDF rows, not backend cells."""
     pdf_path = tmp_path / "paper.pdf"
     pdf_path.write_text("placeholder")
     _install_fake_pymupdf4llm(
@@ -2140,10 +2140,12 @@ def test_pymupdf4llm_extractor_rescues_low_quality_explicit_table_with_text_layo
 
     assert len(tables) == 1
     assert tables[0].title == "Table 2"
-    assert tables[0].n_rows > 3
+    assert tables[0].n_rows == 3
     assert tables[0].n_cols >= 3
-    assert tables[0].metadata["layout_source"] == "pymupdf_text_positions_rescue"
-    assert tables[0].metadata["fallback_used"] is True
+    assert tables[0].metadata["layout_source"] == "pymupdf4llm_json"
+    assert tables[0].metadata["grid_refinement_source"] == "pymupdf_positioned_bbox_words"
+    assert tables[0].metadata["canonical_extraction_layer"] == "pymupdf_positioned_geometry"
+    assert tables[0].metadata["fallback_used"] is False
 
 
 def test_pymupdf4llm_extractor_refines_model_table_columns_from_words_and_rules(

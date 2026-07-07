@@ -25,6 +25,30 @@ docs/implementation/parser_todo.md
 
 Use this file as the persistent implementation ToDo list. When work resolves, changes, or creates an important parser priority, update the ToDo list in the same change so project context does not get lost. Keep detailed epidemiology-table reasoning and implementation planning there or in a linked implementation note, not in the high-level design docs unless the schema, artifact contract, or pipeline design actually changes.
 
+## Parser Logic Approval Gate
+
+Do not change parser logic without explicit user approval for the specific
+logic change. This includes extraction, normalization, table-region ownership,
+header/body splitting, column geometry, row/column repair, bibliography
+parsing, footnote parsing, diagnostics that alter pass/fail interpretation,
+semantic table definition, value parsing, continuation handling, and R/Python
+inspection behavior that changes how parser decisions are interpreted.
+
+Before implementing parser logic changes, first report:
+
+- the observed failure or design problem
+- the exact files/functions likely involved
+- the proposed logic change
+- why the change is structural rather than ad hoc
+- what existing fallback, repair, or competing path would be removed or aligned
+- which real-paper checks and pytest commands would be run
+
+Then wait for explicit approval before editing code. Investigation, read-only
+analysis, artifact inspection, documentation-only clarification, and test runs
+are allowed without approval. If the user explicitly says to implement a named
+logic change, that counts as approval only for that described change; do not
+expand the scope without asking again.
+
 When changing CLI behavior, persisted outputs, schema shape, markdown-context handling, or design assumptions, update the relevant `docs/*.md` files in the same change. Keep the design docs current.
 
 When updating or replacing a process, also remove, retire, or explicitly align

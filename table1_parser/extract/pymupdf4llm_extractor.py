@@ -329,6 +329,11 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                     horizontal_rules = refinement["horizontal_rules"]
                     full_width_horizontal_rules = refinement["full_width_horizontal_rules"]
                     geometry_coordinate_frame = str(refinement["geometry_coordinate_frame"])
+                    geometry_source = str(
+                        refinement.get("geometry_source")
+                        or "pymupdf4llm_json_table_cells"
+                    )
+                    positioned_geometry_used = geometry_source.startswith("pymupdf_positioned")
                     table_bbox_cluster_ids = page_furniture_cluster_ids_for_bbox(
                         paper_page_furniture,
                         page_num=page_num,
@@ -437,11 +442,13 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                                 "row_count": table.get("row_count"),
                                 "col_count": table.get("col_count"),
                                 "explicit_grid_refined_from_words": raw_rows != original_raw_rows,
+                                "backend_grid_replaced_by_positioned_geometry": positioned_geometry_used,
                                 "grid_refinement_source": refinement["grid_refinement_source"],
-                                "geometry_source": (
-                                    "pymupdf_positioned_words_and_rules"
-                                    if refinement.get("grid_refinement_source")
-                                    else "pymupdf4llm_json_table_cells"
+                                "geometry_source": geometry_source,
+                                "canonical_extraction_layer": (
+                                    "pymupdf_positioned_geometry"
+                                    if positioned_geometry_used
+                                    else "pymupdf4llm_backend_grid_noncanonical"
                                 ),
                                 "caption_contaminated_backend_row_removed": refinement.get(
                                     "caption_contaminated_backend_row_removed"
@@ -473,12 +480,12 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                                 "refined_table_cells": refinement["refined_table_cells"],
                                 "original_table_cells": (
                                     table.get("cells")
-                                    if raw_rows != original_raw_rows
+                                    if positioned_geometry_used or raw_rows != original_raw_rows
                                     else None
                                 ),
                                 "original_backend_rows": (
                                     table.get("extract")
-                                    if raw_rows != original_raw_rows
+                                    if positioned_geometry_used or raw_rows != original_raw_rows
                                     else None
                                 ),
                                 "row_bounds": row_bounds,
@@ -693,6 +700,8 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                                         "rotation_direction": rotation_direction,
                                         "caption_detection_space": "transformed_coordinates",
                                         "geometry_coordinate_frame": "page_sideways_transformed",
+                                        "geometry_source": "pymupdf_positioned_words_and_rules",
+                                        "canonical_extraction_layer": "pymupdf_positioned_geometry",
                                         "geometry_transform_source_bbox": page_bbox,
                                         "geometry_transform_transposed": False,
                                         "geometry_transform_applied": True,
@@ -996,7 +1005,11 @@ def _build_rotated_block_candidate_from_mixed_table_box(
                 "col_count": source_table.get("col_count"),
                 "explicit_grid_refined_from_words": True,
                 "grid_refinement_source": refinement["grid_refinement_source"],
-                "geometry_source": "pymupdf_positioned_words_and_rules",
+                "geometry_source": refinement.get(
+                    "geometry_source",
+                    "pymupdf_positioned_words_and_rules",
+                ),
+                "canonical_extraction_layer": "pymupdf_positioned_geometry",
                 "geometry_coordinate_frame": refinement["geometry_coordinate_frame"],
                 "geometry_transform_source_bbox": refinement.get("geometry_transform_source_bbox"),
                 "geometry_transform_transposed": refinement.get("geometry_transform_transposed"),
@@ -1486,15 +1499,25 @@ def _value_matrix_words_after_label_region(
             float(sorted_words[best_start_index - 1]["x1"])
             + float(sorted_words[best_start_index]["x0"])
         ) / 2.0
-    return (
-        [
-            word
-            for index, word in enumerate(sorted_words)
-            if index >= best_start_index
-            and _looks_like_value_matrix_word(str(word.get("text", "")))
-        ],
-        first_value_boundary,
-    )
+    numeric_words: list[dict[str, object]] = []
+    previous_numeric_word: dict[str, object] | None = None
+    for index, word in enumerate(sorted_words):
+        if index < best_start_index or not _looks_like_value_matrix_word(str(word.get("text", ""))):
+            continue
+        if previous_numeric_word is not None:
+            previous_text = str(previous_numeric_word.get("text", "")).strip()
+            current_text = str(word.get("text", "")).strip()
+            same_value_fragment = (
+                current_text.startswith("(")
+                or previous_text.endswith(",")
+                or ("(" in previous_text and ")" not in previous_text)
+            )
+            if same_value_fragment:
+                previous_numeric_word = word
+                continue
+        numeric_words.append(word)
+        previous_numeric_word = word
+    return (numeric_words, first_value_boundary)
 
 
 def _refine_grid_from_value_matrix_word_positions(
@@ -1555,6 +1578,7 @@ def _refine_grid_from_value_matrix_word_positions(
         "horizontal_rules": horizontal_rules,
         "full_width_horizontal_rules": full_width_rules,
         "grid_refinement_source": "value_matrix_word_positions",
+        "geometry_source": "pymupdf_positioned_words_and_rules",
         "geometry_coordinate_frame": "page",
         "geometry_transform_source_bbox": None,
         "geometry_transform_transposed": False,
@@ -1721,6 +1745,7 @@ def _refine_grid_from_hline_word_positions(
         "horizontal_rules": horizontal_rules,
         "full_width_horizontal_rules": full_width_rules,
         "grid_refinement_source": "hline_word_positions",
+        "geometry_source": "pymupdf_positioned_words_and_rules",
         "geometry_coordinate_frame": "page",
         "geometry_transform_source_bbox": None,
         "geometry_transform_transposed": False,
@@ -1737,6 +1762,170 @@ def _looks_like_hline_table_value_word(text: str) -> bool:
     if cleaned in {"-", "–", "—"}:
         return True
     return _looks_like_value_matrix_word(cleaned)
+
+
+def _rebuild_grid_from_positioned_bbox_words(
+    *,
+    clipped_words: list[dict[str, object]],
+    clipped_chars: list[dict[str, object]],
+    full_width_rules: list[float],
+    orientation_metadata: dict[str, Any],
+    caption_bbox: tuple[float, float, float, float] | None = None,
+) -> dict[str, object] | None:
+    """Build an explicit table grid from positioned PyMuPDF words inside a table bbox."""
+    rotation_direction = str(orientation_metadata.get("rotation_direction") or "")
+    has_vertical_rotation_signal = (
+        orientation_metadata.get("table_orientation") == "rotated"
+        and rotation_direction in {"vertical_text_up", "vertical_text_down"}
+    )
+    if has_vertical_rotation_signal or not clipped_words:
+        return None
+
+    positioned_rules = sorted({float(rule) for rule in full_width_rules})
+    lines = build_word_lines(clipped_words)
+    if len(positioned_rules) >= 2 and positioned_rules[-1] - positioned_rules[0] >= 30.0:
+        lines = [
+            line
+            for line in lines
+            if float(line["bottom"]) >= positioned_rules[0] - 2.0
+            and float(line["top"]) <= positioned_rules[-1] + 2.0
+        ]
+    if caption_bbox is not None:
+        caption_left, caption_top, caption_right, caption_bottom = caption_bbox
+        kept_lines: list[dict[str, object]] = []
+        for line in lines:
+            line_left = min(float(word["x0"]) for word in line["words"])
+            line_right = max(float(word["x1"]) for word in line["words"])
+            line_top = float(line["top"])
+            line_bottom = float(line["bottom"])
+            horizontal_overlap = min(line_right, caption_right) - max(line_left, caption_left)
+            vertical_overlap = min(line_bottom, caption_bottom) - max(line_top, caption_top)
+            if horizontal_overlap > 0.0 and vertical_overlap > 0.0:
+                continue
+            kept_lines.append(line)
+        lines = kept_lines
+    if len(lines) < 2:
+        return None
+
+    value_matrix_geometry = _value_matrix_column_boundaries_from_lines(
+        lines,
+        positioned_rules,
+    )
+    if value_matrix_geometry is None:
+        column_start_boundaries = None
+        value_anchors: list[float] = []
+    else:
+        column_start_boundaries, value_anchors = value_matrix_geometry
+
+    grid_geometry: dict[str, object] = {}
+    refined_rows, refined_cell_bboxes = build_row_grid_from_lines(
+        lines,
+        page_chars=clipped_chars,
+        column_start_boundaries=column_start_boundaries,
+        geometry_out=grid_geometry,
+    )
+    if not refined_rows:
+        return None
+
+    keep_indices = [
+        col_idx
+        for col_idx in range(len(refined_rows[0]))
+        if any(col_idx < len(row) and row[col_idx].strip() for row in refined_rows)
+    ]
+    if keep_indices:
+        refined_rows = [
+            [row[col_idx] for col_idx in keep_indices]
+            for row in refined_rows
+        ]
+        refined_cell_bboxes = [
+            [row[col_idx] for col_idx in keep_indices]
+            for row in refined_cell_bboxes
+        ]
+    refined_col_count = max((len(row) for row in refined_rows), default=0)
+    populated_matrix_rows = sum(
+        sum(bool(cell.strip()) for cell in row) >= 2
+        for row in refined_rows
+    )
+    value_like_rows = sum(
+        sum(_looks_like_hline_table_value_word(cell) for cell in row[1:] if cell.strip()) >= 1
+        for row in refined_rows
+    )
+    if refined_col_count < 2 or populated_matrix_rows < 2 or value_like_rows < 1:
+        return None
+
+    if value_matrix_geometry is None:
+        geometry_boundaries = grid_geometry.get("column_start_boundaries")
+        geometry_value_anchors = grid_geometry.get("value_column_anchors")
+        if isinstance(geometry_boundaries, list):
+            column_start_boundaries = [float(boundary) for boundary in geometry_boundaries]
+        if isinstance(geometry_value_anchors, list):
+            value_anchors = [float(anchor) for anchor in geometry_value_anchors]
+
+    header_row_geometry_roles: list[str] = []
+    row_width = max((len(row) for row in refined_rows), default=0)
+    if (
+        positioned_rules
+        and column_start_boundaries
+        and value_anchors
+        and len(column_start_boundaries) == row_width - 1
+        and len(value_anchors) == row_width - 1
+    ):
+        first_value_row_idx: int | None = None
+        for row_idx, row in enumerate(refined_rows):
+            value_cell_count = sum(
+                _looks_like_hline_table_value_word(cell)
+                for cell in row[1:]
+                if cell.strip()
+            )
+            if row and row[0].strip() and value_cell_count >= max(1, min(3, row_width - 1)):
+                first_value_row_idx = row_idx
+                break
+        if first_value_row_idx is not None and first_value_row_idx < len(lines):
+            first_value_top = float(lines[first_value_row_idx]["top"])
+            candidate_separator_rules = [
+                rule
+                for rule in positioned_rules
+                if rule < first_value_top - 0.5
+            ]
+            if candidate_separator_rules:
+                separator_rule = max(candidate_separator_rules)
+                header_line_count = sum(
+                    float(line["bottom"]) <= separator_rule + 2.0
+                    for line in lines
+                )
+                if 0 < header_line_count < len(refined_rows):
+                    header_row_geometry_roles = apply_header_column_band_geometry(
+                        rows=refined_rows,
+                        bbox_rows=refined_cell_bboxes,
+                        lines=lines,
+                        header_line_count=header_line_count,
+                        boundaries=column_start_boundaries,
+                        value_anchors=value_anchors,
+                    )
+
+    return {
+        "raw_rows": refined_rows,
+        "table_cells": refined_cell_bboxes,
+        "refined_table_cells": refined_cell_bboxes,
+        "row_bounds": [
+            (float(line["top"]), float(line["bottom"]))
+            for line in lines
+        ],
+        "horizontal_rules": positioned_rules,
+        "full_width_horizontal_rules": positioned_rules,
+        "grid_refinement_source": "pymupdf_positioned_bbox_words",
+        "geometry_source": (
+            "pymupdf_positioned_words_and_rules"
+            if positioned_rules
+            else "pymupdf_positioned_words"
+        ),
+        "geometry_coordinate_frame": "page",
+        "geometry_transform_source_bbox": None,
+        "geometry_transform_transposed": False,
+        "geometry_transform_applied": False,
+        "value_matrix_column_anchors": [round(anchor, 4) for anchor in value_anchors],
+        "header_row_geometry_roles": header_row_geometry_roles,
+    }
 
 
 def _refine_explicit_table_candidate_grid(
@@ -1756,6 +1945,7 @@ def _refine_explicit_table_candidate_grid(
     refined_table_cells: list[list[tuple[float, float, float, float] | None]] | None = None
     grid_refinement_source: str | None = None
     geometry_coordinate_frame = "page"
+    caption_drop_result: dict[str, object] | None = None
 
     row_bounds: list[tuple[float, float]] = []
     horizontal_rules_raw: list[float] = []
@@ -1796,6 +1986,7 @@ def _refine_explicit_table_candidate_grid(
             "horizontal_rules": horizontal_rules,
             "full_width_horizontal_rules": full_width_rules,
             "grid_refinement_source": grid_refinement_source,
+            "geometry_source": "pymupdf4llm_json_table_cells",
             "geometry_coordinate_frame": geometry_coordinate_frame,
             "geometry_transform_source_bbox": None,
             "geometry_transform_transposed": False,
@@ -1814,6 +2005,30 @@ def _refine_explicit_table_candidate_grid(
         if bottom_rule > bbox[3] and bottom_rule - bbox[3] <= 20.0:
             clip_bottom = bottom_rule
         word_clip_bbox = (bbox[0], clip_top, bbox[2], clip_bottom)
+
+    if caption_bbox is not None:
+        caption_bottom = float(caption_bbox[3])
+        header_hint_floor = (
+            word_clip_bbox[1] - 2.0
+            if full_width_rules
+            else caption_bottom + 2.0
+        )
+        header_hint_words = [
+            word
+            for word in page_words
+            if float(word["x0"]) >= bbox[0] - 2.0
+            and float(word["x1"]) <= bbox[2] + 2.0
+            and header_hint_floor <= float(word["top"]) < bbox[1]
+            and bbox[1] - float(word["bottom"]) <= 18.0
+            and str(word.get("text", "")).strip()
+        ]
+        if header_hint_words:
+            word_clip_bbox = (
+                word_clip_bbox[0],
+                min(word_clip_bbox[1], min(float(word["top"]) for word in header_hint_words)),
+                word_clip_bbox[2],
+                word_clip_bbox[3],
+            )
 
     caption_boundary_rule: float | None = None
     if caption_bbox is not None and full_width_rules and row_bounds:
@@ -1889,7 +2104,7 @@ def _refine_explicit_table_candidate_grid(
             ):
                 kept_full_width_rules.append(float(caption_boundary_rule))
                 kept_full_width_rules.sort()
-            return {
+            caption_drop_result = {
                 "raw_rows": dropped_raw_rows,
                 "table_cells": dropped_table_cells,
                 "refined_table_cells": dropped_table_cells,
@@ -1897,6 +2112,7 @@ def _refine_explicit_table_candidate_grid(
                 "horizontal_rules": kept_horizontal_rules,
                 "full_width_horizontal_rules": kept_full_width_rules,
                 "grid_refinement_source": "caption_contaminated_backend_row_drop",
+                "geometry_source": "pymupdf4llm_json_table_cells",
                 "geometry_coordinate_frame": geometry_coordinate_frame,
                 "geometry_transform_source_bbox": None,
                 "geometry_transform_transposed": False,
@@ -1913,6 +2129,8 @@ def _refine_explicit_table_candidate_grid(
         and float(word["bottom"]) <= word_clip_bbox[3] + 2.0
     ]
     if not clipped_words:
+        if caption_drop_result is not None:
+            return caption_drop_result
         return {
             "raw_rows": raw_rows,
             "table_cells": table_cells,
@@ -1921,6 +2139,7 @@ def _refine_explicit_table_candidate_grid(
             "horizontal_rules": horizontal_rules,
             "full_width_horizontal_rules": full_width_rules,
             "grid_refinement_source": grid_refinement_source,
+            "geometry_source": "pymupdf4llm_json_table_cells",
             "geometry_coordinate_frame": geometry_coordinate_frame,
             "geometry_transform_source_bbox": None,
             "geometry_transform_transposed": False,
@@ -2357,6 +2576,7 @@ def _refine_explicit_table_candidate_grid(
                         "horizontal_rules": working_horizontal_rules,
                         "full_width_horizontal_rules": working_full_width_rules,
                         "grid_refinement_source": str(refinement_attempt["refinement_source"]),
+                        "geometry_source": "pymupdf_positioned_words_and_rules",
                         "geometry_coordinate_frame": str(refinement_attempt["coordinate_frame"]),
                         "geometry_transform_source_bbox": refinement_attempt[
                             "geometry_transform_source_bbox"
@@ -2436,11 +2656,25 @@ def _refine_explicit_table_candidate_grid(
                         "horizontal_rules": horizontal_rules,
                         "full_width_horizontal_rules": full_width_rules,
                         "grid_refinement_source": "word_positions_with_horizontal_rules",
+                        "geometry_source": "pymupdf_positioned_words_and_rules",
                         "geometry_coordinate_frame": "page",
                         "geometry_transform_source_bbox": None,
                         "geometry_transform_transposed": False,
                         "geometry_transform_applied": False,
                     }
+
+    positioned_bbox_refinement = _rebuild_grid_from_positioned_bbox_words(
+        clipped_words=clipped_words,
+        clipped_chars=clipped_chars,
+        full_width_rules=full_width_rules,
+        orientation_metadata=orientation_metadata,
+        caption_bbox=caption_bbox,
+    )
+    if positioned_bbox_refinement is not None:
+        return positioned_bbox_refinement
+
+    if caption_drop_result is not None:
+        return caption_drop_result
 
     return {
         "raw_rows": raw_rows,
@@ -2450,6 +2684,7 @@ def _refine_explicit_table_candidate_grid(
         "horizontal_rules": horizontal_rules,
         "full_width_horizontal_rules": full_width_rules,
         "grid_refinement_source": grid_refinement_source,
+        "geometry_source": "pymupdf4llm_json_table_cells",
         "geometry_coordinate_frame": geometry_coordinate_frame,
         "geometry_transform_source_bbox": None,
         "geometry_transform_transposed": False,

@@ -265,17 +265,20 @@ article-info/abstract page layouts from entering the table pipeline as pseudo
 tables while keeping the decision at the extraction stage where candidate
 ownership belongs.
 
-For some explicit tables, the backend cell grid is too coarse even though the
-page still contains enough geometry to do better. When a table has credible
-full-width horizontal rules, extraction can treat the backend grid as a rough
-table region, rebuild the row grid from positioned PyMuPDF words inside the
-ruled band, and let the rules define the header/body split. If the backend
-table box starts just below a true full-width top rule or ends just above a
-true bottom rule, extraction may expand the word clip to those rules so header
-or final body rows are not lost before column-header schema construction. This
-hline-led path is not limited by table size; it is meant for small ruled tables
-as well as larger grids when the rule geometry is stronger than the backend
-cell grid.
+For explicit PyMuPDF4LLM tables, the backend table box is only a rough region
+hint. The canonical extracted grid is rebuilt from positioned PyMuPDF words,
+characters, and rule geometry inside that region before normalization sees the
+table. The extractor first uses full-width horizontal rules when they define a
+visible ruled band, then value-matrix anchors when repeated numeric value
+columns define stable column starts, and finally a conservative bbox-word
+rebuild when the positioned words form a credible two-dimensional table. If a
+backend table box starts just below a true full-width top rule or ends just
+above a true bottom rule, extraction may expand the word clip to those rules so
+header or final body rows are not lost before column-header schema
+construction. When a caption is bound above the table and no rule provides the
+top boundary, nearby positioned header words just below the caption may expand
+the clip upward; when a top rule exists, the clip does not expand above that
+rule into title or caption text.
 
 Ruled explicit tables and text-position fallback share the same upper-header
 span repair. Sparse word clusters in upper header rows are represented as
@@ -287,12 +290,25 @@ table geometry is the same.
 
 Geometry provenance is explicit in extraction metadata. A candidate may have
 `layout_source = "pymupdf4llm_json"` because PyMuPDF4LLM supplied the rough
-table box, while `geometry_source`,
-`grid_refinement_source`, and `header_row_geometry_source` show whether the
-actual row/column/header geometry came from positioned PyMuPDF words and
-horizontal rules. Text-position fallback candidates use PyMuPDF geometry from
-the start and record `grid_refinement_source =
-"text_position_column_geometry"`.
+table box, but `canonical_extraction_layer =
+"pymupdf_positioned_geometry"` means the rows, columns, cell bboxes, row
+bounds, and header geometry came from PyMuPDF positioned extraction. The
+specific `grid_refinement_source` records which structural path built the
+grid, such as `hline_word_positions`, `value_matrix_word_positions`, or
+`pymupdf_positioned_bbox_words`. Text-position fallback candidates use
+PyMuPDF geometry from the start and record `grid_refinement_source =
+"text_position_column_geometry"`. Any table still marked with
+`geometry_source = "pymupdf4llm_json_table_cells"` is a noncanonical diagnostic
+case to retire, not the normal source of table geometry.
+
+When positioned word rows do not already have explicit column boundaries, the
+first label/value split is derived from the repeated first value-column anchor
+and the observed physical gap immediately before that value across body rows.
+It is not derived by averaging the left edge of the row-label text with the
+first numeric value. Parenthesized numeric expressions are kept together while
+choosing anchors and while assigning cells: an open parenthesis must remain
+with following fragments through its matching close parenthesis unless stronger
+column geometry proves that the fragments belong to separate cells.
 
 When a table shows strong grouped-header signals, such as repeated `Model 1`, `Model 2`, `Model 3` blocks plus wide horizontal boundaries, extraction can also refine the explicit backend grid using word positions inside the table bounding box.
 

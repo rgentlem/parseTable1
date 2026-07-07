@@ -8,7 +8,7 @@ Reference usage counts below come from the latest available 27-PDF real-paper
 batch inspected during the fallback audit:
 
 ```text
-outputs/testpapers_batch_20260707_header_band_geometry
+outputs/testpapers_batch_20260707_pymupdf_canonical3
 ```
 
 That output is generated evidence, not source truth. Re-run the corpus before
@@ -44,10 +44,18 @@ canonical extraction logic with explicit provenance.
 
 - `value_matrix_word_positions`
   - Code: `table1_parser/extract/pymupdf4llm_extractor.py::_refine_grid_from_value_matrix_word_positions`
-  - Latest usage: 14 tables.
+  - Latest usage: 8 tables.
   - Status: keep short-term, then fold into one canonical geometry extractor.
     It is structural and typed, but should not remain a separate rescue branch
     forever.
+
+- `pymupdf_positioned_bbox_words`
+  - Code: `table1_parser/extract/pymupdf4llm_extractor.py::_rebuild_grid_from_positioned_bbox_words`
+  - Latest usage: 28 tables.
+  - Status: keep as canonical positioned extraction for explicit table boxes
+    when stronger hline/value-matrix reconstruction does not fire. It uses
+    PyMuPDF words/chars/rules inside the rough table region and records
+    `canonical_extraction_layer = "pymupdf_positioned_geometry"`.
 
 - Rotated/sideways geometry normalization
   - Code:
@@ -64,8 +72,9 @@ canonical extraction logic with explicit provenance.
   - Code: `table1_parser/extract/pymupdf4llm_extractor.py::_rescue_low_quality_page_candidates`
   - Metadata: `layout_source = "pymupdf_text_positions_rescue"`,
     `fallback_used = true`.
-  - Status: retire or gate very tightly. It re-enters table discovery after
-    weak backend extraction and can hide bad candidate ownership.
+  - Status: retire or gate very tightly. Explicit table boxes now get a
+    bbox-hinted PyMuPDF positioned rebuild before this path can matter, so this
+    should disappear as table-region ownership improves.
 
 - Whole-page PyMuPDF text-position fallback
   - Code: `table1_parser/extract/pymupdf4llm_extractor.py` fallback loop with
@@ -77,9 +86,11 @@ canonical extraction logic with explicit provenance.
 - Caption-contaminated backend row drop
   - Code: `table1_parser/extract/pymupdf4llm_extractor.py`
   - Metadata: `grid_refinement_source = "caption_contaminated_backend_row_drop"`.
-  - Latest usage: 7 tables.
-  - Status: replace with caption/table-region ownership. Caption rows should
-    never enter the table grid and then be removed later.
+  - Latest usage: 0 tables.
+  - Status: replace with caption/table-region ownership. It now remains after
+    positioned rebuild attempts and is explicitly marked with
+    `geometry_source = "pymupdf4llm_json_table_cells"`, so any usage is
+    noncanonical extraction debt.
 
 - Collapsed explicit-grid word-position rescue
   - Metadata: `grid_refinement_source = "collapsed_explicit_grid_word_positions"`.
@@ -91,6 +102,16 @@ canonical extraction logic with explicit provenance.
   - Metadata: `grid_refinement_source = "word_positions_with_horizontal_rules"`.
   - Latest usage: 1 table.
   - Status: retire or fold into general hline/value-anchor extraction.
+
+- Backend JSON cell grid survival
+  - Metadata: `geometry_source = "pymupdf4llm_json_table_cells"`,
+    `canonical_extraction_layer = "pymupdf4llm_backend_grid_noncanonical"`.
+  - Latest usage: 1 candidate, `periodontitis-p11-t0`, which is a known
+    non-table box-like region rather than a real Table 1 grid.
+  - Status: retire. PyMuPDF4LLM may still supply a rough table box, but rows,
+    columns, cell bboxes, and row bounds should come from PyMuPDF positioned
+    extraction. Any surviving backend-grid table should be reviewed as a
+    failed canonical extraction case.
 
 - Strong uncaptioned table geometry
   - Code: `table1_parser/extract/layout_fallback.py::_has_strong_uncaptioned_table_geometry`

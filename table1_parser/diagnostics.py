@@ -283,18 +283,48 @@ def build_parse_quality_report(
             ):
                 selected = split_comparison.get("selected")
                 selected_body_start = selected.get("body_start") if isinstance(selected, dict) else None
-                table_diagnostics.append(
-                    DiagnosticItem(
-                        severity="warning",
-                        code="header_body_split_rule_disagreement",
-                        message=(
-                            "Horizontal-rule and value-region header/body splits disagree "
-                            f"(hline body_start={hline_body_start}, "
-                            f"value-anchor body_start={value_anchor_body_start}, "
-                            f"selected body_start={selected_body_start})."
-                        ),
+                expected_body_leader_gap = False
+                if (
+                    hline_body_start < value_anchor_body_start
+                    and selected_body_start == hline_body_start
+                    and value_anchor_body_start - hline_body_start <= 3
+                ):
+                    row_view_by_idx = {row_view.row_idx: row_view for row_view in table.row_views}
+                    variable_start_rows = {block.row_start for block in variable_blocks}
+                    expected_body_leader_gap = True
+                    for row_idx in range(hline_body_start, value_anchor_body_start):
+                        classification = classification_by_row.get(row_idx)
+                        if row_idx not in variable_start_rows and (
+                            classification is None
+                            or classification.classification not in {"variable_header", "section_header"}
+                        ):
+                            expected_body_leader_gap = False
+                            break
+                        row_view = row_view_by_idx.get(row_idx)
+                        if row_view is None:
+                            expected_body_leader_gap = False
+                            break
+                        recognized_values = [
+                            detect_value_pattern(raw_value).pattern
+                            for raw_value in row_view.raw_cells[1:]
+                            if clean_text(raw_value)
+                        ]
+                        if any(pattern in RECOGNIZED_PATTERNS for pattern in recognized_values):
+                            expected_body_leader_gap = False
+                            break
+                if not expected_body_leader_gap:
+                    table_diagnostics.append(
+                        DiagnosticItem(
+                            severity="warning",
+                            code="header_body_split_rule_disagreement",
+                            message=(
+                                "Horizontal-rule and value-region header/body splits disagree "
+                                f"(hline body_start={hline_body_start}, "
+                                f"value-anchor body_start={value_anchor_body_start}, "
+                                f"selected body_start={selected_body_start})."
+                            ),
+                        )
                     )
-                )
 
     role_by_col = {role.col_idx: role for role in column_roles}
     for col_idx in range(1, table.n_cols):

@@ -405,22 +405,42 @@ def build_row_grid_from_lines(
         row_width = len(boundaries) + 1
         value_column_anchors: list[float] = []
     else:
-        broad_numeric_positions = sorted(
-            float(word["x0"])
-            for line in lines
-            for word in line["words"]
-            if _is_numeric_like(str(word["text"]))
-        )
+        broad_numeric_positions: list[float] = []
         numeric_position_items: list[tuple[float, int]] = []
         for line_index, line in enumerate(lines):
-            for word in line["words"]:
+            suppressed_paren_balance = 0
+            previous_anchor_x1: float | None = None
+            for word in sorted(line["words"], key=lambda item: float(item["x0"])):
                 text = str(word["text"]).strip()
                 compact_text = re.sub(r"[\s,\u00a0\u2009\u202f]+", "", text)
                 if not NUMERIC_TOKEN_PATTERN.search(compact_text):
+                    if suppressed_paren_balance > 0:
+                        suppressed_paren_balance += text.count("(") - text.count(")")
+                        suppressed_paren_balance = max(0, suppressed_paren_balance)
                     continue
-                if ALPHA_TOKEN_PATTERN.search(compact_text) and P_VALUE_ANCHOR_PATTERN.fullmatch(compact_text) is None:
+                word_x0 = float(word["x0"])
+                word_x1 = float(word["x1"])
+                starts_parenthesized_fragment = text.lstrip().startswith("(")
+                if suppressed_paren_balance > 0:
+                    suppressed_paren_balance += text.count("(") - text.count(")")
+                    suppressed_paren_balance = max(0, suppressed_paren_balance)
                     continue
-                numeric_position_items.append((float(word["x0"]), line_index))
+                if (
+                    starts_parenthesized_fragment
+                    and previous_anchor_x1 is not None
+                    and word_x0 - previous_anchor_x1 <= 8.0
+                ):
+                    suppressed_paren_balance = max(0, text.count("(") - text.count(")"))
+                    continue
+                broad_numeric_positions.append(word_x0)
+                if (
+                    ALPHA_TOKEN_PATTERN.search(compact_text) is None
+                    or P_VALUE_ANCHOR_PATTERN.fullmatch(compact_text) is not None
+                ):
+                    numeric_position_items.append((float(word["x0"]), line_index))
+                previous_anchor_x1 = word_x1
+                suppressed_paren_balance = max(0, text.count("(") - text.count(")"))
+        broad_numeric_positions.sort()
         numeric_position_items = sorted(numeric_position_items)
         if not numeric_position_items:
             numeric_anchors = []
@@ -467,6 +487,22 @@ def build_row_grid_from_lines(
                     else:
                         broad_clusters.append([position])
                 numeric_anchors = [sum(cluster) / len(cluster) for cluster in broad_clusters]
+                if numeric_anchors:
+                    left_text_present = any(
+                        ALPHA_TOKEN_PATTERN.search(str(word["text"]))
+                        and not _is_numeric_like(str(word["text"]))
+                        and float(word.get("x1", word["x0"])) < numeric_anchors[0] - COLUMN_CLUSTER_TOLERANCE
+                        for line in lines
+                        for word in line["words"]
+                    )
+                    if left_text_present:
+                        leftmost_word_x0 = min(
+                            float(word["x0"])
+                            for line in lines
+                            for word in line["words"]
+                        )
+                        numeric_anchors = [leftmost_word_x0, *numeric_anchors]
+                        has_left_label_anchor = True
             elif value_anchors:
                 leftmost_word_x0 = min(
                     float(word["x0"])
@@ -488,6 +524,47 @@ def build_row_grid_from_lines(
         ]
         row_width = len(numeric_anchors) if has_left_label_anchor else len(numeric_anchors) + 1
         value_column_anchors = numeric_anchors[1:] if has_left_label_anchor else numeric_anchors
+        if has_left_label_anchor and value_column_anchors:
+            first_value_anchor = value_column_anchors[0]
+            first_value_boundary_candidates: list[float] = []
+            for line in lines:
+                sorted_words = sorted(line["words"], key=lambda item: float(item["x0"]))
+                first_value_word: dict[str, object] | None = None
+                for word in sorted_words:
+                    text = str(word["text"]).strip()
+                    compact_text = re.sub(r"[\s,\u00a0\u2009\u202f]+", "", text)
+                    if not NUMERIC_TOKEN_PATTERN.search(compact_text):
+                        continue
+                    if (
+                        ALPHA_TOKEN_PATTERN.search(compact_text) is not None
+                        and P_VALUE_ANCHOR_PATTERN.fullmatch(compact_text) is None
+                    ):
+                        continue
+                    if abs(float(word["x0"]) - first_value_anchor) <= COLUMN_CLUSTER_TOLERANCE:
+                        first_value_word = word
+                        break
+                if first_value_word is None:
+                    continue
+                first_value_x0 = float(first_value_word["x0"])
+                prior_words = [
+                    word
+                    for word in sorted_words
+                    if str(word["text"]).strip()
+                    and float(word.get("x1", word["x0"])) <= first_value_x0 - 2.0
+                ]
+                if not prior_words:
+                    continue
+                prior_x1 = max(float(word.get("x1", word["x0"])) for word in prior_words)
+                if first_value_x0 - prior_x1 < 8.0:
+                    continue
+                first_value_boundary_candidates.append((prior_x1 + first_value_x0) / 2.0)
+            if first_value_boundary_candidates and boundaries:
+                first_value_boundary_candidates.sort()
+                first_boundary = first_value_boundary_candidates[
+                    len(first_value_boundary_candidates) // 2
+                ]
+                if boundaries[0] < first_boundary < first_value_anchor - 4.0:
+                    boundaries[0] = first_boundary
     if not boundaries and row_width <= 1:
         return ([], [])
     if geometry_out is not None:
@@ -504,7 +581,7 @@ def build_row_grid_from_lines(
     for line in lines:
         row_cells = [""] * row_width
         row_bboxes: list[tuple[float, float, float, float] | None] = [None] * row_width
-        for word in line["words"]:
+        for word in sorted(line["words"], key=lambda item: float(item["x0"])):
             text = str(word["text"]).strip()
             word_width = float(word["x1"]) - float(word["x0"])
             word_height = float(word["bottom"]) - float(word["top"])
@@ -573,6 +650,48 @@ def build_row_grid_from_lines(
                     max(existing_bbox[2], word_bbox[2]),
                     max(existing_bbox[3], word_bbox[3]),
                 )
+        source_column_index = 0
+        while source_column_index < row_width:
+            source_text = row_cells[source_column_index]
+            paren_balance = source_text.count("(") - source_text.count(")")
+            if not source_text.strip() or paren_balance <= 0:
+                source_column_index += 1
+                continue
+            merge_indices: list[int] = []
+            close_found = False
+            for lookahead_column_index in range(source_column_index + 1, row_width):
+                lookahead_text = row_cells[lookahead_column_index]
+                if not lookahead_text.strip():
+                    continue
+                paren_balance += lookahead_text.count("(") - lookahead_text.count(")")
+                merge_indices.append(lookahead_column_index)
+                if paren_balance <= 0:
+                    close_found = True
+                    break
+            if close_found:
+                for merge_column_index in merge_indices:
+                    row_cells[source_column_index] = " ".join(
+                        cell
+                        for cell in (
+                            row_cells[source_column_index],
+                            row_cells[merge_column_index],
+                        )
+                        if cell.strip()
+                    ).strip()
+                    source_bbox = row_bboxes[source_column_index]
+                    merge_bbox = row_bboxes[merge_column_index]
+                    if source_bbox is None:
+                        row_bboxes[source_column_index] = merge_bbox
+                    elif merge_bbox is not None:
+                        row_bboxes[source_column_index] = (
+                            min(source_bbox[0], merge_bbox[0]),
+                            min(source_bbox[1], merge_bbox[1]),
+                            max(source_bbox[2], merge_bbox[2]),
+                            max(source_bbox[3], merge_bbox[3]),
+                        )
+                    row_cells[merge_column_index] = ""
+                    row_bboxes[merge_column_index] = None
+            source_column_index += 1
         populated_indices = [index for index, cell in enumerate(row_cells) if cell.strip()]
         if len(populated_indices) >= 2 and row_width >= 4:
             rightmost_index = populated_indices[-1]
@@ -985,6 +1104,7 @@ def build_text_layout_candidates(
                         "layout_source": layout_source,
                         "grid_refinement_source": "text_position_column_geometry",
                         "geometry_source": "pymupdf_positioned_words",
+                        "canonical_extraction_layer": "pymupdf_positioned_geometry",
                         "geometry_coordinate_frame": "page",
                         "table_cells": segment.get("cell_bboxes", []),
                         "row_bounds": segment["row_bounds"],
