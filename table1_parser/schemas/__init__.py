@@ -34,6 +34,7 @@ from table1_parser.schemas.paper_bibliography import (
     PaperBibliography,
 )
 from table1_parser.schemas.paper_table_inventory import PaperTableInventory, PaperTableRecord, TableCategory
+from table1_parser.schemas.paper_table_mentions import PaperTableMention, TableMentionKind
 from table1_parser.schemas.paper_text_stream import PaperTextLine, PaperTextLineRole, PaperTextPage, PaperTextStream
 from table1_parser.schemas.paper_footnotes import (
     FootnoteAnchor,
@@ -100,6 +101,11 @@ from table1_parser.schemas.table_definition import (
     DefinedVariable,
     TableDefinition,
 )
+from table1_parser.schemas.table_region import (
+    TableRegion,
+    TableRegionRow,
+    TableRegionRowRole,
+)
 from table1_parser.schemas.table_continuation_column_check import TableContinuationColumnCheck
 from table1_parser.schemas.table1_continuation import Table1ContinuationGroup, Table1ContinuationMember
 from table1_parser.schemas.table_processing_status import (
@@ -139,6 +145,7 @@ __all__ = [
     "PaperStyleProfile",
     "PaperTableInventory",
     "PaperTableRecord",
+    "PaperTableMention",
     "PaperTextLine",
     "PaperTextLineRole",
     "PaperTextPage",
@@ -193,8 +200,12 @@ __all__ = [
     "Table1ContinuationMember",
     "TableCell",
     "TableCategory",
+    "TableMentionKind",
     "TableProcessingAttempt",
     "TableProcessingStatus",
+    "TableRegion",
+    "TableRegionRow",
+    "TableRegionRowRole",
     "VariableCandidate",
     "VariableMention",
     "VariableMentionRole",

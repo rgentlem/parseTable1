@@ -36,13 +36,14 @@ The target position is after normalization and before value-free semantic
 definition:
 
 ```text
-ExtractedTable -> NormalizedTable -> ColumnHeaderSchema -> TableDefinition -> ParsedTable
+ExtractedTable -> TableRegion -> NormalizedTable -> ColumnHeaderSchema -> TableDefinition -> ParsedTable
 ```
 
-`NormalizedTable` remains the cleaned row/column grid. `ColumnHeaderSchema`
-becomes the explicit column-structure model built from that grid plus optional
-raw extraction evidence. `TableDefinition` can then consume a column schema
-instead of rebuilding header context locally.
+`TableRegion` supplies geometry-owned caption/header/body/footer row bands when
+available. `NormalizedTable` remains the cleaned row/column grid.
+`ColumnHeaderSchema` becomes the explicit column-structure model built from
+that grid plus optional raw extraction evidence. `TableDefinition` can then
+consume a column schema instead of rebuilding header context locally.
 
 The artifact should be written by `table1-parser parse` as:
 
@@ -143,6 +144,8 @@ Common cases:
 
 - repeated group labels across adjacent columns, such as `Severity of AL, %`
   repeated over statistic leaves
+- sparse upper labels aligned over a repeated leaf-header sequence, such as
+  `% (N)` / `95% CI` repeated under survey-cycle group labels
 - a single non-empty cell followed by blank cells until the next non-empty
   header cell
 - one upper label per leaf, such as `Q1`, `Q2`, `Q3`, `Q4` above threshold
@@ -329,6 +332,10 @@ For each higher header row:
 - ignore rows that are only continuation markers, captions, or table-title text
   when normalization has clearly misclassified them as headers
 - collapse adjacent repeated labels into one `repeated_label_span` group
+- when the leaf-header row repeats the same sequence across value blocks, use
+  that repeated sequence as a candidate upper-group partition only for sparse
+  or centered upper rows; do not override an upper row whose own adjacent
+  repeated labels already define its span
 - let a non-empty cell span following blank cells until the next non-empty cell
   only when the span covers real leaves and does not cross another explicit
   group boundary

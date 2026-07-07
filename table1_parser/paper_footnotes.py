@@ -15,6 +15,7 @@ from table1_parser.extract.pymupdf_page_adapter import (
 )
 from table1_parser.page_furniture_mask import filter_positioned_items_for_page_furniture
 from table1_parser.schemas import (
+    CellTextAnnotation,
     CellTextAnnotationTable,
     ColumnHeaderSchema,
     ExtractedTable,
@@ -32,6 +33,7 @@ from table1_parser.schemas import (
     Table1ContinuationGroup,
     TableCell,
 )
+from table1_parser.schemas.table_region import TableRegion
 from table1_parser.text_cleaning import clean_text
 
 
@@ -79,7 +81,7 @@ DEFINITION_BLOCK_MARKER_PATTERN = re.compile(
 )
 EXTRACTED_FOOTER_MARKER_EVIDENCE_PATTERN = re.compile(
     rf"(?P<prefix>^|[.;:,]\s+|[)\]]\s+)"
-    rf"(?P<glyph>{DEFINITION_SYMBOL_MARKER_TOKEN_PATTERN}|[a-z](?=(?:[A-Z][a-z]|P\s*[<=>≤≥])))"
+    rf"(?P<glyph>{DEFINITION_SYMBOL_MARKER_TOKEN_PATTERN}|[a-z](?=P\s*[<=>≤≥]))"
     rf"\s*(?=\S)"
 )
 TEXTUAL_ASTERISK_DEFINITION_PATTERN = re.compile(
@@ -117,6 +119,7 @@ def build_paper_footnote_anchor_inventory(
     math_unit_suppressed_anchor_count = 0
     subscript_suppressed_anchor_count = 0
     word_like_subscript_suppressed_anchor_count = 0
+    non_footnote_symbol_suppressed_anchor_count = 0
     schemas_by_table_id = {schema.table_id: schema for schema in column_header_schemas or []}
     extracted_by_table_id = {table.table_id: table for table in extracted_tables or []}
     visual_id_by_table_id = _table_visual_ids(extracted_tables or [], table1_continuation_groups)
@@ -149,6 +152,9 @@ def build_paper_footnote_anchor_inventory(
                 math_unit_suppressed_anchor_count += 1
                 continue
             glyph_kind, glyph_key, glyph_codepoints = glyph_fields(glyph_raw)
+            if glyph_key == "symbol:vertical_bar":
+                non_footnote_symbol_suppressed_anchor_count += 1
+                continue
             if glyph_kind == "letter" and len(unicodedata.normalize("NFKC", glyph_raw).strip()) > 1:
                 word_like_subscript_suppressed_anchor_count += 1
                 continue
@@ -240,6 +246,7 @@ def build_paper_footnote_anchor_inventory(
             "math_unit_anchor_suppression_count": math_unit_suppressed_anchor_count,
             "subscript_anchor_suppression_count": subscript_suppressed_anchor_count,
             "word_like_subscript_anchor_suppression_count": word_like_subscript_suppressed_anchor_count,
+            "non_footnote_symbol_suppression_count": non_footnote_symbol_suppressed_anchor_count,
             "definitions_status": "not_built",
             "links_status": "not_built",
         },
@@ -540,10 +547,14 @@ def find_table_footer_definition_blocks(
 def build_paper_footnote_definition_lines_from_extracted_tables(
     extracted_tables: Sequence[ExtractedTable],
     table1_continuation_groups: Sequence[Table1ContinuationGroup] | None = None,
+    table_regions: Sequence[TableRegion] | None = None,
+    cell_text_annotations: Sequence[CellTextAnnotationTable] | None = None,
 ) -> list[FootnoteDefinitionCandidateLine]:
     """Collect table-local footer definition blocks from extracted table rows."""
     lines: list[FootnoteDefinitionCandidateLine] = []
     visual_id_by_table_id = _table_visual_ids(extracted_tables, table1_continuation_groups)
+    region_by_table_id = {region.table_id: region for region in table_regions or []}
+    footer_marker_annotations = _footer_marker_annotations_by_cell(cell_text_annotations or [], extracted_tables)
     for table in extracted_tables:
         rows_by_idx: dict[int, list[TableCell]] = {}
         for cell in table.cells:
@@ -554,9 +565,14 @@ def build_paper_footnote_definition_lines_from_extracted_tables(
             (row_idx, sorted(cells, key=lambda cell: cell.col_idx))
             for row_idx, cells in sorted(rows_by_idx.items())
         ]
-        footer_rows, _footer_detection_basis = find_table_footer_rows(table, ordered_rows)
+        footer_rows, _footer_detection_basis = find_table_footer_rows(
+            table,
+            ordered_rows,
+            table_region=region_by_table_id.get(table.table_id),
+        )
         if not footer_rows:
             continue
+        table_marker_annotations = footer_marker_annotations.get(table.table_id, {})
 
         current_start_row_idx: int | None = None
         current_end_row_idx: int | None = None
@@ -574,6 +590,7 @@ def build_paper_footnote_definition_lines_from_extracted_tables(
                         start_row_idx=current_start_row_idx,
                         end_row_idx=current_end_row_idx or current_start_row_idx,
                         rows=current_rows,
+                        marker_annotations=table_marker_annotations,
                     )
                 )
                 current_start_row_idx = None
@@ -582,6 +599,7 @@ def build_paper_footnote_definition_lines_from_extracted_tables(
                 continue
             starts_definition = (
                 _has_extracted_footer_definition_start(row_text)
+                or _row_has_structured_footer_marker(row_cells, table_marker_annotations)
             )
             if starts_definition:
                 if current_start_row_idx is not None and current_rows:
@@ -592,6 +610,7 @@ def build_paper_footnote_definition_lines_from_extracted_tables(
                             start_row_idx=current_start_row_idx,
                             end_row_idx=current_end_row_idx or current_start_row_idx,
                             rows=current_rows,
+                            marker_annotations=table_marker_annotations,
                         )
                     )
                 current_start_row_idx = row_idx
@@ -610,6 +629,7 @@ def build_paper_footnote_definition_lines_from_extracted_tables(
                     start_row_idx=current_start_row_idx,
                     end_row_idx=current_end_row_idx or current_start_row_idx,
                     rows=current_rows,
+                    marker_annotations=table_marker_annotations,
                 )
             )
     return lines
@@ -618,10 +638,12 @@ def build_paper_footnote_definition_lines_from_extracted_tables(
 def build_paper_footnote_footers_from_extracted_tables(
     extracted_tables: Sequence[ExtractedTable],
     table1_continuation_groups: Sequence[Table1ContinuationGroup] | None = None,
+    table_regions: Sequence[TableRegion] | None = None,
 ) -> list[FootnoteFooter]:
     """Build reviewable table-footer regions from extracted table rows."""
     footers: list[FootnoteFooter] = []
     visual_id_by_table_id = _table_visual_ids(extracted_tables, table1_continuation_groups)
+    region_by_table_id = {region.table_id: region for region in table_regions or []}
     for table_position, table in enumerate(extracted_tables):
         rows_by_idx: dict[int, list[TableCell]] = {}
         for cell in table.cells:
@@ -632,7 +654,11 @@ def build_paper_footnote_footers_from_extracted_tables(
             (row_idx, sorted(cells, key=lambda cell: cell.col_idx))
             for row_idx, cells in sorted(rows_by_idx.items())
         ]
-        footer_rows, detection_basis = find_table_footer_rows(table, ordered_rows)
+        footer_rows, detection_basis = find_table_footer_rows(
+            table,
+            ordered_rows,
+            table_region=region_by_table_id.get(table.table_id),
+        )
         if not footer_rows or detection_basis is None:
             continue
         footer_row_records = [
@@ -1094,11 +1120,78 @@ def glyph_fields(glyph_raw: str) -> tuple[FootnoteGlyphKind, str, list[str]]:
     return "unknown", f"unknown:{normalized_key or glyph}", codepoints
 
 
+def _footer_marker_annotations_by_cell(
+    cell_text_annotations: Sequence[CellTextAnnotationTable],
+    extracted_tables: Sequence[ExtractedTable],
+) -> dict[str, dict[tuple[int, int], list[CellTextAnnotation]]]:
+    first_populated_cell_by_row: dict[str, dict[int, tuple[int, tuple[float, float, float, float] | None]]] = {}
+    for table in extracted_tables:
+        row_cells: dict[int, list[TableCell]] = {}
+        for cell in table.cells:
+            if clean_text(cell.text):
+                row_cells.setdefault(cell.row_idx, []).append(cell)
+        first_populated_cell_by_row[table.table_id] = {
+            row_idx: (min(cells, key=lambda cell: cell.col_idx).col_idx, min(cells, key=lambda cell: cell.col_idx).bbox)
+            for row_idx, cells in row_cells.items()
+        }
+
+    markers: dict[str, dict[tuple[int, int], list[CellTextAnnotation]]] = {}
+    for annotation_table in cell_text_annotations:
+        first_cells = first_populated_cell_by_row.get(annotation_table.table_id, {})
+        for annotation in annotation_table.annotations:
+            first_cell = first_cells.get(annotation.row_idx)
+            if first_cell is None:
+                continue
+            first_col_idx, first_bbox = first_cell
+            if annotation.col_idx != first_col_idx or annotation.annotation_type != "superscript":
+                continue
+            if first_bbox is not None and annotation.bbox is not None and annotation.bbox[0] > first_bbox[0] + 6.0:
+                continue
+            markers.setdefault(annotation_table.table_id, {}).setdefault(
+                (annotation.row_idx, annotation.col_idx),
+                [],
+            ).append(annotation)
+    return markers
+
+
+def _row_has_structured_footer_marker(
+    row_cells: Sequence[TableCell],
+    marker_annotations: Mapping[tuple[int, int], Sequence[CellTextAnnotation]],
+) -> bool:
+    populated_cells = [cell for cell in row_cells if clean_text(cell.text)]
+    if not populated_cells:
+        return False
+    first_cell = min(populated_cells, key=lambda cell: cell.col_idx)
+    return any(
+        _cell_has_row_start_marker_annotation(first_cell, annotation)
+        for annotation in marker_annotations.get((first_cell.row_idx, first_cell.col_idx), [])
+    )
+
+
+def _cell_has_row_start_marker_annotation(cell: TableCell, annotation: CellTextAnnotation) -> bool:
+    if annotation.annotation_type != "superscript" or not annotation.text.strip():
+        return False
+    if annotation.bbox is None or cell.bbox is None:
+        return annotation.attached_to_text is None
+    return annotation.bbox[0] <= cell.bbox[0] + 6.0
+
+
 def find_table_footer_rows(
     table: ExtractedTable,
     ordered_rows: Sequence[tuple[int, list[TableCell]]],
+    *,
+    table_region: TableRegion | None = None,
 ) -> tuple[list[tuple[int, list[TableCell]]], str | None]:
     """Return table-local footer rows using existing table rule geometry when available."""
+    if table_region is not None and table_region.footer_note_rows:
+        footer_row_indices = set(table_region.footer_note_rows)
+        footer_rows = [
+            (row_idx, row_cells)
+            for row_idx, row_cells in ordered_rows
+            if row_idx in footer_row_indices
+        ]
+        if footer_rows:
+            return footer_rows, "table_region_footer_note_band"
     last_value_row_idx = _last_value_matrix_row_idx(ordered_rows, table.n_cols)
     row_bounds = table.metadata.get("row_bounds")
     rules = table.metadata.get("full_width_horizontal_rules")
@@ -1195,6 +1288,7 @@ def _table_footer_definition_line(
     start_row_idx: int,
     end_row_idx: int,
     rows: Sequence[tuple[int, Sequence[TableCell]]],
+    marker_annotations: Mapping[tuple[int, int], Sequence[CellTextAnnotation]],
 ) -> FootnoteDefinitionCandidateLine:
     """Build one logical table-footer source line from one or more extracted rows."""
     row_range = (
@@ -1202,7 +1296,10 @@ def _table_footer_definition_line(
         if start_row_idx == end_row_idx
         else f"r{start_row_idx}-r{end_row_idx}"
     )
-    raw_text, marker_evidence = _text_and_marker_evidence_for_extracted_footer_rows(rows)
+    raw_text, marker_evidence = _text_and_marker_evidence_for_extracted_footer_rows(
+        rows,
+        marker_annotations=marker_annotations,
+    )
     return FootnoteDefinitionCandidateLine(
         line_id=f"{table.table_id}:footer:{row_range}",
         page_num=table.page_num,
@@ -1221,6 +1318,8 @@ def _table_footer_definition_line(
 
 def _text_and_marker_evidence_for_extracted_footer_rows(
     rows: Sequence[tuple[int, Sequence[TableCell]]],
+    *,
+    marker_annotations: Mapping[tuple[int, int], Sequence[CellTextAnnotation]],
 ) -> tuple[str, list[FootnoteDefinitionMarkerEvidence]]:
     """Build footer text and marker evidence from confirmed table-footer rows."""
     text_parts: list[str] = []
@@ -1244,12 +1343,39 @@ def _text_and_marker_evidence_for_extracted_footer_rows(
     raw_text = clean_text("".join(text_parts))
     marker_evidence: list[FootnoteDefinitionMarkerEvidence] = []
     for cell_offset, cell_text, cell in cell_offsets:
+        for annotation in marker_annotations.get((cell.row_idx, cell.col_idx), []):
+            if not _cell_has_row_start_marker_annotation(cell, annotation):
+                continue
+            glyph_raw = annotation.text.strip()
+            if not glyph_raw:
+                continue
+            start = cell_offset
+            end = cell_offset + len(glyph_raw)
+            marker_evidence.append(
+                FootnoteDefinitionMarkerEvidence(
+                    glyph_raw=glyph_raw,
+                    evidence_type="cell_text_annotation_marker",
+                    text_start=start,
+                    text_end=end,
+                    confidence=annotation.confidence if annotation.confidence is not None else 0.9,
+                    bbox=annotation.bbox,
+                    metadata={
+                        "row_idx": cell.row_idx,
+                        "col_idx": cell.col_idx,
+                        "annotation_type": annotation.annotation_type,
+                        **annotation.metadata,
+                    },
+                    notes=["marker_from_superscript_cell_annotation"],
+                )
+            )
         for match in EXTRACTED_FOOTER_MARKER_EVIDENCE_PATTERN.finditer(cell_text):
             glyph_raw = _definition_glyph_from_marker(match.group("glyph"))
             if not glyph_raw:
                 continue
             start = cell_offset + match.start("glyph")
             end = cell_offset + match.end("glyph")
+            if any(item.text_start == start and item.text_end == end and item.glyph_raw == glyph_raw for item in marker_evidence):
+                continue
             marker_evidence.append(
                 FootnoteDefinitionMarkerEvidence(
                     glyph_raw=glyph_raw,

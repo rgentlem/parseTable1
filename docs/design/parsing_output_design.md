@@ -23,7 +23,7 @@ Before changing JSON outputs or schemas, always read:
 Those files define the main development criteria:
 
 - keep extraction, normalization, heuristics, LLM interpretation, and validation as separate modules
-- preserve the pipeline shape `PDF -> ExtractedTable -> NormalizedTable -> ColumnHeaderSchema -> ResolvedTableSet -> TableDefinition -> ParsedTable`
+- preserve the pipeline shape `PDF -> ExtractedTable -> TableRegion -> NormalizedTable -> ColumnHeaderSchema -> ResolvedTableSet -> TableDefinition -> ParsedTable`
 - keep tables in structured JSON rather than switching to Markdown-first representations
 - preserve raw extracted data and original text
 - use deterministic parsing first and LLM refinement only for semantic disambiguation
@@ -71,8 +71,9 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Layer | Canonical type | Current file status | Main purpose |
 | --- | --- | --- | --- |
 | Extraction | `ExtractedTable` | Written now as `extracted_tables.json` by `extract` and `parse` | Preserve raw table grid and cell provenance |
+| Table region ownership | `TableRegion` | Written now as `table_regions.json` by `parse` | Persist geometry-derived row ownership for captions, preamble rows, column-header bands, body rows, and footer/note bands before normalization consumes them |
 | Cell text annotations | `CellTextAnnotationTable` | Written now as `cell_text_annotations.json` by `parse` | Preserve superscript, subscript, and small marker geometry as extraction-side evidence without rewriting raw cell text |
-| Normalization | `NormalizedTable` | Written now as `normalized_tables.json` by `normalize` and `parse` | Clean rows, detect headers, derive row features |
+| Normalization | `NormalizedTable` | Written now as `normalized_tables.json` by `normalize` and `parse` | Clean rows, apply table-region row ownership when available, and derive row features |
 | Column header schema | `ColumnHeaderSchema` | Written now as `column_header_schemas.json` by `parse` | Persist parser-native leaf columns, spanning header groups, group-to-leaf relationships, raw cell evidence, and coordinates before semantic column projection |
 | Resolved table set | `ResolvedTableSet` | Written now as `resolved_tables.json` by `parse` | Persist the semantic working table list after continuation resolution while preserving `normalized_tables.json` as full source evidence |
 | Table 1 continuation inspection | `Table1ContinuationGroup`, `NormalizedTable` | Written now as `table1_continuation_groups.json` and `merged_table1_tables.json` by `parse` | Persist source-fragment grouping and merged normalized-row review views for explicit or strongly inferred Table 1 continuations |
@@ -82,7 +83,7 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Table definition | `TableDefinition` | Written now as `table_definitions.json` by `parse` | Persist value-free row-variable, level, and column semantics |
 | Continued variable integration | `TableDefinition` | Written now as `continued_variable_integrations.json` by `parse` | Persist a source-fragment review view for compatible continued Table 1 fragments; this is not consumed by canonical semantic parsing now that `resolved_tables.json` feeds `TableDefinition` and `ParsedTable` |
 | Parsed source-cell values | `ParsedCellValue` | Written now as `parsed_cell_values.json` by `parse` | Persist source-grid cell value components keyed by table and row/column indices before semantic row/column value joins |
-| Paper context | `PaperTextStream`, `PaperSection`, `PaperVisual`, `PaperVisualReference`, `TableContext` | Written now as `paper_markdown.md`, `paper_text_stream.json`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, and `table_contexts/*.json` by `parse` | Persist raw backend markdown, layout-aware column-ordered paper text, sections, actual in-paper visual objects, anchored table/figure references, and per-table retrieval bundles |
+| Paper context | `PaperTextStream`, `PaperSection`, `PaperTableMention`, `PaperVisual`, `PaperVisualReference`, `TableContext` | Written now as `paper_markdown.md`, `paper_text_stream.json`, `paper_sections.json`, `paper_table_mentions.json`, `paper_visual_inventory.json`, `paper_references.json`, and `table_contexts/*.json` by `parse` | Persist raw backend markdown, layout-aware column-ordered paper text, sections, pre-extraction table mention classification, actual in-paper visual objects, anchored table/figure references, and per-table retrieval bundles |
 | Paper bibliography | `PaperBibliography`, `BibliographyEntry`, `BibliographyReferenceMention` | Written now as `paper_bibliography.json` by `parse` | Persist the paper's own bibliography entries, numbered or unnumbered, and link observed numeric reference markers to numbered entries without creating a cross-paper citation-management layer |
 | Paper style profile | `PaperStyleProfile`, `PaperStyleDimension`, `PaperStyleCheck`, `PaperStyleEvidence` | Written now as `paper_style_profile.json` by `parse` | Persist document-level counts, examples, and consistency checks for footnote-marker, bibliography, caption-placement, and visual-reference conventions without changing extraction or link decisions |
 | Paper variable inventory | `PaperVariableInventory`, `VariableMention`, `VariableCandidate` | Written now as `paper_variable_inventory.json` by `parse` | Persist the paper-level candidate variable reference list with explicit text/table provenance |
@@ -92,7 +93,7 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Final parsed output | `ParsedTable` | Written now as `parsed_tables.json` by `parse` | Validated downstream structured table data |
 | Table processing status | `TableProcessingStatus`, `TableProcessingAttempt` | Written now as `table_processing_status.json` by `parse` | Persist resolved-table rescue attempts, source fragment IDs and diagnostics, terminal failure stage, and failure reason without overloading semantic artifacts |
 | Parse quality diagnostics | `ParseQualityReport` | Written now as `parse_quality_reports.json` by `parse` | Persist deterministic row, column, and value-pattern diagnostics without changing parse behavior |
-| Paper footnotes | `PaperFootnotes` | Written now as `paper_footnotes.json` by `parse` | Persist detected table-local footer regions from extracted rows and page-furniture-filtered PDF text blocks, footnote anchors, PyMuPDF text-block definition candidates with marker evidence, table-footer block classification, page-furniture filter-stage metadata, math/unit suppression metadata, explicit glyph-key links, and structured conventional p-value-star inferences as reviewable evidence without rewriting table text or parsed values |
+| Paper footnotes | `PaperFootnotes` | Written now as `paper_footnotes.json` by `parse` | Persist detected table-local footer regions from extracted rows and page-furniture-filtered PDF text blocks, footnote anchors, PyMuPDF text-block and cell-annotation definition marker evidence, table-footer block classification, page-furniture filter-stage metadata, math/unit/non-footnote-symbol suppression metadata, explicit glyph-key links, and structured conventional p-value-star inferences as reviewable evidence without rewriting table text or parsed values |
 | Paper page furniture | `PaperPageFurniture` | Written now as `paper_page_furniture.json` by `parse` | Persist repeated page text observations, clusters, and ignored regions used near the front of document processing to mask whole-paper markdown/context parsing, extraction, cell annotations, and footnote PDF-block collection before downstream artifacts are built |
 
 Design note for future multitable support:
@@ -109,7 +110,9 @@ These rules matter because later stages refer back to earlier stages.
 
 - `table_id` is the stable table identifier for one extracted table.
 - `row_idx` values are zero-based row indices in the table grid.
-- `header_rows` and `body_rows` are lists of those same grid row indices.
+- `TableRegion` row assignments, `header_rows`, and `body_rows` are lists of
+  those same grid row indices. In current parse output, `header_rows` should
+  mean the table's column-header band, not a page header or table caption.
 - `row_start`, `row_end`, and level `row_idx` values refer to the same row-index space, not to a separate body-only counter.
 - `col_idx` is a zero-based column index in the normalized table grid after any edge-column trimming performed during normalization.
 
@@ -199,6 +202,7 @@ Design intent:
 - extraction may refine a coarse explicit backend grid when word geometry inside the table bbox, together with strong horizontal boundaries, supports a better row/column structure
 - full-width horizontal-rule metadata should be based on stroked line/rule geometry, not filled row highlighting or background shading
 - collapsed-grid word-position refinement chooses value-column anchors from repeated value-like numeric positions rather than one-off digit-bearing label tokens; when needed, it preserves a left label anchor and pulls nonnumeric label fragments back from value columns on rows whose only right-side value is a trailing statistic such as a p-value
+- hline-led word-position refinement can rebuild small or large ruled explicit tables from PyMuPDF words when full-width rules provide stronger row-band evidence than the PyMuPDF4LLM cell grid; this records `metadata.grid_refinement_source = "hline_word_positions"` and preserves the original backend grid in refinement metadata
 - rotated explicit tables may be refined in a table-local normalized coordinate frame; when that happens, `table_cells`, `row_bounds`, and `horizontal_rules` describe that local frame rather than raw page coordinates, while `geometry_transform_source_bbox`, `geometry_transform_transposed`, and `geometry_transform_applied` record the transform input needed to map page characters into the same frame
 - for explicit PyMuPDF4LLM tables, extraction may record `first_column_text_x0_by_row` so normalization can infer visible row-label indentation from word positions rather than full cell boundaries; this metadata supports row classification only and does not replace cell bboxes
 - text-position fallback candidates may preserve parser-facing cell text bounding boxes in `table_cells`; for these candidates, first-column cell boxes are based on the recovered text extents and can also support indentation-sensitive row classification
@@ -219,7 +223,58 @@ Design intent:
   `metadata.trailing_non_table_rows`. Broad footer/furniture cleanup belongs to
   the earlier page-furniture mask, not to value-gap trailing-row heuristics.
 
-## 2. `NormalizedTable` JSON
+## 2. `table_regions.json`
+
+Current CLI path:
+
+```text
+outputs/papers/<paper_stem>/table_regions.json
+```
+
+This file is written by:
+
+- `table1-parser parse`
+
+Top-level shape:
+
+```json
+[
+  {
+    "...": "one TableRegion object"
+  }
+]
+```
+
+Canonical model:
+
+- `TableRegion`
+- child model: `TableRegionRow`
+
+Design intent:
+
+- persist geometry-derived region ownership before normalization
+- distinguish page headers, table captions/titles, column-header bands, body
+  rows, and footer/note bands as separate concepts
+- use extracted table-entry geometry first: row bounds, cell boxes when row
+  bounds are missing, horizontal rules, and full-width horizontal rules
+- use extracted title/caption text only to validate rows already separated by
+  geometry as caption candidates, not to repair normalized headers later
+- provide a single source for downstream consumers that need table row
+  ownership; normalization, column-header schema assembly, footnote harvesting,
+  and continuation checks should not each rediscover those regions independently
+
+Important fields:
+
+- `caption_rows`, `preamble_rows`, `column_header_rows`, `body_rows`, and
+  `footer_note_rows`: row-index lists in extracted-table row space
+- `row_regions`: one role assignment per extracted row with detection basis and
+  confidence
+- `horizontal_rules` and `full_width_horizontal_rules`: rule evidence used by
+  the region detector
+- `diagnostics`: structured notes when rows are unassigned or fallback logic was
+  needed
+
+## 3. `NormalizedTable` JSON
 
 Current status:
 
@@ -310,6 +365,9 @@ Design intent:
 - normalization may also move an embedded count out of the first value column when that cell contains the tail of a row label plus a count-like value, recording evidence in `metadata.column_repairs.embedded_label_count_cells`
 - normalization may also merge label-only continuation rows into the preceding valued row when punctuation, footnote, or phrase-continuation cues show that the visual row label wrapped vertically, recording evidence in `metadata.column_repairs.vertical_label_continuations`
 - normalization may also expand a collapsed extracted value-region cell back into many visual value columns when that cell repeatedly contains a stable newline-delimited stack of numeric values; this repairs an extractor artifact where an upright wide data table has been collapsed in the raw grid even though the visual table is multi-column
+- when `TableRegion` is available, normalization uses region-owned header/body
+  rows as the evidence set for empty-column pruning, so footer/note rows do not
+  define the normalized data-grid column count
 - normalization records a comparison of the two primary structural header/body split candidates, a selective horizontal-rule boundary and the first value-region data anchor, so corpus review can inspect whether the selected rows came from agreeing evidence or from one available rule
 - when full-width horizontal rules identify a header band, `metadata.header_detection` may record `preamble_rows` above that band and `separator_body_support` explaining whether the body starts with a value-dense row or with a sparse parent/reference row followed by value rows
 - those repairs should be driven by row-style expectations and body-value patterns, not by paper-specific header templates
@@ -331,7 +389,7 @@ Conservative repair rule:
 - when a label-only fragment row wraps above the row containing its values, normalization may prepend that fragment to the following row label only when the fragment itself has strong unfinished-label evidence, such as an unmatched parenthesis or phrase connector
 - repair diagnostics should live in `metadata` rather than replacing the canonical `NormalizedTable` fields
 
-## 3. `column_header_schemas.json`
+## 4. `column_header_schemas.json`
 
 Current status:
 
@@ -403,7 +461,7 @@ Design intent:
 - the schema can later support stored summary/tableone-style projection by
   providing a stable column axis before any print method renders a table
 
-## 4. `resolved_tables.json`
+## 5. `resolved_tables.json`
 
 Current status:
 
@@ -503,7 +561,7 @@ Design intent:
   singleton resolved tables with diagnostics
 - avoid making R-side inspection objects the canonical continuation resolver
 
-## 5. Table 1 Continuation Inspection Artifacts
+## 6. Table 1 Continuation Inspection Artifacts
 
 Current status:
 
@@ -570,7 +628,7 @@ are supplied, but the current `parse` CLI writes this source-fragment review
 artifact using source-table profiles so it stays indexed to
 `normalized_tables.json`.
 
-## 6. `table_definitions.json`
+## 7. `table_definitions.json`
 
 Current status:
 
@@ -674,7 +732,7 @@ Design intent:
 - preserve grouped-column level labels and left-to-right order so downstream matching can reconstruct the table's column grouping structure
 - keep multirow column headers structural: parent groups are stored in `header_spans`, per-column paths are stored in `header_path`, and `column_label` remains the leaf label instead of a fragile flattened header string
 
-## 7. Paper Context Artifacts
+## 8. Paper Context Artifacts
 
 Current status:
 
@@ -689,6 +747,7 @@ Current CLI paths:
 outputs/papers/<paper_stem>/paper_markdown.md
 outputs/papers/<paper_stem>/paper_text_stream.json
 outputs/papers/<paper_stem>/paper_sections.json
+outputs/papers/<paper_stem>/paper_table_mentions.json
 outputs/papers/<paper_stem>/paper_bibliography.json
 outputs/papers/<paper_stem>/paper_style_profile.json
 outputs/papers/<paper_stem>/paper_visual_inventory.json
@@ -702,6 +761,7 @@ Canonical models:
 - `PaperSection`
 - `PaperTextStream`
 - child models: `PaperTextLine`, `PaperTextPage`
+- `PaperTableMention`
 - `PaperBibliography`
 - child models: `BibliographyEntry`, `BibliographyReferenceMention`
 - `PaperStyleProfile`
@@ -721,6 +781,12 @@ Design components:
   layout-aware full-paper text from positioned PyMuPDF lines, with repeated page-furniture lines removed, page-level `column_boundaries`/`column_bands`, and lines ordered by page, column, then vertical position for any detected column count
 - `paper_sections.json`
   sections derived from the layout-aware text stream when available, with heading level and simple role hints
+- `paper_table_mentions.json`
+  pre-extraction table mention records derived from the layout-aware text stream,
+  including whether each `Table N` line is likely a caption candidate,
+  continuation label, or prose reference. Extraction consumes this artifact so a
+  prose sentence split across lines, such as `is shown in` followed by
+  `Table 5.`, cannot seed a text-position table candidate.
 - `paper_bibliography.json`
   per-paper bibliography entries extracted from the positioned text stream
   before table extraction, plus table-cell numeric reference markers linked to
@@ -779,7 +845,7 @@ Variation note:
 - that variation should be handled in section parsing and retrieval, not by redefining the meaning of `paper_markdown.md` beyond conservative glyph repair
 - `docs/design/paper_markdown_spec.md` is the design reference for this artifact
 
-## 8. `table_variable_plausibility_llm.json`
+## 9. `table_variable_plausibility_llm.json`
 
 Current status:
 
@@ -839,7 +905,7 @@ outputs/papers/<paper_stem>/llm_variable_plausibility_debug/<timestamp>/
 - `llm_variable_plausibility_monitoring.json` summarizes every table's review status, including skipped-not-eligible tables
 - per-table trace files are written only for tables that actually reached the provider call path
 
-## 9. Variable-Plausibility Debug Trace Files
+## 10. Variable-Plausibility Debug Trace Files
 
 Current status:
 
@@ -900,7 +966,7 @@ Design intent:
 - preserve stable variable identity fields so disagreements can be audited safely
 - keep the prompt payload compact; the saved input wrapper currently uses short payload keys such as `table` and `vars`
 
-## 10. `parsed_cell_values.json`
+## 11. `parsed_cell_values.json`
 
 Current status:
 
@@ -978,7 +1044,7 @@ This artifact is a source component layer. `ParsedTable.values` is the joined
 semantic view over these components and continues to be written to
 `parsed_tables.json`.
 
-## 11. `ParsedTable` JSON
+## 12. `ParsedTable` JSON
 
 Current status:
 
@@ -1081,7 +1147,7 @@ Design note for future value parsing:
 
 This is the richest JSON design in the repo because it joins variable semantics, column semantics, and cell-level values into one validated representation.
 
-## 12. `table_processing_status.json`
+## 13. `table_processing_status.json`
 
 Current status:
 
@@ -1133,7 +1199,7 @@ Design intent:
   `paper_table_inventory.json` categorize it as `data_presentation` when the
   broader taxonomy evidence supports that category
 
-## 13. `parse_quality_reports.json`
+## 14. `parse_quality_reports.json`
 
 Current status:
 
@@ -1167,11 +1233,11 @@ Design intent:
 - report header/body split disagreements when both structural candidates exist and choose different body starts; the full candidate details remain in `normalized_tables.json`
 - keep softer quality warnings separate from `table_processing_status.json`, which records coarse pass/fail outcomes and rescue attempts
 - preserve parse behavior: warnings and errors in this artifact do not halt parsing and do not rewrite `table_definitions.json` or `parsed_tables.json`
-- allow `table_processing_status.json` to mark obvious non-table layout artifacts, such as article-info/abstract boxes emitted as explicit backend tables, as failed non-semantic candidates while preserving them in extraction and normalization artifacts
+- keep obvious non-table layout artifacts from reaching semantic parsing: early extraction guards suppress reference-section, front-matter, and weak source-order-impossible pseudo-tables, while `table_processing_status.json` remains responsible for failed candidates that survive extraction but cannot support a known table route
 - support R-side inspection and corpus review before making higher-risk changes such as consolidated Table 1 parsing
 - treat representative real-paper parsing checks as an important complement to unit tests, because deterministic table heuristics often fail on structural variants that synthetic tests do not cover
 
-## 14. `paper_table_inventory.json`
+## 15. `paper_table_inventory.json`
 
 Current status:
 
@@ -1228,7 +1294,7 @@ Design intent:
 - treat `table_category` as the broader concept that should drive parser-route selection once it is available; current `table_family` output is an earlier provisional route signal, not an independent semantic category
 - keep this artifact deterministic and computable so R can expose it as a data frame or print method later
 
-## 15. `paper_page_furniture.json`
+## 16. `paper_page_furniture.json`
 
 Current status:
 

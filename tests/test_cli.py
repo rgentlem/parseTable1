@@ -340,7 +340,7 @@ def test_cli_parse_marks_descriptive_tables_with_empty_definitions_as_failed(tmp
             return [_build_extracted_table()]
 
     monkeypatch.setattr(cli, "build_extractor", lambda _: FakeExtractor())
-    monkeypatch.setattr(cli, "normalize_extracted_tables", lambda tables: [normalized_table])
+    monkeypatch.setattr(cli, "normalize_extracted_tables", lambda tables, table_regions=None: [normalized_table])
     monkeypatch.setattr(
         cli,
         "build_table_profiles",

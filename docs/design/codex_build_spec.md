@@ -13,6 +13,7 @@ typed artifacts:
 ```text
 PDF
 -> ExtractedTable
+-> TableRegion
 -> NormalizedTable
 -> ColumnHeaderSchema
 -> ResolvedTableSet
@@ -24,9 +25,16 @@ The stages must remain separate:
 
 - `ExtractedTable` preserves the raw recovered grid, raw cell text, page
   information, cell bounding boxes where available, and extraction metadata.
+- `TableRegion` records geometry-derived ownership of extracted rows and
+  columns before normalization: table caption/title rows, preamble rows,
+  column-header bands, body rows, and footer/note bands. It is built from
+  extracted table entries, row/cell geometry, horizontal rules, and cell-text
+  annotation marker geometry after page furniture has already been filtered.
 - `NormalizedTable` performs structural cleanup, header/body row separation,
   row-level feature extraction, and normalization-time repairs while preserving
-  source text provenance.
+  source text provenance. When a `TableRegion` is available, normalization must
+  consume its row-region decisions instead of rediscovering captions, column
+  headers, body rows, or footer rows from cleaned strings.
 - `ColumnHeaderSchema` is the canonical column-axis artifact. It records leaf
   columns, row-label columns, spanning header groups, group-to-leaf
   relationships, raw header evidence, source row/column evidence, and

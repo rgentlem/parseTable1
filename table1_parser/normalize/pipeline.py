@@ -12,6 +12,7 @@ from table1_parser.normalize.header_detector import (
 )
 from table1_parser.normalize.row_signature import build_row_signature
 from table1_parser.schemas import ExtractedTable, NormalizedTable
+from table1_parser.schemas.table_region import TableRegion
 from table1_parser.text_cleaning import clean_text, summarize_text_cleaning_provenance
 
 
@@ -750,7 +751,60 @@ def _repair_split_row_label_field_columns(
     }
 
 
-def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
+def _region_header_body_rows(
+    table_region: TableRegion | None,
+    cleaned_rows: list[list[str]],
+) -> tuple[list[int], list[int], dict[str, object]] | None:
+    """Return region-owned header/body rows when available."""
+    if table_region is None:
+        return None
+    header_rows = [
+        row_idx
+        for row_idx in table_region.column_header_rows
+        if isinstance(row_idx, int) and 0 <= row_idx < len(cleaned_rows)
+    ]
+    body_rows = [
+        row_idx
+        for row_idx in table_region.body_rows
+        if isinstance(row_idx, int) and 0 <= row_idx < len(cleaned_rows)
+    ]
+    if not header_rows and not body_rows:
+        return None
+    return header_rows, body_rows, {
+        "source": "table_region",
+        "table_region_id": table_region.region_id,
+        "table_region_detection_basis": table_region.detection_basis,
+        "table_region_confidence": table_region.confidence,
+        "caption_rows": list(table_region.caption_rows),
+        "preamble_rows": list(table_region.preamble_rows),
+        "footer_note_rows": list(table_region.footer_note_rows),
+        "diagnostics": list(table_region.diagnostics),
+    }
+
+
+def _detect_or_apply_region_header_rows(
+    cleaned_rows: list[list[str]],
+    *,
+    table_region: TableRegion | None,
+    row_bounds: list[tuple[float, float]] | None,
+    horizontal_rules: list[float] | None,
+    separator_horizontal_rules: list[float] | None,
+) -> tuple[list[int], list[int], dict[str, object]]:
+    region_rows = _region_header_body_rows(table_region, cleaned_rows)
+    if region_rows is not None:
+        return region_rows
+    return detect_header_rows_with_metadata(
+        cleaned_rows,
+        row_bounds=row_bounds,
+        horizontal_rules=horizontal_rules,
+        separator_horizontal_rules=separator_horizontal_rules,
+    )
+
+
+def normalize_extracted_table(
+    table: ExtractedTable,
+    table_region: TableRegion | None = None,
+) -> NormalizedTable:
     """Convert a raw extracted table into the normalized intermediate schema."""
     raw_rows = [["" for _ in range(table.n_cols)] for _ in range(table.n_rows)]
     for cell in table.cells:
@@ -877,8 +931,9 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
     header_row_bounds = None if extra_wide_value_column_repair is not None else row_bounds
     header_horizontal_rules = None if extra_wide_value_column_repair is not None else horizontal_rules
     header_separator_rules = None if extra_wide_value_column_repair is not None else separator_horizontal_rules
-    header_rows, body_rows, header_detection = detect_header_rows_with_metadata(
+    header_rows, body_rows, header_detection = _detect_or_apply_region_header_rows(
         cleaned_rows,
+        table_region=table_region,
         row_bounds=header_row_bounds,
         horizontal_rules=header_horizontal_rules,
         separator_horizontal_rules=header_separator_rules,
@@ -923,8 +978,9 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
         body_rows,
     )
     if split_uncertainty_column_repairs or trailing_nondata_column_repair is not None:
-        header_rows, body_rows, header_detection = detect_header_rows_with_metadata(
+        header_rows, body_rows, header_detection = _detect_or_apply_region_header_rows(
             cleaned_rows,
+            table_region=table_region,
             row_bounds=header_row_bounds,
             horizontal_rules=header_horizontal_rules,
             separator_horizontal_rules=header_separator_rules,
@@ -1023,14 +1079,28 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
         merged_columns.append({"from_col_idx": col_idx, "to_col_idx": col_idx - 1, "merged_row_count": merged_row_count})
     dropped_repaired_cols: list[int] = []
     if raw_rows:
-        keep_indices = [col_idx for col_idx in range(len(raw_rows[0])) if any(cleaned_rows[row_idx][col_idx] for row_idx in range(len(cleaned_rows)))]
+        column_shape_rows = sorted(
+            {
+                row_idx
+                for row_idx in [*header_rows, *body_rows]
+                if isinstance(row_idx, int) and 0 <= row_idx < len(cleaned_rows)
+            }
+        )
+        if not column_shape_rows:
+            column_shape_rows = list(range(len(cleaned_rows)))
+        keep_indices = [
+            col_idx
+            for col_idx in range(len(raw_rows[0]))
+            if any(cleaned_rows[row_idx][col_idx] for row_idx in column_shape_rows)
+        ]
         dropped_repaired_cols = [col_idx for col_idx in range(len(raw_rows[0])) if col_idx not in keep_indices]
         if dropped_repaired_cols:
             raw_rows = [[row[col_idx] for col_idx in keep_indices] for row in raw_rows]
             cleaned_rows = [[row[col_idx] for col_idx in keep_indices] for row in cleaned_rows]
             source_col_indices = [source_col_indices[col_idx] for col_idx in keep_indices]
-            header_rows, body_rows, header_detection = detect_header_rows_with_metadata(
+            header_rows, body_rows, header_detection = _detect_or_apply_region_header_rows(
                 cleaned_rows,
+                table_region=table_region,
                 row_bounds=header_row_bounds,
                 horizontal_rules=header_horizontal_rules,
                 separator_horizontal_rules=header_separator_rules,
@@ -1056,8 +1126,9 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
     if trailing_nondata_after_drop is not None:
         source_col_indices = source_col_indices[:-1]
         trailing_nondata_column_repair = trailing_nondata_after_drop
-        header_rows, body_rows, header_detection = detect_header_rows_with_metadata(
+        header_rows, body_rows, header_detection = _detect_or_apply_region_header_rows(
             cleaned_rows,
+            table_region=table_region,
             row_bounds=header_row_bounds,
             horizontal_rules=header_horizontal_rules,
             separator_horizontal_rules=header_separator_rules,
@@ -1084,8 +1155,9 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
     if sparse_nonmatrix_column_repairs:
         dropped_sparse_cols = {repair["dropped_col_idx"] for repair in sparse_nonmatrix_column_repairs}
         source_col_indices = [source for col_idx, source in enumerate(source_col_indices) if col_idx not in dropped_sparse_cols]
-        header_rows, body_rows, header_detection = detect_header_rows_with_metadata(
+        header_rows, body_rows, header_detection = _detect_or_apply_region_header_rows(
             cleaned_rows,
+            table_region=table_region,
             row_bounds=header_row_bounds,
             horizontal_rules=header_horizontal_rules,
             separator_horizontal_rules=header_separator_rules,
@@ -1110,8 +1182,9 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
         if trailing_nondata_after_drop is not None:
             source_col_indices = source_col_indices[:-1]
             trailing_nondata_column_repair = trailing_nondata_after_drop
-            header_rows, body_rows, header_detection = detect_header_rows_with_metadata(
+            header_rows, body_rows, header_detection = _detect_or_apply_region_header_rows(
                 cleaned_rows,
+                table_region=table_region,
                 row_bounds=header_row_bounds,
                 horizontal_rules=header_horizontal_rules,
                 separator_horizontal_rules=header_separator_rules,
@@ -1184,6 +1257,13 @@ def normalize_extracted_table(table: ExtractedTable) -> NormalizedTable:
     )
 
 
-def normalize_extracted_tables(tables: list[ExtractedTable]) -> list[NormalizedTable]:
+def normalize_extracted_tables(
+    tables: list[ExtractedTable],
+    table_regions: list[TableRegion] | None = None,
+) -> list[NormalizedTable]:
     """Normalize a list of extracted tables while preserving input order."""
-    return [normalize_extracted_table(table) for table in tables]
+    region_by_table_id = {region.table_id: region for region in table_regions or []}
+    return [
+        normalize_extracted_table(table, table_region=region_by_table_id.get(table.table_id))
+        for table in tables
+    ]

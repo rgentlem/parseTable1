@@ -22,6 +22,7 @@ FootnoteInferenceSource = Literal["conventional_p_value_star"]
 FootnoteDefinitionMarkerEvidenceType = Literal[
     "superscript_definition_marker",
     "extracted_footer_marker_text",
+    "cell_text_annotation_marker",
 ]
 
 

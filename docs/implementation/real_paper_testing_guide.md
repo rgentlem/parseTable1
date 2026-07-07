@@ -12,6 +12,11 @@ that owns the problem. The current priority is to keep the layout-aware
 bibliography and caption/footer footnote baselines stable while continuing
 failed-status and mixed-family review.
 
+Before committing parser changes, update this guide with the current real-paper
+run, output directory, observed failures, and any changed interpretation of the
+review checklist. Treat the guide as part of commit hygiene, not as an optional
+post-commit note.
+
 All paper paths below are relative to:
 
 ```text
@@ -23,11 +28,11 @@ All paper paths below are relative to:
 Latest reference run:
 
 ```text
-outputs/testpapers_batch_20260706_page_furniture_front
+outputs/testpapers_batch_20260707_table_mentions
 ```
 
 The current refreshed baseline is
-`outputs/testpapers_batch_20260706_page_furniture_front`. It was produced after
+`outputs/testpapers_batch_20260707_table_mentions`. It was produced after
 the PyMuPDF layout-aware text stream became the source of document order for
 sections and reference lists, and after table-local caption/footer note blocks
 began splitting footnote definitions from structured marker evidence, including
@@ -39,7 +44,14 @@ consume page characters. The bibliography extractor reads numbered and
 hanging-indent reference lists through one positioned stream, supports
 references split across columns and pages, treats numbered offset labels as the
 same entry-start structure as unnumbered hanging-indent entries, and does not
-require bibliographies to be numbered.
+require bibliographies to be numbered. Credible ruled table candidates can also
+be rebuilt from PyMuPDF word positions and stroked horizontal rules instead of
+using the PyMuPDF4LLM grid as the sole row/column structure. The current run
+also adds a pre-extraction `paper_table_mentions.json` pass that classifies
+`Table N` lines as caption candidates, continuation labels, or prose references
+from the page-furniture-filtered text stream. Text-position fallback now
+consumes that artifact and rejects numeric-anchor grids whose value region is
+mostly prose fragments.
 
 Older generated `outputs/` runs should not be treated as current.
 
@@ -66,18 +78,20 @@ Current footnote summary:
 PDFs: 27
 parse command failures: 0
 paper_footnotes:
-  anchors: 380
-  definitions: 193
-  links: 380
-  resolved links: 380
+  anchors: 370
+  definitions: 191
+  links: 370
+  resolved links: 370
   inferred links: 0
   ambiguous links: 0
   unresolved links: 0
-  math/unit anchors suppressed before footnote linking: 35
-  subscript anchors suppressed before footnote linking: 6
+  math/unit anchors suppressed before footnote linking: 44
+  subscript anchors suppressed before footnote linking: 5
   word-like subscript anchors suppressed before footnote linking: 0
-  citation-like anchors suppressed before footnote linking: 47
-  PDF text blocks classified as table footers: 49
+  citation-like anchors suppressed before footnote linking: 46
+  non-footnote symbol anchors suppressed before footnote linking: 0
+  PDF text blocks classified as table footers: 48
+  extracted-table footer records: 13
   page-furniture filter stage: before_pdf_definition_block_construction (27 papers)
 extraction page-furniture mask:
   extracted tables with mask metadata: 71
@@ -88,7 +102,40 @@ extraction page-furniture mask:
 
 Current papers with unresolved or ambiguous footnote links:
 
-- None in `outputs/testpapers_batch_20260706_page_furniture_front`.
+- None in `outputs/testpapers_batch_20260707_table_mentions`.
+
+Current extraction/status summary:
+
+```text
+PDFs: 27
+parse command failures: 0
+extracted tables: 69
+table_processing_status:
+  ok: 30
+  rescued: 32
+  failed: 1
+failed table:
+  periodontitis-p11-t0: non_table_layout_candidate
+```
+
+Current table-mention summary:
+
+```text
+paper_table_mentions:
+  total mentions: 318
+  prose_reference: 240
+  caption_candidate: 70
+  continuation_label: 8
+periodontis2 page 6:
+  Table 4 shows... -> prose_reference, same_line_prose_verb_after
+  ... is shown in / Table 5. At ... -> prose_reference, previous_line_prose_cue_before
+  extracted page-6 table candidates: 0
+known weak bucket:
+  line_initial_table_label without bold/heading evidence can still include
+  false positives such as Eke `Table 2 also shows...`; current policy is to
+  monitor this bucket rather than add another rule until it causes extraction
+  harm.
+```
 
 Resolved since the prior baseline:
 
@@ -137,7 +184,8 @@ For each checklist item:
    `column_header_schemas.json`, `resolved_tables.json`,
    `table_definitions.json`, `parsed_cell_values.json`,
    `parsed_tables.json`, `paper_footnotes.json`, `paper_bibliography.json`,
-   `paper_style_profile.json`, `paper_references.json`.
+   `paper_table_mentions.json`, `paper_style_profile.json`,
+   `paper_references.json`.
 3. Record whether the issue belongs to extraction, normalization, continuation,
    table semantics, footnote detection/linking, or visual-reference resolution.
 4. Fix only the earliest responsible stage.
@@ -161,14 +209,14 @@ For each checklist item:
     were resolved, and Table 2 asterisk p-value markers became conventional
     `inferred` links rather than unresolved footnotes.
   - Current result:
-    `outputs/testpapers_batch_20260706_page_furniture_front` resolves all 15
+    `outputs/testpapers_batch_20260706_hline_rebuild_v6` resolves all 15
     Table 1 `letter:a` / `letter:b` links against the below-table footer note.
-    In the PDF text the definitions appear collapsed as `aRepresents ...` and
-    `bRepresents ...`, but the parser now splits them from smaller raised
-    glyph evidence. Table 2 now resolves all 21 `*` links against the explicit
-    same-table footer sentence
-    `The asterisk indicates statistical significance`, rather than emitting
-    conventional inferred links.
+    In the visual PDF the definitions begin with raised `a` and `b`
+    superscripts. Raw extracted text may collapse those markers into following
+    words, but the parser splits them from smaller raised glyph evidence rather
+    than from the damaged string. Table 2 now resolves all 21 `*` links against
+    the explicit same-table footer sentence `The asterisk indicates statistical
+    significance`, rather than emitting conventional inferred links.
 
 - [x] **C0.1** Review false-positive footnote marker detection in Eke.
   - PDF path: `papers_from_laha/Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009.pdf`
@@ -180,7 +228,7 @@ For each checklist item:
     rotated table plus footer and excluding upright article text in the other
     page column.
   - Current full-corpus result:
-    `outputs/testpapers_batch_20260706_page_furniture_front` extracts page
+    `outputs/testpapers_batch_20260706_hline_rebuild_v6` extracts page
     7 with no `letter:t`, `letter:r`, or `letter:l` anchors.
     `paper_footnotes.json` builds the page 7 `†` and `‡` definitions from
     extracted footer row blocks, including their continuation rows. No
@@ -207,11 +255,12 @@ For each checklist item:
   anchors.
   - PDF path: `papers_from_laha/Ethnic Differences in the Relationship Between Insulin Sensitivity and Insulin Response.pdf`
   - Current result:
-    `outputs/testpapers_batch_20260706_page_furniture_front` has 2 resolved
+    `outputs/testpapers_batch_20260706_hline_rebuild_v6` has 9 resolved
     links and 0 unresolved or ambiguous links. `S_I` and `AIR_g` remain
-    suppressed as subscript notation, and the marker-font `x` resolves against
-    the local `xP < 0.05 vs. East Asian` footer definition through confirmed
-    footer-cell marker evidence.
+    suppressed as subscript notation, vertical-bar artifacts attached to
+    rotated numeric cells are suppressed as non-footnote symbols, and the
+    marker-font `x` resolves against the local `xP < 0.05 vs. East Asian`
+    footer definition through confirmed footer-cell marker evidence.
 
 - [x] **C0.4** Resolve statistical-significance stars with footer definitions
   in `stroke`.
@@ -220,7 +269,7 @@ For each checklist item:
   - Strong signal: 58 unresolved anchors were statistical-significance
     asterisks, often attached to p-values such as `<0.001***`.
   - Current result: fixed in
-    `outputs/testpapers_batch_20260706_page_furniture_front`; Table 1,
+    `outputs/testpapers_batch_20260706_hline_rebuild_v6`; Table 1,
     Table 2, and Table 3 each have local `*`, `**`, and `***` definitions linked
     by same-table scope.
   - The previous 7 row-label unit exponents are now suppressed before
@@ -232,7 +281,7 @@ For each checklist item:
   Health Table 1 row labels.
   - PDF path: `papers_from_laha/Science-Advanaced-Planetary Health Diet and risk of mortality and chronic diseases- Results from US NHANES, UK Biobank, and a meta-analysis.pdf`
   - Current result:
-    `outputs/testpapers_batch_20260706_page_furniture_front` resolves all 4
+    `outputs/testpapers_batch_20260706_hline_rebuild_v6` resolves all 4
     Table 1 links (`*`, `†`, `‡`, `§`) against the footer block on the
     continued page. The symbol splitter now handles variable whitespace before
     each marker in a contiguous footer block.
@@ -248,7 +297,7 @@ For each checklist item:
     and 160 conventional inferred p-value-star links because local symbol
     footer definitions were not harvested.
   - Current result: fixed in
-    `outputs/testpapers_batch_20260706_page_furniture_front`. Known symbol
+    `outputs/testpapers_batch_20260706_hline_rebuild_v6`. Known symbol
     markers such as `†`, `‡`, and `*` now define any non-empty local footer text;
     this is a structural footnote rule, not a p-value rule. Structured marker
     evidence from raised glyphs is merged with ordinary symbol marker evidence
@@ -261,13 +310,13 @@ For each checklist item:
     1. `papers_from_laha/mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017.pdf`
   - Previous artifact issue: MDPI Mediterranean had 3 ambiguous links and 3
     unresolved numeric links.
-  - Current result: `outputs/testpapers_batch_20260706_page_furniture_front` has 0
+  - Current result: `outputs/testpapers_batch_20260706_hline_rebuild_v6` has 0
     unresolved and 0 ambiguous footnote links for this paper.
 
 - [x] **C0.6a** Re-review repeated letter markers on continued tertile headers.
   - PDF path: `papers_from_laha/Systemic inflammation markers and the prevalence of hypertension- A NHANES cross-sectional study.pdf`
   - Current result:
-    `outputs/testpapers_batch_20260706_page_furniture_front` resolves all 12
+    `outputs/testpapers_batch_20260706_hline_rebuild_v6` resolves all 12
     `letter:b` markers attached to `Tertile 1`, `Tertile 2`, and `Tertile 3`
     labels across the continued Table 1 against the same-visual footer
     definition on the continuation page.
@@ -292,13 +341,13 @@ supplement-only or out-of-scope references.
 - [x] **C1.1** Review failed statuses that may be correct non-target tables.
   1. `papers_from_laha/An environment-wide association study (EWAS) on type 2 diabetes mellitus.pdf`
      - `An environment-wide association study (EWAS) on type 2 diabetes mellitus-p6-t0`
-     - Current status in `outputs/testpapers_batch_20260706_page_furniture_front`:
+     - Current status in `outputs/testpapers_batch_20260706_hline_rebuild_v6`:
        `ok`, categorized as `analysis_outputs`.
      - Review result: structurally plausible ENWAS analysis-output table with
        sparse left descriptor columns; not a Table 1 descriptive failure.
   2. `papers_from_laha/mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017.pdf`
      - `mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017-p3-t0`
-     - Current status in `outputs/testpapers_batch_20260706_page_furniture_front`:
+     - Current status in `outputs/testpapers_batch_20260706_hline_rebuild_v6`:
        `failed`, reason: `insufficient_table_structure_after_extraction`,
        categorized as `general`.
      - Review result: text/reference table comparing frailty definitions; a
@@ -314,9 +363,11 @@ supplement-only or out-of-scope references.
        enough deterministic evidence for estimate-result routing.
   2. `papers_from_laha/GOLD BioAge and depression- Associations with mortality among depressed NHANES participants (2005–2018).pdf`
      - `GOLD BioAge and depression- Associations with mortality among depressed NHANES participants (2005–2018)-p1-t0`
-     - Current status: still `failed`, reason `non_table_layout_candidate`.
-     - Review result: abstract/title-page text laid out as columns, not a table
-       artifact to route semantically.
+     - Current status: no longer extracted as a table candidate in
+       `outputs/testpapers_batch_20260706_hline_rebuild_v6`.
+     - Review result: abstract/title-page text laid out as article front
+       matter, not a table artifact to route semantically. The front-matter
+       guard now suppresses it before the table pipeline.
   3. `papers_from_laha/Helicobacter pylori infection in the United States beyond NHANES- a scoping review of seroprevalence estimates by racial and ethnic groups.pdf`
      - `Helicobacter pylori infection in the United States beyond NHANES- a scoping review of seroprevalence estimates by racial and ethnic groups-p5-t0`
      - `Helicobacter pylori infection in the United States beyond NHANES- a scoping review of seroprevalence estimates by racial and ethnic groups-p6-t0`
@@ -328,10 +379,15 @@ supplement-only or out-of-scope references.
        layout. It still needs future data-matrix semantics rather than Table 1
        descriptive parsing.
   4. `papers_from_laha/periodontis2.pdf`
-     - `periodontis2-p6-t0`
-     - Current status: still `failed`, reason `non_table_layout_candidate`.
-     - Review result: prose paragraph text reconstructed as a four-column
-       layout candidate, not a table artifact.
+     - Prior artifacts: `periodontis2-p6-t0` and `periodontis2-p6-t1`.
+     - Current status in `outputs/testpapers_batch_20260707_table_mentions`:
+       no page-6 table candidates are extracted.
+     - Review result: page 6 contains prose references to Tables 4 and 5, not a
+       visual table. `paper_table_mentions.json` now classifies `Table 4
+       shows...` and the split-line `... is shown in / Table 5. At ...` as
+       prose references. The text-position fallback consumes that evidence and
+       also rejects candidate grids where numeric anchors merely split prose
+       into sentence fragments.
   5. `papers_from_johnny/periodontitis.pdf`
      - `periodontitis-p11-t0`
      - Current status: still `failed`, reason `non_table_layout_candidate`.
@@ -342,8 +398,8 @@ supplement-only or out-of-scope references.
   - PDF path: `papers_from_laha/Ethnic Differences in the Relationship Between Insulin Sensitivity and Insulin Response.pdf`
   - Table: `Ethnic Differences in the Relationship Between Insulin Sensitivity and Insulin Response-p5-t0`
   - Current status: `rescued`; the prior `collapsed_grid_unrecovered` failure is
-    no longer present in `outputs/testpapers_batch_20260706_page_furniture_front`.
-  - Current footnote result: 2 resolved links and 0 unresolved links. The prior
+    no longer present in `outputs/testpapers_batch_20260706_hline_rebuild_v6`.
+  - Current footnote result: 9 resolved links and 0 unresolved links. The prior
     residual `letter:i`, `letter:x`, and `letter:g` false-marker issue is no
     longer present as unresolved footnote evidence; the remaining `letter:x`
     marker resolves through confirmed footer-cell marker evidence for the local
@@ -353,60 +409,114 @@ Acceptance for C1: every failed table is classified as correct non-target table,
 extraction failure, normalization failure, unsupported table family, or ambiguous
 pending review.
 
-### C2. Continuation Decisions
+### C2. Caption, Header/Body, And Extraction Geometry
 
-- [ ] **C2.1** Review accepted continuations and confirm one visual continued
-  table becomes one semantic resolved table.
-  1. `papers_from_laha/Association between anthropometric indices and chronic kidney disease- Insights from NHANES 2009–2018.pdf`
-     - p7 -> p8 and p11 -> p12 accepted.
-  2. `papers_from_laha/Helicobacter pylori infection in the United States beyond NHANES- a scoping review of seroprevalence estimates by racial and ethnic groups.pdf`
-     - p5 -> p6 and p6 -> p7 accepted.
-  3. `papers_from_laha/Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009.pdf`
-     - p6 -> p7 accepted.
-  4. `papers_from_laha/Systemic inflammation markers and the prevalence of hypertension- A NHANES cross-sectional study.pdf`
-     - p5 -> p6 accepted.
-  5. `papers_from_johnny/gallstones.pdf`
-     - p5 -> p6 accepted.
-  6. `papers_from_laha/mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017.pdf`
-     - p5 -> p6 accepted.
+C2 is table-structure review, and should run before continuation review. It
+covers table captions, continuation labels, title/preamble rows, column-header
+rows, body rows, footers, and the extraction geometry that separates those
+regions. Figure extraction and figure-caption interpretation are future work,
+not part of this pass. However, figure captions should still be kept as
+distinct non-table document components when encountered, so they do not
+contaminate table candidates now and can support later figure extraction.
 
-- [ ] **C2.2** Review rejected continuation candidates that may expose header or
-  column-schema defects.
-  1. `papers_from_laha/Asthma prevalence among United States population insights from NHANES data analysis.pdf`
-     - p4 -> p5 rejected; p5 -> p6 rejected.
-  2. `papers_from_laha/Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009.pdf`
-     - p4 -> p5 rejected.
-  3. `papers_from_laha/Science-Advanaced-Planetary Health Diet and risk of mortality and chronic diseases- Results from US NHANES, UK Biobank, and a meta-analysis.pdf`
-     - p2 -> p3 rejected.
-  4. `papers_from_laha/periodontis2.pdf`
-     - p5 -> p6 rejected.
+- [ ] **C2.1** Review caption and region ownership before header/body or
+  continuation decisions.
+  - Confirm table captions and continuation captions are attached to the
+    correct table candidate.
+  - Confirm caption text, title/preamble rows, body rows, and footer/note blocks
+    are not being merged into the wrong table region.
+  - Confirm figure captions are excluded from table candidates while preserving
+    their identity as separate document components for future figure/caption
+    extraction.
+  - For each paper, check artifacts in this order:
+    1. `paper_visual_inventory.json`: confirm each visual component has the
+       correct `visual_kind`, label, page, caption, and `source_table_id`.
+       Tables should be table visuals; figure captions may appear as figure
+       visuals but should not point at table candidates.
+    2. `extracted_tables.json`: confirm `title`, `caption`, `page_num`,
+       `n_rows`, `n_cols`, `metadata.bbox`, `metadata.row_bounds`,
+       `metadata.horizontal_rules`, `metadata.trailing_non_table_rows`,
+       `metadata.table_orientation`, `metadata.is_continuation`, and
+       `metadata.continuation_of_table_number`. The caption/continuation label
+       should not also appear as a body row, footer definition, or unrelated
+       table candidate.
+    3. `paper_text_stream.json`: inspect positioned lines on the relevant page
+       around the table bbox. The expected order is caption/title, header,
+       body, footer/note block, then surrounding prose or other document
+       components. Column and rotation evidence should explain that order.
+    4. `normalized_tables.json`: confirm `header_rows`, `body_rows`,
+       `row_views`, `metadata.header_detection`,
+       `metadata.header_body_split_rule_comparison`, preamble rows,
+       post-header note rows, and continuation-note rows match the visual
+       table structure.
+    5. `column_header_schemas.json`: confirm the selected header rows produce
+       the expected leaf columns and that caption/title/footer text is not
+       being promoted into column headers.
+    6. `paper_footnotes.json` and `cell_text_annotations.json`: confirm
+       footer/note text is represented as table-local definitions or suppressed
+       non-footnote notation, not as caption text or body rows. Superscript
+       marker evidence should come from positioned glyphs where possible.
+    7. `table1_continuation_groups.json` and
+       `table_continuation_column_checks.json`: only after the earlier checks
+       pass, confirm continuation decisions use the correct caption,
+       continuation label, row provenance, and column schema.
+  1. `papers_from_laha/Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009.pdf`
+     - Current footnote pollution issue appears addressed: continued-page
+       caption text is no longer being written into footnote definitions, and
+       all footnote links are resolved.
+     - p4 -> p5 for `Table 1. (continued)` and p6 -> p7 for
+       `Table 2. (continued)` now pass continuation column/header checks and
+       are accepted as integrated continuations in `resolved_tables.json`.
+       This remains a C2 review case because the normalized header/body split
+       still selects row 9 where hline evidence proposes row 2; decide whether
+       the value-anchor selection is correct for these multirow headers before
+       changing continuation behavior.
+  2. `papers_from_johnny/metabolic.pdf`
+     - Current artifacts appear clean for this check: below-table footer
+       parsing keeps the table caption separate, raised `a` and `b` markers link
+       body cells to definitions, and Table 2 `*` links resolve through the
+       local statistical-significance footer.
+  3. `papers_from_laha/Ethnic Differences in the Relationship Between Insulin Sensitivity and Insulin Response.pdf`
+     - Current artifacts appear clean for this check: rotated Table 1 is
+       extracted as a table, the caption/footer are separated, and the nine
+       detected footnote links resolve.
+  4. `papers_from_laha/Science-Advanaced-Planetary Health Diet and risk of mortality and chronic diseases- Results from US NHANES, UK Biobank, and a meta-analysis.pdf`
+     - Current footnote links resolve, but this remains a structure-review
+       case. The p2 -> p3 Table 1 continuation candidate is skipped because
+       continuation column headers are incompatible, and figure-caption
+       components in `paper_visual_inventory.json` are noisy. Confirm whether
+       the noise is only future figure-extraction debt or whether it is
+       contaminating table candidates, captions, or rows.
 
-Acceptance for C2: continuation decisions are explainable from
-`resolved_tables.json`, source table IDs, row provenance, and
-`column_header_schemas.json`.
-
-### C3. Header/Body And Extraction Geometry
-
-- [ ] **C3.1** Review current header/body split disagreements.
-  1. `papers_from_laha/Association between metabolic score for insulin resistance (METS-IR) and hypertension- a cross-sectional study based on NHANES 2007–2018.pdf`
-     - p6-t0: hline body start 2, value-anchor body start 3, selected 2.
+- [ ] **C2.2** Review current header/body split disagreements.
+  1. `papers_from_laha/GOLD BioAge and depression- Associations with mortality among depressed NHANES participants (2005–2018).pdf`
+     - p4-t1: hline body start 2, value-anchor body start 4, selected 2.
+       This appears to be an acceptable disagreement caused by body parent and
+       wrapped-value rows.
+     - p5-t0 / Table 3 is no longer a C2 extraction/header failure:
+       `grid_refinement_source = "hline_word_positions"`, extracted shape is
+       5 rows by 3 columns, header rows are 0-1, body rows are 2-4, and
+       `Adjusted Model` spans `OR (95%CI)` plus `p-value`. The remaining
+       issue is downstream TableDefinition semantics for a small estimate
+       result table, not extraction geometry.
   2. `papers_from_laha/Asthma prevalence among United States population insights from NHANES data analysis.pdf`
      - p5-t0 and p6-t0.
-  3. `papers_from_laha/GOLD BioAge and depression- Associations with mortality among depressed NHANES participants (2005–2018).pdf`
-     - p4-t1: hline body start 2, value-anchor body start 4, selected 2.
-  4. `papers_from_laha/Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009.pdf`
-     - p4-t0 and p5-t0: hline body start 3, value-anchor body start 10,
-       selected 10.
-  5. `papers_from_johnny/Sarcopenia.pdf`
-     - p7-t0 and p8-t0.
-  6. `papers_from_laha/Science-Advanaced-Planetary Health Diet and risk of mortality and chronic diseases- Results from US NHANES, UK Biobank, and a meta-analysis.pdf`
-     - p2-t0.
-  7. `papers_from_johnny/cardiovascular.pdf`
+     - p5-t0: hline body start 3, value-anchor body start 1, selected 1.
+     - p6-t0: hline body start 2, value-anchor body start 1, selected 1.
+  3. `papers_from_laha/Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009.pdf`
+     - p4-t0 and p5-t0: hline body start 2, value-anchor body start 9,
+       selected 9.
+  4. `papers_from_laha/Science-Advanaced-Planetary Health Diet and risk of mortality and chronic diseases- Results from US NHANES, UK Biobank, and a meta-analysis.pdf`
+     - p2-t0: hline body start 1, value-anchor body start 4, selected 4.
+     - p5-t0: hline body start 1, value-anchor body start 0, selected 1.
+  5. `papers_from_laha/Helicobacter pylori infection in the United States beyond NHANES- a scoping review of seroprevalence estimates by racial and ethnic groups.pdf`
+     - p6-t0: hline body start 8, value-anchor body start 18, selected 7.
+     - p7-t0: hline body start 8, value-anchor body start 7, selected 7.
+  6. `papers_from_johnny/cardiovascular.pdf`
      - p5-t0.
-  8. `papers_from_laha/mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017.pdf`
-     - p7-t0.
+     - hline body start 4, value-anchor body start 7, selected 7.
 
-- [ ] **C3.2** Review explicit hline and preamble behavior in papers with
+- [ ] **C2.3** Review explicit hline and preamble behavior in papers with
   title/preamble rows above true column headers.
   1. `papers_from_johnny/fld.pdf`
   2. `papers_from_johnny/pad.pdf`
@@ -414,16 +524,56 @@ Acceptance for C2: continuation decisions are explainable from
   4. `papers_from_johnny/cardiovascular.pdf`
   5. `papers_from_laha/Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009.pdf`
 
-- [ ] **C3.3** Decide whether raw PyMuPDF geometry should replace
+- [ ] **C2.4** Decide whether raw PyMuPDF geometry should replace
   PyMuPDF4LLM-derived grids for specific failure classes.
   - Start only with ruled or rotated cases where words, rules, and table bbox
     provide strong structural evidence.
   - Do not add downstream continuation/schema hacks to compensate for bad
     extraction geometry.
+  - Initial ruled-table path is implemented: when credible full-width stroked
+    horizontal rules exist, extraction rebuilds the grid from positioned
+    PyMuPDF words and hline geometry, using PyMuPDF4LLM only as a candidate
+    region source. Keep this item open for broader replacement decisions,
+    especially rotated and non-ruled layouts.
 
-Acceptance for C3: each disagreement is classified as correct hline split,
-correct value-anchor split, extraction hline defect, normalization candidate
-defect, or unsupported/misrouted table family.
+Acceptance for C2: each disagreement is classified as correct caption
+ownership, caption/body/footer ownership defect, figure-caption contamination of
+a table artifact, correct hline split, correct value-anchor split, extraction
+hline defect, normalization candidate defect, or unsupported/misrouted table
+family.
+
+### C3. Continuation Decisions
+
+C3 should run after C2 because continuation decisions depend on correct
+caption, header/body, footer, and column-schema evidence.
+
+- [ ] **C3.1** Review accepted continuations and confirm one visual continued
+  table becomes one semantic resolved table.
+  1. `papers_from_laha/Association between anthropometric indices and chronic kidney disease- Insights from NHANES 2009–2018.pdf`
+     - p7 -> p8 and p11 -> p12 accepted.
+  2. `papers_from_laha/Helicobacter pylori infection in the United States beyond NHANES- a scoping review of seroprevalence estimates by racial and ethnic groups.pdf`
+     - p5 -> p6 and p6 -> p7 accepted.
+  3. `papers_from_laha/Systemic inflammation markers and the prevalence of hypertension- A NHANES cross-sectional study.pdf`
+     - p5 -> p6 accepted.
+  4. `papers_from_johnny/gallstones.pdf`
+     - p5 -> p6 accepted.
+  5. `papers_from_laha/mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017.pdf`
+     - p5 -> p6 accepted.
+  6. `papers_from_laha/Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009.pdf`
+     - p4 -> p5 accepted for Table 1, and p6 -> p7 accepted for Table 2.
+
+- [ ] **C3.2** Review rejected continuation candidates that may expose header or
+  column-schema defects.
+  1. `papers_from_laha/Asthma prevalence among United States population insights from NHANES data analysis.pdf`
+     - p4 -> p5 rejected; p5 -> p6 rejected.
+  2. `papers_from_laha/Science-Advanaced-Planetary Health Diet and risk of mortality and chronic diseases- Results from US NHANES, UK Biobank, and a meta-analysis.pdf`
+     - p2 -> p3 rejected.
+  3. `papers_from_laha/periodontis2.pdf`
+     - p5 -> p6 rejected.
+
+Acceptance for C3: continuation decisions are explainable from
+`resolved_tables.json`, source table IDs, row provenance, captions or
+continued-table labels, and `column_header_schemas.json`.
 
 ### C4. Mixed Table Families And Regression Baseline
 

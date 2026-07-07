@@ -323,6 +323,7 @@ def build_column_header_schema(
             table.n_cols,
             [row_idx for row_idx in usable_header_rows if row_idx < leaf_header_row_idx and row_idx not in leaf_header_row_set],
             table.metadata,
+            leaf_header_row_indices=leaf_header_row_indices,
         )
         for run in group_runs:
             if inferred_header_rows_used and run.col_start == run.col_end:
@@ -868,6 +869,8 @@ def _header_runs_for_groups(
     n_cols: int,
     row_indices: list[int],
     metadata: dict[str, object],
+    *,
+    leaf_header_row_indices: list[int] | None = None,
 ) -> list[_HeaderRun]:
     runs: list[_HeaderRun] = []
     header_detection = metadata.get("header_detection")
@@ -875,13 +878,45 @@ def _header_runs_for_groups(
         isinstance(header_detection, dict)
         and header_detection.get("source") in {"value_matrix_boundary", "value_region_anchor"}
     )
+    repeated_leaf_blocks = _repeated_leaf_header_blocks(grid, n_cols, leaf_header_row_indices or [])
     for row_idx in sorted(row_indices):
         row = [_grid_cell(grid, row_idx, col_idx) for col_idx in range(n_cols)]
         if not trust_structural_header_rows and _looks_like_title_or_continuation_header(row):
             continue
         row_runs: list[_HeaderRun] = []
         geometry_gap_used = False
-        if n_cols >= 4 and clean_text(row[0]).lower() in LABEL_COLUMN_TOKENS and all(row[col_idx] for col_idx in range(1, n_cols)):
+        row_has_adjacent_repeated_value_labels = any(
+            row[col_idx] and row[col_idx] == row[col_idx - 1]
+            for col_idx in range(2, n_cols)
+        )
+        if repeated_leaf_blocks and not row_has_adjacent_repeated_value_labels:
+            for block_start, block_end in repeated_leaf_blocks:
+                values = [row[col_idx] for col_idx in range(block_start, block_end + 1) if row[col_idx]]
+                if not values:
+                    continue
+                positions = tuple(
+                    (row_idx, col_idx)
+                    for col_idx in range(block_start, block_end + 1)
+                    if row[col_idx]
+                )
+                row_runs.append(
+                    _HeaderRun(
+                        row_idx,
+                        row_idx,
+                        block_start,
+                        block_end,
+                        clean_text(" ".join(values)),
+                        positions,
+                        "explicit_cell_span",
+                        0.88,
+                    )
+                )
+        if (
+            not row_runs
+            and n_cols >= 4
+            and clean_text(row[0]).lower() in LABEL_COLUMN_TOKENS
+            and all(row[col_idx] for col_idx in range(1, n_cols))
+        ):
             gaps: list[tuple[int, float]] = []
             for col_idx in range(1, n_cols - 1):
                 left_bbox = _metadata_cell_bbox(metadata.get("table_cells"), row_idx, col_idx)
@@ -951,6 +986,30 @@ def _header_runs_for_groups(
             for run in row_runs
             if not (run.col_start == 0 and clean_text(run.label).lower() in LABEL_COLUMN_TOKENS)
         ]
+        if (
+            value_runs
+            and not geometry_gap_used
+            and value_runs[-1].col_start > 0
+            and value_runs[-1].col_end < n_cols - 1
+            and value_runs[-1].inference_rule != "repeated_label_span"
+            and all(not row[col_idx] for col_idx in range(value_runs[-1].col_end + 1, n_cols))
+        ):
+            tail_run = value_runs[-1]
+            row_runs = [
+                run._replace(
+                    col_end=n_cols - 1,
+                    inference_rule="single_cell_blank_span",
+                    confidence=min(run.confidence, 0.78),
+                )
+                if run == tail_run
+                else run
+                for run in row_runs
+            ]
+            value_runs = [
+                run
+                for run in row_runs
+                if not (run.col_start == 0 and clean_text(run.label).lower() in LABEL_COLUMN_TOKENS)
+            ]
         has_blank_gap = any(
             next_run.col_start > run.col_end + 1
             for run, next_run in zip(value_runs, value_runs[1:], strict=False)
@@ -1038,6 +1097,40 @@ def _header_runs_for_groups(
                     min(upper.confidence, run.confidence),
                 )
     return runs
+
+
+def _repeated_leaf_header_blocks(
+    grid: list[list[str]],
+    n_cols: int,
+    leaf_header_row_indices: list[int],
+) -> list[tuple[int, int]]:
+    if n_cols <= 3 or not leaf_header_row_indices:
+        return []
+    leaf_labels = [
+        clean_text(" ".join(_grid_cell(grid, row_idx, col_idx) for row_idx in leaf_header_row_indices))
+        for col_idx in range(1, n_cols)
+    ]
+    if not any(leaf_labels):
+        return []
+    value_col_count = len(leaf_labels)
+    for block_width in range(2, min(6, value_col_count) + 1):
+        if value_col_count % block_width != 0:
+            continue
+        pattern = leaf_labels[:block_width]
+        if not all(pattern):
+            continue
+        block_count = value_col_count // block_width
+        if block_count < 2:
+            continue
+        if all(
+            leaf_labels[block_idx * block_width : (block_idx + 1) * block_width] == pattern
+            for block_idx in range(block_count)
+        ):
+            return [
+                (1 + block_idx * block_width, block_idx * block_width + block_width)
+                for block_idx in range(block_count)
+            ]
+    return []
 
 
 def _can_stack_header_runs(

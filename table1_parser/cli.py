@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import inspect
 import json
 import sys
 from collections.abc import Sequence
@@ -27,6 +28,7 @@ from table1_parser.continued_variable_integration import (
 from table1_parser.context import (
     annotate_visual_reference_checks,
     build_paper_text_stream,
+    build_paper_table_mentions,
     build_paper_visual_inventory,
     build_table_contexts,
     build_paper_variable_inventory,
@@ -34,6 +36,7 @@ from table1_parser.context import (
     extract_paper_markdown,
     paper_variable_inventory_to_payload,
     paper_sections_to_payload,
+    paper_table_mentions_to_payload,
     parse_markdown_sections,
 )
 from table1_parser.diagnostics import ParseQualityReport, build_parse_quality_report
@@ -86,6 +89,7 @@ from table1_parser.schemas import (
     PaperPageFurniture,
     PaperSection,
     PaperStyleProfile,
+    PaperTableMention,
     PaperTextStream,
     PaperVariableInventory,
     PaperVisual,
@@ -97,7 +101,9 @@ from table1_parser.schemas import (
     TableDefinition,
     Table1ContinuationGroup,
     TableProfile,
+    TableRegion,
 )
+from table1_parser.table_regions import build_table_regions, table_regions_to_payload
 from table1_parser.table_continuation_columns import (
     build_table_continuation_column_checks,
     table_continuation_column_checks_to_payload,
@@ -116,6 +122,7 @@ class PaperParseArtifacts:
 
     paper_stem: str
     extracted_tables: list[ExtractedTable]
+    table_regions: list[TableRegion]
     normalized_tables: list[NormalizedTable]
     column_header_schemas: list[ColumnHeaderSchema]
     resolved_table_set: ResolvedTableSet
@@ -140,6 +147,7 @@ class PaperParseArtifacts:
     paper_text_stream: PaperTextStream
     paper_markdown: str
     paper_sections: list[PaperSection]
+    paper_table_mentions: list[PaperTableMention]
     paper_visual_inventory: list[PaperVisual]
     paper_variable_inventory: PaperVariableInventory
     paper_references: list[PaperVisualReference]
@@ -228,6 +236,32 @@ def _build_default_extractor():
     return build_extractor(settings.default_extraction_backend)
 
 
+def _extract_tables_with_context(
+    extractor: object,
+    pdf_path: str,
+    *,
+    paper_page_furniture: PaperPageFurniture | None,
+    paper_table_mentions: list[PaperTableMention] | None = None,
+) -> list[ExtractedTable]:
+    """Run extraction while passing optional paper-level context when supported."""
+    extract = getattr(extractor, "extract")
+    try:
+        signature = inspect.signature(extract)
+    except (TypeError, ValueError):
+        return extract(pdf_path, paper_page_furniture=paper_page_furniture)
+    supports_table_mentions = "paper_table_mentions" in signature.parameters or any(
+        parameter.kind == inspect.Parameter.VAR_KEYWORD
+        for parameter in signature.parameters.values()
+    )
+    if supports_table_mentions:
+        return extract(
+            pdf_path,
+            paper_page_furniture=paper_page_furniture,
+            paper_table_mentions=paper_table_mentions,
+        )
+    return extract(pdf_path, paper_page_furniture=paper_page_furniture)
+
+
 def _extract_payload(tables: list[ExtractedTable]) -> list[dict[str, object]]:
     """Serialize extracted tables as JSON-ready dictionaries."""
     return [table.model_dump(mode="json") for table in tables]
@@ -240,9 +274,20 @@ def _handle_extract(args: argparse.Namespace) -> int:
 
     extractor = _build_default_extractor()
     paper_page_furniture = build_paper_page_furniture(args.pdf_path, paper_id=Path(args.pdf_path).stem)
+    paper_text_stream = build_paper_text_stream(
+        args.pdf_path,
+        paper_page_furniture=paper_page_furniture,
+        paper_id=Path(args.pdf_path).stem,
+    )
+    paper_table_mentions = build_paper_table_mentions(paper_text_stream)
 
     try:
-        tables = extractor.extract(args.pdf_path, paper_page_furniture=paper_page_furniture)
+        tables = _extract_tables_with_context(
+            extractor,
+            args.pdf_path,
+            paper_page_furniture=paper_page_furniture,
+            paper_table_mentions=paper_table_mentions,
+        )
     except Exception as exc:
         _print_stderr(_error_payload(str(exc)))
         return 1
@@ -266,9 +311,29 @@ def _handle_normalize(args: argparse.Namespace) -> int:
     try:
         extractor = _build_default_extractor()
         paper_page_furniture = build_paper_page_furniture(args.pdf_path, paper_id=Path(args.pdf_path).stem)
-        normalized_tables = normalize_extracted_tables(
-            extractor.extract(args.pdf_path, paper_page_furniture=paper_page_furniture)
+        paper_text_stream = build_paper_text_stream(
+            args.pdf_path,
+            paper_page_furniture=paper_page_furniture,
+            paper_id=Path(args.pdf_path).stem,
         )
+        paper_table_mentions = build_paper_table_mentions(paper_text_stream)
+        extracted_tables = _extract_tables_with_context(
+            extractor,
+            args.pdf_path,
+            paper_page_furniture=paper_page_furniture,
+            paper_table_mentions=paper_table_mentions,
+        )
+        cell_text_annotations = build_cell_text_annotation_tables_from_pdf(
+            args.pdf_path,
+            extracted_tables,
+            paper_page_furniture=paper_page_furniture,
+        )
+        table_regions = build_table_regions(
+            extracted_tables,
+            paper_page_furniture=paper_page_furniture,
+            cell_text_annotations=cell_text_annotations,
+        )
+        normalized_tables = normalize_extracted_tables(extracted_tables, table_regions=table_regions)
     except Exception as exc:
         _print_stderr(_error_payload(str(exc)))
         return 1
@@ -455,17 +520,29 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         paper_markdown = ""
     section_markdown = paper_text_stream.markdown or paper_markdown
     paper_sections = parse_markdown_sections(section_markdown)
+    paper_table_mentions = build_paper_table_mentions(paper_text_stream)
     bibliography_entries = build_bibliography_entries_from_text_stream(paper_text_stream)
     if not bibliography_entries:
         bibliography_entries = build_bibliography_entries_from_sections(paper_sections)
     extractor = _build_default_extractor()
-    extracted_tables = extractor.extract(pdf_path, paper_page_furniture=paper_page_furniture)
+    extracted_tables = _extract_tables_with_context(
+        extractor,
+        pdf_path,
+        paper_page_furniture=paper_page_furniture,
+        paper_table_mentions=paper_table_mentions,
+    )
     cell_text_annotations = build_cell_text_annotation_tables_from_pdf(
         pdf_path,
         extracted_tables,
         paper_page_furniture=paper_page_furniture,
     )
-    normalized_tables = normalize_extracted_tables(extracted_tables)
+    table_regions = build_table_regions(
+        extracted_tables,
+        paper_text_stream=paper_text_stream,
+        paper_page_furniture=paper_page_furniture,
+        cell_text_annotations=cell_text_annotations,
+    )
+    normalized_tables = normalize_extracted_tables(extracted_tables, table_regions=table_regions)
     column_header_schemas = build_column_header_schemas(normalized_tables, extracted_tables)
     resolved_table_set = build_resolved_table_set(normalized_tables, column_header_schemas)
     resolved_tables = [resolved_table.table for resolved_table in resolved_table_set.resolved_tables]
@@ -544,11 +621,14 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     extracted_table_footers = build_paper_footnote_footers_from_extracted_tables(
         extracted_tables,
         table1_continuation_groups=table1_continuation_groups,
+        table_regions=table_regions,
     )
     table_local_footnote_definition_lines = (
         build_paper_footnote_definition_lines_from_extracted_tables(
             extracted_tables,
             table1_continuation_groups=table1_continuation_groups,
+            table_regions=table_regions,
+            cell_text_annotations=cell_text_annotations,
         )
     )
     pdf_footnote_definition_blocks = build_paper_footnote_definition_blocks_from_pdf(
@@ -678,6 +758,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     return PaperParseArtifacts(
         paper_stem=paper_stem,
         extracted_tables=extracted_tables,
+        table_regions=table_regions,
         normalized_tables=normalized_tables,
         column_header_schemas=column_header_schemas,
         resolved_table_set=resolved_table_set,
@@ -702,6 +783,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         paper_text_stream=paper_text_stream,
         paper_markdown=paper_markdown,
         paper_sections=paper_sections,
+        paper_table_mentions=paper_table_mentions,
         paper_visual_inventory=paper_visual_inventory,
         paper_references=paper_references,
         paper_variable_inventory=paper_variable_inventory,
@@ -757,6 +839,7 @@ def _write_parse_outputs(
     """Write the deterministic paper-level parse artifacts and return the paper directory."""
     paper_dir = _paper_output_dir(pdf_path, outdir)
     extract_output_path = paper_dir / "extracted_tables.json"
+    table_regions_output_path = paper_dir / "table_regions.json"
     normalize_output_path = paper_dir / "normalized_tables.json"
     column_header_schema_output_path = paper_dir / "column_header_schemas.json"
     resolved_table_output_path = paper_dir / "resolved_tables.json"
@@ -778,6 +861,7 @@ def _write_parse_outputs(
     paper_text_stream_output_path = paper_dir / "paper_text_stream.json"
     paper_markdown_output_path = paper_dir / "paper_markdown.md"
     paper_sections_output_path = paper_dir / "paper_sections.json"
+    paper_table_mentions_output_path = paper_dir / "paper_table_mentions.json"
     paper_visual_inventory_output_path = paper_dir / "paper_visual_inventory.json"
     paper_references_output_path = paper_dir / "paper_references.json"
     paper_variable_inventory_output_path = paper_dir / "paper_variable_inventory.json"
@@ -807,6 +891,10 @@ def _write_parse_outputs(
 
     extract_output_path.write_text(
         json.dumps(_extract_payload(artifacts.extracted_tables), indent=2),
+        encoding="utf-8",
+    )
+    table_regions_output_path.write_text(
+        json.dumps(table_regions_to_payload(artifacts.table_regions), indent=2) + "\n",
         encoding="utf-8",
     )
     write_normalized_tables(normalize_output_path, artifacts.normalized_tables)
@@ -894,6 +982,10 @@ def _write_parse_outputs(
     paper_markdown_output_path.write_text(artifacts.paper_markdown, encoding="utf-8")
     paper_sections_output_path.write_text(
         json.dumps(paper_sections_to_payload(artifacts.paper_sections), indent=2) + "\n",
+        encoding="utf-8",
+    )
+    paper_table_mentions_output_path.write_text(
+        json.dumps(paper_table_mentions_to_payload(artifacts.paper_table_mentions), indent=2) + "\n",
         encoding="utf-8",
     )
     paper_visual_inventory_output_path.write_text(

@@ -252,25 +252,28 @@ earlier fragments of the same visual table. Remaining page-text blocks can be
 classified as page-bottom notes.
 Candidate source blocks may start with a marker, or may contain embedded marker
 definitions after preceding abbreviation or significance prose, such as
-`significance. a Represents ... b Represents ...`. When PyMuPDF text collapses
-a visual superscript marker into the following word, such as
-`aRepresents ... bRepresents ...`, the split is driven by positioned character
-evidence: a smaller raised glyph at a definition boundary. Extracted-table
-footer rows can also contribute weaker marker evidence when a confirmed footer
-cell starts or embeds a marker-shaped prefix such as a symbol run or a letter
-before a statistical expression. Bracketed and parenthesized markers such as
-`[a]` and `(a)` are canonicalized to the visible glyph before matching.
+`significance. a Represents ... b Represents ...`. When the visual PDF has a
+superscript marker but PyMuPDF raw text runs that marker into the following
+word, the split is driven by positioned character evidence: a smaller raised
+glyph at a definition boundary. The damaged extracted word is kept only as
+source text provenance. Extracted-table footer rows can also contribute weaker
+marker evidence when a confirmed footer cell starts or embeds a marker-shaped
+prefix such as a symbol run or a letter before a statistical expression.
+Bracketed and parenthesized markers such as `[a]` and `(a)` are canonicalized
+to the visible glyph before matching.
 
-Known symbol markers such as `†`, `‡`, `§`, `¶`, `#`, `|`, brace-like marker
-glyphs, and asterisk runs are structural footnote-definition evidence when they
-start a local table/footer definition and are followed by any non-empty
-definition body. Do not require the body to contain p-value wording or other
-semantic vocabulary. Statistical footer lines can define repeated asterisk runs
-such as `*`, `**`, and `***` in one comma-separated line; these are split into
-separate definition records with `asterisk:1`, `asterisk:2`, and `asterisk:3`
-glyph keys. P-value semantics are special only for the conventional fallback
-applied to unresolved asterisk anchors after explicit definition matching
-fails.
+Known symbol markers such as `†`, `‡`, `§`, `¶`, `#`, brace-like marker glyphs,
+and asterisk runs are structural footnote-definition evidence when they start a
+local table/footer definition and are followed by any non-empty definition
+body. Do not require the body to contain p-value wording or other semantic
+vocabulary. Vertical-bar glyphs observed as superscript/small annotations are
+suppressed from the anchor inventory as non-footnote artifacts unless stronger
+local definition evidence later justifies treating them as table-note markers.
+Statistical footer lines can define repeated asterisk runs such as `*`, `**`,
+and `***` in one comma-separated line; these are split into separate definition
+records with `asterisk:1`, `asterisk:2`, and `asterisk:3` glyph keys. P-value
+semantics are special only for the conventional fallback applied to unresolved
+asterisk anchors after explicit definition matching fails.
 Distinct symbol markers in one contiguous footer block, such as `* Race ...
 †Education ... ‡Smoking ... §Income ...`, are split into separate definition
 records without requiring whitespace between the glyph and definition body.

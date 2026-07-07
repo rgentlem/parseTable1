@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 from typing import NamedTuple
 
 from table1_parser.page_furniture_mask import (
     filter_positioned_items_for_page_furniture,
     page_furniture_cluster_ids_for_bbox,
 )
-from table1_parser.schemas import PaperPageFurniture
+from table1_parser.schemas import PaperPageFurniture, PaperTableMention
 from table1_parser.extract.table_detector import (
     DetectedTableCandidate,
     _is_rectangular,
@@ -29,6 +30,8 @@ COLUMN_CLUSTER_TOLERANCE = 18.0
 COLLAPSED_LABEL_PATTERN = re.compile(r"[a-z][A-Z]|[A-Za-z-]{8,}")
 P_VALUE_ANCHOR_PATTERN = re.compile(r"^(?:[<>]=?)?(?:0?\.\d+|\.\d+|1\.0+)(?:[*†‡§¶#{}|]+|[a-z])*$", re.IGNORECASE)
 TABLE_VALUE_TEXT_PATTERN = re.compile(r"^(?:[<>]=?\s*)?[\d.,/%()\-+±\s]+$")
+ALPHA_WORD_PATTERN = re.compile(r"[A-Za-z]{2,}")
+SENTENCE_PUNCTUATION_PATTERN = re.compile(r"[.!?;:]")
 CONTINUATION_PAGE_NOTE_PATTERN = re.compile(
     r"\b(?:cont\.?|continued|continues?)\b.*\b(?:previous|next)\s+page\b|"
     r"\b(?:previous|next)\s+page\b.*\b(?:cont\.?|continued|continues?)\b",
@@ -299,6 +302,71 @@ def _has_strong_uncaptioned_table_geometry(rows: list[list[str]]) -> bool:
     return data_like_rows >= 2
 
 
+def _normalized_line_key(text: object) -> str:
+    return re.sub(r"\s+", " ", str(text).strip()).lower()
+
+
+def _prose_reference_line_keys(
+    paper_table_mentions: Sequence[PaperTableMention] | None,
+    *,
+    page_num: int,
+) -> set[str]:
+    if not paper_table_mentions:
+        return set()
+    return {
+        _normalized_line_key(mention.source_line_text)
+        for mention in paper_table_mentions
+        if mention.page_num == page_num and mention.mention_kind == "prose_reference"
+    }
+
+
+def _value_region_prose_density(rows: list[list[str]]) -> dict[str, object]:
+    value_cells = [
+        cell.strip()
+        for row in rows
+        for cell in row[1:]
+        if cell.strip()
+    ]
+    if not value_cells:
+        return {
+            "value_cell_count": 0,
+            "prose_like_value_cell_count": 0,
+            "compact_value_cell_count": 0,
+            "prose_like_value_cell_fraction": 0.0,
+            "compact_value_cell_fraction": 0.0,
+        }
+    prose_like_value_cell_count = 0
+    compact_value_cell_count = 0
+    for cell in value_cells:
+        alpha_words = ALPHA_WORD_PATTERN.findall(cell)
+        compact_value = (
+            TABLE_VALUE_TEXT_PATTERN.fullmatch(cell) is not None
+            and NUMERIC_TOKEN_PATTERN.search(cell) is not None
+        )
+        if compact_value:
+            compact_value_cell_count += 1
+        if len(alpha_words) >= 3 or (len(alpha_words) >= 2 and SENTENCE_PUNCTUATION_PATTERN.search(cell)):
+            prose_like_value_cell_count += 1
+    value_cell_count = len(value_cells)
+    return {
+        "value_cell_count": value_cell_count,
+        "prose_like_value_cell_count": prose_like_value_cell_count,
+        "compact_value_cell_count": compact_value_cell_count,
+        "prose_like_value_cell_fraction": prose_like_value_cell_count / value_cell_count,
+        "compact_value_cell_fraction": compact_value_cell_count / value_cell_count,
+    }
+
+
+def _looks_like_prose_fragment_grid(rows: list[list[str]]) -> bool:
+    if len(rows) < 4 or max((len(row) for row in rows), default=0) < 3:
+        return False
+    density = _value_region_prose_density(rows)
+    value_cell_count = int(density["value_cell_count"])
+    prose_fraction = float(density["prose_like_value_cell_fraction"])
+    compact_fraction = float(density["compact_value_cell_fraction"])
+    return value_cell_count >= 6 and prose_fraction >= 0.35 and compact_fraction < 0.5
+
+
 def build_word_lines(words: list[dict[str, object]]) -> list[dict[str, object]]:
     """Cluster positioned words into reading-order text lines."""
     if not words:
@@ -549,6 +617,7 @@ def build_text_layout_candidates(
     rule_segments: list[tuple[float, float, float, float]] | None = None,
     layout_source: str = "text_positions",
     paper_page_furniture: PaperPageFurniture | None = None,
+    paper_table_mentions: Sequence[PaperTableMention] | None = None,
 ) -> list[DetectedTableCandidate]:
     """Build scored candidates from page word and char geometry."""
     working_words, word_mask_metadata = filter_positioned_items_for_page_furniture(
@@ -563,7 +632,13 @@ def build_text_layout_candidates(
     )
     lines = build_word_lines(working_words)
 
-    caption_indices = [index for index, line in enumerate(lines) if TABLE_CAPTION_PATTERN.search(str(line["text"]))]
+    prose_reference_line_keys = _prose_reference_line_keys(paper_table_mentions, page_num=page_num)
+    caption_indices = [
+        index
+        for index, line in enumerate(lines)
+        if TABLE_CAPTION_PATTERN.search(str(line["text"]))
+        and _normalized_line_key(line["text"]) not in prose_reference_line_keys
+    ]
     candidates: list[DetectedTableCandidate] = []
     segments: list[dict[str, object]] = []
     for segment_index, start_index in enumerate(caption_indices):
@@ -613,6 +688,9 @@ def build_text_layout_candidates(
         content_lines = content_lines[: len(rows)]
         if not rows or not content_lines:
             continue
+        prose_density = _value_region_prose_density(rows)
+        if _looks_like_prose_fragment_grid(rows):
+            continue
         caption = "\n".join(caption_parts)
         caption_signal = first_caption_metadata is not None
         strong_geometry = _has_strong_uncaptioned_table_geometry(rows)
@@ -643,6 +721,7 @@ def build_text_layout_candidates(
                 "row_bounds": trimmed.row_bounds,
                 "bbox": bbox,
                 "trailing_non_table_rows": trimmed.metadata,
+                "value_region_prose_density": prose_density,
                 "page_furniture_overlap": {
                     "source_artifact": "paper_page_furniture.json",
                     "has_overlap": bool(table_bbox_cluster_ids),
@@ -682,6 +761,7 @@ def build_text_layout_candidates(
                         "caption_signal": segment["caption_signal"],
                         "strong_uncaptioned_table_geometry": segment["strong_uncaptioned_table_geometry"],
                         "trailing_non_table_rows": segment["trailing_non_table_rows"],
+                        "value_region_prose_density": segment["value_region_prose_density"],
                         "page_furniture_overlap": segment["page_furniture_overlap"],
                         "page_furniture_mask": segment["page_furniture_mask"],
                     },

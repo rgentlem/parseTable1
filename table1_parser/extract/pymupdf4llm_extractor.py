@@ -7,6 +7,7 @@ import io
 import json
 import re
 from pathlib import Path
+from collections.abc import Sequence
 from typing import Any
 
 from table1_parser.config import Settings
@@ -42,11 +43,18 @@ from table1_parser.page_furniture_mask import (
     page_furniture_cluster_ids_for_bbox,
 )
 from table1_parser.reference_sections import text_has_reference_section_start
-from table1_parser.schemas import ExtractedTable, PaperPageFurniture, TableCell
+from table1_parser.schemas import ExtractedTable, PaperPageFurniture, PaperTableMention, TableCell
+from table1_parser.text_cleaning import clean_text
 
 
 MODEL_HEADER_PATTERN = re.compile(r"\bmodel[_\s]*\d+\b", re.IGNORECASE)
 ESTIMATE_HEADER_PATTERN = re.compile(r"\b(?:or\b|95%\s*ci|p(?:-value)?\b)\b", re.IGNORECASE)
+INTRODUCTION_HEADING_PATTERN = re.compile(
+    r"^(?:\d+(?:\.\d+)*\.?\s+)?introduction\b",
+    re.IGNORECASE,
+)
+
+
 class PyMuPDF4LLMExtractor(BaseExtractor):
     """Extract raw table grids with PyMuPDF4LLM."""
 
@@ -70,12 +78,14 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
         pdf_path: str,
         *,
         paper_page_furniture: PaperPageFurniture | None = None,
+        paper_table_mentions: Sequence[PaperTableMention] | None = None,
     ) -> list[ExtractedTable]:
         """Extract and rank raw table candidates from a PDF."""
         try:
             candidates = self._detect_table_candidates(
                 pdf_path,
                 paper_page_furniture=paper_page_furniture,
+                paper_table_mentions=paper_table_mentions,
             )
         except Exception:
             return []
@@ -131,6 +141,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
         pdf_path: str,
         *,
         paper_page_furniture: PaperPageFurniture | None = None,
+        paper_table_mentions: Sequence[PaperTableMention] | None = None,
     ) -> list[DetectedTableCandidate]:
         try:
             import pymupdf4llm
@@ -157,6 +168,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
         try:
             in_references_section = False
             references_start_page_num: int | None = None
+            front_matter_intervals = _front_matter_intervals_by_page(document)
             for page_num, payload_page in sorted(pages.items()):
                 page = None
                 if document is not None and 0 <= page_num - 1 < getattr(document, "page_count", 0):
@@ -410,6 +422,9 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                                 "geometry_transform_applied": refinement.get(
                                     "geometry_transform_applied"
                                 ),
+                                "value_matrix_column_anchors": refinement.get(
+                                    "value_matrix_column_anchors"
+                                ),
                                 "table_markdown": table.get("markdown"),
                                 "table_cells": cell_bboxes,
                                 "first_column_text_x0_by_row": first_column_text_x0_by_row,
@@ -465,6 +480,11 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                     )
                     if uncaptioned_prose_shard:
                         continue
+                    if _is_uncaptioned_front_matter_layout_candidate(
+                        scored_candidate,
+                        front_matter_intervals.get(page_num),
+                    ):
+                        continue
                     page_candidates.append(scored_candidate)
                     rotated_block_candidate = _build_rotated_block_candidate_from_mixed_table_box(
                         page_num=page_num,
@@ -489,6 +509,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                     page_text=page_text,
                     page_candidates=page_candidates,
                     paper_page_furniture=paper_page_furniture,
+                    paper_table_mentions=paper_table_mentions,
                 )
                 if page is not None and page_words:
                     extracted_page_text = extract_page_text(page)
@@ -584,6 +605,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                             chars=transformed_chars,
                             rule_segments=transformed_rule_segments,
                             layout_source="sideways_text_positions",
+                            paper_table_mentions=paper_table_mentions,
                         )
                         for sideways_candidate in sideways_candidates:
                             n_cols = _column_count(sideways_candidate)
@@ -694,6 +716,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                     rule_segments=extract_page_rule_segments(page, include_filled=False),
                     layout_source="pymupdf_text_positions",
                     paper_page_furniture=paper_page_furniture,
+                    paper_table_mentions=paper_table_mentions,
                 ):
                     candidates.append(
                         candidate.model_copy(
@@ -775,6 +798,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
         page_text: str,
         page_candidates: list[DetectedTableCandidate],
         paper_page_furniture: PaperPageFurniture | None = None,
+        paper_table_mentions: Sequence[PaperTableMention] | None = None,
     ) -> list[DetectedTableCandidate]:
         """Replace suspicious explicit page candidates with better text-layout candidates."""
         if page is None or not any(
@@ -796,6 +820,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
             rule_segments=extract_page_rule_segments(page, include_filled=False),
             layout_source="pymupdf_text_positions_rescue",
             paper_page_furniture=paper_page_furniture,
+            paper_table_mentions=paper_table_mentions,
         )
         if not rescue_candidates:
             return page_candidates
@@ -1191,6 +1216,463 @@ def _infer_first_column_text_x0_by_row(
     return x0_by_row
 
 
+def _looks_like_value_matrix_word(text: str) -> bool:
+    """Return whether a positioned word is numeric enough to define a value column."""
+    compact = re.sub(r"[\s,\u00a0\u2009\u202f]+", "", clean_text(text))
+    if not compact or not re.search(r"\d", compact):
+        return False
+    if re.search(r"[A-Za-z]", compact):
+        return False
+    return bool(re.fullmatch(r"(?:[<>]=?)?[\d./%()\-+±*†‡§¶#]+", compact))
+
+
+def _value_matrix_column_boundaries_from_lines(
+    lines: list[dict[str, object]],
+    horizontal_rules: list[float],
+) -> tuple[list[float], list[float]] | None:
+    """Infer label/value column boundaries from repeated numeric line anchors."""
+    if not lines:
+        return None
+
+    first_table_rule = min(horizontal_rules or [float("-inf")])
+    candidate_items: list[tuple[float, int]] = []
+    first_value_boundaries: list[float] = []
+    left_text_candidate_line_count = 0
+    candidate_line_indices: set[int] = set()
+    for line_index, line in enumerate(lines):
+        line_words = [
+            word
+            for word in line["words"]
+            if str(word.get("text", "")).strip()
+        ]
+        if not line_words or float(line["top"]) < first_table_rule - 2.0:
+            continue
+        numeric_words, first_value_boundary = _value_matrix_words_after_label_region(line_words)
+        if len(numeric_words) < 3 or len(numeric_words) * 2 < len(line_words):
+            continue
+        candidate_line_indices.add(line_index)
+        if first_value_boundary is not None:
+            first_value_boundaries.append(first_value_boundary)
+            if any(
+                float(word.get("x1", word.get("x0", 0.0))) <= first_value_boundary + 1.0
+                and re.search(r"[A-Za-z]", str(word.get("text", "")))
+                for word in line_words
+            ):
+                left_text_candidate_line_count += 1
+        candidate_items.extend((float(word["x0"]), line_index) for word in numeric_words)
+
+    if len(candidate_line_indices) < 3 or not candidate_items:
+        return None
+
+    clusters: list[list[tuple[float, int]]] = []
+    for item in sorted(candidate_items):
+        if not clusters or abs(item[0] - clusters[-1][-1][0]) > 18.0:
+            clusters.append([item])
+            continue
+        clusters[-1].append(item)
+
+    minimum_line_support = (
+        2
+        if len(candidate_line_indices) <= 5
+        else max(3, min(5, len(candidate_line_indices) // 4))
+    )
+    value_anchors = [
+        sum(position for position, _line_index in cluster) / len(cluster)
+        for cluster in clusters
+        if len({_line_index for _position, _line_index in cluster}) >= minimum_line_support
+    ]
+    if len(value_anchors) < 4 or len(value_anchors) > 24:
+        return None
+
+    right_trailing_text_lines = 0
+    rightmost_anchor = value_anchors[-1]
+    for line_index in candidate_line_indices:
+        line = lines[line_index]
+        if any(
+            float(word["x0"]) > rightmost_anchor + 18.0
+            and re.search(r"[A-Za-z]", str(word.get("text", "")))
+            for word in line["words"]
+        ):
+            right_trailing_text_lines += 1
+    if right_trailing_text_lines >= max(2, len(candidate_line_indices) // 3):
+        return None
+
+    header_first_boundary: float | None = None
+    if (
+        len(value_anchors) >= 2
+        and left_text_candidate_line_count >= max(2, len(candidate_line_indices) // 3)
+    ):
+        first_body_top = min(float(lines[line_index]["top"]) for line_index in candidate_line_indices)
+        first_anchor = value_anchors[0]
+        second_anchor = value_anchors[1]
+        first_header_tolerance = max(18.0, min(34.0, (second_anchor - first_anchor) * 0.45))
+        header_boundary_candidates: list[tuple[float, float]] = []
+        for line_index, line in enumerate(lines):
+            if line_index in candidate_line_indices:
+                continue
+            if float(line["top"]) < first_table_rule - 2.0:
+                continue
+            if float(line["bottom"]) > first_body_top - 0.5:
+                continue
+            header_words = sorted(
+                [
+                    word
+                    for word in line["words"]
+                    if str(word.get("text", "")).strip()
+                ],
+                key=lambda word: float(word["x0"]),
+            )
+            if len(header_words) < 2:
+                continue
+            for word_index, word in enumerate(header_words):
+                word_x0 = float(word["x0"])
+                if abs(word_x0 - first_anchor) > first_header_tolerance:
+                    continue
+                prior_words = [
+                    prior_word
+                    for prior_word in header_words[:word_index]
+                    if float(prior_word.get("x1", prior_word.get("x0", 0.0))) <= word_x0 - 2.0
+                ]
+                if not prior_words:
+                    continue
+                prior_text = " ".join(str(prior_word.get("text", "")) for prior_word in prior_words)
+                if re.search(r"[A-Za-z]", prior_text) is None:
+                    continue
+                prior_x1 = float(prior_words[-1].get("x1", prior_words[-1].get("x0", 0.0)))
+                if word_x0 - prior_x1 < 8.0:
+                    continue
+                boundary = (prior_x1 + word_x0) / 2.0
+                if first_anchor - boundary <= 4.0:
+                    continue
+                header_boundary_candidates.append((float(line["top"]), boundary))
+                break
+        if header_boundary_candidates:
+            leaf_header_top = max(line_top for line_top, _boundary in header_boundary_candidates)
+            leaf_header_boundaries = sorted(
+                boundary
+                for line_top, boundary in header_boundary_candidates
+                if line_top >= leaf_header_top - 3.0
+            )
+            header_first_boundary = leaf_header_boundaries[len(leaf_header_boundaries) // 2]
+
+    if header_first_boundary is not None:
+        first_boundary = header_first_boundary
+    elif first_value_boundaries:
+        sorted_first_value_boundaries = sorted(first_value_boundaries)
+        first_boundary = sorted_first_value_boundaries[len(sorted_first_value_boundaries) // 2]
+    else:
+        leftmost_text_x0 = min(float(word["x0"]) for line in lines for word in line["words"])
+        first_boundary = (leftmost_text_x0 + value_anchors[0]) / 2.0
+    if value_anchors[0] - first_boundary <= 4.0:
+        return None
+    boundaries = [
+        first_boundary,
+        *[
+            (value_anchors[index] + value_anchors[index + 1]) / 2.0
+            for index in range(len(value_anchors) - 1)
+        ],
+    ]
+    return boundaries, value_anchors
+
+
+def _value_matrix_words_after_label_region(
+    line_words: list[dict[str, object]],
+) -> tuple[list[dict[str, object]], float | None]:
+    """Return numeric words after the line's left text-label region."""
+    sorted_words = sorted(line_words, key=lambda word: float(word["x0"]))
+    numeric_indices = [
+        index
+        for index, word in enumerate(sorted_words)
+        if _looks_like_value_matrix_word(str(word.get("text", "")))
+    ]
+    if len(numeric_indices) < 3:
+        return [], None
+    best_start_index = numeric_indices[0]
+    best_gap = float("-inf")
+    for numeric_index in numeric_indices:
+        trailing_numeric_count = sum(index >= numeric_index for index in numeric_indices)
+        if trailing_numeric_count < 3:
+            continue
+        previous_x1 = (
+            float(sorted_words[numeric_index - 1]["x1"])
+            if numeric_index > 0
+            else float(sorted_words[numeric_index]["x0"])
+        )
+        gap = float(sorted_words[numeric_index]["x0"]) - previous_x1
+        if gap > best_gap:
+            best_gap = gap
+            best_start_index = numeric_index
+    first_value_boundary = None
+    if best_start_index > 0:
+        first_value_boundary = (
+            float(sorted_words[best_start_index - 1]["x1"])
+            + float(sorted_words[best_start_index]["x0"])
+        ) / 2.0
+    return (
+        [
+            word
+            for index, word in enumerate(sorted_words)
+            if index >= best_start_index
+            and _looks_like_value_matrix_word(str(word.get("text", "")))
+        ],
+        first_value_boundary,
+    )
+
+
+def _refine_grid_from_value_matrix_word_positions(
+    *,
+    raw_rows: list[list[str]],
+    clipped_words: list[dict[str, object]],
+    clipped_chars: list[dict[str, object]],
+    horizontal_rules: list[float],
+    full_width_rules: list[float],
+) -> dict[str, object] | None:
+    """Rebuild a grid from repeated numeric value-column anchors."""
+    if len(raw_rows) < 4 or max((len(row) for row in raw_rows), default=0) < 4:
+        return None
+    if not clipped_words:
+        return None
+
+    lines = build_word_lines(clipped_words)
+    if len(lines) < max(4, len(raw_rows) - 2):
+        return None
+
+    value_matrix_geometry = _value_matrix_column_boundaries_from_lines(
+        lines,
+        full_width_rules or horizontal_rules,
+    )
+    if value_matrix_geometry is None:
+        return None
+    boundaries, value_anchors = value_matrix_geometry
+    refined_rows, refined_cell_bboxes = build_row_grid_from_lines(
+        lines,
+        page_chars=clipped_chars,
+        column_start_boundaries=boundaries,
+    )
+    if not refined_rows:
+        return None
+    refined_col_count = max((len(row) for row in refined_rows), default=0)
+    expected_col_count = len(value_anchors) + 1
+    if refined_col_count != expected_col_count:
+        return None
+    if len(refined_rows) < len(raw_rows) - 2 or len(refined_rows) > len(raw_rows) + 4:
+        return None
+
+    refined_value_rows = 0
+    for row in refined_rows:
+        numeric_values = sum(_looks_like_value_matrix_word(cell) for cell in row[1:] if cell.strip())
+        if numeric_values >= max(3, len(value_anchors) // 2):
+            refined_value_rows += 1
+    if refined_value_rows < 3:
+        return None
+
+    return {
+        "raw_rows": refined_rows,
+        "table_cells": refined_cell_bboxes,
+        "refined_table_cells": refined_cell_bboxes,
+        "row_bounds": [
+            (float(line["top"]), float(line["bottom"]))
+            for line in lines
+        ],
+        "horizontal_rules": horizontal_rules,
+        "full_width_horizontal_rules": full_width_rules,
+        "grid_refinement_source": "value_matrix_word_positions",
+        "geometry_coordinate_frame": "page",
+        "geometry_transform_source_bbox": None,
+        "geometry_transform_transposed": False,
+        "geometry_transform_applied": False,
+        "value_matrix_column_anchors": [round(anchor, 4) for anchor in value_anchors],
+    }
+
+
+def _refine_grid_from_hline_word_positions(
+    *,
+    raw_rows: list[list[str]],
+    clipped_words: list[dict[str, object]],
+    clipped_chars: list[dict[str, object]],
+    horizontal_rules: list[float],
+    full_width_rules: list[float],
+) -> dict[str, object] | None:
+    """Rebuild a ruled table grid from positioned words, using hlines as primary structure."""
+    rules = sorted({float(rule) for rule in full_width_rules})
+    if len(rules) < 3 or not clipped_words:
+        return None
+
+    lines = [
+        line
+        for line in build_word_lines(clipped_words)
+        if float(line["bottom"]) >= rules[0] - 2.0 and float(line["top"]) <= rules[-1] + 2.0
+    ]
+    if len(lines) <= len(raw_rows):
+        return None
+
+    separator_rule: float | None = None
+    for rule in rules[1:-1]:
+        header_count = sum(float(line["bottom"]) <= rule + 2.0 for line in lines)
+        body_count = sum(float(line["top"]) >= rule - 2.0 for line in lines)
+        if header_count >= 1 and body_count >= 1:
+            separator_rule = rule
+            break
+    if separator_rule is None:
+        return None
+
+    header_lines = [line for line in lines if float(line["bottom"]) <= separator_rule + 2.0]
+    body_lines = [line for line in lines if float(line["top"]) >= separator_rule - 2.0]
+    if not header_lines or not body_lines:
+        return None
+
+    first_value_boundaries: list[float] = []
+    value_anchor_items: list[tuple[float, int]] = []
+    for body_line_index, line in enumerate(body_lines):
+        words = [
+            word
+            for word in sorted(line["words"], key=lambda item: float(item["x0"]))
+            if str(word.get("text", "")).strip()
+        ]
+        if len(words) < 2:
+            continue
+        value_like_indices = [
+            index
+            for index, word in enumerate(words)
+            if _looks_like_hline_table_value_word(str(word.get("text", "")))
+        ]
+        if len(value_like_indices) < 2:
+            continue
+        best_start_index: int | None = None
+        best_gap = float("-inf")
+        for value_index in value_like_indices:
+            if value_index == 0:
+                continue
+            trailing_value_count = sum(index >= value_index for index in value_like_indices)
+            if trailing_value_count < 2:
+                continue
+            gap = float(words[value_index]["x0"]) - float(words[value_index - 1]["x1"])
+            if gap > best_gap:
+                best_gap = gap
+                best_start_index = value_index
+        if best_start_index is None:
+            continue
+        first_value_boundaries.append(
+            (float(words[best_start_index - 1]["x1"]) + float(words[best_start_index]["x0"])) / 2.0
+        )
+        for word in words[best_start_index:]:
+            if _looks_like_hline_table_value_word(str(word.get("text", ""))):
+                value_anchor_items.append((float(word["x0"]), body_line_index))
+
+    if not first_value_boundaries or not value_anchor_items:
+        return None
+
+    anchor_clusters: list[list[tuple[float, int]]] = []
+    for item in sorted(value_anchor_items):
+        if not anchor_clusters or abs(item[0] - anchor_clusters[-1][-1][0]) > 24.0:
+            anchor_clusters.append([item])
+            continue
+        anchor_clusters[-1].append(item)
+    minimum_line_support = 2 if len(body_lines) >= 2 else 1
+    value_anchors = [
+        sum(position for position, _line_index in cluster) / len(cluster)
+        for cluster in anchor_clusters
+        if len({_line_index for _position, _line_index in cluster}) >= minimum_line_support
+    ]
+    if len(value_anchors) < 2:
+        return None
+
+    first_boundary = sorted(first_value_boundaries)[len(first_value_boundaries) // 2]
+    if value_anchors[0] - first_boundary <= 4.0:
+        return None
+    boundaries = [
+        first_boundary,
+        *[
+            (value_anchors[index] + value_anchors[index + 1]) / 2.0
+            for index in range(len(value_anchors) - 1)
+        ],
+    ]
+    refined_rows, refined_cell_bboxes = build_row_grid_from_lines(
+        lines,
+        page_chars=clipped_chars,
+        column_start_boundaries=boundaries,
+    )
+    if not refined_rows:
+        return None
+    refined_col_count = max((len(row) for row in refined_rows), default=0)
+    if refined_col_count < 3:
+        return None
+
+    leaf_header_row_idx = max(0, len(header_lines) - 1)
+    for row_idx in range(leaf_header_row_idx):
+        row = refined_rows[row_idx]
+        bbox_row = refined_cell_bboxes[row_idx]
+        run_start: int | None = None
+        for col_idx in range(1, refined_col_count + 1):
+            is_populated = col_idx < refined_col_count and bool(row[col_idx].strip())
+            if is_populated and run_start is None:
+                run_start = col_idx
+            if (not is_populated or col_idx == refined_col_count) and run_start is not None:
+                run_end = col_idx - 1
+                if run_end > run_start:
+                    merged_text = clean_text(" ".join(row[index] for index in range(run_start, run_end + 1)))
+                    merged_bbox = _merge_bboxes(bbox_row[run_start : run_end + 1])
+                    row[run_start] = merged_text
+                    bbox_row[run_start] = merged_bbox
+                    for blank_idx in range(run_start + 1, run_end + 1):
+                        row[blank_idx] = ""
+                        bbox_row[blank_idx] = None
+                run_start = None
+
+    value_row_count = sum(
+        sum(
+            _looks_like_hline_table_value_word(cell)
+            for cell in row[1:]
+            if cell.strip()
+        )
+        >= 1
+        for row in refined_rows[leaf_header_row_idx + 1 :]
+    )
+    if value_row_count < max(2, min(3, len(body_lines))):
+        return None
+
+    return {
+        "raw_rows": refined_rows,
+        "table_cells": refined_cell_bboxes,
+        "refined_table_cells": refined_cell_bboxes,
+        "row_bounds": [
+            (float(line["top"]), float(line["bottom"]))
+            for line in lines
+        ],
+        "horizontal_rules": horizontal_rules,
+        "full_width_horizontal_rules": full_width_rules,
+        "grid_refinement_source": "hline_word_positions",
+        "geometry_coordinate_frame": "page",
+        "geometry_transform_source_bbox": None,
+        "geometry_transform_transposed": False,
+        "geometry_transform_applied": False,
+        "value_matrix_column_anchors": [round(anchor, 4) for anchor in value_anchors],
+    }
+
+
+def _looks_like_hline_table_value_word(text: str) -> bool:
+    cleaned = clean_text(text)
+    if not cleaned:
+        return False
+    if cleaned in {"-", "–", "—"}:
+        return True
+    return _looks_like_value_matrix_word(cleaned)
+
+
+def _merge_bboxes(
+    bboxes: list[tuple[float, float, float, float] | None],
+) -> tuple[float, float, float, float] | None:
+    populated = [bbox for bbox in bboxes if bbox is not None]
+    if not populated:
+        return None
+    return (
+        min(bbox[0] for bbox in populated),
+        min(bbox[1] for bbox in populated),
+        max(bbox[2] for bbox in populated),
+        max(bbox[3] for bbox in populated),
+    )
+
+
 def _refine_explicit_table_candidate_grid(
     *,
     raw_rows: list[list[str]],
@@ -1258,8 +1740,14 @@ def _refine_explicit_table_candidate_grid(
     if full_width_rules:
         sorted_full_width_rules = sorted(float(rule) for rule in full_width_rules)
         top_rule = sorted_full_width_rules[0]
+        bottom_rule = sorted_full_width_rules[-1]
+        clip_top = bbox[1]
+        clip_bottom = bbox[3]
         if top_rule < bbox[1] and bbox[1] - top_rule <= 20.0:
-            word_clip_bbox = (bbox[0], top_rule, bbox[2], bbox[3])
+            clip_top = top_rule
+        if bottom_rule > bbox[3] and bottom_rule - bbox[3] <= 20.0:
+            clip_bottom = bottom_rule
+        word_clip_bbox = (bbox[0], clip_top, bbox[2], clip_bottom)
 
     clipped_words = [
         word
@@ -1292,6 +1780,16 @@ def _refine_explicit_table_candidate_grid(
         and float(char["top"]) >= word_clip_bbox[1] - 2.0
         and float(char["bottom"]) <= word_clip_bbox[3] + 2.0
     ]
+
+    hline_refinement = _refine_grid_from_hline_word_positions(
+        raw_rows=raw_rows,
+        clipped_words=clipped_words,
+        clipped_chars=clipped_chars,
+        horizontal_rules=horizontal_rules,
+        full_width_rules=full_width_rules,
+    )
+    if hline_refinement is not None:
+        return hline_refinement
 
     rotation_direction = str(orientation_metadata.get("rotation_direction") or "")
     rotation_confidence = float(orientation_metadata.get("rotation_confidence") or 0.0)
@@ -1569,7 +2067,18 @@ def _refine_explicit_table_candidate_grid(
                 working_full_width_rules = []
             refined_lines = build_word_lines(working_words)
             column_start_boundaries: list[float] | None = None
-            if bool(refinement_attempt.get("use_top_header_boundaries")) and refined_lines:
+            value_matrix_column_anchors: list[float] = []
+            value_matrix_geometry = _value_matrix_column_boundaries_from_lines(
+                refined_lines,
+                working_full_width_rules or working_horizontal_rules,
+            )
+            if value_matrix_geometry is not None:
+                column_start_boundaries, value_matrix_column_anchors = value_matrix_geometry
+            if (
+                column_start_boundaries is None
+                and bool(refinement_attempt.get("use_top_header_boundaries"))
+                and refined_lines
+            ):
                 first_line = refined_lines[0]
                 header_starts: list[float] = []
                 previous_x1: float | None = None
@@ -1594,7 +2103,8 @@ def _refine_explicit_table_candidate_grid(
                         for index in range(len(clustered_starts) - 1)
                     ]
             if (
-                bool(refinement_attempt["geometry_transform_applied"])
+                column_start_boundaries is None
+                and bool(refinement_attempt["geometry_transform_applied"])
                 and len(working_horizontal_rules) >= 3
             ):
                 sorted_rules = sorted(float(rule) for rule in working_horizontal_rules)
@@ -1702,7 +2212,21 @@ def _refine_explicit_table_candidate_grid(
                         "geometry_transform_applied": bool(
                             refinement_attempt["geometry_transform_applied"]
                         ),
+                        "value_matrix_column_anchors": [
+                            round(anchor, 4)
+                            for anchor in value_matrix_column_anchors
+                        ],
                     }
+
+    value_matrix_refinement = _refine_grid_from_value_matrix_word_positions(
+        raw_rows=raw_rows,
+        clipped_words=clipped_words,
+        clipped_chars=clipped_chars,
+        horizontal_rules=horizontal_rules,
+        full_width_rules=full_width_rules,
+    )
+    if value_matrix_refinement is not None:
+        return value_matrix_refinement
 
     header_text = " ".join(
         cell
@@ -1781,6 +2305,110 @@ def _refine_explicit_table_candidate_grid(
 def _column_count(candidate: DetectedTableCandidate) -> int:
     """Return the candidate column count."""
     return max((len(row) for row in candidate.raw_rows), default=0)
+
+
+def _front_matter_intervals_by_page(document: Any | None) -> dict[int, tuple[float, float]]:
+    """Return page y-intervals between the abstract heading and introduction heading."""
+    if document is None:
+        return {}
+
+    abstract_location: tuple[int, float] | None = None
+    introduction_location: tuple[int, float] | None = None
+    page_bottoms: dict[int, float] = {}
+
+    page_count = int(getattr(document, "page_count", 0) or 0)
+    for zero_based_page_num in range(page_count):
+        try:
+            page = document.load_page(zero_based_page_num)
+        except Exception:
+            continue
+        page_num = zero_based_page_num + 1
+        page_rect = getattr(page, "rect", None)
+        page_bottoms[page_num] = float(getattr(page_rect, "height", 0.0) or 0.0)
+        try:
+            lines = build_word_lines(extract_page_words(page))
+        except Exception:
+            continue
+        for line in lines:
+            text = str(line.get("text", "")).strip()
+            if not text:
+                continue
+            line_top = float(line.get("top", 0.0))
+            if abstract_location is None and _is_abstract_heading(text):
+                abstract_location = (page_num, line_top)
+                continue
+            if abstract_location is not None and _is_introduction_heading(text):
+                introduction_location = (page_num, line_top)
+                break
+        if abstract_location is not None and introduction_location is not None:
+            break
+
+    if abstract_location is None or introduction_location is None:
+        return {}
+    abstract_page, abstract_top = abstract_location
+    introduction_page, introduction_top = introduction_location
+    if (introduction_page, introduction_top) <= (abstract_page, abstract_top):
+        return {}
+
+    intervals: dict[int, tuple[float, float]] = {}
+    for page_num in range(abstract_page, introduction_page + 1):
+        page_bottom = page_bottoms.get(page_num, 0.0)
+        if page_num == abstract_page and page_num == introduction_page:
+            intervals[page_num] = (abstract_top, introduction_top)
+        elif page_num == abstract_page:
+            intervals[page_num] = (abstract_top, page_bottom)
+        elif page_num == introduction_page:
+            intervals[page_num] = (0.0, introduction_top)
+        else:
+            intervals[page_num] = (0.0, page_bottom)
+    return intervals
+
+
+def _is_abstract_heading(text: str) -> bool:
+    """Return whether a line is an abstract heading, including letter-spaced forms."""
+    compact_alpha = re.sub(r"[^A-Za-z]+", "", text).casefold()
+    return compact_alpha == "abstract" or (
+        compact_alpha.endswith("abstract") and len(compact_alpha) <= 28
+    )
+
+
+def _is_introduction_heading(text: str) -> bool:
+    """Return whether a line starts an introduction section."""
+    return bool(INTRODUCTION_HEADING_PATTERN.match(clean_text(text)))
+
+
+def _is_uncaptioned_front_matter_layout_candidate(
+    candidate: DetectedTableCandidate,
+    front_matter_interval: tuple[float, float] | None,
+) -> bool:
+    """Return whether an uncaptained candidate is a front-matter layout block."""
+    if front_matter_interval is None or candidate.bbox is None:
+        return False
+    if candidate.caption or candidate.metadata.get("table_number") is not None:
+        return False
+    signals = candidate.metadata.get("signals")
+    if isinstance(signals, dict) and bool(signals.get("caption_match")):
+        return False
+
+    candidate_top = float(candidate.bbox[1])
+    candidate_bottom = float(candidate.bbox[3])
+    candidate_height = max(1.0, candidate_bottom - candidate_top)
+    interval_top, interval_bottom = front_matter_interval
+    overlap = min(candidate_bottom, interval_bottom) - max(candidate_top, interval_top)
+    if overlap <= 0 or overlap / candidate_height < 0.6:
+        return False
+
+    value_anchors = candidate.metadata.get("value_matrix_column_anchors")
+    if isinstance(value_anchors, list) and len(value_anchors) >= 3:
+        return False
+    later_numeric_ratio = (
+        float(signals.get("later_column_numeric_ratio", 0.0))
+        if isinstance(signals, dict)
+        else 0.0
+    )
+    if later_numeric_ratio >= 0.5 and len(candidate.raw_rows) >= 3:
+        return False
+    return True
 
 
 def _looks_like_collapsed_grid_candidate(candidate: DetectedTableCandidate) -> bool:

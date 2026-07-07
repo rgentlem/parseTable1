@@ -128,6 +128,8 @@ def build_paper_text_stream(
                 role = "heading" if _looks_like_section_heading(text, bool(record.get("bold_like"))) else "body"
                 column_index = int(record.get("column_index", 0))
                 line_notes = list(record.get("notes", [])) if isinstance(record.get("notes"), list) else []
+                if record.get("bold_like"):
+                    line_notes.append("bold_like_text")
                 if role == "heading":
                     line_notes.append("layout_section_heading")
                 stream_lines.append(

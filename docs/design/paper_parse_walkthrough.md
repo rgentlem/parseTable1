@@ -26,6 +26,7 @@ outputs/papers/<paper_stem>/
 Today that directory may contain:
 
 - `extracted_tables.json`
+- `table_regions.json`
 - `cell_text_annotations.json`
 - `normalized_tables.json`
 - `column_header_schemas.json`
@@ -48,6 +49,7 @@ Today that directory may contain:
 - `paper_markdown.md`
 - `paper_text_stream.json`
 - `paper_sections.json`
+- `paper_table_mentions.json`
 - `paper_visual_inventory.json`
 - `paper_references.json`
 - `paper_variable_inventory.json`
@@ -60,6 +62,13 @@ Some of these are per-table artifacts. Others are paper-level context artifacts.
 `cell_text_annotations.json` records superscript, subscript, and small marker
 geometry by table cell when compatible PyMuPDF character geometry and extracted
 cell bboxes are available. It does not change the raw extracted grid.
+
+`table_regions.json` records geometry-derived ownership for each extracted
+table before normalization: caption/title rows, preamble rows, column-header
+bands, body rows, footer/note bands, and row-level role assignments. It is
+built from extracted table entries, row bounds, cell bboxes when needed, and
+horizontal rules after page-furniture filtering. Table captions and titles are
+represented here as table identity/component evidence, not as column headers.
 
 `paper_page_furniture.json` records repeated page text observations, recurrence
 clusters, and generic ignored regions. It is built before paper markdown,
@@ -80,7 +89,9 @@ bottom table rule that is itself below the last value-matrix row, then falls
 back to rows after the last value-matrix row when rule evidence is unavailable.
 Rows that start a marker definition are grouped with adjacent continuation rows
 in extracted row order. Confirmed footer rows can carry marker-start evidence
-from footer-cell boundaries and marker-shaped prefixes.
+from cell-text annotation geometry when a raised marker begins the first
+populated footer cell; raw extracted strings that visually run the marker into
+the next word are preserved as provenance but do not define the marker.
 
 PyMuPDF contiguous page text blocks are the positioned PDF source, not isolated
 page lines. These blocks are built from normalized positioned characters after
@@ -94,9 +105,10 @@ can inspect the same raw footer region that later produces split definition
 records.
 Remaining PDF text blocks can still become page-bottom notes. Candidate blocks
 may start with a marker or contain embedded marker definitions after nearby
-explanatory prose. If extracted text shows a collapsed form such as
-`aRepresents`, the definition split is based on the smaller raised marker glyph
-recorded in PyMuPDF character geometry, not on the malformed word itself.
+explanatory prose. If extracted text visually collapses a superscript marker
+into the following definition word, the definition split is based on the
+smaller raised marker glyph recorded in PyMuPDF character geometry or
+`cell_text_annotations.json`, not on the malformed word itself.
 Textual marker definitions such as `The asterisk indicates ...` remain valid
 local definition evidence. A single table-footer block can yield several
 definition records, for example `*`, `†`, `‡`, `§`, `**`, and `***`
@@ -124,6 +136,13 @@ rows as continuations across column and page boundaries. Table-cell
 reference-marker links are added later after cell text annotations are
 available.
 
+`paper_table_mentions.json` is built from the page-furniture-filtered
+layout-aware text stream before table extraction. It records each observed
+`Table N` mention as a caption candidate, continuation label, or prose
+reference, preserving line IDs, local context, and cue evidence such as a
+previous line ending in `shown in`. Text-position table fallback consumes this
+artifact so a prose reference line cannot become the start of a table candidate.
+
 `paper_style_profile.json` summarizes the document's observed conventions for
 footnote markers, bibliography/reference-list style, table caption placement,
 figure caption evidence, and table/figure prose references. It is built from
@@ -143,6 +162,8 @@ structured `inferred` links with conventional threshold meanings.
 The parser deliberately keeps several versions of the same table because each stage answers a different question.
 
 - `ExtractedTable` answers: what did the PDF extractor recover?
+- `TableRegion` answers: which extracted rows and columns belong to captions,
+  column headers, body content, and footer notes by geometry?
 - `NormalizedTable` answers: what cleaned table structure should downstream logic reason over?
 - `ColumnHeaderSchema` answers: how do normalized columns, leaf headers, and higher spanning header groups relate?
 - `ResolvedTableSet` answers: which normalized fragments form the semantic working table list?
@@ -163,6 +184,7 @@ PDF
   -> paper text stream / markdown / sections / bibliography
   -> extracted tables
   -> cell text annotations
+  -> table regions
   -> normalized tables
   -> column header schemas
   -> resolved tables
@@ -216,9 +238,20 @@ Conceptually, this stage does four things:
 
 The current extractor uses `pymupdf4llm` as the main backend. It tries to recover explicit table boxes and table cell grids from the backend JSON output. When that is not enough, it can fall back to text-position-based layout reconstruction.
 
-For some explicit tables, the backend cell grid is too coarse even though the page still contains enough geometry to do better. When a table shows strong grouped-header signals, such as repeated `Model 1`, `Model 2`, `Model 3` blocks plus wide horizontal boundaries, extraction can now refine the explicit backend grid using word positions inside the table bounding box. If the backend table box starts just below a true full-width top rule, extraction may expand the word clip up to that rule so the grouped header row is not lost before column-header schema construction.
+Extraction also uses early, coarse document-structure landmarks when available.
+If positioned page text identifies an Abstract heading followed by an
+Introduction heading, the y-interval between them is treated as front matter.
+Uncaptioned backend table boxes inside that interval are suppressed unless they
+carry real table identity or strong value-matrix evidence. This prevents
+article-info/abstract page layouts from entering the table pipeline as pseudo
+tables while keeping the decision at the extraction stage where candidate
+ownership belongs.
 
-For collapsed explicit grids, word-position refinement treats stable value columns as repeated value-like numeric anchors. This prevents label text such as `Q1-Q3`, `kg/m2`, or biomarker names containing digits from creating fake columns. Rows with a trailing statistic and only nonnumeric fragments to its left can also be repaired from right to left so long first-column labels remain a single row label.
+For some explicit tables, the backend cell grid is too coarse even though the page still contains enough geometry to do better. When a table has credible full-width horizontal rules, extraction can treat the backend grid as a rough table region, rebuild the row grid from positioned PyMuPDF words inside the ruled band, and let the rules define the header/body split. If the backend table box starts just below a true full-width top rule or ends just above a true bottom rule, extraction may expand the word clip to those rules so header or final body rows are not lost before column-header schema construction. This hline-led path is not limited by table size; it is meant for small ruled tables as well as larger grids when the rule geometry is stronger than the backend cell grid.
+
+When a table shows strong grouped-header signals, such as repeated `Model 1`, `Model 2`, `Model 3` blocks plus wide horizontal boundaries, extraction can also refine the explicit backend grid using word positions inside the table bounding box.
+
+For collapsed explicit grids, word-position refinement treats stable value columns as repeated value-like numeric anchors. The left row-label region is inferred from the observed gap before the repeated value run, not from a literal header such as `Characteristics`. This prevents label text such as `Q1-Q3`, `kg/m2`, or biomarker names containing digits from creating fake columns, while keeping a mostly text left column intact when the numeric matrix starts to its right. Rows with a trailing statistic and only nonnumeric fragments to its left can also be repaired from right to left so long first-column labels remain a single row label.
 
 That refinement is no longer limited to upright tables. For rotated explicit tables, extraction can normalize the clipped word and rule coordinates into a table-local upright frame, rebuild the row/column grid there, and then write the improved grid into `ExtractedTable` while preserving the original rotation metadata separately.
 
@@ -235,8 +268,10 @@ The extractor still scores candidates, but the score is now diagnostic rather th
 - deduplicate exact candidate collisions
 - preserve explicit extracted table candidates in stable page/index order
 - record confidence and caption signals in metadata instead of silently dropping low-scoring tables
+- suppress weak unnumbered candidates when their document position is impossible relative to confirmed numbered tables, such as before Table 1 or between consecutive Table 3 and Table 4 candidates, while preserving adjacent possible continuations for later schema checks
 - allow explicit-table grid refinement when rule and word geometry clearly support a better internal column structure
 - suppress backend table-like boxes once the document has entered a `References` or bibliography section, because reference lists are document metadata rather than epidemiology tables; any future reference parser should consume them as atomic citation records, not tokenized table cells
+- suppress uncaptained backend table-like boxes inside the Abstract-to-Introduction front-matter interval unless they have real table identity or strong value-matrix evidence
 - require page-text-layout fallback candidates to have a real table-number/caption signal unless their reconstructed grid has strong table geometry: at least three columns, at least four rows, a header-like top row, stable multi-column alignment, and multiple rows with data-like trailing cells
 - when a text-position fallback caption wraps onto the next line, keep a short caption continuation line with the table label, and also keep a lowercase sentence fragment ending in punctuation with the caption instead of treating it as the first table row
 - when text-position fallback builds column anchors, prefer an early stable table prefix if using the full page would collapse separated value columns because of later wrapped rows, page-margin text, or other noisy numeric positions
@@ -256,7 +291,7 @@ The extractor still scores candidates, but the score is now diagnostic rather th
   still be removed and recorded in `metadata.trailing_non_table_rows`; broad
   footer/furniture cleanup is handled by the earlier page-furniture mask.
 
-This matters for papers with table continuations, odd numbering, or weak captions. A bad score should be inspectable, not silently destructive.
+This matters for papers with table continuations, odd numbering, or weak captions. A bad score should generally be inspectable, not silently destructive; the exception is a weak unnumbered candidate whose source-order position is already inconsistent with the confirmed table sequence and that does not look like an adjacent continuation.
 
 ### What `ExtractedTable` Contains
 
@@ -296,7 +331,32 @@ If a value is correct here but wrong later, the problem is in normalization or p
 
 That distinction is one of the main reasons the project keeps intermediate artifacts.
 
-## Step 3: Normalization
+## Step 3: Table Region Ownership
+
+The table-region stage converts extracted table geometry into explicit row
+ownership before normalization changes the parser-facing grid.
+
+This stage consumes `ExtractedTable` objects plus their available geometry:
+cell boxes, row bounds, table bboxes, full-width and ordinary horizontal rules,
+and already-filtered page context. For ruled tables, horizontal rules define
+the major candidate bands. Rows above the first table rule can become
+caption/title or preamble rows; rows between table rules become the
+column-header band; rows below the header/body rule become the body; rows below
+a bottom body rule become footer/note rows. When rule evidence is incomplete,
+the stage falls back to value-region anchors and records lower confidence.
+
+This stage deliberately separates three concepts that should not share one
+generic "header" label:
+
+- page headers are page-furniture candidates and should already be filtered
+- table captions/titles identify a table but are not column headers
+- column-header bands are the rows that define the table's column axis
+
+`NormalizedTable` consumes these region decisions when available. Footnote
+harvesting can also consume `footer_note_rows` from this artifact instead of
+independently rediscovering extracted footer rows.
+
+## Step 4: Normalization
 
 Normalization converts each `ExtractedTable` into a `NormalizedTable`.
 
@@ -306,13 +366,13 @@ This is the first stage that prepares the table for interpretation, but it still
 
 Normalization currently performs several practical cleanup steps.
 
-#### 3.1 Build A Stable Row Grid
+#### 4.1 Build A Stable Row Grid
 
 The extracted cells are reassembled into a row-major grid.
 
 This gives the downstream logic a stable rectangular structure to reason over.
 
-#### 3.2 Trim Obviously Non-Informative Edge Columns
+#### 4.2 Trim Obviously Non-Informative Edge Columns
 
 Some extracted tables contain junk leading or trailing columns, often because the PDF layout has an empty margin column, a rule fragment, or other extractor noise.
 
@@ -328,7 +388,7 @@ Why this happens here:
 - it is a structural cleanup, not a semantic inference
 - later row and column interpretation is cleaner when the table edges are already sane
 
-#### 3.3 Produce Parser-Facing Cleaned Rows
+#### 4.3 Produce Parser-Facing Cleaned Rows
 
 Normalization builds `metadata.cleaned_rows`, which is the parser-facing text version of the table.
 
@@ -354,7 +414,7 @@ Important design rule:
 - raw extracted cell text is still preserved earlier in `ExtractedTable`
 - cleaned parser-facing text belongs in normalization and later stages
 
-#### 3.4 Record Text Cleaning Provenance
+#### 4.4 Record Text Cleaning Provenance
 
 Normalization now also records `metadata.text_cleaning_provenance`.
 
@@ -367,26 +427,26 @@ This is a table-level audit summary showing, for the surviving normalized grid:
 
 This exists because parser-facing cleanup is useful, but it should not be invisible.
 
-#### 3.5 Detect Header Rows
+#### 4.5 Apply Table-Region Header And Body Rows
 
-Normalization separates header rows from body rows.
+When `table_regions.json` is available, normalization consumes its
+`column_header_rows` and `body_rows` directly. Caption/title rows, preamble
+rows, and footer/note rows remain preserved in `metadata.cleaned_rows`, but
+they are excluded from `header_rows` and `body_rows`.
 
-The detector uses the cleaned grid and, when available, row geometry such as row bounds and horizontal rules.
-When the first dense numeric value row is a stronger structural signal than
-the initial detector, normalization can use it as the body boundary and treat
-the non-empty rows above it as the header band. A sparse leading caption or
-note tail above that band remains preserved in `metadata.cleaned_rows`, but it
-is excluded from both `header_rows` and `body_rows`.
+The older cleaned-grid detector remains a fallback for callers that normalize
+tables without a `TableRegion` artifact. It is no longer the primary owner of
+caption/header/body/footer region decisions in the parse pipeline.
 
 This is an important turning point in the parse, because many later steps assume the system already knows which rows are header material and which rows are body material.
 
-Why header detection belongs here:
+Why the split is still visible here:
 
 - it is still structural
 - later semantic steps need this split
-- it is easier to debug when header decisions are visible before full semantic interpretation
+- it is easier to debug when region decisions are visible before full semantic interpretation
 
-#### 3.6 Build Row Signatures
+#### 4.6 Build Row Signatures
 
 For each body row, normalization builds a `RowView`.
 
@@ -400,7 +460,7 @@ For each body row, normalization builds a `RowView`.
 
 This gives later heuristics a small and inspectable summary of the row rather than forcing every heuristic to re-derive low-level row facts from scratch.
 
-#### 3.7 Repair Split Count-Percent Columns
+#### 4.7 Repair Split Count-Percent Columns
 
 Some tables are extracted with one logical `n (%)` value split across two adjacent columns, such as:
 
@@ -414,7 +474,7 @@ This is one of the main reasons normalization exists as a real stage rather than
 
 It is not just prettifying text. It is repairing table structure in a controlled way before semantic interpretation starts.
 
-#### 3.8 Repair Sparse Stub Label Columns
+#### 4.8 Repair Sparse Stub Label Columns
 
 Some extracted grids contain a sparse first column whose only purpose is to hold section-like row stubs, while the actual variable names are in the next column. These rows can otherwise cause the downstream parser to see blank row labels for most data rows.
 
@@ -435,7 +495,7 @@ When this fires, normalization:
 
 This is intentionally a structural repair. It should not depend on exact words such as `Outcomes` or `Covariates`.
 
-#### 3.9 Repair Split Row-Label Field Columns
+#### 4.9 Repair Split Row-Label Field Columns
 
 Some PDF table extractors split the single logical row-label field across two adjacent columns. Typical examples are categorical levels that appear in the second extracted column while parent variables appear in the first, or labels such as `Married/` plus `Living with partner` split across the first two columns.
 
@@ -453,7 +513,7 @@ When this fires, normalization:
 
 This repair preserves raw extracted text in `ExtractedTable`; it only changes the parser-facing normalized grid.
 
-#### 3.10 Repair Embedded Label Tails And Vertical Continuations
+#### 4.10 Repair Embedded Label Tails And Vertical Continuations
 
 Some extracted grids keep the visual value columns intact but split row labels awkwardly.
 
@@ -478,7 +538,12 @@ When these fire, normalization:
 
 These repairs improve row-label integrity before row signatures and variable grouping are built. They do not assign a table category by themselves.
 
-#### 3.11 Expand Extra-Wide Stacked Value Columns
+When `TableRegion` is available, column-shape cleanup uses region-owned header
+and body rows as the evidence set for empty-column pruning. Footer/note rows
+remain preserved in `ExtractedTable` and `table_regions.json`, but they do not
+keep an otherwise empty data-grid column alive in `NormalizedTable`.
+
+#### 4.11 Expand Extra-Wide Stacked Value Columns
 
 Some upright, visually wide data tables can be collapsed by extraction into a row-label cell plus one broad value-region cell. The visual table is still multi-column; the broad extracted cell may preserve those visual columns as a stable newline-delimited stack.
 
@@ -499,32 +564,28 @@ When this fires, normalization:
 
 This treats the visual table as a normal multi-column table while preserving the original collapsed cell text in `ExtractedTable`.
 
-#### 3.12 Select Header Bands From Structural Boundaries
+#### 4.12 Preserve Region Boundary Provenance
 
-Some extracted table fragments begin with a stray caption tail or note row,
-followed by a compact multi-row header and then a value region. Normalization
-first tries validated full-width horizontal separator rules. If no separator
-candidate is available, it can use the first row-label-plus-value-region anchor
-as the header/body boundary.
+Normalization copies the table-region source, confidence, caption rows,
+preamble rows, footer/note rows, and diagnostics into
+`metadata.header_detection` when a `TableRegion` was supplied. This makes the
+region decision visible beside the normalized grid while keeping the canonical
+region artifact in `table_regions.json`.
 
-When this fires, normalization:
+If no `TableRegion` was supplied, normalization can still use the legacy
+rule/value-anchor/content fallback and records that fallback source in
+`metadata.header_detection`.
 
-- promotes the non-empty rows above the selected structural boundary into `header_rows`
-- trims a sparse leading note/caption tail out of the promoted header band
-- starts `body_rows` at the first structural body row
-- records the boundary source in `metadata.header_detection`
+#### 4.13 Drop Columns Emptied By Repair
 
-This is a structural boundary decision, not a semantic interpretation of the
-header words. Tables without usable rules or a clear value-region anchor still
-fall back to content scoring.
-
-#### 3.13 Drop Columns Emptied By Repair
-
-If a split-value repair empties a helper column across the table, normalization can drop that now-empty column and rerun header detection on the repaired grid.
+If a split-value repair empties a helper column across the table, normalization
+can drop that now-empty column and then reapply the supplied table-region row
+ownership. If no region artifact is available, it reruns the legacy header/body
+fallback on the repaired grid.
 
 This keeps the normalized grid closer to the logical table structure that the later parser actually wants.
 
-#### 3.14 Decide Whether Indentation Is Informative
+#### 4.14 Decide Whether Indentation Is Informative
 
 For some papers, first-column indentation clearly helps distinguish parent rows from level rows.
 
@@ -557,7 +618,7 @@ surviving normalized column when that identity is still computable. Later
 column-schema evidence should use this map before trying to reconstruct column
 identity from repair summaries.
 
-## Step 4: Build `ColumnHeaderSchema`
+## Step 5: Build `ColumnHeaderSchema`
 
 After normalization, the parser builds a parser-native column-header schema for
 each normalized table and writes `column_header_schemas.json`.
@@ -599,6 +660,11 @@ groups, and can expand repeated single-cell group labels leftward when the
 physical extraction placed a centered spanning header into the right-hand leaf
 of a two-column span. This keeps headers such as survey-cycle groups,
 prevalence-estimate groups, and statistic/unit leaves separate.
+When a repeated leaf-header sequence such as `% (N)` / `95% CI` recurs across
+the value region, that sequence can partition sparse or centered upper headers
+into group spans. The rule does not override upper rows that already contain
+adjacent repeated labels, because those rows supply their own repeated-label
+span evidence.
 
 `TableDefinition.column_definition` now carries that structure forward. Each
 defined column stores a leaf `column_label`, a top-to-bottom `header_path`, the
@@ -620,7 +686,7 @@ Why this exists:
 - later tableone-style rendering needs a stored summary object before printing,
   and that object will need a stable column axis
 
-## Step 5: Resolve Continuation Fragments
+## Step 6: Resolve Continuation Fragments
 
 After normalization and column-schema construction, the parser builds
 `resolved_tables.json`.
@@ -706,7 +772,7 @@ back to a cruder comparison. Coordinate profiles remain separate diagnostics
 and do not override matching column headers with matching normalized column
 counts.
 
-## Step 6: Provisional Table Routing With `TableProfile`
+## Step 7: Provisional Table Routing With `TableProfile`
 
 Once the resolved working table list exists, the parser builds a `TableProfile`
 for each resolved table.
@@ -727,7 +793,7 @@ Why this stage exists:
 - it keeps mixed-table handling explicit
 - it lets the deterministic parser decide whether an LLM step is even relevant
 
-## Step 7: Build `TableDefinition`
+## Step 8: Build `TableDefinition`
 
 `TableDefinition` is the value-free semantic interpretation of each resolved
 table.
@@ -785,7 +851,7 @@ This makes it easier to:
 - support downstream matching and R-side table objects
 - compare deterministic semantics with future LLM semantics
 
-## Step 8: Parse Source-Cell Value Components
+## Step 9: Parse Source-Cell Value Components
 
 After `ColumnHeaderSchema` exists, the parser builds `parsed_cell_values.json`
 from source normalized table body cells in schema-derived value columns.
@@ -816,7 +882,7 @@ This early component layer is useful for two reasons:
 Ambiguous shapes such as `52.3 (14.1)` remain conservative until semantic
 context can distinguish `mean (SD)` from `estimate (SE)`.
 
-## Step 9: Build `ParsedTable`
+## Step 10: Build `ParsedTable`
 
 `ParsedTable` is the final deterministic structured table output.
 
@@ -866,7 +932,7 @@ of the canonical value record.
 `parsed_tables.json` is not replaced by `parsed_cell_values.json`; it is the
 joined semantic view over source components.
 
-## Step 10: Build Parse Quality Reports
+## Step 11: Build Parse Quality Reports
 
 The parser also writes `parse_quality_reports.json`.
 
@@ -883,7 +949,7 @@ It is meant to answer questions like:
 This step does not change `table_definitions.json` or `parsed_tables.json`.
 It exists so column and row problems are visible even when the table technically parses.
 
-## Step 11: Write Paper Page Furniture
+## Step 12: Write Paper Page Furniture
 
 The parser writes the `paper_page_furniture.json` artifact that was built before
 paper context parsing and table extraction.
@@ -894,7 +960,7 @@ generic ignored regions. Paper text streaming, markdown filtering, table
 extraction, cell text annotation, and footnote PDF-block collection use those
 regions before downstream artifacts are built.
 
-## Step 12: Build Paper-Level Document Context
+## Step 13: Build Paper-Level Document Context
 
 The parser also builds a paper-level context representation from the whole document.
 
@@ -903,7 +969,7 @@ This is separate from table extraction.
 The current paper-context path is:
 
 ```text
-PDF -> paper_page_furniture.json -> paper_text_stream.json -> paper_markdown.md -> paper_sections.json -> paper_bibliography.json -> paper_visual_inventory.json -> paper_references.json -> paper_style_profile.json -> paper_variable_inventory.json -> table_contexts/*.json
+PDF -> paper_page_furniture.json -> paper_text_stream.json -> paper_markdown.md -> paper_sections.json -> paper_table_mentions.json -> paper_bibliography.json -> paper_visual_inventory.json -> paper_references.json -> paper_style_profile.json -> paper_variable_inventory.json -> table_contexts/*.json
 ```
 
 ### `paper_markdown.md`
@@ -939,6 +1005,19 @@ results-like. If positioned text cannot be read, the parser falls back to
 filtered `paper_markdown.md`.
 
 This gives the parser a document structure that is easier to retrieve from than raw markdown alone.
+
+### `paper_table_mentions.json`
+
+The parser scans `paper_text_stream.json` for `Table N` mentions before table
+extraction. Each record keeps the table number, source line ID, local context
+line IDs, source-line text, cue, and whether the mention is a `caption_candidate`,
+`continuation_label`, or `prose_reference`.
+
+This artifact is used as extraction evidence, not as a table source. A line
+beginning with `Table 5.` is rejected as a fallback table start when the previous
+line makes the sentence read as `... is shown in Table 5.`. Bold-like or
+heading-like text-stream evidence is preserved in line notes and can support a
+caption candidate, but it does not by itself create a table.
 
 ### `paper_bibliography.json`
 
@@ -1029,7 +1108,7 @@ For each table, the parser builds a focused context bundle using:
 
 This produces per-table passages and term lists that can later support standalone review workflows or future semantic interpretation.
 
-## Step 13: Optional Variable-Plausibility LLM Review
+## Step 14: Optional Variable-Plausibility LLM Review
 
 The separate `review-variable-plausibility` command can run a narrow LLM review using:
 
@@ -1055,7 +1134,7 @@ Why this stage is optional:
 - LLM use should be focused on ambiguity, not raw PDF recovery
 - review calls should be inspectable and skippable
 
-## Step 14: Write Table Processing Status
+## Step 15: Write Table Processing Status
 
 After deterministic parsing, the parser writes `table_processing_status.json`.
 

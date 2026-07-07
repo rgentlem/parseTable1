@@ -7,7 +7,7 @@ This project parses epidemiology tables in stages. The goal is to keep each stag
 The implemented parser pipeline is:
 
 ```text
-PDF -> ExtractedTable -> NormalizedTable -> ColumnHeaderSchema -> ResolvedTableSet -> TableDefinition -> ParsedTable
+PDF -> ExtractedTable -> TableRegion -> NormalizedTable -> ColumnHeaderSchema -> ResolvedTableSet -> TableDefinition -> ParsedTable
 ```
 
 For continued tables, the resolved stage can integrate compatible source
@@ -25,6 +25,9 @@ which remains the complete normalized source record.
 In plain terms:
 
 - `ExtractedTable` is what the PDF extraction layer found
+- `TableRegion` is the geometry-derived ownership model for captions,
+  column-header bands, body rows, and footer/note bands, including footer
+  marker-row evidence from cell-text annotation geometry
 - `NormalizedTable` is the cleaned and organized version used for interpretation
 - `ColumnHeaderSchema` is the explicit leaf-column and spanning-header model
 - `ResolvedTableSet` is the table list consumed by semantic parsing
@@ -47,7 +50,9 @@ A `NormalizedTable` is the intermediate representation between raw extraction an
 
 It keeps the table structure, but makes it easier to interpret by:
 
-- separating header rows from body rows
+- consuming `TableRegion` row ownership when available, including the
+  distinction between table captions, column-header bands, body rows, and
+  footer/note bands
 - cleaning cell text
 - preserving raw row content
 - computing row-level signals such as:
@@ -59,7 +64,7 @@ It does not yet decide the final meaning of the table.
 
 For example, a `NormalizedTable` can represent:
 
-- which rows are likely headers
+- which rows belong to the column-header band
 - what the cleaned rows look like
 - which rows belong to the body
 
@@ -98,7 +103,7 @@ This separation keeps the parser safer and easier to debug.
 
 If you are looking at parser outputs:
 
-- `table1-parser parse path/to/paper.pdf` is the main entry point and currently writes `extracted_tables.json`, `normalized_tables.json`, `column_header_schemas.json`, `resolved_tables.json`, `table_profiles.json`, `paper_table_inventory.json`, `table_definitions.json`, `parsed_cell_values.json`, `parsed_tables.json`, `paper_page_furniture.json`, `paper_markdown.md`, `paper_text_stream.json`, `paper_sections.json`, `paper_footnotes.json`, `paper_bibliography.json`, `paper_style_profile.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and per-table context JSON files
+- `table1-parser parse path/to/paper.pdf` is the main entry point and currently writes `extracted_tables.json`, `table_regions.json`, `normalized_tables.json`, `column_header_schemas.json`, `resolved_tables.json`, `table_profiles.json`, `paper_table_inventory.json`, `table_definitions.json`, `parsed_cell_values.json`, `parsed_tables.json`, `paper_page_furniture.json`, `paper_markdown.md`, `paper_text_stream.json`, `paper_sections.json`, `paper_footnotes.json`, `paper_bibliography.json`, `paper_style_profile.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and per-table context JSON files
 - `extract` and `normalize` remain useful for inspecting a single stage in isolation
 
 - raw extraction output answers: "What table did the PDF extractor recover?"

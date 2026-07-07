@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+import re
 
+from table1_parser.heuristics.value_pattern_detector import detect_value_pattern
 from table1_parser.schemas import (
     ExtractedTable,
     NormalizedTable,
@@ -15,6 +17,11 @@ from table1_parser.schemas import (
     TableProcessingStatus,
     TableProfile,
 )
+from table1_parser.text_cleaning import clean_text
+
+
+ALPHA_PATTERN = re.compile(r"[A-Za-z]")
+ALNUM_PATTERN = re.compile(r"[A-Za-z0-9]")
 
 
 def build_table_processing_statuses(
@@ -159,10 +166,17 @@ def build_table_processing_statuses(
             and len(normalized_table.body_rows) >= 3
             and populated_trailing_cell_count >= max(8, len(normalized_table.body_rows))
         )
+        text_only_layout_candidate = _is_text_only_layout_candidate(
+            normalized_table,
+            table_profile=table_profile,
+            has_table_signal=has_table_signal,
+            variable_count=len(table_definition.variables),
+        )
         non_semantic_layout_candidate = (
             not has_table_signal
             and table_profile.table_family == "unknown"
             and not matrix_like_layout_candidate
+            and not text_only_layout_candidate
             and bool(
                 quality_error_codes.intersection(
                     {
@@ -327,6 +341,8 @@ def build_table_processing_statuses(
             notes.append("non_semantic_table_candidate")
         elif matrix_like_layout_candidate and table_profile.table_family == "unknown":
             notes.append("matrix_like_table_without_supported_semantic_route")
+        elif text_only_layout_candidate:
+            notes.append("text_only_table_without_supported_semantic_route")
         elif is_descriptive_candidate and extraction_inadequate:
             status = "failed"
             failure_stage = "extraction"
@@ -379,3 +395,49 @@ def build_table_processing_statuses(
             )
         )
     return statuses
+
+
+def _is_text_only_layout_candidate(
+    normalized_table: NormalizedTable,
+    *,
+    table_profile: TableProfile,
+    has_table_signal: bool,
+    variable_count: int,
+) -> bool:
+    """Return whether a real table is text-only and outside current Table 1 semantics."""
+    if (
+        not has_table_signal
+        or table_profile.table_family != "unknown"
+        or variable_count > 0
+        or normalized_table.n_cols < 2
+        or len(normalized_table.body_rows) < 2
+    ):
+        return False
+
+    populated_cells: list[str] = []
+    trailing_populated = 0
+    for row_view in normalized_table.row_views:
+        for col_idx, raw_value in enumerate(row_view.raw_cells):
+            cleaned = clean_text(str(raw_value))
+            if not cleaned or not ALNUM_PATTERN.search(cleaned):
+                continue
+            populated_cells.append(cleaned)
+            if col_idx > 0:
+                trailing_populated += 1
+    if len(populated_cells) < 6 or trailing_populated < max(3, len(normalized_table.body_rows)):
+        return False
+
+    text_like_count = sum(
+        1
+        for cell in populated_cells
+        if ALPHA_PATTERN.search(cell) and len(cell) >= 3
+    )
+    value_like_count = sum(
+        1
+        for cell in populated_cells
+        if detect_value_pattern(cell).pattern != "unknown"
+    )
+    return (
+        text_like_count / len(populated_cells) >= 0.80
+        and value_like_count <= max(1, int(len(populated_cells) * 0.15))
+    )
