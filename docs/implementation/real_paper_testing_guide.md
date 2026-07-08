@@ -28,11 +28,11 @@ All paper paths below are relative to:
 Latest reference run:
 
 ```text
-outputs/testpapers_batch_20260707_no_backend_grid
+outputs/testpapers_batch_20260708_header_group_upstream_fix
 ```
 
 The current refreshed baseline is
-`outputs/testpapers_batch_20260707_no_backend_grid`. It was produced after
+`outputs/testpapers_batch_20260708_header_group_upstream_fix`. It was produced after
 the PyMuPDF layout-aware text stream became the source of document order for
 sections and reference lists, and after table-local caption/footer note blocks
 began splitting footnote definitions from structured marker evidence, including
@@ -62,7 +62,9 @@ characters, and rules. If positioned reconstruction cannot build a credible
 grid from a rough box, that backend candidate is not emitted as an extracted
 table. Ruled-table extraction and text-position fallback also share the same
 header-span repair: sparse upper-header word clusters become spanning group
-cells, while dense repeated header clusters remain separate leaf columns.
+cells only when their start-column spans are ordered, non-overlapping, and
+cover multiple lower columns; dense or tight wrapped header clusters remain
+separate leaf columns.
 
 Older generated `outputs/` runs should not be treated as current.
 
@@ -119,7 +121,7 @@ extraction page-furniture mask:
 
 Current papers with unresolved or ambiguous footnote links:
 
-- None in `outputs/testpapers_batch_20260707_no_backend_grid`.
+- None in `outputs/testpapers_batch_20260708_header_group_upstream_fix`.
 
 Current extraction/status summary:
 
@@ -135,7 +137,7 @@ canonical extraction layer:
   pymupdf_positioned_geometry: 66
 table_processing_status:
   ok: 16
-  rescued: 43
+  rescued: 42
   failed: 0
 previous backend-grid survivor:
   periodontitis-p11-t0 is no longer emitted
@@ -191,8 +193,8 @@ Resolved since the prior baseline:
   and Ethnic Differences caption/footer markers through general table-local
   marker-definition parsing rather than paper-specific link patches.
 - OR/CI estimate routing, matrix-like table status guards, front-matter/prose
-  suppression, and backend-grid survival removal reduce current table-processing
-  failures to 0 in the no-backend-grid baseline.
+  suppression, and backend-grid survival removal keep current table-processing
+  failures at 0 in the retained baseline.
 - Asthma NHANES below-table captions are now attached to the correct visual
   tables: p5-t0 carries `Table 1`, p5-t1 carries `Table 2`, and p6-t0 carries
   `Table 3`. The strong uncaptained p4-t0 fragment integrates with p5-t0 as
@@ -203,9 +205,11 @@ Resolved since the prior baseline:
   `TableRegion` ownership, not by mutating backend rows.
 - Shared PyMuPDF word/rule header-span repair improves real multicolumn
   headers by splitting collapsed upper group labels in PRISm, PAD, gallstones,
-  MDPI frailty, Lead, Cobalt, and periodontitis. Planetary Health p2-t0/p3-t0
-  remains a current continuation-review case because the no-backend-grid run
-  still rejects integration at the column-schema gate.
+  MDPI frailty, Lead, Cobalt, periodontitis, and Planetary Health. The current
+  header-grid rule uses word start columns rather than glyph right edges when
+  deciding whether an upper header cluster spans multiple lower columns, which
+  preserves tight wrapped leaf headers such as periodontitis page 6 while
+  allowing Planetary Health p2-t0 to expose the same grouped schema as p3-t0.
 
 ## Review Loop
 
@@ -242,7 +246,7 @@ For each checklist item:
     were resolved, and Table 2 asterisk p-value markers became conventional
     `inferred` links rather than unresolved footnotes.
   - Current result:
-    `outputs/testpapers_batch_20260707_no_backend_grid` resolves all 15
+    `outputs/testpapers_batch_20260708_header_group_upstream_fix` resolves all 15
     Table 1 `letter:a` / `letter:b` links against the below-table footer note.
     In the visual PDF the definitions begin with raised `a` and `b`
     superscripts. Raw extracted text may collapse those markers into following
@@ -261,7 +265,7 @@ For each checklist item:
     rotated table plus footer and excluding upright article text in the other
     page column.
   - Current full-corpus result:
-    `outputs/testpapers_batch_20260707_no_backend_grid` extracts page
+    `outputs/testpapers_batch_20260708_header_group_upstream_fix` extracts page
     7 with no `letter:t`, `letter:r`, or `letter:l` anchors.
     `paper_footnotes.json` builds the page 7 `†` and `‡` definitions from
     extracted footer row blocks, including their continuation rows. No
@@ -288,7 +292,7 @@ For each checklist item:
   anchors.
   - PDF path: `papers_from_laha/Ethnic Differences in the Relationship Between Insulin Sensitivity and Insulin Response.pdf`
   - Current result:
-    `outputs/testpapers_batch_20260707_no_backend_grid` has 9 resolved
+    `outputs/testpapers_batch_20260708_header_group_upstream_fix` has 9 resolved
     links and 0 unresolved or ambiguous links. `S_I` and `AIR_g` remain
     suppressed as subscript notation, vertical-bar artifacts attached to
     rotated numeric cells are suppressed as non-footnote symbols, and the
@@ -302,7 +306,7 @@ For each checklist item:
   - Strong signal: 58 unresolved anchors were statistical-significance
     asterisks, often attached to p-values such as `<0.001***`.
   - Current result: fixed in
-    `outputs/testpapers_batch_20260707_no_backend_grid`; Table 1,
+    `outputs/testpapers_batch_20260708_header_group_upstream_fix`; Table 1,
     Table 2, and Table 3 each have local `*`, `**`, and `***` definitions linked
     by same-table scope.
   - The previous 7 row-label unit exponents are now suppressed before
@@ -314,7 +318,7 @@ For each checklist item:
   Health Table 1 row labels.
   - PDF path: `papers_from_laha/Science-Advanaced-Planetary Health Diet and risk of mortality and chronic diseases- Results from US NHANES, UK Biobank, and a meta-analysis.pdf`
   - Current result:
-    `outputs/testpapers_batch_20260707_no_backend_grid` resolves all 4
+    `outputs/testpapers_batch_20260708_header_group_upstream_fix` resolves all 4
     Table 1 links (`*`, `†`, `‡`, `§`) against the footer block on the
     continued page. The symbol splitter now handles variable whitespace before
     each marker in a contiguous footer block.
@@ -330,7 +334,7 @@ For each checklist item:
     and 160 conventional inferred p-value-star links because local symbol
     footer definitions were not harvested.
   - Current result: fixed in
-    `outputs/testpapers_batch_20260707_no_backend_grid`. Known symbol
+    `outputs/testpapers_batch_20260708_header_group_upstream_fix`. Known symbol
     markers such as `†`, `‡`, and `*` now define any non-empty local footer text;
     this is a structural footnote rule, not a p-value rule. Structured marker
     evidence from raised glyphs is merged with ordinary symbol marker evidence
@@ -343,13 +347,13 @@ For each checklist item:
     1. `papers_from_laha/mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017.pdf`
   - Previous artifact issue: MDPI Mediterranean had 3 ambiguous links and 3
     unresolved numeric links.
-  - Current result: `outputs/testpapers_batch_20260707_no_backend_grid` has 0
+  - Current result: `outputs/testpapers_batch_20260708_header_group_upstream_fix` has 0
     unresolved and 0 ambiguous footnote links for this paper.
 
 - [x] **C0.6a** Re-review repeated letter markers on continued tertile headers.
   - PDF path: `papers_from_laha/Systemic inflammation markers and the prevalence of hypertension- A NHANES cross-sectional study.pdf`
   - Current result:
-    `outputs/testpapers_batch_20260707_no_backend_grid` resolves all 12
+    `outputs/testpapers_batch_20260708_header_group_upstream_fix` resolves all 12
     `letter:b` markers attached to `Tertile 1`, `Tertile 2`, and `Tertile 3`
     labels across the continued Table 1 against the same-visual footer
     definition on the continuation page.
@@ -374,13 +378,13 @@ supplement-only or out-of-scope references.
 - [x] **C1.1** Review failed statuses that may be correct non-target tables.
   1. `papers_from_laha/An environment-wide association study (EWAS) on type 2 diabetes mellitus.pdf`
      - `An environment-wide association study (EWAS) on type 2 diabetes mellitus-p6-t0`
-     - Current status in `outputs/testpapers_batch_20260707_no_backend_grid`:
+     - Current status in `outputs/testpapers_batch_20260708_header_group_upstream_fix`:
        `ok`, categorized as `analysis_outputs`.
      - Review result: structurally plausible ENWAS analysis-output table with
        sparse left descriptor columns; not a Table 1 descriptive failure.
   2. `papers_from_laha/mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017.pdf`
      - `mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017-p3-t0`
-     - Current status in `outputs/testpapers_batch_20260707_no_backend_grid`:
+     - Current status in `outputs/testpapers_batch_20260708_header_group_upstream_fix`:
        `ok`.
      - Review result: text/reference table comparing frailty definitions; a
        correct non-target table for the current Table 1 descriptive parser.
@@ -396,7 +400,7 @@ supplement-only or out-of-scope references.
   2. `papers_from_laha/GOLD BioAge and depression- Associations with mortality among depressed NHANES participants (2005–2018).pdf`
      - `GOLD BioAge and depression- Associations with mortality among depressed NHANES participants (2005–2018)-p1-t0`
      - Current status: no longer extracted as a table candidate in
-       `outputs/testpapers_batch_20260707_no_backend_grid`.
+       `outputs/testpapers_batch_20260708_header_group_upstream_fix`.
      - Review result: abstract/title-page text laid out as article front
        matter, not a table artifact to route semantically. The front-matter
        guard now suppresses it before the table pipeline.
@@ -412,7 +416,7 @@ supplement-only or out-of-scope references.
        descriptive parsing.
   4. `papers_from_laha/periodontis2.pdf`
      - Prior artifacts: `periodontis2-p6-t0` and `periodontis2-p6-t1`.
-     - Current status in `outputs/testpapers_batch_20260707_no_backend_grid`:
+     - Current status in `outputs/testpapers_batch_20260708_header_group_upstream_fix`:
        no page-6 table candidates are extracted.
      - Review result: page 6 contains prose references to Tables 4 and 5, not a
        visual table. `paper_table_mentions.json` now classifies `Table 4
@@ -422,7 +426,7 @@ supplement-only or out-of-scope references.
        into sentence fragments.
   5. `papers_from_johnny/periodontitis.pdf`
      - `periodontitis-p11-t0`
-     - Current status in `outputs/testpapers_batch_20260707_no_backend_grid`:
+     - Current status in `outputs/testpapers_batch_20260708_header_group_upstream_fix`:
        no longer emitted as an extracted table.
      - Review result: abbreviation glossary/reference block, not a table
        artifact. The retired backend-grid survival path is no longer allowed to
@@ -432,7 +436,7 @@ supplement-only or out-of-scope references.
   - PDF path: `papers_from_laha/Ethnic Differences in the Relationship Between Insulin Sensitivity and Insulin Response.pdf`
   - Table: `Ethnic Differences in the Relationship Between Insulin Sensitivity and Insulin Response-p5-t0`
   - Current status: `rescued`; the prior `collapsed_grid_unrecovered` failure is
-    no longer present in `outputs/testpapers_batch_20260707_no_backend_grid`.
+    no longer present in `outputs/testpapers_batch_20260708_header_group_upstream_fix`.
   - Current footnote result: 9 resolved links and 0 unresolved links. The prior
     residual `letter:i`, `letter:x`, and `letter:g` false-marker issue is no
     longer present as unresolved footnote evidence; the remaining `letter:x`
@@ -520,12 +524,14 @@ contaminate table candidates now and can support later figure extraction.
        detected footnote links resolve.
   4. `papers_from_laha/Science-Advanaced-Planetary Health Diet and risk of mortality and chronic diseases- Results from US NHANES, UK Biobank, and a meta-analysis.pdf`
      - Current footnote links resolve. The p2 -> p3 Table 1 continuation is
-       still rejected in `resolved_tables.json` by the column-schema gate:
-       source-table geometry is PyMuPDF-positioned in both fragments, but the
-       base and continuation header paths are not yet equivalent. Figure-caption
-       components in `paper_visual_inventory.json` remain noisy; confirm
-       whether that is only future figure-extraction debt or whether it is
-       contaminating table candidates, captions, or rows.
+       accepted in `resolved_tables.json` after the base fragment's
+       PyMuPDF-positioned header grid records the same two grouped upper
+       headers as the continuation fragment. This remains a C2.4 path-review
+       case because p2 currently enters through `pymupdf_text_positions` while
+       p3 still enters through a PyMuPDF4LLM rough box plus hline word
+       refinement. Figure-caption components in `paper_visual_inventory.json`
+       remain noisy; confirm whether that is only future figure-extraction
+       debt or whether it is contaminating table candidates, captions, or rows.
 
 - [ ] **C2.2** Review current header/body split disagreements.
   1. `papers_from_laha/GOLD BioAge and depression- Associations with mortality among depressed NHANES participants (2005–2018).pdf`
@@ -550,6 +556,9 @@ contaminate table candidates now and can support later figure extraction.
        PyMuPDF text-position geometry now records
        `header_row_geometry_roles = group_header, leaf_header, leaf_header,
        leaf_header`, so p2-t0 and p3-t0 expose the same column header schema.
+       The only schema change versus the prior no-backend-grid baseline is the
+       intended p2-t0 split into two upper groups over cols 1-4 and 5-8; the
+       periodontitis p6-t0 wrapped leaf headers remain flat leaf headers.
      - p5-t0: hline body start 1, value-anchor body start 0, selected 1.
   5. `papers_from_laha/Helicobacter pylori infection in the United States beyond NHANES- a scoping review of seroprevalence estimates by racial and ethnic groups.pdf`
      - p6-t0: hline body start 8, value-anchor body start 18, selected 7.
@@ -606,16 +615,15 @@ caption, header/body, footer, and column-schema evidence.
   7. `papers_from_laha/Asthma prevalence among United States population insights from NHANES data analysis.pdf`
      - p4 -> p5 accepted as a prefix fragment integrated with the
        below-captioned terminal Table 1 fragment after column-schema matching.
+  8. `papers_from_laha/Science-Advanaced-Planetary Health Diet and risk of mortality and chronic diseases- Results from US NHANES, UK Biobank, and a meta-analysis.pdf`
+     - p2 -> p3 accepted after grouped column-header schemas match.
 
 - [ ] **C3.2** Review rejected continuation candidates that may expose header or
   column-schema defects.
   1. `papers_from_laha/Asthma prevalence among United States population insights from NHANES data analysis.pdf`
      - Prior p5 -> p6 false continuation is no longer present; p5-t1 and p6-t0
        pass through as singleton Table 2 and Table 3.
-  2. `papers_from_laha/Science-Advanaced-Planetary Health Diet and risk of mortality and chronic diseases- Results from US NHANES, UK Biobank, and a meta-analysis.pdf`
-     - p2 -> p3 rejected by the column-schema gate. This remains a current
-       continuation review case.
-  3. `papers_from_laha/periodontis2.pdf`
+  2. `papers_from_laha/periodontis2.pdf`
      - Prior p5 -> p6 rejection is no longer present because page 6 no longer
        emits table candidates from prose references.
 

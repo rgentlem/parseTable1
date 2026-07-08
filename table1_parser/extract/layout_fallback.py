@@ -791,13 +791,52 @@ def apply_header_column_band_geometry(
         average_words_per_aligned_col = (
             sum(words_by_aligned_col.values()) / max(1, len(words_by_aligned_col))
         )
+        label_words = [word for word in words if float(word["x0"]) < boundaries[0] - 2.0]
+        value_words = [word for word in words if word not in label_words]
+        clusters: list[list[dict[str, object]]] = []
+        for word in value_words:
+            if not clusters:
+                clusters.append([word])
+                continue
+            previous_word = clusters[-1][-1]
+            gap = float(word["x0"]) - float(previous_word["x1"])
+            if gap > cluster_gap_threshold:
+                clusters.append([word])
+            else:
+                clusters[-1].append(word)
+        cluster_spans: list[tuple[int, int]] = []
+        for cluster in clusters:
+            start_cols = [
+                _header_leaf_column_index(float(word["x0"]), boundaries, row_width)
+                for word in cluster
+            ]
+            start_col = max(1, min(start_cols))
+            end_col = max(start_col, max(start_cols))
+            cluster_spans.append((start_col, end_col))
+        ordered_non_overlapping_spans = all(
+            left_end < right_start
+            for (_, left_end), (right_start, _) in zip(
+                cluster_spans,
+                cluster_spans[1:],
+                strict=False,
+            )
+        )
+        group_like_spanning_header = (
+            len(clusters) >= 2
+            and len(cluster_spans) == len(clusters)
+            and all(end_col > start_col for start_col, end_col in cluster_spans)
+            and ordered_non_overlapping_spans
+            and not previous_leaf_header
+        )
         dense_leaf_header = len(aligned_value_cols) >= value_col_count or (
             len(aligned_value_cols) >= value_col_count - 1
             and average_words_per_aligned_col <= 2.5
         )
         if value_col_count <= 4:
             dense_leaf_header = dense_leaf_header or len(aligned_value_cols) >= max(2, value_col_count - 1)
-        is_leaf_header = dense_leaf_header or (previous_leaf_header and bool(aligned_value_cols))
+        is_leaf_header = (
+            dense_leaf_header or (previous_leaf_header and bool(aligned_value_cols))
+        ) and not group_like_spanning_header
 
         rebuilt_row = [""] * row_width
         rebuilt_bboxes: list[tuple[float, float, float, float] | None] = [None] * row_width
@@ -812,32 +851,16 @@ def apply_header_column_band_geometry(
             roles.append("leaf_header")
             previous_leaf_header = True
         else:
-            label_words = [word for word in words if float(word["x0"]) < boundaries[0] - 2.0]
             for word in label_words:
                 _append_word_to_grid_cell(rebuilt_row, rebuilt_bboxes, 0, word)
-            value_words = [word for word in words if word not in label_words]
-            clusters: list[list[dict[str, object]]] = []
-            for word in value_words:
-                if not clusters:
-                    clusters.append([word])
-                    continue
-                previous_word = clusters[-1][-1]
-                gap = float(word["x0"]) - float(previous_word["x1"])
-                if gap > cluster_gap_threshold:
-                    clusters.append([word])
-                else:
-                    clusters[-1].append(word)
             single_value_cluster = len(clusters) == 1 and not label_words
-            for cluster in clusters:
+            for cluster, (start_col, end_col) in zip(clusters, cluster_spans, strict=False):
                 start_x = min(float(word["x0"]) for word in cluster)
                 end_x = max(float(word["x1"]) for word in cluster)
                 if single_value_cluster:
                     start_col = 1
-                else:
-                    start_col = _word_column_index(start_x, boundaries, row_width)
-                    start_col = max(1, min(start_col, row_width - 1))
-                end_col = _word_column_index(max(start_x, end_x - 0.5), boundaries, row_width)
-                end_col = max(start_col, min(end_col, row_width - 1))
+                    end_col = _word_column_index(max(start_x, end_x - 0.5), boundaries, row_width)
+                    end_col = max(start_col, min(end_col, row_width - 1))
                 for word in cluster:
                     _append_word_to_grid_cell(rebuilt_row, rebuilt_bboxes, start_col, word)
                 for col_idx in range(start_col + 1, end_col + 1):

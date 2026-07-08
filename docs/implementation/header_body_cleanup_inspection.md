@@ -6,13 +6,13 @@ fallback path.
 
 Current reference run:
 
-- `outputs/testpapers_batch_20260707_no_backend_grid`
+- `outputs/testpapers_batch_20260708_header_group_upstream_fix`
 - PDFs parsed: 27/27
 - Extracted tables: 66
 - Extraction geometry: 64 `pymupdf_positioned_words_and_rules`, 2
   `pymupdf_positioned_words`, 0 `pymupdf4llm_json_table_cells`
 - Canonical extraction layer: 66 `pymupdf_positioned_geometry`
-- Table processing statuses: ok 16, rescued 43, failed 0
+- Table processing statuses: ok 16, rescued 42, failed 0
 - Bibliography extraction: 27 papers, 0 empty bibliographies, 1370 entries
 - Footnote links: 387 links, 387 resolved
 - Previous backend-grid survivor `periodontitis-p11-t0` is no longer emitted.
@@ -22,6 +22,19 @@ path. PyMuPDF4LLM may still provide rough table boxes, but emitted rows,
 columns, cell boxes, row bounds, and header geometry must come from positioned
 PyMuPDF reconstruction. If a rough backend box cannot be reconstructed from
 positioned geometry, it is not emitted as an extracted table.
+
+The current upstream header-grid repair uses PyMuPDF word start columns, not
+word right edges, when deciding whether an upper header cluster spans multiple
+lower columns. Candidate group spans must be ordered and non-overlapping. This
+fixes Planetary Health p2-t0 by creating the two visible upper groups over
+columns 1-4 and 5-8, while preserving tight wrapped leaf headers such as
+`papers_from_johnny/periodontitis.pdf` p6-t0 as flat leaf columns.
+
+Compared with `outputs/testpapers_batch_20260707_no_backend_grid`, the only
+column-header schema change is the intended Planetary Health p2-t0 group split.
+The p2 -> p3 Planetary continuation is now accepted, but the source fragments
+still use mixed candidate paths: p2 enters through text-position extraction and
+p3 through a PyMuPDF4LLM rough box plus hline word refinement.
 
 Historical comparison runs:
 
