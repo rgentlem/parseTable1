@@ -162,6 +162,38 @@ known weak bucket:
   harm.
 ```
 
+Current open structural issues:
+
+- `papers_from_johnny/hypertension.pdf`, `hypertension-p5-t0`, is the only
+  known current parse defect from the latest header-geometry review. The table
+  extracts and parses, but `extracted_tables.json` interleaves tight multiword
+  leaf headers across adjacent value columns. Current leaf labels are
+  `Healthy diet physically active`, `and Healthy diet physically`, `but
+  Unhealthy inactive physically`, `diet and Unhealthy inactive but physically
+  active`, and `diet P value`; the expected labels are `Healthy diet and
+  physically active`, `Healthy diet but physically inactive`, `Unhealthy diet
+  and physically inactive`, `Unhealthy diet but physically active`, and `P
+  value`.
+- Two attempted leaf-header word-reassignment patches were intentionally
+  rejected and reverted. `outputs/header_leaf_wordgap_focus_20260708` fixed
+  `hypertension-p5-t0` but changed `cardiovascular-p5-t0`.
+  `outputs/header_leaf_anchor_runs_focus_20260708` also fixed
+  `hypertension-p5-t0`, but regressed MDPI frailty `p5-t0`, `p7-t0`, `p8-t0`,
+  Eke `p8-t0`, Eke `p9-t0`, and `cardiovascular-p5-t0`. Do not revive
+  word-level cross-column reassignment. The next acceptable direction is
+  whole-cluster/header-cell assignment from PyMuPDF geometry, followed by
+  column-band/span ownership.
+- `papers_from_laha/Science-Advanaced-Planetary Health Diet and risk of
+  mortality and chronic diseases- Results from US NHANES, UK Biobank, and a
+  meta-analysis.pdf` still needs a path-consistency audit for Table 1. The
+  p2 -> p3 continuation is accepted and the grouped column-header schemas now
+  match, but the fragments reach that result through different candidate paths:
+  p2 enters through whole-page PyMuPDF text-position extraction, while p3 still
+  starts from a PyMuPDF4LLM rough table box and then uses hline word-position
+  refinement. This is not currently a semantic failure, but it remains
+  unresolved extraction-path debt because two fragments of one visual table
+  should ideally follow the same canonical positioned-geometry path.
+
 Resolved since the prior baseline:
 
 - `cardiovascular` Table 1 page 4 now resolves 20 double-dagger body-cell
@@ -566,6 +598,18 @@ contaminate table candidates now and can support later figure extraction.
   6. `papers_from_johnny/cardiovascular.pdf`
      - p5-t0.
      - hline body start 4, value-anchor body start 7, selected 7.
+  7. `papers_from_johnny/hypertension.pdf`
+     - `hypertension-p5-t0`.
+     - First bad artifact: `extracted_tables.json`.
+     - Current issue: the leaf header row is assigned word-by-word to
+       body-derived column bands, so tight multiword wrapped headers are
+       interleaved across adjacent columns. The table otherwise extracts,
+       parses, and has `table_processing_status = rescued`.
+     - Do not fix this by moving individual words across column boundaries.
+       The next review should evaluate a cluster-first/header-cell-first
+       extraction rule: build complete header clusters from positioned words,
+       assign whole clusters to column bands or spans, and then let
+       `ColumnHeaderSchema` stack vertical wrapped fragments.
 
 - [ ] **C2.3** Review explicit hline and preamble behavior in papers with
   title/preamble rows above true column headers.
@@ -586,6 +630,15 @@ contaminate table candidates now and can support later figure extraction.
     PyMuPDF words and hline geometry, using PyMuPDF4LLM only as a candidate
     region source. Keep this item open for broader replacement decisions,
     especially rotated and non-ruled layouts.
+  - Current path-consistency audit target:
+    `papers_from_laha/Science-Advanaced-Planetary Health Diet and risk of
+    mortality and chronic diseases- Results from US NHANES, UK Biobank, and a
+    meta-analysis.pdf`. Table 1 p2 and p3 now produce compatible grouped
+    schemas and integrate, but p2 enters through whole-page PyMuPDF
+    text-position extraction while p3 starts from a PyMuPDF4LLM rough table
+    box plus hline word-position refinement. Determine why the same visual
+    continued table does not use one canonical positioned-geometry path before
+    adding any continuation or schema compensation.
 
 Acceptance for C2: each disagreement is classified as correct caption
 ownership, caption/body/footer ownership defect, figure-caption contamination of
@@ -689,3 +742,6 @@ regression decision:
 - Do not create broad unit-test expansion; add focused regressions for known
   failures or artifact contracts.
 - Do not add R helpers before repeated review use shows what is needed.
+- Do not add word-level header reassignment across column boundaries. Header
+  reconstruction should operate on complete positioned clusters/cells and then
+  assign those units to column bands or spans.
