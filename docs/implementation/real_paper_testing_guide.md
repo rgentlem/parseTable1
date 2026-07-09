@@ -28,11 +28,11 @@ All paper paths below are relative to:
 Latest reference run:
 
 ```text
-outputs/testpapers_batch_20260708_header_group_upstream_fix
+outputs/testpapers_batch_20260708_comma_body_evidence
 ```
 
 The current refreshed baseline is
-`outputs/testpapers_batch_20260708_header_group_upstream_fix`. It was produced after
+`outputs/testpapers_batch_20260708_comma_body_evidence`. It was produced after
 the PyMuPDF layout-aware text stream became the source of document order for
 sections and reference lists, and after table-local caption/footer note blocks
 began splitting footnote definitions from structured marker evidence, including
@@ -44,7 +44,11 @@ consume page characters. The bibliography extractor reads numbered and
 hanging-indent reference lists through one positioned stream, supports
 references split across columns and pages, treats numbered offset labels as the
 same entry-start structure as unnumbered hanging-indent entries, and does not
-require bibliographies to be numbered. Credible ruled table candidates can also
+require bibliographies to be numbered. The purpose-built bibliography pass now
+owns the reference-region boundary used by table extraction: when it finds a
+bibliography, extraction receives the first bibliography page and suppresses
+later table candidates; if it finds no bibliography, extraction does not run a
+separate raw-text `References` scan. Credible ruled table candidates can also
 be rebuilt from PyMuPDF word positions and stroked horizontal rules instead of
 using the PyMuPDF4LLM grid as the sole row/column structure. The current run
 also adds a pre-extraction `paper_table_mentions.json` pass that classifies
@@ -55,6 +59,9 @@ mostly prose fragments. Explicit table extraction now also uses caption
 geometry directly: caption boxes are bound one-to-one to the nearest compatible
 table above or below, and strong uncaptained fragments can integrate with a
 following below-captioned fragment when the column-header schema matches.
+Caption-aligned multi-column pages can be split into per-column extraction
+bands before text-position candidate building, so side-by-side tables in the
+same page region are not interleaved into one full-page stream.
 The backend JSON grid is no longer an emitted extraction fallback:
 PyMuPDF4LLM may still provide a rough table box, but rows, columns, cell
 boxes, row bounds, and header geometry must come from positioned PyMuPDF words,
@@ -64,7 +71,21 @@ table. Ruled-table extraction and text-position fallback also share the same
 header-span repair: sparse upper-header word clusters become spanning group
 cells only when their start-column spans are ordered, non-overlapping, and
 cover multiple lower columns; dense or tight wrapped header clusters remain
-separate leaf columns.
+separate leaf columns. Leaf-header text runs are now grouped by small visual
+between-word spacing before assignment to body-derived column extents, so large
+gaps between adjacent leaf columns are not glued together by nearby value
+anchors. If geometry roles cover only an upper prefix of declared header rows,
+`ColumnHeaderSchema` may use the lower declared rows as the leaf band, but it
+does not promote rows with body-value evidence into leaf headers.
+Comma-containing leaf headers are split only when adjacent body value columns
+repeatedly show the corresponding structure: the left body cell ends with a
+comma and the right body cell is populated. This fixes estimate/p-value headers
+such as `OR (95% CI), P-value` without splitting unit labels such as `Mean AL,
+mm` or interval values that keep commas inside one body cell.
+The old low-quality page rescue, page-wide sideways text replacement, and
+model/estimate-specific `word_positions_with_horizontal_rules` refinement have
+been removed; the current corpus run keeps the same table count and footnote /
+bibliography baseline without those paths.
 
 Older generated `outputs/` runs should not be treated as current.
 
@@ -83,11 +104,11 @@ paper_bibliography:
   papers with bibliography entries: 27
   papers with empty bibliographies: 0
   papers with bibliography diagnostics: 0
-  total bibliography entries: 1370
-  numbered entries: 1092
-  unnumbered entries: 278
-  numbered bibliography papers: 22
-  unnumbered bibliography papers: 5
+  total bibliography entries: 1308
+  numbered entries: 1197
+  unnumbered entries: 111
+  numbered bibliography papers: 25
+  unnumbered bibliography papers: 2
   mixed numbering-style papers: 0
 ```
 
@@ -97,48 +118,56 @@ Current footnote summary:
 PDFs: 27
 parse command failures: 0
 paper_footnotes:
-  anchors: 387
-  definitions: 191
-  links: 387
-  resolved links: 387
+  anchors: 441
+  definitions: 208
+  links: 441
+  resolved links: 441
   inferred links: 0
   ambiguous links: 0
   unresolved links: 0
-  math/unit anchors suppressed before footnote linking: 34
+  math/unit anchors suppressed before footnote linking: 35
   subscript anchors suppressed before footnote linking: 5
   word-like subscript anchors suppressed before footnote linking: 0
   citation-like anchors suppressed before footnote linking: 18
   non-footnote symbol anchors suppressed before footnote linking: 2
-  PDF text blocks classified as table footers: 35
+  PDF text blocks classified as table footers: 44
   extracted-table footer records: 10
   page-furniture filter stage: before_pdf_definition_block_construction (27 papers)
 extraction page-furniture mask:
-  extracted tables with mask metadata: 60
-  page words removed before extraction/refinement: 949
-  page chars removed before extraction/refinement: 7920
+  extracted tables with mask metadata: 73
+  page words removed before extraction/refinement: 1106
+  page chars removed before extraction/refinement: 8802
   explicit-grid rows removed by page-furniture mask: 0
 ```
 
 Current papers with unresolved or ambiguous footnote links:
 
-- None in `outputs/testpapers_batch_20260708_header_group_upstream_fix`.
+- None in `outputs/testpapers_batch_20260708_comma_body_evidence`.
 
 Current extraction/status summary:
 
 ```text
 PDFs: 27
 parse command failures: 0
-extracted tables: 66
+extracted tables: 79
 extraction geometry:
-  pymupdf_positioned_words_and_rules: 64
-  pymupdf_positioned_words: 2
-  pymupdf4llm_json_table_cells: 0
+  hline_word_positions: 24
+  collapsed_explicit_grid_word_positions: 2
+  pymupdf_positioned_bbox_words: 35
+  value_matrix_word_positions: 8
+  text_position_column_geometry: 4
+  rotated_word_positions_with_rules: 6
 canonical extraction layer:
-  pymupdf_positioned_geometry: 66
+  pymupdf_positioned_geometry: 79
 table_processing_status:
-  ok: 16
-  rescued: 42
+  ok: 20
+  rescued: 51
   failed: 0
+empty-grid invariant:
+  extracted tables with all-empty rows: 0
+  extracted tables with trailing all-empty columns: 0
+  normalized tables with all-empty rows: 0
+  normalized tables with trailing all-empty columns: 0
 previous backend-grid survivor:
   periodontitis-p11-t0 is no longer emitted
 ```
@@ -164,25 +193,12 @@ known weak bucket:
 
 Current open structural issues:
 
-- `papers_from_johnny/hypertension.pdf`, `hypertension-p5-t0`, is the only
-  known current parse defect from the latest header-geometry review. The table
-  extracts and parses, but `extracted_tables.json` interleaves tight multiword
-  leaf headers across adjacent value columns. Current leaf labels are
-  `Healthy diet physically active`, `and Healthy diet physically`, `but
-  Unhealthy inactive physically`, `diet and Unhealthy inactive but physically
-  active`, and `diet P value`; the expected labels are `Healthy diet and
-  physically active`, `Healthy diet but physically inactive`, `Unhealthy diet
-  and physically inactive`, `Unhealthy diet but physically active`, and `P
-  value`.
-- Two attempted leaf-header word-reassignment patches were intentionally
-  rejected and reverted. `outputs/header_leaf_wordgap_focus_20260708` fixed
-  `hypertension-p5-t0` but changed `cardiovascular-p5-t0`.
-  `outputs/header_leaf_anchor_runs_focus_20260708` also fixed
-  `hypertension-p5-t0`, but regressed MDPI frailty `p5-t0`, `p7-t0`, `p8-t0`,
-  Eke `p8-t0`, Eke `p9-t0`, and `cardiovascular-p5-t0`. Do not revive
-  word-level cross-column reassignment. The next acceptable direction is
-  whole-cluster/header-cell assignment from PyMuPDF geometry, followed by
-  column-band/span ownership.
+- No current open leaf-header extraction defect is known in the retained
+  baseline. The prior `hypertension-p5-t0` failure is resolved by grouping
+  leaf-header text into small-gap visual runs before assigning those runs to
+  body-derived column extents. Anchor-start grouping was rejected because it
+  regressed MDPI frailty and Eke headers by gluing visually separated leaf
+  columns.
 - `papers_from_laha/Science-Advanaced-Planetary Health Diet and risk of
   mortality and chronic diseases- Results from US NHANES, UK Biobank, and a
   meta-analysis.pdf` still needs a path-consistency audit for Table 1. The
@@ -242,6 +258,31 @@ Resolved since the prior baseline:
   deciding whether an upper header cluster spans multiple lower columns, which
   preserves tight wrapped leaf headers such as periodontitis page 6 while
   allowing Planetary Health p2-t0 to expose the same grouped schema as p3-t0.
+- Small-gap visual-run grouping for leaf headers resolves the remaining
+  header-leaf issues from the prior retained baseline without changing table
+  counts or processing statuses. `hypertension-p5-t0` now has the expected
+  `Healthy diet ...` / `Unhealthy diet ...` leaf columns, cardiovascular p5-t0
+  uses `All-cause mortality` and `Cardiovascular mortality` as leaves with the
+  AUC text as upper groups, Systemic inflammation p5/p6 no longer splits the
+  hypertension cohort labels across leaves, and EWAS p6-t0 keeps `OR (95% CI)`
+  together. The full run has 27 parsed PDFs, 79 extracted tables, 0 backend
+  JSON grid survivors, 441 resolved / 0 unresolved footnote links, and 1308
+  bibliography entries with 0 empty bibliographies. The current
+  empty-grid cleanup check found 0 all-empty extracted or normalized rows and
+  0 trailing all-empty extracted or normalized columns.
+- The METS-IR/hypertension paper now keeps `Reference` as ordinary table-body
+  text in Table 2 while extracting the real 33-entry bibliography from pages 9
+  and later. Its page 7 side-by-side Tables 3 and 4 are split through
+  caption-aligned column-band extraction instead of one interleaved full-page
+  text stream.
+- `Association between metabolic score for insulin resistance (METS-IR) and
+  hypertension- a cross-sectional study based on NHANES 2007-2018` now exposes
+  the estimate/p-value column pairs in Tables 2, 3, and 4 through
+  `ColumnHeaderSchema`: Table 2 has `Model 1`/`Model 2`/`Model 3` groups over
+  `OR (95% CI)` and `P-value` leaves, Table 3 has `Adjusted` over those two
+  leaves, and Table 4 has separate `OR (95% CI)`, `P-value`, and
+  `P-interaction` leaves. This is driven by adjacent body cells where the
+  estimate cell ends with a comma and the p-value cell is populated.
 
 ## Review Loop
 
@@ -278,7 +319,7 @@ For each checklist item:
     were resolved, and Table 2 asterisk p-value markers became conventional
     `inferred` links rather than unresolved footnotes.
   - Current result:
-    `outputs/testpapers_batch_20260708_header_group_upstream_fix` resolves all 15
+    `outputs/testpapers_batch_20260708_comma_body_evidence` resolves all 15
     Table 1 `letter:a` / `letter:b` links against the below-table footer note.
     In the visual PDF the definitions begin with raised `a` and `b`
     superscripts. Raw extracted text may collapse those markers into following
@@ -297,7 +338,7 @@ For each checklist item:
     rotated table plus footer and excluding upright article text in the other
     page column.
   - Current full-corpus result:
-    `outputs/testpapers_batch_20260708_header_group_upstream_fix` extracts page
+    `outputs/testpapers_batch_20260708_comma_body_evidence` extracts page
     7 with no `letter:t`, `letter:r`, or `letter:l` anchors.
     `paper_footnotes.json` builds the page 7 `†` and `‡` definitions from
     extracted footer row blocks, including their continuation rows. No
@@ -324,7 +365,7 @@ For each checklist item:
   anchors.
   - PDF path: `papers_from_laha/Ethnic Differences in the Relationship Between Insulin Sensitivity and Insulin Response.pdf`
   - Current result:
-    `outputs/testpapers_batch_20260708_header_group_upstream_fix` has 9 resolved
+    `outputs/testpapers_batch_20260708_comma_body_evidence` has 9 resolved
     links and 0 unresolved or ambiguous links. `S_I` and `AIR_g` remain
     suppressed as subscript notation, vertical-bar artifacts attached to
     rotated numeric cells are suppressed as non-footnote symbols, and the
@@ -338,7 +379,7 @@ For each checklist item:
   - Strong signal: 58 unresolved anchors were statistical-significance
     asterisks, often attached to p-values such as `<0.001***`.
   - Current result: fixed in
-    `outputs/testpapers_batch_20260708_header_group_upstream_fix`; Table 1,
+    `outputs/testpapers_batch_20260708_comma_body_evidence`; Table 1,
     Table 2, and Table 3 each have local `*`, `**`, and `***` definitions linked
     by same-table scope.
   - The previous 7 row-label unit exponents are now suppressed before
@@ -350,7 +391,7 @@ For each checklist item:
   Health Table 1 row labels.
   - PDF path: `papers_from_laha/Science-Advanaced-Planetary Health Diet and risk of mortality and chronic diseases- Results from US NHANES, UK Biobank, and a meta-analysis.pdf`
   - Current result:
-    `outputs/testpapers_batch_20260708_header_group_upstream_fix` resolves all 4
+    `outputs/testpapers_batch_20260708_comma_body_evidence` resolves all 4
     Table 1 links (`*`, `†`, `‡`, `§`) against the footer block on the
     continued page. The symbol splitter now handles variable whitespace before
     each marker in a contiguous footer block.
@@ -366,7 +407,7 @@ For each checklist item:
     and 160 conventional inferred p-value-star links because local symbol
     footer definitions were not harvested.
   - Current result: fixed in
-    `outputs/testpapers_batch_20260708_header_group_upstream_fix`. Known symbol
+    `outputs/testpapers_batch_20260708_comma_body_evidence`. Known symbol
     markers such as `†`, `‡`, and `*` now define any non-empty local footer text;
     this is a structural footnote rule, not a p-value rule. Structured marker
     evidence from raised glyphs is merged with ordinary symbol marker evidence
@@ -379,13 +420,13 @@ For each checklist item:
     1. `papers_from_laha/mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017.pdf`
   - Previous artifact issue: MDPI Mediterranean had 3 ambiguous links and 3
     unresolved numeric links.
-  - Current result: `outputs/testpapers_batch_20260708_header_group_upstream_fix` has 0
+  - Current result: `outputs/testpapers_batch_20260708_comma_body_evidence` has 0
     unresolved and 0 ambiguous footnote links for this paper.
 
 - [x] **C0.6a** Re-review repeated letter markers on continued tertile headers.
   - PDF path: `papers_from_laha/Systemic inflammation markers and the prevalence of hypertension- A NHANES cross-sectional study.pdf`
   - Current result:
-    `outputs/testpapers_batch_20260708_header_group_upstream_fix` resolves all 12
+    `outputs/testpapers_batch_20260708_comma_body_evidence` resolves all 12
     `letter:b` markers attached to `Tertile 1`, `Tertile 2`, and `Tertile 3`
     labels across the continued Table 1 against the same-visual footer
     definition on the continuation page.
@@ -410,13 +451,13 @@ supplement-only or out-of-scope references.
 - [x] **C1.1** Review failed statuses that may be correct non-target tables.
   1. `papers_from_laha/An environment-wide association study (EWAS) on type 2 diabetes mellitus.pdf`
      - `An environment-wide association study (EWAS) on type 2 diabetes mellitus-p6-t0`
-     - Current status in `outputs/testpapers_batch_20260708_header_group_upstream_fix`:
+     - Current status in `outputs/testpapers_batch_20260708_comma_body_evidence`:
        `ok`, categorized as `analysis_outputs`.
      - Review result: structurally plausible ENWAS analysis-output table with
        sparse left descriptor columns; not a Table 1 descriptive failure.
   2. `papers_from_laha/mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017.pdf`
      - `mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017-p3-t0`
-     - Current status in `outputs/testpapers_batch_20260708_header_group_upstream_fix`:
+     - Current status in `outputs/testpapers_batch_20260708_comma_body_evidence`:
        `ok`.
      - Review result: text/reference table comparing frailty definitions; a
        correct non-target table for the current Table 1 descriptive parser.
@@ -432,7 +473,7 @@ supplement-only or out-of-scope references.
   2. `papers_from_laha/GOLD BioAge and depression- Associations with mortality among depressed NHANES participants (2005–2018).pdf`
      - `GOLD BioAge and depression- Associations with mortality among depressed NHANES participants (2005–2018)-p1-t0`
      - Current status: no longer extracted as a table candidate in
-       `outputs/testpapers_batch_20260708_header_group_upstream_fix`.
+       `outputs/testpapers_batch_20260708_comma_body_evidence`.
      - Review result: abstract/title-page text laid out as article front
        matter, not a table artifact to route semantically. The front-matter
        guard now suppresses it before the table pipeline.
@@ -448,7 +489,7 @@ supplement-only or out-of-scope references.
        descriptive parsing.
   4. `papers_from_laha/periodontis2.pdf`
      - Prior artifacts: `periodontis2-p6-t0` and `periodontis2-p6-t1`.
-     - Current status in `outputs/testpapers_batch_20260708_header_group_upstream_fix`:
+     - Current status in `outputs/testpapers_batch_20260708_comma_body_evidence`:
        no page-6 table candidates are extracted.
      - Review result: page 6 contains prose references to Tables 4 and 5, not a
        visual table. `paper_table_mentions.json` now classifies `Table 4
@@ -458,7 +499,7 @@ supplement-only or out-of-scope references.
        into sentence fragments.
   5. `papers_from_johnny/periodontitis.pdf`
      - `periodontitis-p11-t0`
-     - Current status in `outputs/testpapers_batch_20260708_header_group_upstream_fix`:
+     - Current status in `outputs/testpapers_batch_20260708_comma_body_evidence`:
        no longer emitted as an extracted table.
      - Review result: abbreviation glossary/reference block, not a table
        artifact. The retired backend-grid survival path is no longer allowed to
@@ -468,7 +509,7 @@ supplement-only or out-of-scope references.
   - PDF path: `papers_from_laha/Ethnic Differences in the Relationship Between Insulin Sensitivity and Insulin Response.pdf`
   - Table: `Ethnic Differences in the Relationship Between Insulin Sensitivity and Insulin Response-p5-t0`
   - Current status: `rescued`; the prior `collapsed_grid_unrecovered` failure is
-    no longer present in `outputs/testpapers_batch_20260708_header_group_upstream_fix`.
+    no longer present in `outputs/testpapers_batch_20260708_comma_body_evidence`.
   - Current footnote result: 9 resolved links and 0 unresolved links. The prior
     residual `letter:i`, `letter:x`, and `letter:g` false-marker issue is no
     longer present as unresolved footnote evidence; the remaining `letter:x`
@@ -598,18 +639,16 @@ contaminate table candidates now and can support later figure extraction.
   6. `papers_from_johnny/cardiovascular.pdf`
      - p5-t0.
      - hline body start 4, value-anchor body start 7, selected 7.
+     - Current result: `All-cause mortality` and `Cardiovascular mortality`
+       are leaf labels, while the AUC text is represented as upper spanning
+       groups over training and testing cohort columns.
   7. `papers_from_johnny/hypertension.pdf`
      - `hypertension-p5-t0`.
-     - First bad artifact: `extracted_tables.json`.
-     - Current issue: the leaf header row is assigned word-by-word to
-       body-derived column bands, so tight multiword wrapped headers are
-       interleaved across adjacent columns. The table otherwise extracts,
-       parses, and has `table_processing_status = rescued`.
-     - Do not fix this by moving individual words across column boundaries.
-       The next review should evaluate a cluster-first/header-cell-first
-       extraction rule: build complete header clusters from positioned words,
-       assign whole clusters to column bands or spans, and then let
-       `ColumnHeaderSchema` stack vertical wrapped fragments.
+     - Current result: the tight wrapped lifestyle leaves are reconstructed
+       from small-gap visual text runs and stacked across the leaf-header band:
+       `Healthy diet and physically active`, `Healthy diet but physically
+       inactive`, `Unhealthy diet and physically inactive`, `Unhealthy diet but
+       physically active`, and `P value`.
 
 - [ ] **C2.3** Review explicit hline and preamble behavior in papers with
   title/preamble rows above true column headers.
@@ -743,5 +782,6 @@ regression decision:
   failures or artifact contracts.
 - Do not add R helpers before repeated review use shows what is needed.
 - Do not add word-level header reassignment across column boundaries. Header
-  reconstruction should operate on complete positioned clusters/cells and then
-  assign those units to column bands or spans.
+  reconstruction should first group positioned words into visual text runs
+  using small between-word spacing, then assign those runs to column bands or
+  spans.

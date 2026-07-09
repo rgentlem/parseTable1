@@ -34,6 +34,136 @@ def _has_count_like_values(row_view: RowView) -> bool:
     return count_like >= 2 and count_like >= len(patterns) - 1
 
 
+def _has_continuation_level_values(row_view: RowView) -> bool:
+    """Return whether a boundary-leading row has data values compatible with a categorical level."""
+    populated_cells = [clean_text(cell) for cell in row_view.raw_cells[1:] if clean_text(cell)]
+    if not populated_cells:
+        return False
+    patterns = [detect_value_pattern(cell).pattern for cell in populated_cells]
+    non_p_value_patterns = [pattern for pattern in patterns if pattern != "p_value"]
+    if not non_p_value_patterns:
+        return False
+    if any(pattern in {"mean_sd", "median_iqr"} for pattern in non_p_value_patterns):
+        return False
+    if any(pattern in {"count_pct", "n_only"} for pattern in non_p_value_patterns):
+        return True
+    numeric_like_count = sum(any(char.isdigit() for char in cell) and not any(char.isalpha() for char in cell) for cell in populated_cells)
+    return numeric_like_count >= 1 and numeric_like_count == len(non_p_value_patterns)
+
+
+def _resolved_row_source_roles(table: NormalizedTable) -> dict[int, str]:
+    """Return resolved-row source roles carried by the continuation resolver."""
+    records = table.metadata.get("resolved_row_provenance")
+    if not isinstance(records, list):
+        return {}
+    roles: dict[int, str] = {}
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        row_idx = record.get("resolved_row_idx")
+        role = record.get("source_role")
+        if isinstance(row_idx, int) and not isinstance(row_idx, bool) and isinstance(role, str):
+            roles[row_idx] = role
+    return roles
+
+
+def _resolved_continuation_boundaries(table: NormalizedTable) -> list[tuple[int | None, int]]:
+    """Return resolved row boundaries where accepted continuation fragments begin."""
+    records = table.metadata.get("resolved_integration_boundaries")
+    if not isinstance(records, list):
+        return []
+    boundaries: list[tuple[int | None, int]] = []
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        after_row_idx = record.get("after_resolved_row_idx")
+        before_row_idx = record.get("before_resolved_row_idx")
+        if not isinstance(after_row_idx, int) or isinstance(after_row_idx, bool) or after_row_idx < 0:
+            continue
+        before = (
+            before_row_idx
+            if isinstance(before_row_idx, int) and not isinstance(before_row_idx, bool) and before_row_idx >= 0
+            else None
+        )
+        boundaries.append((before, after_row_idx))
+    return sorted(set(boundaries), key=lambda boundary: boundary[1])
+
+
+def _attach_leading_continuation_levels(
+    *,
+    table: NormalizedTable,
+    blocks: list[VariableBlock],
+    row_order: list[int],
+    row_views_by_idx: dict[int, RowView],
+) -> list[VariableBlock]:
+    """Attach boundary-leading continuation rows to the previous open parent variable."""
+    continuation_boundaries = _resolved_continuation_boundaries(table)
+    source_roles = _resolved_row_source_roles(table)
+    if not continuation_boundaries or not source_roles:
+        return blocks
+
+    block_by_start = {block.variable_row_idx: block for block in blocks}
+    extension_rows_by_block_start: dict[int, list[int]] = {}
+    rows_to_suppress_as_blocks: set[int] = set()
+    row_position_by_idx = {row_idx: position for position, row_idx in enumerate(row_order)}
+
+    for boundary_before, continuation_start in continuation_boundaries:
+        start_position = row_position_by_idx.get(continuation_start)
+        if start_position is None:
+            continue
+        if any(block.variable_row_idx < continuation_start <= block.row_end for block in blocks):
+            continue
+        prior_blocks = [
+            block
+            for block in blocks
+            if block.row_end == boundary_before
+            and block.variable_kind in {"binary", "categorical"}
+            and bool(block.level_row_indices)
+        ]
+        if not prior_blocks:
+            continue
+        prior_block = prior_blocks[-1]
+        leading_rows: list[int] = []
+        for row_idx in row_order[start_position:]:
+            if source_roles.get(row_idx) != "continuation_fragment":
+                break
+            row_view = row_views_by_idx.get(row_idx)
+            if row_view is None:
+                break
+            candidate_block = block_by_start.get(row_idx)
+            if candidate_block is not None and candidate_block.level_row_indices:
+                break
+            if not _has_continuation_level_values(row_view):
+                break
+            leading_rows.append(row_idx)
+            if candidate_block is not None:
+                rows_to_suppress_as_blocks.add(row_idx)
+        if leading_rows:
+            extension_rows_by_block_start.setdefault(prior_block.variable_row_idx, []).extend(leading_rows)
+
+    if not extension_rows_by_block_start:
+        return blocks
+
+    adjusted_blocks: list[VariableBlock] = []
+    for block in blocks:
+        if block.variable_row_idx in rows_to_suppress_as_blocks:
+            continue
+        extension_rows = extension_rows_by_block_start.get(block.variable_row_idx, [])
+        if not extension_rows:
+            adjusted_blocks.append(block)
+            continue
+        level_rows = [*block.level_row_indices, *extension_rows]
+        adjusted_blocks.append(
+            block.model_copy(
+                update={
+                    "row_end": max(block.row_end, *extension_rows),
+                    "level_row_indices": level_rows,
+                }
+            )
+        )
+    return adjusted_blocks
+
+
 def _count_pct_continuation_level_rows(
     parent_row_idx: int,
     row_order: list[int],
@@ -182,4 +312,9 @@ def group_variable_blocks(
                     level_row_indices=level_rows,
                 )
             )
-    return blocks
+    return _attach_leading_continuation_levels(
+        table=table,
+        blocks=blocks,
+        row_order=row_order,
+        row_views_by_idx=row_views_by_idx,
+    )

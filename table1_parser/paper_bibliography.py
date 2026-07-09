@@ -42,6 +42,10 @@ REFERENCE_LIST_CUE_PATTERN = re.compile(
     r"\b(?:references?|bibliography|works cited)\b\s+(?=(?:\[\s*)?\d{1,3}(?:\s*\])?[.)]?\s+[A-Z])",
     re.IGNORECASE,
 )
+BIBLIOGRAPHY_CONTENT_CUE_PATTERN = re.compile(
+    r"\b(?:18|19|20)\d{2}\b|\bdoi\b|\bpmid\b|\bpubmed\b|https?://",
+    re.IGNORECASE,
+)
 REFERENCE_ENTRY_START_PATTERN = re.compile(
     r"(?P<prefix>^|\s+-\s+|\s+)\s*(?:\[\s*)?(?P<label>\d{1,3})(?:\s*\])?[.)]?\s+(?=[A-Za-z])"
 )
@@ -179,8 +183,12 @@ def build_bibliography_entries_from_text_stream(
     candidate_entry_sets: list[list[BibliographyEntry]] = []
     for line_index, line in enumerate(paper_text_stream.lines):
         start_text = reference_start_text(line.text)
+        heading_match = REFERENCE_HEADING_LINE_PATTERN.match(start_text)
         inline_match = INLINE_REFERENCE_START_PATTERN.match(start_text)
-        if not REFERENCE_HEADING_LINE_PATTERN.match(start_text) and inline_match is None:
+        if inline_match is None and (
+            heading_match is None
+            or not _line_has_reference_section_heading_layout(line, paper_text_stream)
+        ):
             continue
         inline_body = inline_match.group("body") if inline_match is not None else None
         entries = _build_bibliography_entries_from_layout_region(
@@ -189,7 +197,7 @@ def build_bibliography_entries_from_text_stream(
             inline_body=inline_body,
             heading=inline_match.group("heading") if inline_match is not None else start_text,
         )
-        if entries:
+        if entries and _bibliography_entries_have_reference_list_shape(entries):
             candidate_entry_sets.append(entries)
 
     if not candidate_entry_sets:
@@ -203,6 +211,59 @@ def build_bibliography_entries_from_text_stream(
             -sum(len(entry.clean_text) for entry in entries),
         ),
     )
+
+
+def _line_has_reference_section_heading_layout(
+    line: PaperTextLine,
+    paper_text_stream: PaperTextStream,
+) -> bool:
+    """Return whether a reference-heading text line has section-heading layout."""
+    if line.role != "heading" and "layout_section_heading" not in line.notes:
+        return False
+    page = next(
+        (page for page in paper_text_stream.pages if page.page_num == line.page_num),
+        None,
+    )
+    if page is None:
+        return True
+    page_width = max(float(page.page_width), 1.0)
+    column_bands = page.column_bands or [(0.0, page_width)]
+    column_index = min(max(line.column_index, 0), len(column_bands) - 1)
+    band_left, band_right = column_bands[column_index]
+    same_column_lines = [
+        stream_line
+        for stream_line in paper_text_stream.lines
+        if stream_line.page_num == line.page_num and stream_line.column_index == line.column_index
+    ]
+    content_left = min((float(stream_line.bbox[0]) for stream_line in same_column_lines), default=float(band_left))
+    content_right = max((float(stream_line.bbox[2]) for stream_line in same_column_lines), default=float(band_right))
+    band_width = max(float(band_right) - float(band_left), 1.0)
+    left, _top, right, _bottom = line.bbox
+    line_center = (float(left) + float(right)) / 2.0
+    content_center = (content_left + content_right) / 2.0
+    content_width = max(content_right - content_left, band_width)
+    left_aligned = float(left) <= content_left + max(24.0, content_width * 0.06)
+    centered_heading = abs(line_center - content_center) <= max(32.0, content_width * 0.12)
+    return left_aligned or centered_heading or "full_width_line" in line.notes
+
+
+def _bibliography_entries_have_reference_list_shape(entries: Sequence[BibliographyEntry]) -> bool:
+    """Return whether extracted candidate entries look like a bibliography."""
+    if not entries:
+        return False
+    numbered_entries = [entry for entry in entries if entry.reference_number is not None]
+    if numbered_entries:
+        reference_numbers = sorted(
+            entry.reference_number
+            for entry in numbered_entries
+            if entry.reference_number is not None
+        )
+        return len(numbered_entries) >= 2 and reference_numbers[0] == 1
+    cue_count = sum(
+        bool(BIBLIOGRAPHY_CONTENT_CUE_PATTERN.search(entry.clean_text))
+        for entry in entries
+    )
+    return len(entries) >= LOW_BIBLIOGRAPHY_ENTRY_COUNT_THRESHOLD and cue_count >= 3
 
 
 def build_bibliography_entries_from_sections(

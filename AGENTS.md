@@ -255,6 +255,13 @@ accurate, layout-aware extraction first: page furniture, captions, table
 regions, row/column geometry, horizontal rules, cell bounding boxes, and
 structured artifacts should be correct near the front of the pipeline.
 
+Treat wrong extraction as the highest-priority defect. Every bad extraction
+usually creates multiple downstream errors in normalization, header schemas,
+footnote linking, continuation handling, and semantic parsing. Do not fix those
+secondary symptoms first. Identify the earliest artifact where the table,
+caption, row, column, or cell geometry became wrong, then repair that extraction
+or ownership step directly.
+
 When extraction is wrong, improve the canonical extraction or region-ownership
 stage. Do not add a later patch that guesses around the defect from cleaned
 strings, paper-specific words, or semantic expectations. If a table cannot be

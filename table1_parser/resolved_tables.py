@@ -554,6 +554,7 @@ def build_resolved_table_set(
                     if parent_resolved.resolution_type == "integrated_continuation"
                     else f"{parent_resolved.table_id}-resolved-continuation"
                 )
+                integrated_boundaries = [*parent_resolved.integration_boundaries, integration_boundary]
                 integrated_metadata = {
                     **parent_resolved.table.metadata,
                     "cleaned_rows": integrated_rows,
@@ -563,6 +564,12 @@ def build_resolved_table_set(
                         "column_schema_decision_id": column_schema_decision.decision_id,
                         "parent_headers_carried_forward": True,
                     },
+                    "resolved_row_provenance": [
+                        provenance.model_dump(mode="json") for provenance in row_provenance
+                    ],
+                    "resolved_integration_boundaries": [
+                        boundary.model_dump(mode="json") for boundary in integrated_boundaries
+                    ],
                 }
                 integrated_table = parent_resolved.table.model_copy(
                     update={
@@ -598,7 +605,7 @@ def build_resolved_table_set(
                     table=integrated_table,
                     source_table_ids=integrated_source_table_ids,
                     row_provenance=row_provenance,
-                    integration_boundaries=[*parent_resolved.integration_boundaries, integration_boundary],
+                    integration_boundaries=integrated_boundaries,
                     column_schema_decisions=[*parent_resolved.column_schema_decisions, column_schema_decision],
                     confidence=0.95,
                     notes=[
@@ -842,6 +849,7 @@ def build_resolved_table_set(
                     ]
                     integrated_source_table_ids = [*prefix_resolved.source_table_ids, table.table_id]
                     integrated_table_id = f"{prefix_resolved.table_id}-resolved-continuation"
+                    integrated_boundaries = [*prefix_resolved.integration_boundaries, integration_boundary]
                     integrated_metadata = {
                         **prefix_resolved.table.metadata,
                         "table_number": logical_table_number,
@@ -857,6 +865,12 @@ def build_resolved_table_set(
                             "caption_below_terminal_fragment": True,
                             "parent_headers_carried_forward": True,
                         },
+                        "resolved_row_provenance": [
+                            provenance.model_dump(mode="json") for provenance in row_provenance
+                        ],
+                        "resolved_integration_boundaries": [
+                            boundary.model_dump(mode="json") for boundary in integrated_boundaries
+                        ],
                     }
                     integrated_table = prefix_resolved.table.model_copy(
                         update={
@@ -880,7 +894,7 @@ def build_resolved_table_set(
                         table=integrated_table,
                         source_table_ids=integrated_source_table_ids,
                         row_provenance=row_provenance,
-                        integration_boundaries=[*prefix_resolved.integration_boundaries, integration_boundary],
+                        integration_boundaries=integrated_boundaries,
                         column_schema_decisions=[*prefix_resolved.column_schema_decisions, prefix_schema_decision],
                         confidence=0.95,
                         notes=[

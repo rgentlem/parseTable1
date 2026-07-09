@@ -307,11 +307,36 @@ When there is no leaf header row, leaves should still exist from body columns,
 but their labels should be blank or generated as low-confidence placeholders
 with diagnostics.
 
+When extraction metadata supplies geometry roles for only an upper prefix of
+the declared header rows, lower declared header rows before the body may be the
+actual leaf band. In that case the schema builder should use those lower rows
+as the leaf band and keep the upper prefix as group-header evidence. Rows with
+body-value evidence, such as a row label plus repeated numeric/reference values,
+must not be promoted into the leaf band merely because they were declared as
+headers upstream.
+
 ### 4. Build Leaf Labels
 
 For each leaf column, take the cleaned cell from the leaf header row at that
 column. Preserve a direct evidence reference to the raw extracted cell when
 available.
+
+If the leaf header is a wrapped band, concatenate the cleaned cells for the
+same leaf column across the whole band. Upstream extraction should group
+positioned words into visual text runs using small between-word spacing, then
+assign those runs to body-derived column extents. Value-column anchors may help
+derive the extents, but they should not glue visually separated header runs
+together. This keeps labels such as `N = ...` with the value column to their
+right while preserving tight wrapped labels such as diet/activity categories.
+
+When adjacent body value columns repeatedly show a comma split across cells
+(`left value ending in comma` plus a populated right value), a comma-containing
+leaf-band header may be split across that same adjacent pair. This is body and
+geometry evidence, not a header-token shortcut: unit labels such as `Mean AL,
+mm` stay intact when the body does not show adjacent comma-pair support, and
+interval values with commas inside one body cell do not trigger a split. If a
+single-row header also has a group label adjacent to the comma-composite label,
+record that group as a `ColumnHeaderGroup` spanning the two supported leaves.
 
 Do not place upper group text into `leaf_label`. Upper rows belong in
 `ColumnHeaderGroup` records and relationships.

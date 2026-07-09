@@ -10,7 +10,7 @@ Current corpus-driven hardening guide:
 `docs/implementation/real_paper_testing_guide.md`. Use it for the ordered
 real-paper review loop across extraction, normalization, continuation handling,
 table semantics, footnote/reference artifacts, and mixed-family routing. The
-current retained reference run is `outputs/testpapers_batch_20260708_header_group_upstream_fix`.
+current retained reference run is `outputs/testpapers_batch_20260708_comma_body_evidence`.
 
 Fallback/removal inventory:
 `docs/implementation/fallback_inventory.md`. Do not add new fallback tools or
@@ -25,7 +25,7 @@ insufficient.
    Implementation plan: `docs/implementation/column_header_schema_implementation_plan.md`.
    This should become the primary column model consumed by `TableDefinition` and any later stored summary/tableone projection; continuation compatibility is an important later consumer, but not the main design driver.
    Initial implementation is in place: `table1-parser parse` writes `column_header_schemas.json`, `TableDefinition` consumes it, continuation checks use schema-derived column headers, and tests cover Eke-like Table 1/Table 2 structures plus non-problem tables.
-   Follow-up: Eke Tables 1-2 show that multi-line header stacks can produce wrong parent paths when rule-banded header rows are extracted as many short text fragments. The current parser now repairs obvious split estimate/uncertainty value columns, drops sparse non-matrix page-text columns and empty separator columns, removes tall/narrow numeric margin text before grid construction, keeps adjacent header text runs together, only merges wrapped leaf rows after geometry-based header inference, preserves normalized-to-original column identity in `source_col_indices`, moves short leading leaf fragments across adjacent column boundaries when structural or coordinate evidence supports it, trims sparse group rows out of the leaf-header stack, and persists `TableDefinition.column_definition.header_spans` plus per-column `header_path` so JSON no longer relies on flattened multirow labels. Remaining work should expose ambiguous leaf-band fragment assignments as structured candidates that deterministic code or later LLM inference can adjudicate; do not hard-code paper-specific vocabulary.
+   Follow-up: Eke Tables 1-2 show that multi-line header stacks can produce wrong parent paths when rule-banded header rows are extracted as many short text fragments. The current parser now repairs obvious split estimate/uncertainty value columns, drops sparse non-matrix page-text columns and empty separator columns, removes tall/narrow numeric margin text before grid construction, groups leaf-header words into visual runs by small between-word spacing before assigning those runs to body-derived column extents, only merges wrapped leaf rows after geometry-based header inference, preserves normalized-to-original column identity in `source_col_indices`, moves short leading leaf fragments across adjacent column boundaries when structural or coordinate evidence supports it, trims sparse group rows out of the leaf-header stack, and persists `TableDefinition.column_definition.header_spans` plus per-column `header_path` so JSON no longer relies on flattened multirow labels. Remaining work should expose ambiguous leaf-band fragment assignments as structured candidates that deterministic code or later LLM inference can adjudicate; do not hard-code paper-specific vocabulary.
 
 2. [ ] Make continuations semantically real.
    One logical Table 1 spanning pages should feed `TableDefinition` and `ParsedTable`, rather than leaving page-level and continuation-page parses as separate semantic outputs.
@@ -46,7 +46,7 @@ insufficient.
    Parser wiring G1.16-G1.20 is in place: `table1-parser parse` writes `resolved_tables.json`, builds `TableProfile` and `TableDefinition` over resolved working tables, keeps `parsed_cell_values.json` source-fragment keyed, and joins source value components into `ParsedTable.values` through resolved-row provenance. Remaining work includes continuation-level semantic hardening, status/source-fragment diagnostics, and corpus review.
    Continuation hardening G1.21-G1.23 is in place: accepted continuation body rows feed ordinary resolved-table row/level grouping, so leading continuation count/percent rows can attach to an open categorical parent from the base fragment; `table_processing_status.json` is keyed to resolved semantic tables and carries source table IDs plus structured source-fragment diagnostics; `continued_variable_integrations.json` is retained only as a source-fragment review artifact built from source-fragment definitions and is not consumed by canonical semantic parsing.
    Documentation/artifact contract G1.24-G1.27 is in place: `parsing_output_design.md` records the `resolved_tables.json` contract and source-fragment versus resolved-table artifact relationships; `paper_parse_walkthrough.md` shows resolved tables as the semantic input to profiles, definitions, parsed tables, paper table inventory, and status; no R inspection docs were changed because no real R inspection surface was added.
-   Verification G1.28-G1.33 is in place: focused resolved-table regressions cover accepted explicit continuations, schema-rejected continuation candidates, continuation level attachment to a base-fragment parent, and unrelated same-column tables remaining separate. The latest retained full 27-PDF run is `outputs/testpapers_batch_20260708_header_group_upstream_fix`; use that output for current footnote and corpus inspection.
+   Verification G1.28-G1.33 is in place: focused resolved-table regressions cover accepted explicit continuations, schema-rejected continuation candidates, continuation level attachment to a base-fragment parent, and unrelated same-column tables remaining separate. The latest retained full 27-PDF run is `outputs/testpapers_batch_20260708_comma_body_evidence`; use that output for current footnote and corpus inspection.
    Recent caption-continuation update: explicit extraction now binds table
    captions one-to-one by page geometry above or below the table before using
    caption text as table identity. A strong uncaptained fragment immediately
@@ -115,8 +115,8 @@ insufficient.
    cannot build a credible grid from the rough box, the explicit backend table
    is not emitted as an extracted table.
    Current verification run:
-   `outputs/testpapers_batch_20260708_header_group_upstream_fix` parsed 27/27 PDFs,
-   emitted 66 extracted tables, used `pymupdf_positioned_geometry` for all 66,
+   `outputs/testpapers_batch_20260708_comma_body_evidence` parsed 27/27 PDFs,
+   emitted 79 extracted tables, used `pymupdf_positioned_geometry` for all 79,
    and had 0 backend JSON grid survivors. The test suite no longer keeps
    backend-grid survival fixtures as acceptable parser behavior.
    Positioned row-grid construction now keeps parenthesized numeric expressions
@@ -124,8 +124,28 @@ insufficient.
    the first row-label/value boundary from the observed gap before the repeated
    first value-column anchor, rather than from a fake midpoint between the
    leftmost row-label text and the first value column.
+   Leaf-header reconstruction groups positioned words into small-gap visual
+   runs before assigning each run to body-derived column extents. Anchors may
+   define value-column extents upstream, but they do not glue visually separated
+   header text into one leaf. If geometry roles cover only upper header rows,
+   `ColumnHeaderSchema` can use lower declared header rows as the leaf band,
+   while rejecting trailing rows that already contain body-value evidence.
    This preserves the Planetary Health p2 -> p3 continuation and the MDPI p5
    -> p6 continuation without schema-level continuation enrichment.
+   Grid construction now removes all-empty rows and terminal all-empty columns
+   before emitting extracted tables; the current full run found 0 empty-row or
+   trailing-empty-column problems in both extracted and normalized tables.
+   Recent fallback cleanup: the broad low-quality page rescue
+   (`pymupdf_text_positions_rescue`), page-wide sideways transformed
+   replacement (`sideways_text_positions`), and model/estimate-specific
+   `word_positions_with_horizontal_rules` refinement have been removed. The
+   verification run
+   `outputs/testpapers_batch_20260708_comma_body_evidence` still
+   parses 27/27 PDFs, emits 79 extracted tables, records 1308 bibliography
+   entries, and has 441 resolved / 0 inferred / 0 unresolved / 0 ambiguous
+   footnote links. The only extraction-source change from the prior baseline is
+   GOLD Table 3 moving from `word_positions_with_horizontal_rules` to the
+   general `pymupdf_positioned_bbox_words` path with the same 13 x 11 shape.
    Remaining follow-up: Planetary p2 and p3 still use mixed candidate paths
    even though both emit PyMuPDF-positioned geometry, so the next extraction
    hardening step should make the continuation fragment follow the same
@@ -184,9 +204,9 @@ insufficient.
    Recent math/unit update: numeric superscripts and subscripts in expressions like `10^9`, `10^6`, `m^2`, `kg/m^2`, `CO₂`, `I²`, and `×10^9/L` are rejected before `FootnoteAnchor` creation. Subscript annotations are now generally suppressed as non-footnote anchors, including single-letter notation such as `S_I`/`AIR_g` and multi-letter subscript words such as `P_Begg`/`P_Egger`. They remain visible in `cell_text_annotations.json` with original glyph case; `paper_footnotes.json` records suppression counts in `math_unit_anchor_suppression_count`, `subscript_anchor_suppression_count`, and `word_like_subscript_anchor_suppression_count`.
    Recent symbol-font update: PyMuPDF char extraction now applies font-qualified Unicode normalization before word/grid reconstruction for known embedded symbol-font codes such as `±`, `×`, `−`, and `<`. Inline marker detection accepts same-height trailing glyphs attached to numeric/comparator text including `±` values and preserves marker font metadata. In the focused Ethnic Differences run, `S_I` and `AIR_g` remain suppressed subscript annotations, while the marker-font `x` resolves against the local `xP < ...` footer definition.
    Recent p-value-star update: after math/unit rejection and explicit local footnote linking, `*`, `**`, and `***` attached to p-value cells/columns receive structured conventional fallback meanings with thresholds `10^-1`, `10^-2`, and `10^-3`. Explicit footer definitions override the fallback, and R-facing output exposes whether the interpretation was explicit or conventional.
-   Bibliographic reference follow-up: `paper_bibliography.json` now preserves the paper's own bibliography entries, numbered or unnumbered, from the PyMuPDF layout-aware text stream and links numeric table-cell study/source/header markers to numbered entries when no local table-note definition exists. The footnote linker suppresses citation-like numeric table-cell markers with matching numbered bibliography entries from table-footnote link counts, while the original marker evidence remains visible in `cell_text_annotations.json` and linked in `paper_bibliography.json`. Reference-list extraction uses one layout stream: read page, then column, then vertical position; start entries at the column left edge, with either a numeric label or the first author/organization line; keep indented rows open across column and page breaks; and fall back to markdown-derived sections only when the positioned text stream cannot produce entries. The current full 27-PDF run, `outputs/testpapers_batch_20260708_header_group_upstream_fix`, has 1370 bibliography entries, 0 empty bibliographies, and 0 bibliography diagnostics.
+   Bibliographic reference follow-up: `paper_bibliography.json` now preserves the paper's own bibliography entries, numbered or unnumbered, from the PyMuPDF layout-aware text stream and links numeric table-cell study/source/header markers to numbered entries when no local table-note definition exists. The footnote linker suppresses citation-like numeric table-cell markers with matching numbered bibliography entries from table-footnote link counts, while the original marker evidence remains visible in `cell_text_annotations.json` and linked in `paper_bibliography.json`. Reference-list extraction uses one layout stream: read page, then column, then vertical position; start entries at the column left edge, with either a numeric label or the first author/organization line; keep indented rows open across column and page breaks; and fall back to markdown-derived sections only when the positioned text stream cannot produce entries. The bibliography pass is now the only source of the reference-region boundary used by table extraction: if entries are found, the first bibliography page is passed into extraction; if no bibliography is found, extraction does not run a separate raw-text `References` scan. The current full 27-PDF run, `outputs/testpapers_batch_20260708_comma_body_evidence`, has 1308 bibliography entries, 0 empty bibliographies, and 0 bibliography diagnostics.
    Future work: harvest numeric bibliography reference markers from body text and captions into the same per-paper artifact, then validate one-to-one coverage for numbered lists: every observed numeric reference marker should resolve to a numbered bibliography entry, and every numbered bibliography entry should have at least one observed marker. Add author-year body citation harvesting separately against preserved unnumbered entries. Record coverage gaps as diagnostics without introducing any cross-paper citation-management layer.
-   Footnote-style update: `paper_footnotes.json` now splits local caption/footer definitions from structured marker evidence before falling back to text parsing. PyMuPDF footer blocks are built from positioned characters, and extracted footer rows can use `cell_text_annotations.json` when a raised superscript marker begins the first populated footer cell. Raw damaged strings where the marker runs into the following word are preserved as source text but do not define the marker. Extracted footer rows can still contribute weaker text evidence from confirmed statistical marker prefixes such as `xP < ...`. Structured marker evidence is merged with ordinary symbol markers in the same footer block, so an upright `* p < 0.05` definition is not dropped just because the same block also contains a raised `†` definition, as in the anthropometric CKD Table 1 footer. Textual marker definitions such as `The asterisk indicates ...` remain valid local definition evidence. The parser also preserves symbol-block splitting across variable whitespace before `†`, `‡`, `§`, and similar markers, while avoiding all-caps acronym false splits such as `eGFR`; vertical-bar glyph artifacts attached to rotated numeric cells are suppressed as non-footnote symbols. Current page-furniture handling filters positioned text before PDF definition blocks are built; the full 27-PDF run, `outputs/testpapers_batch_20260708_header_group_upstream_fix`, records `page_furniture_filter_stage = before_pdf_definition_block_construction` for all papers, has 387 resolved footnote links, 0 inferred, 0 unresolved, and 0 ambiguous links, and `paper_style_profile.json` footnote-link coverage passes for all 27 papers.
+   Footnote-style update: `paper_footnotes.json` now splits local caption/footer definitions from structured marker evidence before falling back to text parsing. PyMuPDF footer blocks are built from positioned characters, and extracted footer rows can use `cell_text_annotations.json` when a raised superscript marker begins the first populated footer cell. Raw damaged strings where the marker runs into the following word are preserved as source text but do not define the marker. Extracted footer rows can still contribute weaker text evidence from confirmed statistical marker prefixes such as `xP < ...`. Structured marker evidence is merged with ordinary symbol markers in the same footer block, so an upright `* p < 0.05` definition is not dropped just because the same block also contains a raised `†` definition, as in the anthropometric CKD Table 1 footer. Textual marker definitions such as `The asterisk indicates ...` remain valid local definition evidence. The parser also preserves symbol-block splitting across variable whitespace before `†`, `‡`, `§`, and similar markers, while avoiding all-caps acronym false splits such as `eGFR`; vertical-bar glyph artifacts attached to rotated numeric cells are suppressed as non-footnote symbols. Current page-furniture handling filters positioned text before PDF definition blocks are built; the full 27-PDF run, `outputs/testpapers_batch_20260708_comma_body_evidence`, records `page_furniture_filter_stage = before_pdf_definition_block_construction` for all papers, has 441 resolved footnote links, 0 inferred, 0 unresolved, and 0 ambiguous links, and `paper_style_profile.json` footnote-link coverage passes for all 27 papers.
    Treat these as normalization follow-ups, not emergency parser changes. Preserve raw extraction, add focused repairs with provenance, and avoid broad rules that could merge real value columns into labels.
 
 11. [ ] Add known-failure regression fixtures.
@@ -214,7 +234,11 @@ insufficient.
   large-gap/text-spread cleanup after the final value row has been retired;
   `metadata.trailing_non_table_rows` now records only explicit trailing
   continuation-page notes.
-- Recent extraction guardrail: reference/bibliography section detection now combines backend payload text with PyMuPDF page text before table detection and carries the section stop into fallback extraction, so bibliography pages cannot enter the table pipeline just because the primary JSON payload missed the section heading.
+- Recent extraction guardrail: the purpose-built bibliography pass now owns
+  reference-region detection before table extraction. When it finds entries, it
+  passes the first bibliography page to extraction as the stop boundary; when it
+  finds no entries, extraction does not run a separate raw-text `References`
+  scan.
 - Recent paper-context update: `paper_text_stream.json` now records
   layout-aware, page-furniture-filtered PyMuPDF text lines, page-level
   `column_boundaries` and `column_bands`, and orders pages as page, column, then
@@ -256,6 +280,12 @@ insufficient.
   but they cannot keep a footer-only column alive in the normalized data grid.
 - Recent normalization update: header/body selection now uses validated full-width separator rules first, first value-region anchors second, and content scoring only as fallback. Full-width separator evidence is derived from stroked rule geometry so filled row highlighting/background shading does not create false hlines. Future work still needs a more principled model for data/estimate tables without clear separator or value-anchor evidence, rather than adding more ordered special cases.
 - Recent column-schema update: full-width hlines inside an already selected header band now split upper spanning-group rows from lower wrapped leaf-header rows. Cardiovascular Table 2 keeps body start row 7 while using rows 4-6 as leaf labels and rows 0-3 as training/testing cohort groups.
+- Recent column-schema update: comma-containing leaf headers are split across
+  adjacent value columns only when body rows repeatedly show the same adjacent
+  comma-pair structure: the left value cell ends with a comma and the right
+  value cell is populated. This exposes `OR (95% CI)` and `P-value` leaves in
+  the METS-IR hypertension Tables 2-4 while keeping unit labels such as
+  `Mean AL, mm` and body intervals with internal commas intact.
 - Recent normalization update: dense row-by-row full-width rules no longer disable hline separator detection. Fully ruled tables should still use hlines as boundary proposals, then choose the boundary that preserves a multicolumn group row plus its single-column leaf-label row above any row-label-only body parent. This fixes the Table 3 continuation in `Association between anthropometric indices and chronic kidney disease: Insights from NHANES 2009–2018`, where page 11 and page 12 now share the same `Model 1`/`Model 2`/`Model 3` column schema and integrate as one resolved table.
 - Recent hline-led extraction update: for credible ruled table candidates with
   full-width stroked horizontal rules, extraction now treats the
@@ -285,11 +315,11 @@ insufficient.
   recognized value pattern.
 - Recent bibliography baseline update:
   `docs/implementation/real_paper_testing_guide.md` now uses
-  `outputs/testpapers_batch_20260708_header_group_upstream_fix` as the current
+  `outputs/testpapers_batch_20260708_comma_body_evidence` as the current
   retained run: 27 PDF command successes, 0 empty bibliographies, 0
-  bibliography diagnostics, 1370 bibliography entries, 22 numbered
-  bibliography papers, 5 unnumbered bibliography papers, and 0 mixed
-  numbering-style papers. The same run has 381 resolved / 0 inferred / 0
+  bibliography diagnostics, 1308 bibliography entries, 25 numbered
+  bibliography papers, 2 unnumbered bibliography papers, and 0 mixed
+  numbering-style papers. The same run has 441 resolved / 0 inferred / 0
   unresolved / 0 ambiguous footnote links.
 - Recent front-matter guard check:
   `outputs/testpapers_batch_20260706_frontmatter_guard` recorded 27/27 parse

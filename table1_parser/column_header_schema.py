@@ -72,12 +72,58 @@ def build_column_header_schema(
     declared_leaf_header_row_idx = (
         max(declared_leaf_header_candidates) if declared_leaf_header_candidates else max(header_rows, default=None)
     )
+    trailing_declared_header_rows_after_geometry: list[int] = []
     if header_row_roles:
+        geometry_role_rows = [
+            row_idx
+            for row_idx in header_rows
+            if header_row_roles.get(row_idx) in {"group_header", "leaf_header"}
+        ]
+        if geometry_role_rows:
+            max_geometry_role_row = max(geometry_role_rows)
+            trailing_candidates: list[int] = []
+            body_value_trailing_rows: list[int] = []
+            for row_idx in header_rows:
+                if (
+                    row_idx <= max_geometry_role_row
+                    or (first_declared_body_row is not None and row_idx >= first_declared_body_row)
+                    or _row_nonempty_count(grid, row_idx, table.n_cols) == 0
+                ):
+                    continue
+                value_cells = [
+                    clean_text(_grid_cell(grid, row_idx, col_idx))
+                    for col_idx in range(1, table.n_cols)
+                    if clean_text(_grid_cell(grid, row_idx, col_idx))
+                ]
+                digit_value_cells = [value for value in value_cells if any(char.isdigit() for char in value)]
+                numeric_value_cells = [value for value in value_cells if _looks_like_numeric_body_value(value)]
+                repeated_digit_value = len(set(digit_value_cells)) < len(digit_value_cells)
+                if (
+                    _grid_cell(grid, row_idx, 0)
+                    and len(value_cells) >= 2
+                    and (len(numeric_value_cells) >= 2 or (len(digit_value_cells) >= 2 and repeated_digit_value))
+                ):
+                    body_value_trailing_rows.append(row_idx)
+                else:
+                    trailing_candidates.append(row_idx)
+            if body_value_trailing_rows:
+                diagnostics.append(
+                    "skipped_trailing_declared_header_rows_after_body_value_evidence:"
+                    f"rows={','.join(map(str, body_value_trailing_rows))}"
+                )
+            else:
+                trailing_declared_header_rows_after_geometry = trailing_candidates
         usable_header_rows = [
             row_idx
             for row_idx in header_rows
             if header_row_roles.get(row_idx) in {"group_header", "leaf_header"}
         ]
+        if trailing_declared_header_rows_after_geometry:
+            usable_header_rows = sorted([*usable_header_rows, *trailing_declared_header_rows_after_geometry])
+            diagnostics.append(
+                "included_trailing_declared_header_rows_after_geometry_roles:"
+                f"rows={','.join(map(str, trailing_declared_header_rows_after_geometry))}"
+            )
         skipped_leaf_header_rows: list[int] = []
     else:
         usable_header_rows = [
@@ -133,7 +179,14 @@ def build_column_header_schema(
 
     leaf_header_row_idx: int | None = None
     leaf_header_row_indices: list[int] = []
-    if header_row_roles:
+    if trailing_declared_header_rows_after_geometry:
+        leaf_header_row_indices = sorted(trailing_declared_header_rows_after_geometry)
+        leaf_header_row_idx = max(leaf_header_row_indices)
+        diagnostics.append(
+            "used_trailing_declared_header_rows_as_leaf_band:"
+            f"rows={','.join(map(str, leaf_header_row_indices))}"
+        )
+    elif header_row_roles:
         leaf_header_row_indices = [
             row_idx
             for row_idx in usable_header_rows
@@ -218,6 +271,70 @@ def build_column_header_schema(
     schema_id = f"{table.table_id}:column_header_schema"
     original_col_indices = _original_col_indices(table, extracted_table)
     leaf_extra_evidence_positions: dict[tuple[int, int], list[int]] = {}
+    leaf_label_overrides: dict[int, str] = {}
+    same_row_group_overrides: list[_HeaderRun] = []
+    body_comma_pair_support: set[tuple[int, int]] = set()
+    for left_col_idx in range(1, table.n_cols - 1):
+        paired_body_rows = 0
+        left_comma_body_rows = 0
+        for row_idx in body_rows:
+            left_text = clean_text(_grid_cell(grid, row_idx, left_col_idx))
+            right_text = clean_text(_grid_cell(grid, row_idx, left_col_idx + 1))
+            if not left_text or not right_text:
+                continue
+            paired_body_rows += 1
+            if left_text.endswith(","):
+                left_comma_body_rows += 1
+        if (
+            left_comma_body_rows >= 2
+            and paired_body_rows > 0
+            and left_comma_body_rows / paired_body_rows >= 0.6
+        ):
+            body_comma_pair_support.add((left_col_idx, left_col_idx + 1))
+    if leaf_header_row_indices and body_comma_pair_support:
+        leaf_row_idx = max(leaf_header_row_indices)
+        for left_col_idx, right_col_idx in sorted(body_comma_pair_support):
+            left_header = clean_text(" ".join(_grid_cell(grid, row_idx, left_col_idx) for row_idx in leaf_header_row_indices))
+            right_header = clean_text(" ".join(_grid_cell(grid, row_idx, right_col_idx) for row_idx in leaf_header_row_indices))
+            split_source_col_idx: int | None = None
+            group_label = ""
+            composite_header = ""
+            if "," in left_header and not right_header:
+                split_source_col_idx = left_col_idx
+                composite_header = left_header
+            elif "," in right_header and not left_header:
+                split_source_col_idx = right_col_idx
+                composite_header = right_header
+            elif "," in right_header and left_header:
+                split_source_col_idx = right_col_idx
+                composite_header = right_header
+                group_label = left_header
+            if split_source_col_idx is None:
+                continue
+            left_part, right_part = [clean_text(part) for part in composite_header.split(",", 1)]
+            if not left_part or not right_part:
+                continue
+            leaf_label_overrides[left_col_idx] = left_part
+            leaf_label_overrides[right_col_idx] = right_part
+            leaf_extra_evidence_positions.setdefault((leaf_row_idx, left_col_idx), []).append(split_source_col_idx)
+            leaf_extra_evidence_positions.setdefault((leaf_row_idx, right_col_idx), []).append(split_source_col_idx)
+            diagnostics.append(
+                "split_comma_leaf_header_by_body_pair_evidence:"
+                f"row={leaf_row_idx}:cols={left_col_idx}-{right_col_idx}"
+            )
+            if group_label:
+                same_row_group_overrides.append(
+                    _HeaderRun(
+                        leaf_row_idx,
+                        leaf_row_idx,
+                        left_col_idx,
+                        right_col_idx,
+                        group_label,
+                        ((leaf_row_idx, left_col_idx),),
+                        "explicit_cell_span",
+                        0.86,
+                    )
+                )
     source_page_num = table.metadata.get("source_page_num")
     page_num = source_page_num if isinstance(source_page_num, int) and source_page_num >= 1 else None
     extracted_cells = _extracted_cells_by_position(extracted_table)
@@ -271,6 +388,8 @@ def build_column_header_schema(
         leaf_label = ""
         if leaf_header_row_idx is not None:
             leaf_label = clean_text(" ".join(_grid_cell(grid, row_idx, col_idx) for row_idx in leaf_header_row_indices))
+            if col_idx in leaf_label_overrides:
+                leaf_label = leaf_label_overrides[col_idx]
             if not leaf_label and col_idx == 0:
                 upper_label = next(
                     (
@@ -337,6 +456,7 @@ def build_column_header_schema(
             table.metadata,
             leaf_header_row_indices=leaf_header_row_indices,
         )
+        group_runs.extend(same_row_group_overrides)
         for run in group_runs:
             if inferred_header_rows_used and run.col_start == run.col_end:
                 diagnostics.append(f"skipped_single_leaf_header_group:row={run.row_idx}:col={run.col_start}")

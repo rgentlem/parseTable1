@@ -8,7 +8,7 @@ Reference usage counts below come from the latest available 27-PDF real-paper
 batch inspected during the fallback audit:
 
 ```text
-outputs/testpapers_batch_20260707_pymupdf_canonical3
+outputs/testpapers_batch_20260708_180516_fallback_cleanup_verify2
 ```
 
 That output is generated evidence, not source truth. Re-run the corpus before
@@ -37,7 +37,7 @@ canonical extraction logic with explicit provenance.
 
 - `hline_word_positions`
   - Code: `table1_parser/extract/pymupdf4llm_extractor.py::_refine_grid_from_hline_word_positions`
-  - Latest usage: 20 tables.
+  - Latest usage: 24 tables.
   - Status: keep, but rename mentally from fallback to primary ruled-table
     extraction. It uses positioned words, horizontal rules, value anchors, and
     header-band geometry, which is the intended direction.
@@ -51,20 +51,22 @@ canonical extraction logic with explicit provenance.
 
 - `pymupdf_positioned_bbox_words`
   - Code: `table1_parser/extract/pymupdf4llm_extractor.py::_rebuild_grid_from_positioned_bbox_words`
-  - Latest usage: 28 tables.
+  - Latest usage: 35 tables.
   - Status: keep as canonical positioned extraction for explicit table boxes
     when stronger hline/value-matrix reconstruction does not fire. It uses
     PyMuPDF words/chars/rules inside the rough table region and records
     `canonical_extraction_layer = "pymupdf_positioned_geometry"`.
 
-- Rotated/sideways geometry normalization
+- Rotated table-local geometry normalization
   - Code:
     - `table1_parser/extract/pymupdf4llm_extractor.py::_build_rotated_block_candidate_from_mixed_table_box`
     - `table1_parser/extract/layout_fallback.py::normalize_positioned_geometry_for_rotation`
   - Latest usage: 1 mixed rotated-block repair; 6 rotated word-position
     refinements.
   - Status: keep, but make this ordinary orientation-aware extraction rather
-    than an exceptional recovery path.
+    than an exceptional recovery path. The older page-wide sideways replacement
+    branch has been removed; retained rotated support is table-local and based
+    on explicit/mixed table regions plus directional PyMuPDF text blocks.
 
 ### Retire Or Replace
 
@@ -72,16 +74,26 @@ canonical extraction logic with explicit provenance.
   - Code: `table1_parser/extract/pymupdf4llm_extractor.py::_rescue_low_quality_page_candidates`
   - Metadata: `layout_source = "pymupdf_text_positions_rescue"`,
     `fallback_used = true`.
-  - Status: retire or gate very tightly. Explicit table boxes now get a
-    bbox-hinted PyMuPDF positioned rebuild before this path can matter, so this
-    should disappear as table-region ownership improves.
+  - Latest usage: 0 tables.
+  - Status: retired and removed. Explicit table boxes now get a bbox-hinted
+    PyMuPDF positioned rebuild; the broad page rescue path should not be
+    reintroduced.
 
 - Whole-page PyMuPDF text-position fallback
   - Code: `table1_parser/extract/pymupdf4llm_extractor.py` fallback loop with
     `layout_source = "pymupdf_text_positions"`.
-  - Latest usage: 2 tables.
+  - Latest usage: 4 tables.
   - Status: replace with canonical positioned PyMuPDF extraction so pages
     without PyMuPDF4LLM table boxes are not a special path.
+
+- Page-wide sideways transformed replacement
+  - Metadata: `layout_source = "sideways_text_positions"` and transformed
+    full-page candidate geometry.
+  - Latest usage: 0 tables.
+  - Status: retired and removed. Rotated extraction should stay table-local,
+    using explicit/mixed table boxes and PyMuPDF directional text-block
+    geometry rather than rewriting a whole page into a separate candidate
+    stream.
 
 - Caption-contaminated backend row drop
   - Code: `table1_parser/extract/pymupdf4llm_extractor.py`
@@ -93,20 +105,22 @@ canonical extraction logic with explicit provenance.
 
 - Collapsed explicit-grid word-position rescue
   - Metadata: `grid_refinement_source = "collapsed_explicit_grid_word_positions"`.
-  - Latest usage: 1 table.
+  - Latest usage: 2 tables.
   - Status: retire after hline/value-matrix extraction owns collapsed grid
     reconstruction.
 
 - Special model/estimate `word_positions_with_horizontal_rules`
   - Metadata: `grid_refinement_source = "word_positions_with_horizontal_rules"`.
-  - Latest usage: 1 table.
-  - Status: retire or fold into general hline/value-anchor extraction.
+  - Latest usage: 0 tables.
+  - Status: retired and removed. The former GOLD Table 3 case now emits the
+    same 13 x 11 grid through the general `pymupdf_positioned_bbox_words` path
+    instead of a model/estimate-specific refinement.
 
 - Backend JSON cell grid survival
   - Metadata: `geometry_source = "pymupdf4llm_json_table_cells"`,
     `canonical_extraction_layer = "pymupdf4llm_backend_grid_noncanonical"`.
   - Latest usage: 0 tables in
-    `outputs/testpapers_batch_20260707_no_backend_grid`. The previous survivor,
+    `outputs/testpapers_batch_20260708_180516_fallback_cleanup_verify2`. The previous survivor,
     `periodontitis-p11-t0`, is no longer emitted because positioned PyMuPDF
     reconstruction cannot build a credible grid from that rough box.
   - Status: retired. PyMuPDF4LLM may still supply a rough table box, but rows,

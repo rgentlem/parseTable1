@@ -52,6 +52,7 @@ SECTION_HEADING_TEXTS = {
     "publisher's note",
     "publisher’s note",
 }
+TABLE_CAPTION_LINE_PATTERN = re.compile(r"^\s*table\s+[A-Za-z]?\d+[A-Za-z]?\b", re.IGNORECASE)
 
 
 def build_paper_text_stream(
@@ -276,6 +277,9 @@ def _detect_page_columns(
 ) -> tuple[int, list[float], list[tuple[float, float]], list[str]]:
     if len(line_records) < 8 or page_width <= 0.0:
         return 1, [], [(0.0, max(page_width, 1.0))], []
+    caption_column_result = _detect_caption_aligned_columns(line_records, page_width)
+    if caption_column_result is not None:
+        return caption_column_result
     candidate_records = [
         record
         for record in line_records
@@ -322,6 +326,53 @@ def _detect_page_columns(
     column_count = len(column_bands)
     diagnostics = [f"{column_count}_column_layout_detected"]
     return column_count, column_boundaries, column_bands, diagnostics
+
+
+def _detect_caption_aligned_columns(
+    line_records: list[dict[str, object]],
+    page_width: float,
+) -> tuple[int, list[float], list[tuple[float, float]], list[str]] | None:
+    caption_records = [
+        record
+        for record in line_records
+        if TABLE_CAPTION_LINE_PATTERN.match(str(record.get("text", "")))
+        and not _is_full_width_record(record, page_width)
+    ]
+    if len(caption_records) < 2:
+        return None
+    caption_rows: list[list[dict[str, object]]] = []
+    for record in sorted(caption_records, key=lambda item: (float(item["bbox"][1]), float(item["bbox"][0]))):
+        top = float(record["bbox"][1])
+        if not caption_rows or abs(top - float(caption_rows[-1][0]["bbox"][1])) > 18.0:
+            caption_rows.append([record])
+            continue
+        caption_rows[-1].append(record)
+    for caption_row in caption_rows:
+        if len(caption_row) < 2:
+            continue
+        ordered = sorted(caption_row, key=lambda item: float(item["bbox"][0]))
+        if float(ordered[-1]["bbox"][0]) - float(ordered[0]["bbox"][0]) < page_width * 0.25:
+            continue
+        boundaries = [
+            (float(left_record["bbox"][2]) + float(right_record["bbox"][0])) / 2.0
+            for left_record, right_record in zip(ordered, ordered[1:])
+            if float(right_record["bbox"][0]) > float(left_record["bbox"][2])
+        ]
+        if len(boundaries) != len(ordered) - 1:
+            continue
+        column_bands: list[tuple[float, float]] = []
+        band_left = 0.0
+        for boundary in boundaries:
+            column_bands.append((band_left, boundary))
+            band_left = boundary
+        column_bands.append((band_left, page_width))
+        return (
+            len(column_bands),
+            boundaries,
+            column_bands,
+            [f"{len(column_bands)}_column_layout_detected", "caption_aligned_column_detection"],
+        )
+    return None
 
 
 def _order_page_lines(

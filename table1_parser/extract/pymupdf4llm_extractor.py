@@ -43,13 +43,10 @@ from table1_parser.page_furniture_mask import (
     filter_table_rows_for_page_furniture,
     page_furniture_cluster_ids_for_bbox,
 )
-from table1_parser.reference_sections import text_has_reference_section_start
-from table1_parser.schemas import ExtractedTable, PaperPageFurniture, PaperTableMention, TableCell
+from table1_parser.schemas import ExtractedTable, PaperPageFurniture, PaperTableMention, PaperTextStream, TableCell
 from table1_parser.text_cleaning import clean_text
 
 
-MODEL_HEADER_PATTERN = re.compile(r"\bmodel[_\s]*\d+\b", re.IGNORECASE)
-ESTIMATE_HEADER_PATTERN = re.compile(r"\b(?:or\b|95%\s*ci|p(?:-value)?\b)\b", re.IGNORECASE)
 INTRODUCTION_HEADING_PATTERN = re.compile(
     r"^(?:\d+(?:\.\d+)*\.?\s+)?introduction\b",
     re.IGNORECASE,
@@ -82,6 +79,8 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
         *,
         paper_page_furniture: PaperPageFurniture | None = None,
         paper_table_mentions: Sequence[PaperTableMention] | None = None,
+        paper_text_stream: PaperTextStream | None = None,
+        reference_start_page_num: int | None = None,
     ) -> list[ExtractedTable]:
         """Extract and rank raw table candidates from a PDF."""
         try:
@@ -89,6 +88,8 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                 pdf_path,
                 paper_page_furniture=paper_page_furniture,
                 paper_table_mentions=paper_table_mentions,
+                paper_text_stream=paper_text_stream,
+                reference_start_page_num=reference_start_page_num,
             )
         except Exception:
             return []
@@ -145,6 +146,8 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
         *,
         paper_page_furniture: PaperPageFurniture | None = None,
         paper_table_mentions: Sequence[PaperTableMention] | None = None,
+        paper_text_stream: PaperTextStream | None = None,
+        reference_start_page_num: int | None = None,
     ) -> list[DetectedTableCandidate]:
         try:
             import pymupdf4llm
@@ -163,16 +166,15 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
         if not pages:
             return []
         candidates: list[DetectedTableCandidate] = []
-        explicit_page_nums: set[int] = set()
         try:
             document = open_pymupdf_document(pdf_path)
         except Exception:
             document = None
         try:
-            in_references_section = False
-            references_start_page_num: int | None = None
             front_matter_intervals = _front_matter_intervals_by_page(document)
             for page_num, payload_page in sorted(pages.items()):
+                if reference_start_page_num is not None and page_num >= reference_start_page_num:
+                    continue
                 page = None
                 if document is not None and 0 <= page_num - 1 < getattr(document, "page_count", 0):
                     page = document.load_page(page_num - 1)
@@ -183,12 +185,6 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                     extracted_page_text = extract_page_text(page)
                     if extracted_page_text and extracted_page_text not in page_text:
                         page_text = f"{page_text}\n{extracted_page_text}".strip()
-                if text_has_reference_section_start(page_text):
-                    in_references_section = True
-                    if references_start_page_num is None:
-                        references_start_page_num = page_num
-                if in_references_section:
-                    continue
                 page_word_mask_metadata: dict[str, object] | None = None
                 page_char_mask_metadata: dict[str, object] | None = None
                 if page is None:
@@ -537,200 +533,12 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                     )
                     if rotated_block_candidate is not None:
                         page_candidates.append(rotated_block_candidate)
-                page_candidates = self._rescue_low_quality_page_candidates(
-                    page_num=page_num,
-                    page=page,
-                    page_text=page_text,
-                    page_candidates=page_candidates,
-                    paper_page_furniture=paper_page_furniture,
-                    paper_table_mentions=paper_table_mentions,
-                )
-                if page is not None and page_words:
-                    extracted_page_text = extract_page_text(page)
-                    sideways_page_text = page_text
-                    if extracted_page_text and extracted_page_text not in sideways_page_text:
-                        sideways_page_text = f"{sideways_page_text}\n{extracted_page_text}".strip()
-                    page_rect = getattr(page, "rect", None)
-                    if page_rect is not None and all(hasattr(page_rect, attr) for attr in ("width", "height")):
-                        page_bbox = (0.0, 0.0, float(page_rect.width), float(page_rect.height))
-                    else:
-                        page_bbox = (
-                            min(float(word["x0"]) for word in page_words),
-                            min(float(word["top"]) for word in page_words),
-                            max(float(word["x1"]) for word in page_words),
-                            max(float(word["bottom"]) for word in page_words),
-                        )
-                    page_width = max(1.0, page_bbox[2] - page_bbox[0])
-                    page_height = max(1.0, page_bbox[3] - page_bbox[1])
-                    page_rotation = int(getattr(page, "rotation", 0) or 0)
-                    page_directions = extract_clipped_line_directions(page, page_bbox)
-                    horizontal_count = 0
-                    vertical_up_count = 0
-                    vertical_down_count = 0
-                    for dx, dy in page_directions:
-                        if abs(dx) >= 0.8 and abs(dy) <= 0.2:
-                            horizontal_count += 1
-                            continue
-                        if abs(dy) >= 0.8 and abs(dx) <= 0.2:
-                            if dy < 0:
-                                vertical_up_count += 1
-                            else:
-                                vertical_down_count += 1
-                    vertical_count = vertical_up_count + vertical_down_count
-                    considered_count = horizontal_count + vertical_count
-                    vertical_confidence = (
-                        vertical_count / considered_count
-                        if considered_count
-                        else 0.0
-                    )
-                    caption_lines = _find_table_caption_lines(sideways_page_text)
-                    collapsed_page_candidate = any(
-                        _looks_like_collapsed_grid_candidate(candidate)
-                        for candidate in page_candidates
-                    )
-                    sideways_signals: list[str] = []
-                    if page_width < page_height:
-                        sideways_signals.append("portrait_page")
-                    if page_rotation == 0:
-                        sideways_signals.append("page_rotation_zero")
-                    if vertical_confidence >= 0.75 and vertical_count >= max(8, horizontal_count * 2):
-                        sideways_signals.append("vertical_line_directions")
-                    if caption_lines:
-                        sideways_signals.append("table_caption_in_page_text")
-                    if collapsed_page_candidate:
-                        sideways_signals.append("collapsed_upright_candidate")
-                    is_sideways_page = (
-                        (
-                            page_width < page_height
-                            and page_rotation == 0
-                            and vertical_confidence >= 0.75
-                            and vertical_count >= max(8, horizontal_count * 2)
-                            and bool(caption_lines)
-                        )
-                        or (
-                            vertical_confidence >= 0.75
-                            and vertical_count >= 20
-                            and bool(caption_lines)
-                            and collapsed_page_candidate
-                        )
-                    )
-                    if is_sideways_page:
-                        rotation_direction = (
-                            "vertical_text_up"
-                            if vertical_up_count >= vertical_down_count
-                            else "vertical_text_down"
-                        )
-                        (
-                            transformed_words,
-                            transformed_chars,
-                            transformed_rule_segments,
-                            _transformed_bbox,
-                        ) = normalize_positioned_geometry_for_rotation(
-                            words=page_words,
-                            chars=page_chars,
-                            rule_segments=page_rule_segments,
-                            bbox=page_bbox,
-                            rotation_direction=rotation_direction,
-                        )
-                        sideways_candidates = build_text_layout_candidates(
-                            page_num=page_num,
-                            page_text=sideways_page_text,
-                            words=transformed_words,
-                            chars=transformed_chars,
-                            rule_segments=transformed_rule_segments,
-                            layout_source="sideways_text_positions",
-                            paper_table_mentions=paper_table_mentions,
-                        )
-                        for sideways_candidate in sideways_candidates:
-                            n_cols = _column_count(sideways_candidate)
-                            data_like_rows = sum(
-                                sum(
-                                    bool(re.search(r"\d", cell))
-                                    for cell in row[1:]
-                                    if cell.strip()
-                                )
-                                >= 2
-                                for row in sideways_candidate.raw_rows[1:]
-                            )
-                            if (
-                                len(sideways_candidate.raw_rows) < 4
-                                or n_cols < 3
-                                or data_like_rows < 2
-                            ):
-                                continue
-                            target_table_index = sideways_candidate.table_index
-                            sideways_table_number = sideways_candidate.metadata.get("table_number")
-                            same_number_candidates = [
-                                candidate
-                                for candidate in page_candidates
-                                if candidate.metadata.get("table_number") == sideways_table_number
-                                and sideways_table_number is not None
-                            ]
-                            if same_number_candidates:
-                                target_table_index = same_number_candidates[0].table_index
-                            elif len(sideways_candidates) == 1 and len(page_candidates) == 1:
-                                target_table_index = page_candidates[0].table_index
-                            replacement_candidate = sideways_candidate.model_copy(
-                                update={
-                                    "table_index": target_table_index,
-                                    "metadata": {
-                                        **sideways_candidate.metadata,
-                                        "primary_representation": "json",
-                                        "extractor_used": self.backend_name,
-                                        "fallback_used": True,
-                                        "orientation_strategy": "sideways_transformed",
-                                        "sideways_candidate": True,
-                                        "sideways_detection_signals": sideways_signals,
-                                        "sideways_vertical_confidence": round(vertical_confidence, 4),
-                                        "rotation_direction": rotation_direction,
-                                        "caption_detection_space": "transformed_coordinates",
-                                        "geometry_coordinate_frame": "page_sideways_transformed",
-                                        "geometry_source": "pymupdf_positioned_words_and_rules",
-                                        "canonical_extraction_layer": "pymupdf_positioned_geometry",
-                                        "geometry_transform_source_bbox": page_bbox,
-                                        "geometry_transform_transposed": False,
-                                        "geometry_transform_applied": True,
-                                        "grid_refinement_source": "sideways_text_positions",
-                                        "table_orientation": "rotated",
-                                        "rotation_source": "pymupdf_page_line_direction",
-                                        "rotation_confidence": round(vertical_confidence, 4),
-                                        "page_furniture_mask": page_item_furniture_mask,
-                                    },
-                                }
-                            )
-                            replaced_candidate = False
-                            for candidate_index, existing_candidate in enumerate(page_candidates):
-                                if existing_candidate.table_index != target_table_index:
-                                    continue
-                                higher_quality_replacement = (
-                                    replacement_candidate.score >= existing_candidate.score
-                                    and (
-                                        _column_count(replacement_candidate) > _column_count(existing_candidate)
-                                        or len(replacement_candidate.raw_rows) > len(existing_candidate.raw_rows)
-                                    )
-                                )
-                                structural_replacement = (
-                                    _looks_like_collapsed_grid_candidate(existing_candidate)
-                                    and replacement_candidate.score >= self.heuristic_confidence_threshold
-                                    and _column_count(replacement_candidate) > _column_count(existing_candidate)
-                                    and len(replacement_candidate.raw_rows) >= len(existing_candidate.raw_rows)
-                                )
-                                if higher_quality_replacement or structural_replacement:
-                                    page_candidates[candidate_index] = replacement_candidate
-                                    replaced_candidate = True
-                                break
-                            if not replaced_candidate:
-                                page_candidates.append(replacement_candidate)
                 if page_candidates:
-                    explicit_page_nums.add(page_num)
                     candidates.extend(page_candidates)
-
-            if pages and len(explicit_page_nums) == len(pages):
-                return candidates
 
             for page_index in range(getattr(document, "page_count", 0) if document is not None else 0):
                 page_num = page_index + 1
-                if page_num in explicit_page_nums:
+                if reference_start_page_num is not None and page_num >= reference_start_page_num:
                     continue
                 page = document.load_page(page_index)
                 payload_page = pages.get(page_num, {})
@@ -739,21 +547,31 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                 extracted_page_text = extract_page_text(page)
                 if extracted_page_text and extracted_page_text not in page_text:
                     page_text = f"{page_text}\n{extracted_page_text}".strip()
-                if references_start_page_num is not None and page_num >= references_start_page_num:
-                    continue
-                if text_has_reference_section_start(page_text):
-                    references_start_page_num = page_num
-                    continue
-                for candidate in build_text_layout_candidates(
+                page_words = extract_page_words(page)
+                page_chars = _extract_page_chars_with_page_num(page, page_num)
+                page_rule_segments = extract_page_rule_segments(page, include_filled=False)
+                text_layout_candidates = _build_column_band_text_layout_candidates(
                     page_num=page_num,
                     page_text=page_text,
-                    words=extract_page_words(page),
-                    chars=_extract_page_chars_with_page_num(page, page_num),
-                    rule_segments=extract_page_rule_segments(page, include_filled=False),
-                    layout_source="pymupdf_text_positions",
+                    words=page_words,
+                    chars=page_chars,
+                    rule_segments=page_rule_segments,
+                    paper_text_stream=paper_text_stream,
                     paper_page_furniture=paper_page_furniture,
                     paper_table_mentions=paper_table_mentions,
-                ):
+                )
+                if not text_layout_candidates:
+                    text_layout_candidates = build_text_layout_candidates(
+                        page_num=page_num,
+                        page_text=page_text,
+                        words=page_words,
+                        chars=page_chars,
+                        rule_segments=page_rule_segments,
+                        layout_source="pymupdf_text_positions",
+                        paper_page_furniture=paper_page_furniture,
+                        paper_table_mentions=paper_table_mentions,
+                    )
+                for candidate in text_layout_candidates:
                     candidates.append(
                         candidate.model_copy(
                             update={
@@ -826,84 +644,104 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
             metadata=metadata,
         )
 
-    def _rescue_low_quality_page_candidates(
-        self,
-        *,
-        page_num: int,
-        page: Any,
-        page_text: str,
-        page_candidates: list[DetectedTableCandidate],
-        paper_page_furniture: PaperPageFurniture | None = None,
-        paper_table_mentions: Sequence[PaperTableMention] | None = None,
-    ) -> list[DetectedTableCandidate]:
-        """Replace suspicious explicit page candidates with better text-layout candidates."""
-        if page is None or not any(
-            candidate.score < self.heuristic_confidence_threshold
-            and bool(candidate.metadata.get("signals", {}).get("caption_match", False))
-            and (
-                _column_count(candidate) <= 2
-                or _first_column_fill_ratio(candidate) < 0.25
-            )
-            for candidate in page_candidates
-        ):
-            return page_candidates
+def _build_column_band_text_layout_candidates(
+    *,
+    page_num: int,
+    page_text: str,
+    words: list[dict[str, object]],
+    chars: list[dict[str, object]],
+    rule_segments: list[tuple[float, float, float, float]],
+    paper_text_stream: PaperTextStream | None,
+    paper_page_furniture: PaperPageFurniture | None,
+    paper_table_mentions: Sequence[PaperTableMention] | None,
+) -> list[DetectedTableCandidate]:
+    """Build fallback table candidates separately inside caption-bearing column bands."""
+    if paper_text_stream is None or not paper_table_mentions or not words:
+        return []
+    page = next((page for page in paper_text_stream.pages if page.page_num == page_num), None)
+    if page is None or page.column_count <= 1 or len(page.column_bands) <= 1:
+        return []
+    line_by_id = {
+        line.line_id: line
+        for line in paper_text_stream.lines
+        if line.page_num == page_num
+    }
+    caption_band_indices: set[int] = set()
+    for mention in paper_table_mentions:
+        if mention.page_num != page_num or not mention.is_caption_candidate:
+            continue
+        source_line = line_by_id.get(mention.source_line_id)
+        if source_line is None:
+            continue
+        line_center = (float(source_line.bbox[0]) + float(source_line.bbox[2])) / 2.0
+        for band_index, (band_left, band_right) in enumerate(page.column_bands):
+            if float(band_left) - 2.0 <= line_center <= float(band_right) + 2.0:
+                caption_band_indices.add(band_index)
+                break
+    if len(caption_band_indices) < 2:
+        return []
 
-        rescue_candidates = build_text_layout_candidates(
+    candidates: list[DetectedTableCandidate] = []
+    for band_index in sorted(caption_band_indices):
+        band_left, band_right = page.column_bands[band_index]
+        left = float(band_left)
+        right = float(band_right)
+        band_words = [
+            word
+            for word in words
+            if left - 2.0 <= (float(word["x0"]) + float(word["x1"])) / 2.0 <= right + 2.0
+        ]
+        if not band_words:
+            continue
+        band_chars = [
+            char
+            for char in chars
+            if left - 2.0 <= (float(char["x0"]) + float(char["x1"])) / 2.0 <= right + 2.0
+        ]
+        band_rules: list[tuple[float, float, float, float]] = []
+        for x0, y0, x1, y1 in rule_segments:
+            rule_left = min(float(x0), float(x1))
+            rule_right = max(float(x0), float(x1))
+            overlap_left = max(left, rule_left)
+            overlap_right = min(right, rule_right)
+            if overlap_right <= overlap_left:
+                continue
+            band_rules.append((overlap_left, float(y0), overlap_right, float(y1)))
+        for candidate in build_text_layout_candidates(
             page_num=page_num,
-            page_text=page_text or extract_page_text(page),
-            words=extract_page_words(page),
-            chars=_extract_page_chars_with_page_num(page, page_num),
-            rule_segments=extract_page_rule_segments(page, include_filled=False),
-            layout_source="pymupdf_text_positions_rescue",
+            page_text=page_text,
+            words=band_words,
+            chars=band_chars,
+            rule_segments=band_rules,
+            layout_source="pymupdf_text_positions",
             paper_page_furniture=paper_page_furniture,
             paper_table_mentions=paper_table_mentions,
-        )
-        if not rescue_candidates:
-            return page_candidates
-
-        rescued: list[DetectedTableCandidate] = []
-        for candidate in page_candidates:
-            target_table_number = candidate.metadata.get("signals", {}).get("caption_table_number")
-            matching = [
-                rescue
-                for rescue in rescue_candidates
-                if rescue.metadata.get("signals", {}).get("caption_table_number") == target_table_number
-            ]
-            ranked = matching or rescue_candidates
-            if not ranked:
-                replacement = None
-            else:
-                best = sorted(
-                    ranked,
-                    key=lambda rescue: (-rescue.score, -_column_count(rescue), -len(rescue.raw_rows)),
-                )[0]
-                should_replace = (
-                    best.score >= self.heuristic_confidence_threshold
-                    and best.score > candidate.score
-                    and (
-                        _column_count(best) > _column_count(candidate)
-                        or _first_column_fill_ratio(best) > _first_column_fill_ratio(candidate) + 0.4
-                        or len(best.raw_rows) > len(candidate.raw_rows) + 5
-                    )
-                )
-                replacement = best if should_replace else None
-            if replacement is None:
-                rescued.append(candidate)
-                continue
-            rescued.append(
-                replacement.model_copy(
+        ):
+            candidates.append(
+                candidate.model_copy(
                     update={
-                        "table_index": candidate.table_index,
                         "metadata": {
-                            **replacement.metadata,
-                            "extractor_used": self.backend_name,
-                            "fallback_used": True,
-                            **_infer_table_orientation_metadata(page, replacement.bbox),
-                        },
+                            **candidate.metadata,
+                            "page_column_band_index": band_index,
+                            "page_column_band": [left, right],
+                            "page_column_band_source": "paper_text_stream_caption_columns",
+                        }
                     }
                 )
             )
-        return rescued
+    return [
+        candidate.model_copy(update={"table_index": index})
+        for index, candidate in enumerate(
+            sorted(
+                candidates,
+                key=lambda candidate: (
+                    float(candidate.bbox[1]) if candidate.bbox is not None else 0.0,
+                    float(candidate.bbox[0]) if candidate.bbox is not None else 0.0,
+                    candidate.table_index,
+                ),
+            )
+        )
+    ]
 
 
 def _build_rotated_block_candidate_from_mixed_table_box(
@@ -1291,6 +1129,7 @@ def _looks_like_value_matrix_word(text: str) -> bool:
 def _value_matrix_column_boundaries_from_lines(
     lines: list[dict[str, object]],
     horizontal_rules: list[float],
+    geometry_out: dict[str, object] | None = None,
 ) -> tuple[list[float], list[float]] | None:
     """Infer label/value column boundaries from repeated numeric line anchors."""
     if not lines:
@@ -1434,6 +1273,14 @@ def _value_matrix_column_boundaries_from_lines(
             for index in range(len(value_anchors) - 1)
         ],
     ]
+    if geometry_out is not None:
+        sorted_candidate_line_indices = sorted(candidate_line_indices)
+        geometry_out["value_matrix_candidate_line_indices"] = sorted_candidate_line_indices
+        geometry_out["value_matrix_first_body_line_index"] = (
+            sorted_candidate_line_indices[0]
+            if sorted_candidate_line_indices
+            else None
+        )
     return boundaries, value_anchors
 
 
@@ -1792,9 +1639,11 @@ def _rebuild_grid_from_positioned_bbox_words(
     if len(lines) < 2:
         return None
 
+    value_matrix_info: dict[str, object] = {}
     value_matrix_geometry = _value_matrix_column_boundaries_from_lines(
         lines,
         positioned_rules,
+        geometry_out=value_matrix_info,
     )
     if value_matrix_geometry is None:
         column_start_boundaries = None
@@ -1838,6 +1687,7 @@ def _rebuild_grid_from_positioned_bbox_words(
     if refined_col_count < 2 or populated_matrix_rows < 2 or value_like_rows < 1:
         return None
 
+    row_width = max((len(row) for row in refined_rows), default=0)
     if value_matrix_geometry is None:
         geometry_boundaries = grid_geometry.get("column_start_boundaries")
         geometry_value_anchors = grid_geometry.get("value_column_anchors")
@@ -1845,9 +1695,14 @@ def _rebuild_grid_from_positioned_bbox_words(
             column_start_boundaries = [float(boundary) for boundary in geometry_boundaries]
         if isinstance(geometry_value_anchors, list):
             value_anchors = [float(anchor) for anchor in geometry_value_anchors]
+    if (
+        column_start_boundaries
+        and len(column_start_boundaries) > row_width - 1
+        and keep_indices == list(range(len(keep_indices)))
+    ):
+        column_start_boundaries = column_start_boundaries[: max(0, row_width - 1)]
 
     header_row_geometry_roles: list[str] = []
-    row_width = max((len(row) for row in refined_rows), default=0)
     if (
         positioned_rules
         and column_start_boundaries
@@ -1855,38 +1710,61 @@ def _rebuild_grid_from_positioned_bbox_words(
         and len(column_start_boundaries) == row_width - 1
         and len(value_anchors) == row_width - 1
     ):
-        first_value_row_idx: int | None = None
-        for row_idx, row in enumerate(refined_rows):
-            value_cell_count = sum(
-                _looks_like_hline_table_value_word(cell)
-                for cell in row[1:]
-                if cell.strip()
-            )
-            if row and row[0].strip() and value_cell_count >= max(1, min(3, row_width - 1)):
-                first_value_row_idx = row_idx
-                break
-        if first_value_row_idx is not None and first_value_row_idx < len(lines):
-            first_value_top = float(lines[first_value_row_idx]["top"])
+        header_line_count: int | None = None
+        first_body_line_index = value_matrix_info.get("value_matrix_first_body_line_index")
+        if isinstance(first_body_line_index, int) and 0 <= first_body_line_index < len(lines):
+            first_body_top = float(lines[first_body_line_index]["top"])
             candidate_separator_rules = [
                 rule
                 for rule in positioned_rules
-                if rule < first_value_top - 0.5
+                if rule < first_body_top - 0.5
             ]
             if candidate_separator_rules:
                 separator_rule = max(candidate_separator_rules)
-                header_line_count = sum(
+                candidate_header_line_count = sum(
                     float(line["bottom"]) <= separator_rule + 2.0
                     for line in lines
                 )
-                if 0 < header_line_count < len(refined_rows):
-                    header_row_geometry_roles = apply_header_column_band_geometry(
-                        rows=refined_rows,
-                        bbox_rows=refined_cell_bboxes,
-                        lines=lines,
-                        header_line_count=header_line_count,
-                        boundaries=column_start_boundaries,
-                        value_anchors=value_anchors,
+                if 0 < candidate_header_line_count < len(refined_rows):
+                    header_line_count = candidate_header_line_count
+        if header_line_count is None:
+            for row_idx, row in enumerate(refined_rows):
+                value_cell_count = sum(
+                    _looks_like_hline_table_value_word(cell)
+                    for cell in row[1:]
+                    if cell.strip()
+                )
+                if (
+                    not row
+                    or not row[0].strip()
+                    or value_cell_count < max(1, min(3, row_width - 1))
+                    or row_idx >= len(lines)
+                ):
+                    continue
+                first_value_top = float(lines[row_idx]["top"])
+                candidate_separator_rules = [
+                    rule
+                    for rule in positioned_rules
+                    if rule < first_value_top - 0.5
+                ]
+                if candidate_separator_rules:
+                    separator_rule = max(candidate_separator_rules)
+                    candidate_header_line_count = sum(
+                        float(line["bottom"]) <= separator_rule + 2.0
+                        for line in lines
                     )
+                    if 0 < candidate_header_line_count < len(refined_rows):
+                        header_line_count = candidate_header_line_count
+                        break
+        if header_line_count is not None:
+            header_row_geometry_roles = apply_header_column_band_geometry(
+                rows=refined_rows,
+                bbox_rows=refined_cell_bboxes,
+                lines=lines,
+                header_line_count=header_line_count,
+                boundaries=column_start_boundaries,
+                value_anchors=value_anchors,
+            )
 
     return {
         "raw_rows": refined_rows,
@@ -2464,66 +2342,6 @@ def _refine_explicit_table_candidate_grid(
     if value_matrix_refinement is not None:
         return value_matrix_refinement
 
-    header_text = " ".join(
-        cell
-        for row in raw_rows[:2]
-        for cell in row
-        if isinstance(cell, str) and cell.strip()
-    )
-    if (
-        len(horizontal_rules) >= 3
-        and len(MODEL_HEADER_PATTERN.findall(header_text)) >= 2
-        and ESTIMATE_HEADER_PATTERN.search(header_text)
-    ):
-        refined_lines = build_word_lines(clipped_words)
-        header_boundary = horizontal_rules[1]
-        header_line_count = sum(
-            float(line["bottom"]) <= header_boundary + 2.0
-            for line in refined_lines
-        )
-        if 1 <= header_line_count < len(refined_lines):
-            refined_rows, refined_cell_bboxes = build_row_grid_from_lines(
-                refined_lines,
-                page_chars=clipped_chars,
-            )
-            if refined_rows:
-                keep_indices = [
-                    col_idx
-                    for col_idx in range(len(refined_rows[0]))
-                    if any(col_idx < len(row) and row[col_idx].strip() for row in refined_rows)
-                ]
-                if keep_indices:
-                    refined_rows = [
-                        [row[col_idx] for col_idx in keep_indices]
-                        for row in refined_rows
-                    ]
-                    refined_cell_bboxes = [
-                        [row[col_idx] for col_idx in keep_indices]
-                        for row in refined_cell_bboxes
-                    ]
-                if (
-                    len(refined_rows) >= len(raw_rows) + 2
-                    and max((len(row) for row in refined_rows), default=0)
-                    >= max((len(row) for row in raw_rows), default=0) + 2
-                ):
-                    return {
-                        "raw_rows": refined_rows,
-                        "table_cells": refined_cell_bboxes,
-                        "refined_table_cells": refined_cell_bboxes,
-                        "row_bounds": [
-                            (float(line["top"]), float(line["bottom"]))
-                            for line in refined_lines
-                        ],
-                        "horizontal_rules": horizontal_rules,
-                        "full_width_horizontal_rules": full_width_rules,
-                        "grid_refinement_source": "word_positions_with_horizontal_rules",
-                        "geometry_source": "pymupdf_positioned_words_and_rules",
-                        "geometry_coordinate_frame": "page",
-                        "geometry_transform_source_bbox": None,
-                        "geometry_transform_transposed": False,
-                        "geometry_transform_applied": False,
-                    }
-
     positioned_bbox_refinement = _rebuild_grid_from_positioned_bbox_words(
         clipped_words=clipped_words,
         clipped_chars=clipped_chars,
@@ -2644,29 +2462,6 @@ def _is_uncaptioned_front_matter_layout_candidate(
     if later_numeric_ratio >= 0.5 and len(candidate.raw_rows) >= 3:
         return False
     return True
-
-
-def _looks_like_collapsed_grid_candidate(candidate: DetectedTableCandidate) -> bool:
-    """Return whether a grid has collapsed several physical columns into wide cells."""
-    return (
-        _column_count(candidate) <= 4
-        and len(candidate.raw_rows) >= 3
-        and any(
-            len(str(cell).split()) >= 20
-            for row in candidate.raw_rows
-            for cell in row
-        )
-    )
-
-
-def _first_column_fill_ratio(candidate: DetectedTableCandidate) -> float:
-    """Measure how often the first column is populated in the extracted grid."""
-    if not candidate.raw_rows:
-        return 0.0
-    return round(
-        sum(bool(row and row[0].strip()) for row in candidate.raw_rows) / len(candidate.raw_rows),
-        4,
-    )
 
 
 def _collect_page_text(page_boxes: list[dict[str, Any]]) -> str:

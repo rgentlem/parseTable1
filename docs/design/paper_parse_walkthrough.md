@@ -132,9 +132,13 @@ markdown-derived sections retained as fallback. The layout reader uses one
 entry-boundary workflow: read page, column, then vertical position; start a new
 entry when the row returns to the column's left edge, either at a numeric label
 or at the first author/organization text in a hanging-indent list; keep indented
-rows as continuations across column and page boundaries. Table-cell
-reference-marker links are added later after cell text annotations are
-available.
+rows as continuations across column and page boundaries. When this
+purpose-built pass finds a bibliography, table extraction receives the
+bibliography's first page as a reference-region boundary and suppresses table
+candidates from that region. If this pass does not find a bibliography, table
+extraction receives no reference-section boundary and does not independently
+scan table text for `References`. Table-cell reference-marker links are added
+later after cell text annotations are available.
 
 `paper_table_mentions.json` is built from the page-furniture-filtered
 layout-aware text stream before table extraction. It records each observed
@@ -225,8 +229,11 @@ Why this is separate:
 ## Step 2: Table Extraction
 
 Before table extraction, the parser builds repeated page-furniture regions from
-positioned page text. The extraction layer receives those regions and is
-responsible for finding likely tables in the remaining PDF geometry and
+positioned page text, then builds paper sections, table mentions, and
+bibliography entries from the page-furniture-filtered document stream. The
+extraction layer receives page-furniture regions, caption/prose table-mention
+evidence, and, when a bibliography was found, the first reference-list page. It
+is responsible for finding likely tables in the remaining PDF geometry and
 recovering a raw grid for each one.
 
 Conceptually, this stage does four things:
@@ -316,13 +323,12 @@ For collapsed explicit grids, word-position refinement treats stable value colum
 
 That refinement is no longer limited to upright tables. For rotated explicit tables, extraction can normalize the clipped word and rule coordinates into a table-local upright frame, rebuild the row/column grid there, and then write the improved grid into `ExtractedTable` while preserving the original rotation metadata separately.
 
-Some PDFs draw visually landscape tables sideways on portrait pages without setting
-page-level rotation. For those pages, extraction may detect dominant vertical table
-text, transform the page geometry into a table-readable coordinate frame, run
-caption and layout detection in that transformed frame, and write a normal
-`ExtractedTable` with orientation metadata such as `orientation_strategy`,
-`sideways_candidate`, and `caption_detection_space`. This happens before
-normalization so downstream stages still consume ordinary table objects.
+Some PDFs draw visually landscape tables sideways on portrait pages without
+setting page-level rotation. Retained rotated support is table-local: extraction
+uses explicit or mixed table regions plus PyMuPDF directional text-block
+geometry, normalizes that table region into a readable coordinate frame, and
+writes a normal `ExtractedTable` with orientation metadata. The older
+page-wide sideways transformed candidate stream has been retired.
 
 The extractor still scores candidates, but the score is now diagnostic rather than a hard keep-drop gate for explicit extracted tables. The current rule is:
 
@@ -336,7 +342,9 @@ The extractor still scores candidates, but the score is now diagnostic rather th
   the remaining backend column geometry
 - suppress weak unnumbered candidates when their document position is impossible relative to confirmed numbered tables, such as before Table 1 or between consecutive Table 3 and Table 4 candidates, while preserving adjacent possible continuations for later schema checks
 - allow explicit-table grid refinement when rule and word geometry clearly support a better internal column structure
-- suppress backend table-like boxes once the document has entered a `References` or bibliography section, because reference lists are document metadata rather than epidemiology tables; any future reference parser should consume them as atomic citation records, not tokenized table cells
+- suppress table candidates at or after the bibliography start page when the
+  earlier purpose-built bibliography pass found one; the extractor itself does
+  not scan raw table/page text for `References`
 - suppress uncaptained backend table-like boxes inside the Abstract-to-Introduction front-matter interval unless they have real table identity or strong value-matrix evidence
 - require page-text-layout fallback candidates to have a real table-number/caption signal unless their reconstructed grid has strong table geometry: at least three columns, at least four rows, a header-like top row, stable multi-column alignment, and multiple rows with data-like trailing cells
 - when a text-position fallback caption wraps onto the next line, keep a short caption continuation line with the table label, and also keep a lowercase sentence fragment ending in punctuation with the caption instead of treating it as the first table row
@@ -385,7 +393,11 @@ geometry-derived subregion rather than the full backend table box.
 
 For explicit tables, extraction may also record the visible first-word x-position for each first-column row label. This exists because backend cell boxes often describe the full column boundary, while the actual text inside that cell may be indented. Normalization uses that compact word-position metadata for indentation inference while preserving the original cell boxes as grid geometry.
 
-For text-position fallback and sideways-transformed candidates, extraction may preserve recovered cell text bounding boxes directly in `table_cells`. These boxes are in the same coordinate frame as the recovered grid and allow normalization to infer row-label indentation even when the backend did not emit explicit table cells.
+For text-position fallback candidates and rotated table-local refinements,
+extraction may preserve recovered cell text bounding boxes directly in
+`table_cells`. These boxes are in the same coordinate frame as the recovered
+grid and allow normalization to infer row-label indentation even when the
+backend did not emit explicit table cells.
 
 ### Why `ExtractedTable` Exists
 
@@ -1110,6 +1122,12 @@ following hanging-indent continuations. This artifact is per-paper only: it
 keeps labels and raw/clean entry text as separate entities without DOI lookup,
 author normalization, cross-paper deduplication, or any corpus-level reference
 store.
+
+The bibliography pass is also the only stage that discovers the reference-list
+region for table extraction. If it finds entries, the parse flow passes the
+first bibliography page into extraction so references cannot become tables. If
+it finds no entries, no bibliography-derived table suppression is applied.
+Extraction does not run a separate raw-text `References` detector.
 
 After table extraction and cell text annotation, numeric table-cell markers that
 look like bibliography references can be linked to those bibliography entries.
