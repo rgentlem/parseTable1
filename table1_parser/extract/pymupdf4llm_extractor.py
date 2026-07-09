@@ -8,6 +8,7 @@ import json
 import re
 from pathlib import Path
 from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import Any
 
 from table1_parser.config import Settings
@@ -43,7 +44,14 @@ from table1_parser.page_furniture_mask import (
     filter_table_rows_for_page_furniture,
     page_furniture_cluster_ids_for_bbox,
 )
-from table1_parser.schemas import ExtractedTable, PaperPageFurniture, PaperTableMention, PaperTextStream, TableCell
+from table1_parser.schemas import (
+    BibliographyEntry,
+    ExtractedTable,
+    PaperPageFurniture,
+    PaperTableMention,
+    PaperTextStream,
+    TableCell,
+)
 from table1_parser.text_cleaning import clean_text
 
 
@@ -53,6 +61,151 @@ INTRODUCTION_HEADING_PATTERN = re.compile(
 )
 CAPTION_LINK_MAX_DISTANCE = 120.0
 CAPTION_BOUNDARY_TOLERANCE = 2.0
+
+
+@dataclass(slots=True)
+class BibliographyEvidenceMask:
+    """Page-local bibliography-owned evidence used before table candidate construction."""
+
+    page_num: int
+    source_line_ids: set[str]
+    source_line_keys: set[tuple[int, int]]
+    line_regions: list[tuple[float, float, float, float]]
+    entry_regions: list[tuple[float, float, float, float]]
+
+
+def _bibliography_evidence_masks_by_page(
+    bibliography_entries: Sequence[BibliographyEntry] | None,
+    paper_text_stream: PaperTextStream | None,
+) -> dict[int, BibliographyEvidenceMask]:
+    """Build page-local masks from bibliography-owned source lines and entry bboxes."""
+    if not bibliography_entries:
+        return {}
+    line_by_id = {
+        line.line_id: line
+        for line in (paper_text_stream.lines if paper_text_stream is not None else [])
+    }
+    source_line_ids_by_page: dict[int, set[str]] = {}
+    source_line_keys_by_page: dict[int, set[tuple[int, int]]] = {}
+    line_regions_by_page: dict[int, list[tuple[float, float, float, float]]] = {}
+    entry_regions_by_page: dict[int, list[tuple[float, float, float, float]]] = {}
+    for entry in bibliography_entries:
+        entry_pages = [int(page_num) for page_num in entry.page_nums if page_num is not None]
+        entry_bbox = _as_bbox(entry.bbox)
+        for source_line_id in entry.source_line_ids:
+            line = line_by_id.get(source_line_id)
+            if line is None:
+                continue
+            page_num = int(line.page_num)
+            source_line_ids_by_page.setdefault(page_num, set()).add(source_line_id)
+            line_regions_by_page.setdefault(page_num, []).append(line.bbox)
+            if line.block_index is not None and line.line_index is not None:
+                source_line_keys_by_page.setdefault(page_num, set()).add((line.block_index, line.line_index))
+        if entry_bbox is not None:
+            for page_num in entry_pages:
+                entry_regions_by_page.setdefault(page_num, []).append(entry_bbox)
+
+    page_nums = (
+        set(source_line_ids_by_page)
+        | set(source_line_keys_by_page)
+        | set(line_regions_by_page)
+        | set(entry_regions_by_page)
+    )
+    masks: dict[int, BibliographyEvidenceMask] = {}
+    for page_num in sorted(page_nums):
+        masks[page_num] = BibliographyEvidenceMask(
+            page_num=page_num,
+            source_line_ids=source_line_ids_by_page.get(page_num, set()),
+            source_line_keys=source_line_keys_by_page.get(page_num, set()),
+            line_regions=line_regions_by_page.get(page_num, []),
+            entry_regions=entry_regions_by_page.get(page_num, []),
+        )
+    return masks
+
+
+def _filter_positioned_items_for_bibliography(
+    items: list[dict[str, object]],
+    bibliography_mask: BibliographyEvidenceMask | None,
+    *,
+    item_kind: str,
+) -> tuple[list[dict[str, object]], dict[str, object] | None]:
+    """Remove positioned text items owned by the bibliography before table detection."""
+    if bibliography_mask is None or not items:
+        return items, None
+    regions = bibliography_mask.line_regions or bibliography_mask.entry_regions
+    if not regions and not bibliography_mask.source_line_keys:
+        return items, None
+    filtered_items: list[dict[str, object]] = []
+    removed_by_line_key = 0
+    removed_by_region_center = 0
+    for item in items:
+        remove_item = False
+        if item_kind == "char":
+            block_index = _optional_int(item.get("block_index"))
+            line_index = _optional_int(item.get("line_index"))
+            if (
+                block_index is not None
+                and line_index is not None
+                and (block_index, line_index) in bibliography_mask.source_line_keys
+            ):
+                remove_item = True
+                removed_by_line_key += 1
+        if not remove_item:
+            bbox = _positioned_item_bbox(item)
+            if bbox is not None and _bbox_center_inside_any_region(bbox, regions):
+                remove_item = True
+                removed_by_region_center += 1
+        if remove_item:
+            continue
+        filtered_items.append(item)
+
+    removed_count = len(items) - len(filtered_items)
+    if removed_count == 0:
+        return items, None
+    return filtered_items, {
+        "source_artifact": "paper_bibliography.json",
+        "page_num": bibliography_mask.page_num,
+        "removed_count": removed_count,
+        "kept_count": len(filtered_items),
+        "source_line_id_count": len(bibliography_mask.source_line_ids),
+        "line_region_count": len(bibliography_mask.line_regions),
+        "entry_region_count": len(bibliography_mask.entry_regions),
+        "removed_by_source_line_key": removed_by_line_key,
+        "removed_by_region_center": removed_by_region_center,
+    }
+
+
+def _positioned_item_bbox(item: dict[str, object]) -> tuple[float, float, float, float] | None:
+    try:
+        return (
+            float(item["x0"]),
+            float(item["top"]),
+            float(item["x1"]),
+            float(item["bottom"]),
+        )
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+def _bbox_center_inside_any_region(
+    bbox: tuple[float, float, float, float],
+    regions: Sequence[tuple[float, float, float, float]],
+) -> bool:
+    if not regions:
+        return False
+    center_x = (bbox[0] + bbox[2]) / 2.0
+    center_y = (bbox[1] + bbox[3]) / 2.0
+    return any(
+        left <= center_x <= right and top <= center_y <= bottom
+        for left, top, right, bottom in regions
+    )
+
+
+def _optional_int(value: object) -> int | None:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
 
 
 class PyMuPDF4LLMExtractor(BaseExtractor):
@@ -80,7 +233,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
         paper_page_furniture: PaperPageFurniture | None = None,
         paper_table_mentions: Sequence[PaperTableMention] | None = None,
         paper_text_stream: PaperTextStream | None = None,
-        reference_start_page_num: int | None = None,
+        bibliography_entries: Sequence[BibliographyEntry] | None = None,
     ) -> list[ExtractedTable]:
         """Extract and rank raw table candidates from a PDF."""
         try:
@@ -89,7 +242,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                 paper_page_furniture=paper_page_furniture,
                 paper_table_mentions=paper_table_mentions,
                 paper_text_stream=paper_text_stream,
-                reference_start_page_num=reference_start_page_num,
+                bibliography_entries=bibliography_entries,
             )
         except Exception:
             return []
@@ -147,7 +300,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
         paper_page_furniture: PaperPageFurniture | None = None,
         paper_table_mentions: Sequence[PaperTableMention] | None = None,
         paper_text_stream: PaperTextStream | None = None,
-        reference_start_page_num: int | None = None,
+        bibliography_entries: Sequence[BibliographyEntry] | None = None,
     ) -> list[DetectedTableCandidate]:
         try:
             import pymupdf4llm
@@ -171,10 +324,12 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
         except Exception:
             document = None
         try:
+            bibliography_masks_by_page = _bibliography_evidence_masks_by_page(
+                bibliography_entries,
+                paper_text_stream,
+            )
             front_matter_intervals = _front_matter_intervals_by_page(document)
             for page_num, payload_page in sorted(pages.items()):
-                if reference_start_page_num is not None and page_num >= reference_start_page_num:
-                    continue
                 page = None
                 if document is not None and 0 <= page_num - 1 < getattr(document, "page_count", 0):
                     page = document.load_page(page_num - 1)
@@ -203,6 +358,16 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                         paper_page_furniture,
                         page_num=page_num,
                     )
+                    page_words, page_word_bibliography_mask_metadata = _filter_positioned_items_for_bibliography(
+                        page_words,
+                        bibliography_masks_by_page.get(page_num),
+                        item_kind="word",
+                    )
+                    page_chars, page_char_bibliography_mask_metadata = _filter_positioned_items_for_bibliography(
+                        page_chars,
+                        bibliography_masks_by_page.get(page_num),
+                        item_kind="char",
+                    )
                     page_rule_segments = extract_page_rule_segments(page)
                     page_stroked_rule_segments = extract_page_rule_segments(page, include_filled=False)
                 page_item_furniture_mask = {
@@ -210,6 +375,14 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                     for key, value in {
                         "word_items": page_word_mask_metadata,
                         "char_items": page_char_mask_metadata,
+                    }.items()
+                    if value is not None
+                }
+                page_item_bibliography_mask = {
+                    key: value
+                    for key, value in {
+                        "word_items": page_word_bibliography_mask_metadata if page is not None else None,
+                        "char_items": page_char_bibliography_mask_metadata if page is not None else None,
                     }.items()
                     if value is not None
                 }
@@ -482,6 +655,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                                     }.items()
                                     if value is not None
                                 },
+                                "bibliography_evidence_mask": page_item_bibliography_mask or None,
                                 **orientation_metadata,
                             },
                         )
@@ -538,8 +712,6 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
 
             for page_index in range(getattr(document, "page_count", 0) if document is not None else 0):
                 page_num = page_index + 1
-                if reference_start_page_num is not None and page_num >= reference_start_page_num:
-                    continue
                 page = document.load_page(page_index)
                 payload_page = pages.get(page_num, {})
                 page_boxes = payload_page.get("boxes", []) or []
@@ -549,6 +721,17 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                     page_text = f"{page_text}\n{extracted_page_text}".strip()
                 page_words = extract_page_words(page)
                 page_chars = _extract_page_chars_with_page_num(page, page_num)
+                bibliography_mask = bibliography_masks_by_page.get(page_num)
+                page_words, page_word_bibliography_mask_metadata = _filter_positioned_items_for_bibliography(
+                    page_words,
+                    bibliography_mask,
+                    item_kind="word",
+                )
+                page_chars, page_char_bibliography_mask_metadata = _filter_positioned_items_for_bibliography(
+                    page_chars,
+                    bibliography_mask,
+                    item_kind="char",
+                )
                 page_rule_segments = extract_page_rule_segments(page, include_filled=False)
                 text_layout_candidates = _build_column_band_text_layout_candidates(
                     page_num=page_num,
@@ -572,6 +755,14 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                         paper_table_mentions=paper_table_mentions,
                     )
                 for candidate in text_layout_candidates:
+                    bibliography_mask_metadata = {
+                        key: value
+                        for key, value in {
+                            "word_items": page_word_bibliography_mask_metadata,
+                            "char_items": page_char_bibliography_mask_metadata,
+                        }.items()
+                        if value is not None
+                    }
                     candidates.append(
                         candidate.model_copy(
                             update={
@@ -580,6 +771,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                                     "primary_representation": "json",
                                     "extractor_used": self.backend_name,
                                     "fallback_used": False,
+                                    "bibliography_evidence_mask": bibliography_mask_metadata or None,
                                     **_infer_table_orientation_metadata(page, candidate.bbox),
                                 }
                             }

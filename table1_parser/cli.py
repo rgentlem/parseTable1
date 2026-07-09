@@ -260,7 +260,7 @@ def _extract_tables_with_context(
         parameter.kind == inspect.Parameter.VAR_KEYWORD
         for parameter in signature.parameters.values()
     )
-    supports_reference_start = "reference_start_page_num" in signature.parameters or any(
+    supports_bibliography_entries = "bibliography_entries" in signature.parameters or any(
         parameter.kind == inspect.Parameter.VAR_KEYWORD
         for parameter in signature.parameters.values()
     )
@@ -271,24 +271,9 @@ def _extract_tables_with_context(
         keyword_arguments["paper_table_mentions"] = paper_table_mentions
     if supports_text_stream:
         keyword_arguments["paper_text_stream"] = paper_text_stream
-    if supports_reference_start:
-        keyword_arguments["reference_start_page_num"] = _reference_start_page_num_from_bibliography_entries(
-            bibliography_entries or []
-        )
+    if supports_bibliography_entries:
+        keyword_arguments["bibliography_entries"] = bibliography_entries
     return extract(pdf_path, **keyword_arguments)
-
-
-def _reference_start_page_num_from_bibliography_entries(
-    bibliography_entries: Sequence[BibliographyEntry],
-) -> int | None:
-    """Return the first page occupied by the early bibliography artifact."""
-    page_nums = [
-        page_num
-        for entry in bibliography_entries
-        for page_num in entry.page_nums
-        if page_num is not None
-    ]
-    return min(page_nums, default=None)
 
 
 def _extract_payload(tables: list[ExtractedTable]) -> list[dict[str, object]]:

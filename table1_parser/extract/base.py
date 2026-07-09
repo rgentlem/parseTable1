@@ -6,7 +6,13 @@ from abc import ABC, abstractmethod
 
 from collections.abc import Sequence
 
-from table1_parser.schemas import ExtractedTable, PaperPageFurniture, PaperTableMention, PaperTextStream
+from table1_parser.schemas import (
+    BibliographyEntry,
+    ExtractedTable,
+    PaperPageFurniture,
+    PaperTableMention,
+    PaperTextStream,
+)
 
 
 class BaseExtractor(ABC):
@@ -20,6 +26,6 @@ class BaseExtractor(ABC):
         paper_page_furniture: PaperPageFurniture | None = None,
         paper_table_mentions: Sequence[PaperTableMention] | None = None,
         paper_text_stream: PaperTextStream | None = None,
-        reference_start_page_num: int | None = None,
+        bibliography_entries: Sequence[BibliographyEntry] | None = None,
     ) -> list[ExtractedTable]:
         """Extract tables from a PDF into canonical extracted-table models."""

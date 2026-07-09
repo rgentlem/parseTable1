@@ -27,11 +27,11 @@ Markdown-derived sections are retained only as a fallback when the positioned
 stream cannot produce entries. Later table-cell annotation and footnote
 processing can then link numeric table markers to already-known numbered
 bibliography entries. The same bibliography pass is the only source of the
-reference-region boundary used by table extraction: when entries are found,
-table extraction receives the first bibliography page and suppresses later
-table candidates; when entries are not found, no bibliography-derived
-suppression is applied. The extractor must not run a separate raw-text
-`References` scan.
+reference-region evidence used by table extraction: when entries are found,
+table extraction receives bibliography-owned source-line IDs and entry bboxes
+and removes positioned bibliography words/chars before candidate construction;
+when entries are not found, no bibliography-derived suppression is applied. The
+extractor must not run a separate raw-text `References` scan.
 
 The implemented flow is:
 
@@ -42,7 +42,7 @@ PDF
 -> paper_markdown.md
 -> paper_sections.json
 -> bibliography entries from positioned text
--> bibliography start page passed to table extraction when entries are found
+-> bibliography-owned line/entry evidence passed to table extraction when entries are found
 -> table extraction and cell text annotations
 -> bibliography reference-marker links
 -> paper_bibliography.json

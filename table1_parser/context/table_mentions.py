@@ -27,16 +27,26 @@ PROSE_VERB_AFTER_PATTERN = re.compile(
     r"illustrates?|contains?|details?|examines?|depicts?|indicates?|reveals?)\b",
     re.IGNORECASE,
 )
+SUPPLEMENTARY_INFORMATION_HEADING_PATTERN = re.compile(
+    r"\bsupplement(?:ary|al)?\s+information\b",
+    re.IGNORECASE,
+)
 
 
 def build_paper_table_mentions(paper_text_stream: object) -> list[PaperTableMention]:
     """Build pre-extraction table mention records from layout-aware paper text."""
     lines = list(getattr(paper_text_stream, "lines", []) or [])
     mentions: list[PaperTableMention] = []
+    active_heading = ""
     for line_index, line in enumerate(lines):
         text = clean_text(getattr(line, "text", ""))
         if not text:
             continue
+        line_notes = list(getattr(line, "notes", []) or [])
+        line_is_heading = getattr(line, "role", "body") == "heading" or "layout_section_heading" in line_notes
+        in_supplementary_information = bool(
+            active_heading and SUPPLEMENTARY_INFORMATION_HEADING_PATTERN.search(active_heading)
+        )
         for match_index, match in enumerate(TABLE_MENTION_PATTERN.finditer(text)):
             if not match.group("label"):
                 continue
@@ -46,7 +56,6 @@ def build_paper_table_mentions(paper_text_stream: object) -> list[PaperTableMent
             local_suffix = clean_text(text[match.end() :])
             previous_text = clean_text(getattr(previous_line, "text", "")) if previous_line is not None else ""
             line_starts_with_label = CAPTION_LINE_START_PATTERN.match(text) is not None and match.start() <= 2
-            line_notes = list(getattr(line, "notes", []) or [])
             bold_or_heading = getattr(line, "role", "body") == "heading" or "bold_like_text" in line_notes
             cue: str | None = None
             if CONTINUATION_PATTERN.search(text):
@@ -89,26 +98,41 @@ def build_paper_table_mentions(paper_text_stream: object) -> list[PaperTableMent
             ]
             context_text = clean_text(" ".join(str(getattr(context_line, "text", "")) for context_line in context_lines))
             for table_number in _table_numbers(match.group("numbers")):
+                table_mention_kind = mention_kind
+                table_cue = cue
+                table_confidence = confidence
+                notes = _mention_notes(line_starts_with_label, bold_or_heading)
+                if (
+                    mention_kind == "caption_candidate"
+                    and table_number.startswith("S")
+                    and in_supplementary_information
+                ):
+                    table_mention_kind = "prose_reference"
+                    table_cue = "supplementary_information_table_listing"
+                    table_confidence = 0.9
+                    notes.append("supplementary_information_table_listing")
                 mentions.append(
                     PaperTableMention(
                         mention_id=f"paper_table_mention:{getattr(line, 'line_id', line_index)}:{match_index}:{table_number}",
                         table_number=table_number,
                         table_label=f"Table {table_number}",
-                        mention_kind=mention_kind,
+                        mention_kind=table_mention_kind,
                         page_num=int(getattr(line, "page_num")),
                         line_ids=[str(getattr(context_line, "line_id")) for context_line in context_lines],
                         source_line_id=str(getattr(line, "line_id")),
                         source_line_text=text,
                         context_text=context_text,
                         matched_text=match.group("label"),
-                        cue=cue,
-                        is_caption_candidate=mention_kind in {"caption_candidate", "continuation_label"},
+                        cue=table_cue,
+                        is_caption_candidate=table_mention_kind in {"caption_candidate", "continuation_label"},
                         source_line_role=str(getattr(line, "role", "body")),
                         source_line_notes=line_notes,
-                        confidence=confidence,
-                        notes=_mention_notes(line_starts_with_label, bold_or_heading),
+                        confidence=table_confidence,
+                        notes=notes,
                     )
                 )
+        if line_is_heading:
+            active_heading = text
     return mentions
 
 

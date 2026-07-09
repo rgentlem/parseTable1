@@ -133,12 +133,13 @@ entry-boundary workflow: read page, column, then vertical position; start a new
 entry when the row returns to the column's left edge, either at a numeric label
 or at the first author/organization text in a hanging-indent list; keep indented
 rows as continuations across column and page boundaries. When this
-purpose-built pass finds a bibliography, table extraction receives the
-bibliography's first page as a reference-region boundary and suppresses table
-candidates from that region. If this pass does not find a bibliography, table
-extraction receives no reference-section boundary and does not independently
-scan table text for `References`. Table-cell reference-marker links are added
-later after cell text annotations are available.
+purpose-built pass finds a bibliography, table extraction receives
+bibliography-owned source-line IDs and entry bboxes so positioned bibliography
+words/chars can be removed before table candidates are built. If this pass does
+not find a bibliography, table extraction receives no reference-section evidence
+and does not independently scan table text for `References`. Table-cell
+reference-marker links are added later after cell text annotations are
+available.
 
 `paper_table_mentions.json` is built from the page-furniture-filtered
 layout-aware text stream before table extraction. It records each observed
@@ -232,9 +233,9 @@ Before table extraction, the parser builds repeated page-furniture regions from
 positioned page text, then builds paper sections, table mentions, and
 bibliography entries from the page-furniture-filtered document stream. The
 extraction layer receives page-furniture regions, caption/prose table-mention
-evidence, and, when a bibliography was found, the first reference-list page. It
-is responsible for finding likely tables in the remaining PDF geometry and
-recovering a raw grid for each one.
+evidence, and, when a bibliography was found, bibliography-owned source-line and
+entry-bbox evidence. It is responsible for finding likely tables in the
+remaining PDF geometry and recovering a raw grid for each one.
 
 Conceptually, this stage does four things:
 
@@ -342,9 +343,9 @@ The extractor still scores candidates, but the score is now diagnostic rather th
   the remaining backend column geometry
 - suppress weak unnumbered candidates when their document position is impossible relative to confirmed numbered tables, such as before Table 1 or between consecutive Table 3 and Table 4 candidates, while preserving adjacent possible continuations for later schema checks
 - allow explicit-table grid refinement when rule and word geometry clearly support a better internal column structure
-- suppress table candidates at or after the bibliography start page when the
-  earlier purpose-built bibliography pass found one; the extractor itself does
-  not scan raw table/page text for `References`
+- remove bibliography-owned positioned words/chars before table candidates are
+  constructed when the earlier purpose-built bibliography pass found entries;
+  the extractor itself does not scan raw table/page text for `References`
 - suppress uncaptained backend table-like boxes inside the Abstract-to-Introduction front-matter interval unless they have real table identity or strong value-matrix evidence
 - require page-text-layout fallback candidates to have a real table-number/caption signal unless their reconstructed grid has strong table geometry: at least three columns, at least four rows, a header-like top row, stable multi-column alignment, and multiple rows with data-like trailing cells
 - when a text-position fallback caption wraps onto the next line, keep a short caption continuation line with the table label, and also keep a lowercase sentence fragment ending in punctuation with the caption instead of treating it as the first table row
@@ -1107,7 +1108,10 @@ This artifact is used as extraction evidence, not as a table source. A line
 beginning with `Table 5.` is rejected as a fallback table start when the previous
 line makes the sentence read as `... is shown in Table 5.`. Bold-like or
 heading-like text-stream evidence is preserved in line notes and can support a
-caption candidate, but it does not by itself create a table.
+caption candidate, but it does not by itself create a table. Line-initial
+`Table S...` listings under an active `Supplementary Information` heading are
+classified as `prose_reference`, not `caption_candidate`, because they describe
+external supplementary material rather than an extractable in-paper table.
 
 ### `paper_bibliography.json`
 
@@ -1123,11 +1127,12 @@ keeps labels and raw/clean entry text as separate entities without DOI lookup,
 author normalization, cross-paper deduplication, or any corpus-level reference
 store.
 
-The bibliography pass is also the only stage that discovers the reference-list
-region for table extraction. If it finds entries, the parse flow passes the
-first bibliography page into extraction so references cannot become tables. If
-it finds no entries, no bibliography-derived table suppression is applied.
-Extraction does not run a separate raw-text `References` detector.
+The bibliography pass is also the only stage that discovers reference-list
+evidence for table extraction. If it finds entries, the parse flow passes
+bibliography-owned source-line IDs and entry bboxes into extraction so
+references cannot become table-candidate evidence. If it finds no entries, no
+bibliography-derived table suppression is applied. Extraction does not run a
+separate raw-text `References` detector.
 
 After table extraction and cell text annotation, numeric table-cell markers that
 look like bibliography references can be linked to those bibliography entries.

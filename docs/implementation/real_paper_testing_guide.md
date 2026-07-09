@@ -28,11 +28,11 @@ All paper paths below are relative to:
 Latest reference run:
 
 ```text
-outputs/testpapers_batch_20260708_comma_body_evidence
+outputs/testpapers_batch_20260709_bib_region_mask
 ```
 
 The current refreshed baseline is
-`outputs/testpapers_batch_20260708_comma_body_evidence`. It was produced after
+`outputs/testpapers_batch_20260709_bib_region_mask`. It was produced after
 the PyMuPDF layout-aware text stream became the source of document order for
 sections and reference lists, and after table-local caption/footer note blocks
 began splitting footnote definitions from structured marker evidence, including
@@ -45,13 +45,14 @@ hanging-indent reference lists through one positioned stream, supports
 references split across columns and pages, treats numbered offset labels as the
 same entry-start structure as unnumbered hanging-indent entries, and does not
 require bibliographies to be numbered. The purpose-built bibliography pass now
-owns the reference-region boundary used by table extraction: when it finds a
-bibliography, extraction receives the first bibliography page and suppresses
-later table candidates; if it finds no bibliography, extraction does not run a
-separate raw-text `References` scan. Credible ruled table candidates can also
-be rebuilt from PyMuPDF word positions and stroked horizontal rules instead of
-using the PyMuPDF4LLM grid as the sole row/column structure. The current run
-also adds a pre-extraction `paper_table_mentions.json` pass that classifies
+owns the reference-region evidence used by table extraction: when it finds a
+bibliography, extraction receives bibliography entry source-line IDs and bboxes
+and removes bibliography-owned words/chars before table candidate construction;
+if it finds no bibliography, extraction does not run a separate raw-text
+`References` scan. Credible ruled table candidates can also be rebuilt from
+PyMuPDF word positions and stroked horizontal rules instead of using the
+PyMuPDF4LLM grid as the sole row/column structure. The current run also adds a
+pre-extraction `paper_table_mentions.json` pass that classifies
 `Table N` lines as caption candidates, continuation labels, or prose references
 from the page-furniture-filtered text stream. Text-position fallback now
 consumes that artifact and rejects numeric-anchor grids whose value region is
@@ -118,50 +119,50 @@ Current footnote summary:
 PDFs: 27
 parse command failures: 0
 paper_footnotes:
-  anchors: 441
-  definitions: 208
-  links: 441
-  resolved links: 441
+  anchors: 442
+  definitions: 211
+  links: 442
+  resolved links: 442
   inferred links: 0
   ambiguous links: 0
   unresolved links: 0
-  math/unit anchors suppressed before footnote linking: 35
-  subscript anchors suppressed before footnote linking: 5
+  math/unit anchors suppressed before footnote linking: 36
+  subscript anchors suppressed before footnote linking: 7
   word-like subscript anchors suppressed before footnote linking: 0
-  citation-like anchors suppressed before footnote linking: 18
-  non-footnote symbol anchors suppressed before footnote linking: 2
-  PDF text blocks classified as table footers: 44
-  extracted-table footer records: 10
+  citation-like anchors suppressed before footnote linking: 19
+  non-footnote symbol anchors suppressed before footnote linking: 0
+  PDF text blocks classified as table footers: 45
+  extracted-table footer records: 12
   page-furniture filter stage: before_pdf_definition_block_construction (27 papers)
 extraction page-furniture mask:
-  extracted tables with mask metadata: 73
-  page words removed before extraction/refinement: 1106
-  page chars removed before extraction/refinement: 8802
+  extracted tables with mask metadata: 76
+  page words removed before extraction/refinement: 1134
+  page chars removed before extraction/refinement: 8989
   explicit-grid rows removed by page-furniture mask: 0
 ```
 
 Current papers with unresolved or ambiguous footnote links:
 
-- None in `outputs/testpapers_batch_20260708_comma_body_evidence`.
+- None in `outputs/testpapers_batch_20260709_bib_region_mask`.
 
 Current extraction/status summary:
 
 ```text
 PDFs: 27
 parse command failures: 0
-extracted tables: 79
+extracted tables: 82
 extraction geometry:
   hline_word_positions: 24
   collapsed_explicit_grid_word_positions: 2
   pymupdf_positioned_bbox_words: 35
   value_matrix_word_positions: 8
   text_position_column_geometry: 4
-  rotated_word_positions_with_rules: 6
+  rotated_word_positions_with_rules: 9
 canonical extraction layer:
-  pymupdf_positioned_geometry: 79
+  pymupdf_positioned_geometry: 82
 table_processing_status:
-  ok: 20
-  rescued: 51
+  ok: 21
+  rescued: 53
   failed: 0
 empty-grid invariant:
   extracted tables with all-empty rows: 0
@@ -177,13 +178,23 @@ Current table-mention summary:
 ```text
 paper_table_mentions:
   total mentions: 318
-  prose_reference: 240
-  caption_candidate: 70
+  prose_reference: 244
+  caption_candidate: 66
   continuation_label: 8
+  Table S listings under Supplementary Information: 4 prose_reference
+caption candidates without same-page extracted tables:
+  periodontis2 Table 1, Table 3, Table 4
+  Uses of NHANES Biomarker Data for Chemical Risk Assessment- Trends, Challenges, and Opportunities Table 1
 periodontis2 page 6:
   Table 4 shows... -> prose_reference, same_line_prose_verb_after
   ... is shown in / Table 5. At ... -> prose_reference, previous_line_prose_cue_before
   extracted page-6 table candidates: 0
+periodontis2 post-reference tables:
+  Table 2 and Table 5 are extracted after the bibliography because extraction no
+  longer suppresses every page at or after the first bibliography page.
+Supplementary Information listings:
+  metabolic Table S2 -> prose_reference, supplementary_information_table_listing
+  periodontitis Table S1/S2/S3 -> prose_reference, supplementary_information_table_listing
 known weak bucket:
   line_initial_table_label without bold/heading evidence can still include
   false positives such as Eke `Table 2 also shows...`; current policy is to
@@ -265,8 +276,8 @@ Resolved since the prior baseline:
   uses `All-cause mortality` and `Cardiovascular mortality` as leaves with the
   AUC text as upper groups, Systemic inflammation p5/p6 no longer splits the
   hypertension cohort labels across leaves, and EWAS p6-t0 keeps `OR (95% CI)`
-  together. The full run has 27 parsed PDFs, 79 extracted tables, 0 backend
-  JSON grid survivors, 441 resolved / 0 unresolved footnote links, and 1308
+  together. The full run has 27 parsed PDFs, 82 extracted tables, 0 backend
+  JSON grid survivors, 442 resolved / 0 unresolved footnote links, and 1308
   bibliography entries with 0 empty bibliographies. The current
   empty-grid cleanup check found 0 all-empty extracted or normalized rows and
   0 trailing all-empty extracted or normalized columns.
@@ -319,7 +330,7 @@ For each checklist item:
     were resolved, and Table 2 asterisk p-value markers became conventional
     `inferred` links rather than unresolved footnotes.
   - Current result:
-    `outputs/testpapers_batch_20260708_comma_body_evidence` resolves all 15
+    `outputs/testpapers_batch_20260709_bib_region_mask` resolves all 15
     Table 1 `letter:a` / `letter:b` links against the below-table footer note.
     In the visual PDF the definitions begin with raised `a` and `b`
     superscripts. Raw extracted text may collapse those markers into following
@@ -338,7 +349,7 @@ For each checklist item:
     rotated table plus footer and excluding upright article text in the other
     page column.
   - Current full-corpus result:
-    `outputs/testpapers_batch_20260708_comma_body_evidence` extracts page
+    `outputs/testpapers_batch_20260709_bib_region_mask` extracts page
     7 with no `letter:t`, `letter:r`, or `letter:l` anchors.
     `paper_footnotes.json` builds the page 7 `†` and `‡` definitions from
     extracted footer row blocks, including their continuation rows. No
@@ -365,7 +376,7 @@ For each checklist item:
   anchors.
   - PDF path: `papers_from_laha/Ethnic Differences in the Relationship Between Insulin Sensitivity and Insulin Response.pdf`
   - Current result:
-    `outputs/testpapers_batch_20260708_comma_body_evidence` has 9 resolved
+    `outputs/testpapers_batch_20260709_bib_region_mask` has 9 resolved
     links and 0 unresolved or ambiguous links. `S_I` and `AIR_g` remain
     suppressed as subscript notation, vertical-bar artifacts attached to
     rotated numeric cells are suppressed as non-footnote symbols, and the
@@ -379,7 +390,7 @@ For each checklist item:
   - Strong signal: 58 unresolved anchors were statistical-significance
     asterisks, often attached to p-values such as `<0.001***`.
   - Current result: fixed in
-    `outputs/testpapers_batch_20260708_comma_body_evidence`; Table 1,
+    `outputs/testpapers_batch_20260709_bib_region_mask`; Table 1,
     Table 2, and Table 3 each have local `*`, `**`, and `***` definitions linked
     by same-table scope.
   - The previous 7 row-label unit exponents are now suppressed before
@@ -391,7 +402,7 @@ For each checklist item:
   Health Table 1 row labels.
   - PDF path: `papers_from_laha/Science-Advanaced-Planetary Health Diet and risk of mortality and chronic diseases- Results from US NHANES, UK Biobank, and a meta-analysis.pdf`
   - Current result:
-    `outputs/testpapers_batch_20260708_comma_body_evidence` resolves all 4
+    `outputs/testpapers_batch_20260709_bib_region_mask` resolves all 4
     Table 1 links (`*`, `†`, `‡`, `§`) against the footer block on the
     continued page. The symbol splitter now handles variable whitespace before
     each marker in a contiguous footer block.
@@ -407,7 +418,7 @@ For each checklist item:
     and 160 conventional inferred p-value-star links because local symbol
     footer definitions were not harvested.
   - Current result: fixed in
-    `outputs/testpapers_batch_20260708_comma_body_evidence`. Known symbol
+    `outputs/testpapers_batch_20260709_bib_region_mask`. Known symbol
     markers such as `†`, `‡`, and `*` now define any non-empty local footer text;
     this is a structural footnote rule, not a p-value rule. Structured marker
     evidence from raised glyphs is merged with ordinary symbol marker evidence
@@ -420,13 +431,13 @@ For each checklist item:
     1. `papers_from_laha/mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017.pdf`
   - Previous artifact issue: MDPI Mediterranean had 3 ambiguous links and 3
     unresolved numeric links.
-  - Current result: `outputs/testpapers_batch_20260708_comma_body_evidence` has 0
+  - Current result: `outputs/testpapers_batch_20260709_bib_region_mask` has 0
     unresolved and 0 ambiguous footnote links for this paper.
 
 - [x] **C0.6a** Re-review repeated letter markers on continued tertile headers.
   - PDF path: `papers_from_laha/Systemic inflammation markers and the prevalence of hypertension- A NHANES cross-sectional study.pdf`
   - Current result:
-    `outputs/testpapers_batch_20260708_comma_body_evidence` resolves all 12
+    `outputs/testpapers_batch_20260709_bib_region_mask` resolves all 12
     `letter:b` markers attached to `Tertile 1`, `Tertile 2`, and `Tertile 3`
     labels across the continued Table 1 against the same-visual footer
     definition on the continuation page.
@@ -451,13 +462,13 @@ supplement-only or out-of-scope references.
 - [x] **C1.1** Review failed statuses that may be correct non-target tables.
   1. `papers_from_laha/An environment-wide association study (EWAS) on type 2 diabetes mellitus.pdf`
      - `An environment-wide association study (EWAS) on type 2 diabetes mellitus-p6-t0`
-     - Current status in `outputs/testpapers_batch_20260708_comma_body_evidence`:
+     - Current status in `outputs/testpapers_batch_20260709_bib_region_mask`:
        `ok`, categorized as `analysis_outputs`.
      - Review result: structurally plausible ENWAS analysis-output table with
        sparse left descriptor columns; not a Table 1 descriptive failure.
   2. `papers_from_laha/mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017.pdf`
      - `mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017-p3-t0`
-     - Current status in `outputs/testpapers_batch_20260708_comma_body_evidence`:
+     - Current status in `outputs/testpapers_batch_20260709_bib_region_mask`:
        `ok`.
      - Review result: text/reference table comparing frailty definitions; a
        correct non-target table for the current Table 1 descriptive parser.
@@ -473,7 +484,7 @@ supplement-only or out-of-scope references.
   2. `papers_from_laha/GOLD BioAge and depression- Associations with mortality among depressed NHANES participants (2005–2018).pdf`
      - `GOLD BioAge and depression- Associations with mortality among depressed NHANES participants (2005–2018)-p1-t0`
      - Current status: no longer extracted as a table candidate in
-       `outputs/testpapers_batch_20260708_comma_body_evidence`.
+       `outputs/testpapers_batch_20260709_bib_region_mask`.
      - Review result: abstract/title-page text laid out as article front
        matter, not a table artifact to route semantically. The front-matter
        guard now suppresses it before the table pipeline.
@@ -489,7 +500,7 @@ supplement-only or out-of-scope references.
        descriptive parsing.
   4. `papers_from_laha/periodontis2.pdf`
      - Prior artifacts: `periodontis2-p6-t0` and `periodontis2-p6-t1`.
-     - Current status in `outputs/testpapers_batch_20260708_comma_body_evidence`:
+     - Current status in `outputs/testpapers_batch_20260709_bib_region_mask`:
        no page-6 table candidates are extracted.
      - Review result: page 6 contains prose references to Tables 4 and 5, not a
        visual table. `paper_table_mentions.json` now classifies `Table 4
@@ -499,7 +510,7 @@ supplement-only or out-of-scope references.
        into sentence fragments.
   5. `papers_from_johnny/periodontitis.pdf`
      - `periodontitis-p11-t0`
-     - Current status in `outputs/testpapers_batch_20260708_comma_body_evidence`:
+     - Current status in `outputs/testpapers_batch_20260709_bib_region_mask`:
        no longer emitted as an extracted table.
      - Review result: abbreviation glossary/reference block, not a table
        artifact. The retired backend-grid survival path is no longer allowed to
@@ -509,7 +520,7 @@ supplement-only or out-of-scope references.
   - PDF path: `papers_from_laha/Ethnic Differences in the Relationship Between Insulin Sensitivity and Insulin Response.pdf`
   - Table: `Ethnic Differences in the Relationship Between Insulin Sensitivity and Insulin Response-p5-t0`
   - Current status: `rescued`; the prior `collapsed_grid_unrecovered` failure is
-    no longer present in `outputs/testpapers_batch_20260708_comma_body_evidence`.
+    no longer present in `outputs/testpapers_batch_20260709_bib_region_mask`.
   - Current footnote result: 9 resolved links and 0 unresolved links. The prior
     residual `letter:i`, `letter:x`, and `letter:g` false-marker issue is no
     longer present as unresolved footnote evidence; the remaining `letter:x`
