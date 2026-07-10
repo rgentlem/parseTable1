@@ -630,6 +630,15 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                                 "header_row_geometry_roles": refinement.get(
                                     "header_row_geometry_roles"
                                 ),
+                                **(
+                                    {
+                                        "partial_header_horizontal_rules": refinement[
+                                            "partial_header_horizontal_rules"
+                                        ]
+                                    }
+                                    if refinement.get("partial_header_horizontal_rules")
+                                    else {}
+                                ),
                                 "header_row_geometry_source": (
                                     "pymupdf_positioned_words_and_horizontal_rules"
                                     if refinement.get("header_row_geometry_roles")
@@ -1774,6 +1783,733 @@ def _refine_grid_from_hline_word_positions(
     }
 
 
+def _refine_collapsed_explicit_body_layout(
+    *,
+    raw_rows: list[list[str]],
+    row_bounds: list[tuple[float, float]],
+    bbox: tuple[float, float, float, float] | None,
+    caption_bbox: tuple[float, float, float, float] | None,
+    page_words: list[dict[str, object]],
+    page_chars: list[dict[str, object]],
+    page_rule_segments: list[tuple[float, float, float, float]],
+    clipped_words: list[dict[str, object]],
+    clipped_chars: list[dict[str, object]],
+    horizontal_rules: list[float],
+    full_width_rules: list[float],
+    orientation_metadata: dict[str, Any],
+) -> dict[str, object] | None:
+    """Rebuild body rows when an explicit backend grid collapsed into stacked cells."""
+    if bbox is None:
+        return None
+
+    rotation_direction = str(orientation_metadata.get("rotation_direction") or "")
+    rotation_confidence = float(orientation_metadata.get("rotation_confidence") or 0.0)
+    has_vertical_rotation_signal = (
+        orientation_metadata.get("table_orientation") == "rotated"
+        and rotation_direction in {"vertical_text_up", "vertical_text_down"}
+    )
+    is_rotated = has_vertical_rotation_signal and rotation_confidence >= 0.8
+    max_raw_cols = max((len(row) for row in raw_rows), default=0)
+    stacked_or_blob_cell_count = sum(
+        1
+        for row in raw_rows
+        for cell in row
+        if isinstance(cell, str) and (cell.count("\n") >= 2 or len(cell.split()) >= 12)
+    )
+    first_row_internally_stacked = False
+    if raw_rows and len(row_bounds) == len(raw_rows) and max_raw_cols >= 4:
+        first_row = raw_rows[0]
+        first_row_stacked_cells = sum(
+            isinstance(cell, str) and cell.count("\n") >= 2
+            for cell in first_row
+        )
+        first_row_lines = [
+            str(cell).splitlines()[0].strip()
+            for cell in first_row
+            if isinstance(cell, str) and str(cell).splitlines()
+        ]
+        first_line_alpha_cells = sum(
+            bool(re.search(r"[A-Za-z]", cell)) for cell in first_row_lines if cell
+        )
+        row_heights = [
+            bottom - top
+            for top, bottom in row_bounds[1:]
+            if bottom > top
+        ]
+        median_following_height = (
+            sorted(row_heights)[len(row_heights) // 2]
+            if row_heights
+            else 0.0
+        )
+        first_row_height = row_bounds[0][1] - row_bounds[0][0]
+        first_row_has_internal_rule = any(
+            row_bounds[0][0] + 3.0 < float(rule) < row_bounds[0][1] - 3.0
+            for rule in full_width_rules
+        )
+        first_row_internally_stacked = (
+            not has_vertical_rotation_signal
+            and len(raw_rows) >= 4
+            and len(clipped_words) >= 12
+            and first_row_stacked_cells >= max(3, max_raw_cols // 2)
+            and first_line_alpha_cells >= max(3, max_raw_cols // 2)
+            and first_row_height >= max(30.0, median_following_height * 3.0)
+            and first_row_has_internal_rule
+        )
+    rotated_few_column_stacked_grid = (
+        has_vertical_rotation_signal
+        and rotation_confidence >= 0.5
+        and len(raw_rows) >= 4
+        and max_raw_cols <= 4
+        and len(clipped_words) >= 12
+        and stacked_or_blob_cell_count >= 2
+    )
+    collapsed_explicit_grid = (
+        len(raw_rows) <= 1
+        or (
+            len(raw_rows) <= 3
+            and max_raw_cols <= 4
+            and len(clipped_words) >= 12
+        )
+        or rotated_few_column_stacked_grid
+        or first_row_internally_stacked
+    )
+    if not collapsed_explicit_grid:
+        return None
+
+    sorted_full_width_rules = sorted({float(rule) for rule in full_width_rules})
+    if (
+        not has_vertical_rotation_signal
+        and len(sorted_full_width_rules) == 3
+        and max_raw_cols <= 4
+    ):
+        top_rule, separator_rule, bottom_rule = sorted_full_width_rules
+        lines = [
+            line
+            for line in build_word_lines(clipped_words)
+            if float(line["bottom"]) >= top_rule - 2.0
+            and float(line["top"]) <= bottom_rule + 2.0
+        ]
+        header_lines = [
+            line
+            for line in lines
+            if float(line["bottom"]) <= separator_rule + 2.0
+        ]
+        body_lines = [
+            line
+            for line in lines
+            if float(line["top"]) >= separator_rule - 2.0
+        ]
+        if len(header_lines) >= 2 and len(body_lines) >= 4:
+            header_runs: list[dict[str, object]] = []
+            for line_index, line in enumerate(header_lines):
+                current_words: list[dict[str, object]] = []
+                previous_x1: float | None = None
+                for word in sorted(line["words"], key=lambda item: float(item["x0"])):
+                    text = str(word.get("text", "")).strip()
+                    if not text:
+                        continue
+                    word_x0 = float(word["x0"])
+                    word_x1 = float(word["x1"])
+                    if previous_x1 is not None and word_x0 - previous_x1 > 18.0:
+                        if current_words:
+                            run_text = clean_text(
+                                " ".join(
+                                    str(item.get("text", "")).strip()
+                                    for item in current_words
+                                )
+                            )
+                            if re.search(r"[A-Za-z0-9]", run_text):
+                                header_runs.append(
+                                    {
+                                        "line_index": line_index,
+                                        "x0": min(float(item["x0"]) for item in current_words),
+                                        "x1": max(float(item["x1"]) for item in current_words),
+                                        "text": run_text,
+                                    }
+                                )
+                        current_words = []
+                    current_words.append(word)
+                    previous_x1 = word_x1
+                if current_words:
+                    run_text = clean_text(
+                        " ".join(
+                            str(item.get("text", "")).strip()
+                            for item in current_words
+                        )
+                    )
+                    if re.search(r"[A-Za-z0-9]", run_text):
+                        header_runs.append(
+                            {
+                                "line_index": line_index,
+                                "x0": min(float(item["x0"]) for item in current_words),
+                                "x1": max(float(item["x1"]) for item in current_words),
+                                "text": run_text,
+                            }
+                        )
+
+            header_clusters: list[list[dict[str, object]]] = []
+            cluster_starts: list[float] = []
+            for run in sorted(header_runs, key=lambda item: float(item["x0"])):
+                run_x0 = float(run["x0"])
+                if not header_clusters or abs(run_x0 - cluster_starts[-1]) > 24.0:
+                    header_clusters.append([run])
+                    cluster_starts.append(run_x0)
+                    continue
+                header_clusters[-1].append(run)
+                cluster_starts[-1] = (
+                    sum(float(item["x0"]) for item in header_clusters[-1])
+                    / len(header_clusters[-1])
+                )
+
+            value_starts: list[float] = []
+            if len(header_clusters) >= 3:
+                for cluster_index, cluster in enumerate(header_clusters):
+                    if cluster_index == 0:
+                        continue
+                    start = sum(float(item["x0"]) for item in cluster) / len(cluster)
+                    body_value_support = sum(
+                        any(
+                            abs(float(word["x0"]) - start) <= 24.0
+                            and _looks_like_hline_table_value_word(str(word.get("text", "")))
+                            for word in line["words"]
+                        )
+                        for line in body_lines
+                    )
+                    if body_value_support >= max(2, min(4, len(body_lines) // 4)):
+                        value_starts.append(start)
+            value_starts = sorted(value_starts)
+
+            if len(value_starts) >= 2:
+                first_value_boundaries: list[float] = []
+                first_value_start = value_starts[0]
+                for line in body_lines:
+                    words = [
+                        word
+                        for word in sorted(line["words"], key=lambda item: float(item["x0"]))
+                        if str(word.get("text", "")).strip()
+                    ]
+                    for word_index, word in enumerate(words):
+                        if (
+                            word_index == 0
+                            or abs(float(word["x0"]) - first_value_start) > 24.0
+                            or not _looks_like_hline_table_value_word(
+                                str(word.get("text", ""))
+                            )
+                        ):
+                            continue
+                        first_value_boundaries.append(
+                            (
+                                float(words[word_index - 1]["x1"])
+                                + float(word["x0"])
+                            )
+                            / 2.0
+                        )
+                        break
+                if first_value_boundaries:
+                    first_boundary = sorted(first_value_boundaries)[
+                        len(first_value_boundaries) // 2
+                    ]
+                else:
+                    label_start = sum(float(item["x0"]) for item in header_clusters[0]) / len(header_clusters[0])
+                    first_boundary = (label_start + first_value_start) / 2.0
+                if first_value_start - first_boundary > 4.0:
+                    column_start_boundaries = [
+                        first_boundary,
+                        *[
+                            (value_starts[index] + value_starts[index + 1]) / 2.0
+                            for index in range(len(value_starts) - 1)
+                        ],
+                    ]
+                    refined_rows, refined_cell_bboxes = build_row_grid_from_lines(
+                        lines,
+                        page_chars=clipped_chars,
+                        column_start_boundaries=column_start_boundaries,
+                    )
+                    if refined_rows:
+                        keep_indices = [
+                            col_idx
+                            for col_idx in range(len(refined_rows[0]))
+                            if any(
+                                col_idx < len(row) and row[col_idx].strip()
+                                for row in refined_rows
+                            )
+                        ]
+                        if keep_indices:
+                            refined_rows = [
+                                [row[col_idx] for col_idx in keep_indices]
+                                for row in refined_rows
+                            ]
+                            refined_cell_bboxes = [
+                                [row[col_idx] for col_idx in keep_indices]
+                                for row in refined_cell_bboxes
+                            ]
+                        refined_col_count = max((len(row) for row in refined_rows), default=0)
+                        value_row_count = sum(
+                            sum(
+                                _looks_like_hline_table_value_word(cell)
+                                for cell in row[1:]
+                                if cell.strip()
+                            )
+                            >= 1
+                            for row in refined_rows[len(header_lines) :]
+                        )
+                        if (
+                            refined_col_count == len(value_starts) + 1
+                            and value_row_count >= max(3, min(6, len(body_lines) // 3))
+                        ):
+                            header_row_geometry_roles = apply_header_column_band_geometry(
+                                rows=refined_rows,
+                                bbox_rows=refined_cell_bboxes,
+                                lines=lines,
+                                header_line_count=len(header_lines),
+                                boundaries=column_start_boundaries,
+                                value_anchors=value_starts,
+                            )
+                            partial_header_rules: list[dict[str, float]] = []
+                            value_region_left = min(value_starts) - 2.0
+                            value_region_right = max(
+                                bbox[2],
+                                max(float(word["x1"]) for line in lines for word in line["words"]),
+                            )
+                            value_region_width = max(1.0, value_region_right - value_region_left)
+                            for segment in page_rule_segments:
+                                segment_left = min(float(segment[0]), float(segment[2]))
+                                segment_right = max(float(segment[0]), float(segment[2]))
+                                segment_top = min(float(segment[1]), float(segment[3]))
+                                segment_bottom = max(float(segment[1]), float(segment[3]))
+                                if segment_bottom - segment_top > 2.0:
+                                    continue
+                                y_mid = (segment_top + segment_bottom) / 2.0
+                                if not (top_rule + 2.0 < y_mid < separator_rule - 2.0):
+                                    continue
+                                overlap = min(segment_right, value_region_right) - max(
+                                    segment_left,
+                                    value_region_left,
+                                )
+                                if overlap < value_region_width * 0.65:
+                                    continue
+                                if segment_left <= bbox[0] + 8.0:
+                                    continue
+                                partial_header_rules.append(
+                                    {
+                                        "y": round(y_mid, 4),
+                                        "x0": round(segment_left, 4),
+                                        "x1": round(segment_right, 4),
+                                    }
+                                )
+                            deduped_partial_rules: list[dict[str, float]] = []
+                            for rule in sorted(partial_header_rules, key=lambda item: item["y"]):
+                                if (
+                                    deduped_partial_rules
+                                    and abs(rule["y"] - deduped_partial_rules[-1]["y"]) <= 0.5
+                                ):
+                                    prior = deduped_partial_rules[-1]
+                                    prior["y"] = round((prior["y"] + rule["y"]) / 2.0, 4)
+                                    prior["x0"] = round(min(prior["x0"], rule["x0"]), 4)
+                                    prior["x1"] = round(max(prior["x1"], rule["x1"]), 4)
+                                else:
+                                    deduped_partial_rules.append(rule)
+                            partial_header_rules = deduped_partial_rules
+                            if partial_header_rules:
+                                split_y = min(rule["y"] for rule in partial_header_rules)
+                                split_roles: list[str] = []
+                                for line in header_lines:
+                                    line_bottom = float(line["bottom"])
+                                    line_top = float(line["top"])
+                                    if line_bottom <= split_y + 1.5:
+                                        split_roles.append("group_header")
+                                    elif line_top >= split_y - 1.5:
+                                        split_roles.append("leaf_header")
+                                    else:
+                                        split_roles.append("group_header")
+                                if "group_header" in split_roles and "leaf_header" in split_roles:
+                                    header_row_geometry_roles = split_roles
+                            return {
+                                "raw_rows": refined_rows,
+                                "table_cells": refined_cell_bboxes,
+                                "refined_table_cells": refined_cell_bboxes,
+                                "row_bounds": [
+                                    (float(line["top"]), float(line["bottom"]))
+                                    for line in lines
+                                ],
+                                "horizontal_rules": horizontal_rules,
+                                "full_width_horizontal_rules": full_width_rules,
+                                "grid_refinement_source": "ruled_body_layout_word_positions",
+                                "geometry_source": "pymupdf_positioned_words_and_rules",
+                                "geometry_coordinate_frame": "page",
+                                "geometry_transform_source_bbox": None,
+                                "geometry_transform_transposed": False,
+                                "geometry_transform_applied": False,
+                                "value_matrix_column_anchors": [
+                                    round(anchor, 4)
+                                    for anchor in value_starts
+                                ],
+                                "header_row_geometry_roles": header_row_geometry_roles,
+                                "partial_header_horizontal_rules": partial_header_rules,
+                            }
+
+    should_rotate_refinement = is_rotated or rotated_few_column_stacked_grid
+    refinement_attempts: list[dict[str, object]] = []
+
+    if should_rotate_refinement:
+        rotated_refinement_bbox = bbox
+        rotated_text_block_bbox = _as_bbox(
+            orientation_metadata.get("rotated_text_block_bbox")
+        )
+        overlapping_rule_boxes: list[tuple[float, float, float, float]] = []
+        for segment in page_rule_segments:
+            segment_left = min(float(segment[0]), float(segment[2]))
+            segment_right = max(float(segment[0]), float(segment[2]))
+            segment_top = min(float(segment[1]), float(segment[3]))
+            segment_bottom = max(float(segment[1]), float(segment[3]))
+            if segment_right < bbox[0] - 12.0 or segment_left > bbox[2] + 12.0:
+                continue
+            if segment_bottom < bbox[1] - 2.0:
+                continue
+            overlapping_rule_boxes.append(
+                (segment_left, segment_top, segment_right, segment_bottom)
+            )
+        if overlapping_rule_boxes:
+            rule_left = min(rule_box[0] for rule_box in overlapping_rule_boxes)
+            rule_right = max(rule_box[2] for rule_box in overlapping_rule_boxes)
+            rule_bottom = max(rule_box[3] for rule_box in overlapping_rule_boxes)
+            if rule_bottom > bbox[3] + 20.0 or rule_left < bbox[0] - 2.0:
+                rotated_refinement_bbox = (
+                    min(float(bbox[0]), rule_left),
+                    float(bbox[1]),
+                    max(float(bbox[2]), rule_right),
+                    max(float(bbox[3]), rule_bottom),
+                )
+        if caption_bbox is not None:
+            caption_left_hint = min(float(caption_bbox[0]), float(caption_bbox[1]))
+            if 0.0 < rotated_refinement_bbox[0] - caption_left_hint <= 24.0:
+                rotated_refinement_bbox = (
+                    caption_left_hint - 2.0,
+                    rotated_refinement_bbox[1],
+                    rotated_refinement_bbox[2],
+                    rotated_refinement_bbox[3],
+                )
+        if rotated_text_block_bbox is not None:
+            rotated_refinement_bbox = rotated_text_block_bbox
+        rotated_words = [
+            word
+            for word in page_words
+            if float(word["x0"]) >= rotated_refinement_bbox[0] - 2.0
+            and float(word["x1"]) <= rotated_refinement_bbox[2] + 2.0
+            and float(word["top"]) >= rotated_refinement_bbox[1] - 2.0
+            and float(word["bottom"]) <= rotated_refinement_bbox[3] + 2.0
+        ]
+        rotated_chars = [
+            char
+            for char in page_chars
+            if float(char["x0"]) >= rotated_refinement_bbox[0] - 2.0
+            and float(char["x1"]) <= rotated_refinement_bbox[2] + 2.0
+            and float(char["top"]) >= rotated_refinement_bbox[1] - 2.0
+            and float(char["bottom"]) <= rotated_refinement_bbox[3] + 2.0
+        ]
+        clipped_rule_segments = [
+            segment
+            for segment in page_rule_segments
+            if max(float(segment[0]), float(segment[2])) >= rotated_refinement_bbox[0] - 2.0
+            and min(float(segment[0]), float(segment[2])) <= rotated_refinement_bbox[2] + 2.0
+            and max(float(segment[1]), float(segment[3])) >= rotated_refinement_bbox[1] - 2.0
+            and min(float(segment[1]), float(segment[3])) <= rotated_refinement_bbox[3] + 2.0
+        ]
+        (
+            working_words,
+            working_chars,
+            transformed_rule_segments,
+            transformed_bbox,
+        ) = normalize_positioned_geometry_for_rotation(
+            words=rotated_words or clipped_words,
+            chars=rotated_chars or clipped_chars,
+            rule_segments=clipped_rule_segments,
+            bbox=rotated_refinement_bbox,
+            rotation_direction=rotation_direction,
+        )
+        refinement_attempts.append(
+            {
+                "words": working_words,
+                "chars": working_chars,
+                "horizontal_rules": detect_horizontal_rules(
+                    transformed_rule_segments,
+                    transformed_bbox,
+                ),
+                "full_width_horizontal_rules": detect_horizontal_rules(
+                    transformed_rule_segments,
+                    transformed_bbox,
+                    require_full_width=True,
+                ),
+                "refinement_source": "rotated_word_positions_with_rules",
+                "coordinate_frame": "table_local_rotated_normalized",
+                "geometry_transform_source_bbox": rotated_refinement_bbox,
+                "geometry_transform_transposed": False,
+                "geometry_transform_applied": True,
+                "minimum_row_gain": 3,
+            }
+        )
+
+        bbox_width = float(bbox[2]) - float(bbox[0])
+        bbox_height = float(bbox[3]) - float(bbox[1])
+        if rotated_few_column_stacked_grid and bbox_width >= bbox_height * 3.0:
+            compact_padding = max(8.0, min(12.0, bbox_height * 0.12))
+            label_padding = max(20.0, min(32.0, bbox_height * 0.28))
+            transposed_bbox = (
+                max(0.0, float(bbox[1]) - compact_padding),
+                max(0.0, float(bbox[0]) - compact_padding),
+                float(bbox[3]) + label_padding,
+                float(bbox[2]) + label_padding,
+            )
+            transposed_words = [
+                word
+                for word in page_words
+                if float(word["x0"]) >= transposed_bbox[0] - 2.0
+                and float(word["x1"]) <= transposed_bbox[2] + 2.0
+                and float(word["top"]) >= transposed_bbox[1] - 2.0
+                and float(word["bottom"]) <= transposed_bbox[3] + 2.0
+            ]
+            if transposed_words:
+                transposed_chars = [
+                    char
+                    for char in page_chars
+                    if float(char["x0"]) >= transposed_bbox[0] - 2.0
+                    and float(char["x1"]) <= transposed_bbox[2] + 2.0
+                    and float(char["top"]) >= transposed_bbox[1] - 2.0
+                    and float(char["bottom"]) <= transposed_bbox[3] + 2.0
+                ]
+                transposed_rule_segments = [
+                    segment
+                    for segment in page_rule_segments
+                    if max(float(segment[0]), float(segment[2])) >= transposed_bbox[0] - 2.0
+                    and min(float(segment[0]), float(segment[2])) <= transposed_bbox[2] + 2.0
+                    and max(float(segment[1]), float(segment[3])) >= transposed_bbox[1] - 2.0
+                    and min(float(segment[1]), float(segment[3])) <= transposed_bbox[3] + 2.0
+                ]
+                (
+                    transposed_working_words,
+                    transposed_working_chars,
+                    transposed_transformed_rule_segments,
+                    transposed_transformed_bbox,
+                ) = normalize_positioned_geometry_for_rotation(
+                    words=transposed_words,
+                    chars=transposed_chars,
+                    rule_segments=transposed_rule_segments,
+                    bbox=transposed_bbox,
+                    rotation_direction=rotation_direction,
+                )
+                refinement_attempts.append(
+                    {
+                        "words": transposed_working_words,
+                        "chars": transposed_working_chars,
+                        "horizontal_rules": detect_horizontal_rules(
+                            transposed_transformed_rule_segments,
+                            transposed_transformed_bbox,
+                        ),
+                        "full_width_horizontal_rules": detect_horizontal_rules(
+                            transposed_transformed_rule_segments,
+                            transposed_transformed_bbox,
+                            require_full_width=True,
+                        ),
+                        "refinement_source": "rotated_transposed_word_positions_with_rules",
+                        "coordinate_frame": "table_local_rotated_transposed_normalized",
+                        "geometry_transform_source_bbox": transposed_bbox,
+                        "geometry_transform_transposed": True,
+                        "geometry_transform_applied": True,
+                        "minimum_row_gain": 3,
+                    }
+                )
+    else:
+        refinement_attempts.append(
+            {
+                "words": clipped_words,
+                "chars": clipped_chars,
+                "horizontal_rules": horizontal_rules,
+                "full_width_horizontal_rules": full_width_rules,
+                "refinement_source": (
+                    "stacked_row_word_positions"
+                    if first_row_internally_stacked
+                    else "collapsed_explicit_grid_word_positions"
+                ),
+                "coordinate_frame": "page",
+                "geometry_transform_source_bbox": None,
+                "geometry_transform_transposed": False,
+                "geometry_transform_applied": False,
+                "minimum_row_gain": 3 if first_row_internally_stacked else 4,
+                "allow_same_column_count": first_row_internally_stacked,
+                "use_top_header_boundaries": first_row_internally_stacked,
+            }
+        )
+
+    for refinement_attempt in refinement_attempts:
+        working_words = refinement_attempt["words"]
+        working_chars = refinement_attempt["chars"]
+        working_horizontal_rules = refinement_attempt["horizontal_rules"]
+        working_full_width_rules = refinement_attempt.get("full_width_horizontal_rules")
+        if not isinstance(working_words, list) or not isinstance(working_chars, list):
+            continue
+        if not isinstance(working_horizontal_rules, list):
+            working_horizontal_rules = []
+        if not isinstance(working_full_width_rules, list):
+            working_full_width_rules = []
+        refined_lines = build_word_lines(working_words)
+        column_start_boundaries: list[float] | None = None
+        value_matrix_column_anchors: list[float] = []
+        value_matrix_geometry = _value_matrix_column_boundaries_from_lines(
+            refined_lines,
+            working_full_width_rules or working_horizontal_rules,
+        )
+        if value_matrix_geometry is not None:
+            column_start_boundaries, value_matrix_column_anchors = value_matrix_geometry
+        if (
+            column_start_boundaries is None
+            and bool(refinement_attempt.get("use_top_header_boundaries"))
+            and refined_lines
+        ):
+            first_line = refined_lines[0]
+            header_starts: list[float] = []
+            previous_x1: float | None = None
+            for word in sorted(first_line["words"], key=lambda item: float(item["x0"])):
+                text = str(word["text"]).strip()
+                if not text:
+                    continue
+                word_x0 = float(word["x0"])
+                word_x1 = float(word["x1"])
+                if previous_x1 is None or word_x0 - previous_x1 > 10.0:
+                    header_starts.append(word_x0)
+                previous_x1 = word_x1
+            clustered_starts: list[float] = []
+            for start in sorted(header_starts):
+                if not clustered_starts or abs(start - clustered_starts[-1]) > 8.0:
+                    clustered_starts.append(start)
+                else:
+                    clustered_starts[-1] = (clustered_starts[-1] + start) / 2.0
+            if len(clustered_starts) >= max(4, max_raw_cols):
+                column_start_boundaries = [
+                    (clustered_starts[index] + clustered_starts[index + 1]) / 2.0
+                    for index in range(len(clustered_starts) - 1)
+                ]
+        if (
+            column_start_boundaries is None
+            and bool(refinement_attempt["geometry_transform_applied"])
+            and len(working_horizontal_rules) >= 3
+        ):
+            sorted_rules = sorted(float(rule) for rule in working_horizontal_rules)
+            internal_rules = [
+                rule
+                for rule in sorted_rules[1:-1]
+                if rule > sorted_rules[0] + 3.0 and rule < sorted_rules[-1] - 3.0
+            ]
+            if internal_rules:
+                separator_rule = internal_rules[0]
+                header_lines = [
+                    line
+                    for line in refined_lines
+                    if float(line["bottom"]) <= separator_rule + 1.5
+                ]
+                header_starts: list[float] = []
+                for line in header_lines:
+                    previous_x1: float | None = None
+                    for word in sorted(line["words"], key=lambda item: float(item["x0"])):
+                        text = str(word["text"]).strip()
+                        if not text:
+                            continue
+                        word_x0 = float(word["x0"])
+                        word_x1 = float(word["x1"])
+                        if previous_x1 is None or word_x0 - previous_x1 > 10.0:
+                            header_starts.append(word_x0)
+                        previous_x1 = word_x1
+                clustered_starts: list[float] = []
+                for start in sorted(header_starts):
+                    if not clustered_starts or abs(start - clustered_starts[-1]) > 8.0:
+                        clustered_starts.append(start)
+                    else:
+                        clustered_starts[-1] = (clustered_starts[-1] + start) / 2.0
+                if len(clustered_starts) >= max_raw_cols + 4:
+                    column_start_boundaries = clustered_starts[1:]
+        grid_geometry: dict[str, object] = {}
+        refined_rows, refined_cell_bboxes = build_row_grid_from_lines(
+            refined_lines,
+            page_chars=working_chars,
+            column_start_boundaries=column_start_boundaries,
+            geometry_out=grid_geometry,
+        )
+        if refined_rows:
+            keep_indices = [
+                col_idx
+                for col_idx in range(len(refined_rows[0]))
+                if any(col_idx < len(row) and row[col_idx].strip() for row in refined_rows)
+            ]
+            if keep_indices:
+                refined_rows = [
+                    [row[col_idx] for col_idx in keep_indices]
+                    for row in refined_rows
+                ]
+                refined_cell_bboxes = [
+                    [row[col_idx] for col_idx in keep_indices]
+                    for row in refined_cell_bboxes
+                ]
+            refined_col_count = max((len(row) for row in refined_rows), default=0)
+            column_gain_ok = refined_col_count > max_raw_cols
+            row_gain_ok = len(refined_rows) >= len(raw_rows) + int(
+                refinement_attempt["minimum_row_gain"]
+            )
+            stacked_column_gain_ok = (
+                rotated_few_column_stacked_grid
+                and refined_col_count >= max_raw_cols + 4
+                and len(refined_rows) >= max(4, len(raw_rows) - 1)
+            )
+            wide_rotated_refinement = (
+                bool(refinement_attempt["geometry_transform_applied"])
+                and max_raw_cols <= 4
+                and refined_col_count > 12
+            )
+            has_rotated_rule_support = (
+                len(working_horizontal_rules) >= 3
+                or column_start_boundaries is not None
+            )
+            if wide_rotated_refinement and (
+                refined_col_count > 30 or not has_rotated_rule_support
+            ):
+                continue
+            same_column_stacked_row_ok = (
+                bool(refinement_attempt.get("allow_same_column_count"))
+                and refined_col_count >= max_raw_cols
+                and row_gain_ok
+            )
+            if (
+                column_gain_ok and (row_gain_ok or stacked_column_gain_ok)
+            ) or same_column_stacked_row_ok:
+                return {
+                    "raw_rows": refined_rows,
+                    "table_cells": refined_cell_bboxes,
+                    "refined_table_cells": refined_cell_bboxes,
+                    "row_bounds": [
+                        (float(line["top"]), float(line["bottom"]))
+                        for line in refined_lines
+                    ],
+                    "horizontal_rules": working_horizontal_rules,
+                    "full_width_horizontal_rules": working_full_width_rules,
+                    "grid_refinement_source": str(refinement_attempt["refinement_source"]),
+                    "geometry_source": "pymupdf_positioned_words_and_rules",
+                    "geometry_coordinate_frame": str(refinement_attempt["coordinate_frame"]),
+                    "geometry_transform_source_bbox": refinement_attempt[
+                        "geometry_transform_source_bbox"
+                    ],
+                    "geometry_transform_transposed": bool(
+                        refinement_attempt["geometry_transform_transposed"]
+                    ),
+                    "geometry_transform_applied": bool(
+                        refinement_attempt["geometry_transform_applied"]
+                    ),
+                    "value_matrix_column_anchors": [
+                        round(anchor, 4)
+                        for anchor in value_matrix_column_anchors
+                    ],
+                }
+
+    return None
+
+
 def _looks_like_hline_table_value_word(text: str) -> bool:
     cleaned = clean_text(text)
     if not cleaned:
@@ -2015,7 +2751,11 @@ def _refine_explicit_table_candidate_grid(
             horizontal_rules.append(value)
 
     separator_rule_segments = full_width_rule_segments if full_width_rule_segments is not None else page_rule_segments
-    full_width_rules = detect_horizontal_rules(separator_rule_segments, bbox) if bbox is not None else []
+    full_width_rules = (
+        detect_horizontal_rules(separator_rule_segments, bbox, require_full_width=True)
+        if bbox is not None
+        else []
+    )
     if full_width_rules:
         for value in sorted(horizontal_rules + full_width_rules):
             if not horizontal_rules or abs(value - horizontal_rules[-1]) > 1.5:
@@ -2091,435 +2831,22 @@ def _refine_explicit_table_candidate_grid(
     if hline_refinement is not None:
         return hline_refinement
 
-    rotation_direction = str(orientation_metadata.get("rotation_direction") or "")
-    rotation_confidence = float(orientation_metadata.get("rotation_confidence") or 0.0)
-    has_vertical_rotation_signal = (
-        orientation_metadata.get("table_orientation") == "rotated"
-        and rotation_direction in {"vertical_text_up", "vertical_text_down"}
+    collapsed_body_refinement = _refine_collapsed_explicit_body_layout(
+        raw_rows=raw_rows,
+        row_bounds=row_bounds,
+        bbox=bbox,
+        caption_bbox=caption_bbox,
+        page_words=page_words,
+        page_chars=page_chars,
+        page_rule_segments=page_rule_segments,
+        clipped_words=clipped_words,
+        clipped_chars=clipped_chars,
+        horizontal_rules=horizontal_rules,
+        full_width_rules=full_width_rules,
+        orientation_metadata=orientation_metadata,
     )
-    is_rotated = has_vertical_rotation_signal and rotation_confidence >= 0.8
-    max_raw_cols = max((len(row) for row in raw_rows), default=0)
-    stacked_or_blob_cell_count = sum(
-        1
-        for row in raw_rows
-        for cell in row
-        if isinstance(cell, str) and (cell.count("\n") >= 2 or len(cell.split()) >= 12)
-    )
-    first_row_internally_stacked = False
-    if raw_rows and len(row_bounds) == len(raw_rows) and max_raw_cols >= 4:
-        first_row = raw_rows[0]
-        first_row_stacked_cells = sum(
-            isinstance(cell, str) and cell.count("\n") >= 2
-            for cell in first_row
-        )
-        first_row_lines = [
-            str(cell).splitlines()[0].strip()
-            for cell in first_row
-            if isinstance(cell, str) and str(cell).splitlines()
-        ]
-        first_line_alpha_cells = sum(
-            bool(re.search(r"[A-Za-z]", cell)) for cell in first_row_lines if cell
-        )
-        row_heights = [
-            bottom - top
-            for top, bottom in row_bounds[1:]
-            if bottom > top
-        ]
-        median_following_height = (
-            sorted(row_heights)[len(row_heights) // 2]
-            if row_heights
-            else 0.0
-        )
-        first_row_height = row_bounds[0][1] - row_bounds[0][0]
-        first_row_has_internal_rule = any(
-            row_bounds[0][0] + 3.0 < float(rule) < row_bounds[0][1] - 3.0
-            for rule in full_width_rules
-        )
-        first_row_internally_stacked = (
-            not has_vertical_rotation_signal
-            and len(raw_rows) >= 4
-            and len(clipped_words) >= 12
-            and first_row_stacked_cells >= max(3, max_raw_cols // 2)
-            and first_line_alpha_cells >= max(3, max_raw_cols // 2)
-            and first_row_height >= max(30.0, median_following_height * 3.0)
-            and first_row_has_internal_rule
-        )
-    rotated_few_column_stacked_grid = (
-        has_vertical_rotation_signal
-        and rotation_confidence >= 0.5
-        and len(raw_rows) >= 4
-        and max_raw_cols <= 4
-        and len(clipped_words) >= 12
-        and stacked_or_blob_cell_count >= 2
-    )
-    collapsed_explicit_grid = (
-        len(raw_rows) <= 1
-        or (
-            len(raw_rows) <= 3
-            and max_raw_cols <= 4
-            and len(clipped_words) >= 12
-        )
-        or rotated_few_column_stacked_grid
-        or first_row_internally_stacked
-    )
-
-    if collapsed_explicit_grid:
-        should_rotate_refinement = is_rotated or rotated_few_column_stacked_grid
-        refinement_attempts: list[dict[str, object]] = []
-
-        if should_rotate_refinement:
-            rotated_refinement_bbox = bbox
-            rotated_text_block_bbox = _as_bbox(
-                orientation_metadata.get("rotated_text_block_bbox")
-            )
-            overlapping_rule_boxes: list[tuple[float, float, float, float]] = []
-            for segment in page_rule_segments:
-                segment_left = min(float(segment[0]), float(segment[2]))
-                segment_right = max(float(segment[0]), float(segment[2]))
-                segment_top = min(float(segment[1]), float(segment[3]))
-                segment_bottom = max(float(segment[1]), float(segment[3]))
-                if segment_right < bbox[0] - 12.0 or segment_left > bbox[2] + 12.0:
-                    continue
-                if segment_bottom < bbox[1] - 2.0:
-                    continue
-                overlapping_rule_boxes.append(
-                    (segment_left, segment_top, segment_right, segment_bottom)
-                )
-            if overlapping_rule_boxes:
-                rule_left = min(rule_box[0] for rule_box in overlapping_rule_boxes)
-                rule_right = max(rule_box[2] for rule_box in overlapping_rule_boxes)
-                rule_bottom = max(rule_box[3] for rule_box in overlapping_rule_boxes)
-                if rule_bottom > bbox[3] + 20.0 or rule_left < bbox[0] - 2.0:
-                    rotated_refinement_bbox = (
-                        min(float(bbox[0]), rule_left),
-                        float(bbox[1]),
-                        max(float(bbox[2]), rule_right),
-                        max(float(bbox[3]), rule_bottom),
-                    )
-            if caption_bbox is not None:
-                caption_left_hint = min(float(caption_bbox[0]), float(caption_bbox[1]))
-                if 0.0 < rotated_refinement_bbox[0] - caption_left_hint <= 24.0:
-                    rotated_refinement_bbox = (
-                        caption_left_hint - 2.0,
-                        rotated_refinement_bbox[1],
-                        rotated_refinement_bbox[2],
-                        rotated_refinement_bbox[3],
-                    )
-            if rotated_text_block_bbox is not None:
-                rotated_refinement_bbox = rotated_text_block_bbox
-            rotated_words = [
-                word
-                for word in page_words
-                if float(word["x0"]) >= rotated_refinement_bbox[0] - 2.0
-                and float(word["x1"]) <= rotated_refinement_bbox[2] + 2.0
-                and float(word["top"]) >= rotated_refinement_bbox[1] - 2.0
-                and float(word["bottom"]) <= rotated_refinement_bbox[3] + 2.0
-            ]
-            rotated_chars = [
-                char
-                for char in page_chars
-                if float(char["x0"]) >= rotated_refinement_bbox[0] - 2.0
-                and float(char["x1"]) <= rotated_refinement_bbox[2] + 2.0
-                and float(char["top"]) >= rotated_refinement_bbox[1] - 2.0
-                and float(char["bottom"]) <= rotated_refinement_bbox[3] + 2.0
-            ]
-            clipped_rule_segments = [
-                segment
-                for segment in page_rule_segments
-                if max(float(segment[0]), float(segment[2])) >= rotated_refinement_bbox[0] - 2.0
-                and min(float(segment[0]), float(segment[2])) <= rotated_refinement_bbox[2] + 2.0
-                and max(float(segment[1]), float(segment[3])) >= rotated_refinement_bbox[1] - 2.0
-                and min(float(segment[1]), float(segment[3])) <= rotated_refinement_bbox[3] + 2.0
-            ]
-            (
-                working_words,
-                working_chars,
-                transformed_rule_segments,
-                transformed_bbox,
-            ) = normalize_positioned_geometry_for_rotation(
-                words=rotated_words or clipped_words,
-                chars=rotated_chars or clipped_chars,
-                rule_segments=clipped_rule_segments,
-                bbox=rotated_refinement_bbox,
-                rotation_direction=rotation_direction,
-            )
-            refinement_attempts.append(
-                {
-                    "words": working_words,
-                    "chars": working_chars,
-                    "horizontal_rules": detect_horizontal_rules(
-                        transformed_rule_segments,
-                        transformed_bbox,
-                    ),
-                    "full_width_horizontal_rules": detect_horizontal_rules(
-                        transformed_rule_segments,
-                        transformed_bbox,
-                    ),
-                    "refinement_source": "rotated_word_positions_with_rules",
-                    "coordinate_frame": "table_local_rotated_normalized",
-                    "geometry_transform_source_bbox": rotated_refinement_bbox,
-                    "geometry_transform_transposed": False,
-                    "geometry_transform_applied": True,
-                    "minimum_row_gain": 3,
-                }
-            )
-
-            bbox_width = float(bbox[2]) - float(bbox[0])
-            bbox_height = float(bbox[3]) - float(bbox[1])
-            if rotated_few_column_stacked_grid and bbox_width >= bbox_height * 3.0:
-                compact_padding = max(8.0, min(12.0, bbox_height * 0.12))
-                label_padding = max(20.0, min(32.0, bbox_height * 0.28))
-                transposed_bbox = (
-                    max(0.0, float(bbox[1]) - compact_padding),
-                    max(0.0, float(bbox[0]) - compact_padding),
-                    float(bbox[3]) + label_padding,
-                    float(bbox[2]) + label_padding,
-                )
-                transposed_words = [
-                    word
-                    for word in page_words
-                    if float(word["x0"]) >= transposed_bbox[0] - 2.0
-                    and float(word["x1"]) <= transposed_bbox[2] + 2.0
-                    and float(word["top"]) >= transposed_bbox[1] - 2.0
-                    and float(word["bottom"]) <= transposed_bbox[3] + 2.0
-                ]
-                if transposed_words:
-                    transposed_chars = [
-                        char
-                        for char in page_chars
-                        if float(char["x0"]) >= transposed_bbox[0] - 2.0
-                        and float(char["x1"]) <= transposed_bbox[2] + 2.0
-                        and float(char["top"]) >= transposed_bbox[1] - 2.0
-                        and float(char["bottom"]) <= transposed_bbox[3] + 2.0
-                    ]
-                    transposed_rule_segments = [
-                        segment
-                        for segment in page_rule_segments
-                        if max(float(segment[0]), float(segment[2])) >= transposed_bbox[0] - 2.0
-                        and min(float(segment[0]), float(segment[2])) <= transposed_bbox[2] + 2.0
-                        and max(float(segment[1]), float(segment[3])) >= transposed_bbox[1] - 2.0
-                        and min(float(segment[1]), float(segment[3])) <= transposed_bbox[3] + 2.0
-                    ]
-                    (
-                        transposed_working_words,
-                        transposed_working_chars,
-                        transposed_transformed_rule_segments,
-                        transposed_transformed_bbox,
-                    ) = normalize_positioned_geometry_for_rotation(
-                        words=transposed_words,
-                        chars=transposed_chars,
-                        rule_segments=transposed_rule_segments,
-                        bbox=transposed_bbox,
-                        rotation_direction=rotation_direction,
-                    )
-                    refinement_attempts.append(
-                        {
-                            "words": transposed_working_words,
-                            "chars": transposed_working_chars,
-                            "horizontal_rules": detect_horizontal_rules(
-                                transposed_transformed_rule_segments,
-                                transposed_transformed_bbox,
-                            ),
-                            "full_width_horizontal_rules": detect_horizontal_rules(
-                                transposed_transformed_rule_segments,
-                                transposed_transformed_bbox,
-                            ),
-                            "refinement_source": "rotated_transposed_word_positions_with_rules",
-                            "coordinate_frame": "table_local_rotated_transposed_normalized",
-                            "geometry_transform_source_bbox": transposed_bbox,
-                            "geometry_transform_transposed": True,
-                            "geometry_transform_applied": True,
-                            "minimum_row_gain": 3,
-                        }
-                    )
-        else:
-            refinement_attempts.append(
-                {
-                    "words": clipped_words,
-                    "chars": clipped_chars,
-                    "horizontal_rules": horizontal_rules,
-                    "full_width_horizontal_rules": full_width_rules,
-                    "refinement_source": (
-                        "stacked_row_word_positions"
-                        if first_row_internally_stacked
-                        else "collapsed_explicit_grid_word_positions"
-                    ),
-                    "coordinate_frame": "page",
-                    "geometry_transform_source_bbox": None,
-                    "geometry_transform_transposed": False,
-                    "geometry_transform_applied": False,
-                    "minimum_row_gain": 3 if first_row_internally_stacked else 4,
-                    "allow_same_column_count": first_row_internally_stacked,
-                    "use_top_header_boundaries": first_row_internally_stacked,
-                }
-            )
-
-        for refinement_attempt in refinement_attempts:
-            working_words = refinement_attempt["words"]
-            working_chars = refinement_attempt["chars"]
-            working_horizontal_rules = refinement_attempt["horizontal_rules"]
-            working_full_width_rules = refinement_attempt.get("full_width_horizontal_rules")
-            if not isinstance(working_words, list) or not isinstance(working_chars, list):
-                continue
-            if not isinstance(working_horizontal_rules, list):
-                working_horizontal_rules = []
-            if not isinstance(working_full_width_rules, list):
-                working_full_width_rules = []
-            refined_lines = build_word_lines(working_words)
-            column_start_boundaries: list[float] | None = None
-            value_matrix_column_anchors: list[float] = []
-            value_matrix_geometry = _value_matrix_column_boundaries_from_lines(
-                refined_lines,
-                working_full_width_rules or working_horizontal_rules,
-            )
-            if value_matrix_geometry is not None:
-                column_start_boundaries, value_matrix_column_anchors = value_matrix_geometry
-            if (
-                column_start_boundaries is None
-                and bool(refinement_attempt.get("use_top_header_boundaries"))
-                and refined_lines
-            ):
-                first_line = refined_lines[0]
-                header_starts: list[float] = []
-                previous_x1: float | None = None
-                for word in sorted(first_line["words"], key=lambda item: float(item["x0"])):
-                    text = str(word["text"]).strip()
-                    if not text:
-                        continue
-                    word_x0 = float(word["x0"])
-                    word_x1 = float(word["x1"])
-                    if previous_x1 is None or word_x0 - previous_x1 > 10.0:
-                        header_starts.append(word_x0)
-                    previous_x1 = word_x1
-                clustered_starts: list[float] = []
-                for start in sorted(header_starts):
-                    if not clustered_starts or abs(start - clustered_starts[-1]) > 8.0:
-                        clustered_starts.append(start)
-                    else:
-                        clustered_starts[-1] = (clustered_starts[-1] + start) / 2.0
-                if len(clustered_starts) >= max(4, max_raw_cols):
-                    column_start_boundaries = [
-                        (clustered_starts[index] + clustered_starts[index + 1]) / 2.0
-                        for index in range(len(clustered_starts) - 1)
-                    ]
-            if (
-                column_start_boundaries is None
-                and bool(refinement_attempt["geometry_transform_applied"])
-                and len(working_horizontal_rules) >= 3
-            ):
-                sorted_rules = sorted(float(rule) for rule in working_horizontal_rules)
-                internal_rules = [
-                    rule
-                    for rule in sorted_rules[1:-1]
-                    if rule > sorted_rules[0] + 3.0 and rule < sorted_rules[-1] - 3.0
-                ]
-                if internal_rules:
-                    separator_rule = internal_rules[0]
-                    header_lines = [
-                        line
-                        for line in refined_lines
-                        if float(line["bottom"]) <= separator_rule + 1.5
-                    ]
-                    header_starts: list[float] = []
-                    for line in header_lines:
-                        previous_x1: float | None = None
-                        for word in sorted(line["words"], key=lambda item: float(item["x0"])):
-                            text = str(word["text"]).strip()
-                            if not text:
-                                continue
-                            word_x0 = float(word["x0"])
-                            word_x1 = float(word["x1"])
-                            if previous_x1 is None or word_x0 - previous_x1 > 10.0:
-                                header_starts.append(word_x0)
-                            previous_x1 = word_x1
-                    clustered_starts: list[float] = []
-                    for start in sorted(header_starts):
-                        if not clustered_starts or abs(start - clustered_starts[-1]) > 8.0:
-                            clustered_starts.append(start)
-                        else:
-                            clustered_starts[-1] = (clustered_starts[-1] + start) / 2.0
-                    if len(clustered_starts) >= max_raw_cols + 4:
-                        column_start_boundaries = clustered_starts[1:]
-            grid_geometry: dict[str, object] = {}
-            refined_rows, refined_cell_bboxes = build_row_grid_from_lines(
-                refined_lines,
-                page_chars=working_chars,
-                column_start_boundaries=column_start_boundaries,
-                geometry_out=grid_geometry,
-            )
-            if refined_rows:
-                keep_indices = [
-                    col_idx
-                    for col_idx in range(len(refined_rows[0]))
-                    if any(col_idx < len(row) and row[col_idx].strip() for row in refined_rows)
-                ]
-                if keep_indices:
-                    refined_rows = [
-                        [row[col_idx] for col_idx in keep_indices]
-                        for row in refined_rows
-                    ]
-                    refined_cell_bboxes = [
-                        [row[col_idx] for col_idx in keep_indices]
-                        for row in refined_cell_bboxes
-                    ]
-                refined_col_count = max((len(row) for row in refined_rows), default=0)
-                column_gain_ok = refined_col_count > max_raw_cols
-                row_gain_ok = len(refined_rows) >= len(raw_rows) + int(
-                    refinement_attempt["minimum_row_gain"]
-                )
-                stacked_column_gain_ok = (
-                    rotated_few_column_stacked_grid
-                    and refined_col_count >= max_raw_cols + 4
-                    and len(refined_rows) >= max(4, len(raw_rows) - 1)
-                )
-                wide_rotated_refinement = (
-                    bool(refinement_attempt["geometry_transform_applied"])
-                    and max_raw_cols <= 4
-                    and refined_col_count > 12
-                )
-                has_rotated_rule_support = (
-                    len(working_horizontal_rules) >= 3
-                    or column_start_boundaries is not None
-                )
-                if wide_rotated_refinement and (
-                    refined_col_count > 30 or not has_rotated_rule_support
-                ):
-                    continue
-                same_column_stacked_row_ok = (
-                    bool(refinement_attempt.get("allow_same_column_count"))
-                    and refined_col_count >= max_raw_cols
-                    and row_gain_ok
-                )
-                if (
-                    column_gain_ok and (row_gain_ok or stacked_column_gain_ok)
-                ) or same_column_stacked_row_ok:
-                    return {
-                        "raw_rows": refined_rows,
-                        "table_cells": refined_cell_bboxes,
-                        "refined_table_cells": refined_cell_bboxes,
-                        "row_bounds": [
-                            (float(line["top"]), float(line["bottom"]))
-                            for line in refined_lines
-                        ],
-                        "horizontal_rules": working_horizontal_rules,
-                        "full_width_horizontal_rules": working_full_width_rules,
-                        "grid_refinement_source": str(refinement_attempt["refinement_source"]),
-                        "geometry_source": "pymupdf_positioned_words_and_rules",
-                        "geometry_coordinate_frame": str(refinement_attempt["coordinate_frame"]),
-                        "geometry_transform_source_bbox": refinement_attempt[
-                            "geometry_transform_source_bbox"
-                        ],
-                        "geometry_transform_transposed": bool(
-                            refinement_attempt["geometry_transform_transposed"]
-                        ),
-                        "geometry_transform_applied": bool(
-                            refinement_attempt["geometry_transform_applied"]
-                        ),
-                        "value_matrix_column_anchors": [
-                            round(anchor, 4)
-                            for anchor in value_matrix_column_anchors
-                        ],
-                    }
+    if collapsed_body_refinement is not None:
+        return collapsed_body_refinement
 
     value_matrix_refinement = _refine_grid_from_value_matrix_word_positions(
         raw_rows=raw_rows,

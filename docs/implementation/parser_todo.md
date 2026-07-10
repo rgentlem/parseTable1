@@ -159,6 +159,31 @@ insufficient.
    value column. It must keep the extracted grid coordinate-faithful: if a
    printed value is split across physical cells or rows, extraction preserves
    those cells and bboxes rather than joining them.
+   The existing collapsed explicit-grid reconstruction is now isolated in
+   `_refine_collapsed_explicit_body_layout()`. A narrow ruled-body layout
+   branch now handles non-rotated three-rule tables when header visual runs and
+   body value starts agree, producing
+   `grid_refinement_source = "ruled_body_layout_word_positions"` before the
+   older numeric-anchor collapsed-grid path is tried. The first verification
+   run changed only the intended Lead exposure p5-t0 table from 27 x 6 to
+   27 x 3; all other extracted tables, including the other collapsed-path table
+   and all non-collapsed tables, were unchanged.
+   Follow-up verification split the Lead p5-t0 header with the partial
+   value-region rule above the White/Black leaves: row 0 is now a
+   `group_header`, rows 1-2 are `leaf_header`, and `Mean ± SDa` is a group
+   spanning both value leaves. The 27-paper run changed only Lead artifacts
+   plus ordinary parse-quality timestamps.
+   Recent rule-classification update: `horizontal_rules` now preserves
+   discontinuous same-y rule positions as ordinary drawn-rule evidence, while
+   `full_width_horizontal_rules` is restricted to continuous near-edge-to-near-edge
+   rules. Discontinuous value-region rules should inform header structure; they
+   must not be promoted into header/body or body/footer separators by summing
+   separated spans. The 27-paper run
+   `outputs/testpapers_batch_rule_continuity2_20260710` parsed 27/27 PDFs; the
+   only extracted-table shape change was `stroke-p7-t1`, where the corrected
+   full-width rule list exposes a remaining ruled-body layout bug: the table
+   should preserve a row-label column plus six value columns, but the current
+   ruled-body branch merges the row label with the first OR column.
    Leaf-header reconstruction groups positioned words into small-gap visual
    runs before assigning each run to body-derived column extents. Anchors may
    define value-column extents upstream, but they do not glue visually separated
@@ -235,9 +260,29 @@ insufficient.
    `ColumnHeaderSchema` and before `parsed_cell_values.json`. It records
    single-cell candidates plus logical value candidates reconstructed from
    same-column vertical continuations or row text streams that split into one
-   candidate per settled value column. The extracted and normalized physical
-   grids are not mutated; candidates carry source cells, fragments, bboxes when
-   available, and candidate text used by component parsing.
+   candidate per settled value column. `body_row_label_candidates.json` now
+   sits beside it for wrapped body row labels, replacing the older
+   normalization-time `vertical_label_continuations` row merge. The extracted
+   and normalized physical grids are not mutated; candidates carry source
+   cells, fragments, bboxes when available, and candidate text or labels used by
+   later parsing.
+   Recent normalization cleanup: value-fragment grid mutation paths were
+   retired from normalization, including count-percent column merging, split
+   uncertainty-column merging, embedded label/count movement, extra-wide
+   newline-stacked value-column expansion, and empty-column cleanup created by
+   those repairs. Eke Table 1 page 4/page 5 now preserves the 19 physical
+   columns. `ColumnHeaderSchema` comparison labels now canonicalize standalone
+   split-header hyphen punctuation, so the Eke fragments resolve as one
+   continuation without re-merging the grid. Remaining value-component work is
+   to represent the related estimate/SE leaves explicitly for downstream value
+   interpretation.
+   Recent column-shape cleanup: normalization no longer drops trailing
+   nondata columns, sparse nonmatrix columns, sparse stub label columns, or
+   split row-label field columns, and it no longer performs inline
+   `merged_split_label_columns` mutation. The physical grid is preserved; bad
+   ownership belongs in extraction/table-region work, while logically related
+   row-label fragments should be represented by row-label candidates or
+   semantic row logic.
 11. [ ] Strengthen parent/level reasoning.
    Use table-local evidence such as repeated level blocks, blank or sparse parent rows, indentation, header value roles, continuation boundaries, and value-region shape. Indentation should be one strong signal, not the only signal.
 
@@ -346,7 +391,7 @@ insufficient.
   normalization repairs now uses region-owned header/body rows when available.
   Footer/note rows remain available in extraction and table-region artifacts,
   but they cannot keep a footer-only column alive in the normalized data grid.
-- Recent normalization update: header/body selection now uses validated full-width separator rules first, first value-region anchors second, and content scoring only as fallback. Full-width separator evidence is derived from stroked rule geometry so filled row highlighting/background shading does not create false hlines. Future work still needs a more principled model for data/estimate tables without clear separator or value-anchor evidence, rather than adding more ordered special cases.
+- Recent normalization update: header/body selection now uses validated full-width separator rules first, first value-region anchors second, and content scoring only as fallback. Full-width separator evidence is derived from drawn rule geometry so filled row highlighting/background shading does not create false hlines. Future work still needs a more principled model for data/estimate tables without clear separator or value-anchor evidence, rather than adding more ordered special cases.
 - Recent column-schema update: full-width hlines inside an already selected header band now split upper spanning-group rows from lower wrapped leaf-header rows. Cardiovascular Table 2 keeps body start row 7 while using rows 4-6 as leaf labels and rows 0-3 as training/testing cohort groups.
 - Recent column-schema update: comma-containing leaf headers are split across
   adjacent value columns only when body rows repeatedly show the same adjacent
@@ -356,7 +401,7 @@ insufficient.
   `Mean AL, mm` and body intervals with internal commas intact.
 - Recent normalization update: dense row-by-row full-width rules no longer disable hline separator detection. Fully ruled tables should still use hlines as boundary proposals, then choose the boundary that preserves a multicolumn group row plus its single-column leaf-label row above any row-label-only body parent. This fixes the Table 3 continuation in `Association between anthropometric indices and chronic kidney disease: Insights from NHANES 2009–2018`, where page 11 and page 12 now share the same `Model 1`/`Model 2`/`Model 3` column schema and integrate as one resolved table.
 - Recent hline-led extraction update: for credible ruled table candidates with
-  full-width stroked horizontal rules, extraction now treats the
+  full-width drawn horizontal rules, extraction now treats the
   PyMuPDF4LLM grid as only a rough region and rebuilds row/column structure
   from positioned PyMuPDF words inside the ruled band. The first internal
   full-width rule supplies the header/body separator when both sides contain

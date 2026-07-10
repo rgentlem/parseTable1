@@ -51,8 +51,10 @@ class TrimmedTableRows(NamedTuple):
 def detect_horizontal_rules(
     rule_segments: list[tuple[float, float, float, float]] | None,
     bbox: tuple[float, float, float, float] | None,
+    *,
+    require_full_width: bool = False,
 ) -> list[float]:
-    """Detect wide horizontal rules spanning most of the candidate table width."""
+    """Detect horizontal rule y-positions inside a candidate table bbox."""
     if bbox is None or not rule_segments:
         return []
 
@@ -94,9 +96,20 @@ def detect_horizontal_rules(
                 merged_spans.append([span_left, span_right])
                 continue
             merged_spans[-1][1] = max(merged_spans[-1][1], span_right)
-        coverage = sum(span_right - span_left for span_left, span_right in merged_spans)
-        if coverage / table_width < 0.8:
-            continue
+        if require_full_width:
+            edge_tolerance = max(8.0, table_width * 0.08)
+            full_width_span_found = any(
+                (span_right - span_left) / table_width >= 0.8
+                and span_left <= float(left) + edge_tolerance
+                and span_right >= float(right) - edge_tolerance
+                for span_left, span_right in merged_spans
+            )
+            if not full_width_span_found:
+                continue
+        else:
+            coverage = sum(span_right - span_left for span_left, span_right in merged_spans)
+            if coverage / table_width < 0.8:
+                continue
         deduped.append(float(bucket["y"]))
     return deduped
 

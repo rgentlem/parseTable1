@@ -31,6 +31,7 @@ Today that directory may contain:
 - `normalized_tables.json`
 - `column_header_schemas.json`
 - `body_element_candidates.json`
+- `body_row_label_candidates.json`
 - `resolved_tables.json`
 - `table1_continuation_groups.json`
 - `table_continuation_column_checks.json`
@@ -70,6 +71,9 @@ bands, body rows, footer/note bands, and row-level role assignments. It is
 built from extracted table entries, row bounds, cell bboxes when needed, and
 horizontal rules after page-furniture filtering. Table captions and titles are
 represented here as table identity/component evidence, not as column headers.
+Discontinuous same-y rule segments are preserved as ordinary horizontal-rule
+evidence; only continuous near-edge-to-near-edge drawn rules are treated as
+full-width boundary rules.
 
 `paper_positioned_document.json` records the shared PyMuPDF positioned text pass
 for the whole paper: pages, visual lines, span text, bboxes, font names, font
@@ -337,7 +341,21 @@ column geometry proves that the fragments belong to separate cells.
 
 When a table shows strong grouped-header signals, such as repeated `Model 1`, `Model 2`, `Model 3` blocks plus wide horizontal boundaries, extraction can also refine the explicit backend grid using word positions inside the table bounding box.
 
-For collapsed explicit grids, word-position refinement treats stable value columns as repeated value-like numeric anchors. The left row-label region is inferred from the observed gap before the repeated value run, not from a literal header such as `Characteristics`. This prevents label text such as `Q1-Q3`, `kg/m2`, or biomarker names containing digits from creating fake columns, while keeping a mostly text left column intact when the numeric matrix starts to its right. Rows with a trailing statistic and only nonnumeric fragments to its left can also be repaired from right to left so long first-column labels remain a single row label.
+For collapsed explicit grids, extraction first looks for hard ruled-table
+evidence. In a non-rotated table with a top rule, a header/body separator, and a
+bottom rule, header visual runs can define candidate value columns when body
+value starts agree with those runs. The body grid is then rebuilt from
+positioned words using those boundaries, so compound values such as `mean ± SD`
+or `n (%)` remain in one physical value column when the header geometry supports
+that column. If that evidence is absent, the older word-position refinement
+treats stable value columns as repeated value-like numeric anchors. In that
+path, the left row-label region is inferred from the observed gap before the
+repeated value run, not from a literal header such as `Characteristics`. This
+prevents label text such as `Q1-Q3`, `kg/m2`, or biomarker names containing
+digits from creating fake columns, while keeping a mostly text left column
+intact when the numeric matrix starts to its right. Rows with a trailing
+statistic and only nonnumeric fragments to its left can also be repaired from
+right to left so long first-column labels remain a single row label.
 
 That refinement is no longer limited to upright tables. For rotated explicit tables, extraction can normalize the clipped word and rule coordinates into a table-local upright frame, rebuild the row/column grid there, and then write the improved grid into `ExtractedTable` while preserving the original rotation metadata separately.
 
@@ -566,101 +584,39 @@ Some tables are extracted with one logical `n (%)` value split across two adjace
 
 Normalization can conservatively merge those back into one logical cell when the surrounding row pattern strongly supports that interpretation.
 
-This is one of the main reasons normalization exists as a real stage rather than a trivial cleanup wrapper.
+This is one of the main reasons normalization exists as a real stage rather
+than a trivial cleanup wrapper. It separates header/body rows, cleans
+parser-facing text, and records row features without pretending that later
+semantic interpretation has happened.
 
-It is not just prettifying text. It is repairing table structure in a controlled way before semantic interpretation starts.
+#### 4.8 Preserve Physical Row-Label Columns
 
-#### 4.8 Repair Sparse Stub Label Columns
+Normalization no longer shifts, merges, or suppresses row-label columns after
+extraction. Sparse stub columns, split left-side label fields, section stubs,
+and adjacent label fragments remain in the physical normalized grid. If those
+columns are wrong, the fix belongs in positioned extraction or table-region
+ownership; if they are physically real but logically related, downstream
+row-label candidate or semantic row logic should represent that relationship
+without rewriting `NormalizedTable`.
 
-Some extracted grids contain a sparse first column whose only purpose is to hold section-like row stubs, while the actual variable names are in the next column. These rows can otherwise cause the downstream parser to see blank row labels for most data rows.
+This keeps `ExtractedTable` and `NormalizedTable` aligned on physical column
+structure and avoids hiding extraction defects behind row-label repairs.
 
-Normalization can repair this only when the evidence is strong:
+#### 4.9 Preserve Physical Value Fragments
 
-- the first column is sparse and does not contain value-like cells
-- at least one first-column-only stub row is present
-- the second column is dense and label-like
-- many rows have a blank first column, a label-like second column, and value-like cells to the right
-- the right-side columns look like the data region
+Normalization no longer merges split value fragments, embedded label/count
+fragments, or newline-stacked value-region cells into synthetic columns. If
+the extracted grid contains those physical fragments, `NormalizedTable`
+preserves them. Logical relationships between fragments belong later in
+`body_element_candidates.json`, parsed value components, or extraction fixes
+when the visual grid itself was wrong.
 
-When this fires, normalization:
+Wrapped body row labels are not merged during normalization. They remain as
+physical rows in `normalized_tables.json` and are later represented in
+`body_row_label_candidates.json`, after `ColumnHeaderSchema` has established
+row-label and value columns.
 
-- suppresses pure stub rows from `body_rows`
-- shifts the second column into the row-label position
-- merges first-column and second-column text for rows where both pieces form one label
-- records the repair evidence in `metadata.column_repairs.sparse_stub_label_column`
-
-This is intentionally a structural repair. It should not depend on exact words such as `Outcomes` or `Covariates`.
-
-#### 4.9 Repair Split Row-Label Field Columns
-
-Some PDF table extractors split the single logical row-label field across two adjacent columns. Typical examples are categorical levels that appear in the second extracted column while parent variables appear in the first, or labels such as `Married/` plus `Living with partner` split across the first two columns.
-
-Normalization can merge this two-column row-label field when strong row-pattern evidence shows that:
-
-- the second column repeatedly contains row-label fragments
-- data-like values begin to the right of the first two columns
-- shifted rows or many merged first-plus-second label fragments are present
-
-When this fires, normalization:
-
-- shifts second-column label fragments into the first column
-- merges first-column and second-column fragments when both contain label text
-- records the repair evidence in `metadata.column_repairs.split_row_label_field_columns`
-
-This repair preserves raw extracted text in `ExtractedTable`; it only changes the parser-facing normalized grid.
-
-#### 4.10 Repair Embedded Label Tails And Vertical Continuations
-
-Some extracted grids keep the visual value columns intact but split row labels awkwardly.
-
-Two recurring cases are:
-
-- a label tail is embedded in the first value cell with a count, for example `<100%` plus `FPL 625`
-- a row label wraps onto the next extracted row while the values stay on the first row, for example `All (NHANES` followed by `2009 to 2012)`
-- a row label starts on a label-only row and finishes on the following valued row, for example `SI (31025 min21` followed by `per pmol/L)`
-
-Normalization can repair these only when the row context is strong:
-
-- embedded label-tail repair requires a label-like first cell, a label-tail-plus-count pattern in the first value cell, and additional value-like cells to the right
-- vertical continuation repair requires a label-only row after a valued row plus punctuation, footnote, lowercase/digit-start, or phrase-continuation cues
-- leading label-fragment repair requires the label-only row itself to show unfinished-label evidence, such as an unmatched parenthesis or trailing phrase connector, before it can merge into the following valued row
-
-When these fire, normalization:
-
-- moves the embedded label tail back into the row-label cell while leaving the count in the value column
-- appends vertical continuation text to the preceding valued row's label, or prepends a leading label fragment to the following valued row's label
-- suppresses consumed continuation rows from `body_rows`
-- records repair evidence in `metadata.column_repairs.embedded_label_count_cells` and `metadata.column_repairs.vertical_label_continuations`
-
-These repairs improve row-label integrity before row signatures and variable grouping are built. They do not assign a table category by themselves.
-
-When `TableRegion` is available, column-shape cleanup uses region-owned header
-and body rows as the evidence set for empty-column pruning. Footer/note rows
-remain preserved in `ExtractedTable` and `table_regions.json`, but they do not
-keep an otherwise empty data-grid column alive in `NormalizedTable`.
-
-#### 4.11 Expand Extra-Wide Stacked Value Columns
-
-Some upright, visually wide data tables can be collapsed by extraction into a row-label cell plus one broad value-region cell. The visual table is still multi-column; the broad extracted cell may preserve those visual columns as a stable newline-delimited stack.
-
-Normalization can expand that collapsed value-region cell only when the evidence is strong:
-
-- several rows share the same stack width
-- the stacked body tokens are mostly numeric value-like tokens
-- top header stacks can be aligned to the same width or cleanly repeated over paired leaf columns
-
-When this fires, normalization:
-
-- keeps the first extracted column as the row-label field
-- splits the broad value-region cell into separate parser-facing columns
-- repeats coarser shared header labels over their leaf value/statistic columns
-- chunks dense multi-line header stacks into one label per expanded value column
-- records the recovered header band and first value row as boundary evidence
-- records the repair evidence in `metadata.column_repairs.extra_wide_value_column`
-
-This treats the visual table as a normal multi-column table while preserving the original collapsed cell text in `ExtractedTable`.
-
-#### 4.12 Preserve Region Boundary Provenance
+#### 4.10 Preserve Region Boundary Provenance
 
 Normalization copies the table-region source, confidence, caption rows,
 preamble rows, footer/note rows, and diagnostics into
@@ -742,12 +698,13 @@ keeps the moved-from cell as evidence; it should not depend on recognizing
 paper-specific words.
 
 The schema builder also uses rule and coordinate evidence inside the header
-band. A horizontal rule between header rows can mark the rows below it as the
-wrapped leaf-header stack while keeping higher rows as spanning groups. The
-row-label column is allowed to sit outside value-region group headers, since
-those group headers often describe only subsets of the data columns. If a
-value-region group header is extracted as adjacent text fragments, a large
-horizontal gap can split those fragments into separate groups.
+band. A full-width rule or a partial value-region rule between header rows can
+mark the rows below it as the wrapped leaf-header stack while keeping higher
+rows as spanning groups. The row-label column is allowed to sit outside
+value-region group headers, since those group headers often describe only
+subsets of the data columns. If a value-region group header is extracted as
+adjacent text fragments, a large horizontal gap can split those fragments into
+separate groups.
 When an upper header row mixes a standalone leaf column with a spanning group,
 for example a `Total` column followed by a multi-column grouped exposure band,
 the schema builder uses the lower leaf-header stack to split those runs rather
@@ -962,11 +919,12 @@ This makes it easier to:
 ## Step 9: Build Body Element Candidates
 
 After `ColumnHeaderSchema` exists, the parser builds
-`body_element_candidates.json` over source normalized tables.
+`body_element_candidates.json` and `body_row_label_candidates.json` over source
+normalized tables.
 
-This is the first body-value interpretation layer. It does not alter the
-extracted or normalized grid. Instead, it records candidate logical values from
-one or more physical source cells, including:
+`body_element_candidates.json` is the first body-value interpretation layer. It
+does not alter the extracted or normalized grid. Instead, it records candidate
+logical values from one or more physical source cells, including:
 
 - a normal single populated body cell
 - a value split vertically into a blank-label continuation row
@@ -978,6 +936,13 @@ known, bboxes when available, printed fragments, and candidate text.
 
 This lets later value parsing use good element-candidate text while R and
 Python inspection can still show what was physically printed in the PDF.
+
+`body_row_label_candidates.json` is the sibling body-label interpretation
+layer. It records candidate logical labels from adjacent physical body rows
+where the anchor row has values and following label-continuation rows have
+label text but empty value columns. It gives row classification and
+`TableDefinition` the candidate label while preserving the physical rows in
+`normalized_tables.json`.
 
 ## Step 10: Parse Source-Cell Value Components
 
@@ -1293,8 +1258,6 @@ This artifact records:
 - whether the table ended as `ok`, `rescued`, or `failed`
 - the terminal failure stage and failure reason when rescue was exhausted
 
-If a broad extracted value cell was expanded into visual value columns during normalization, that repair is recorded as an `extra_wide_value_column_repair` attempt rather than treating the original newline-stacked extraction as an unrecovered collapsed grid.
-
 If a structurally wide matrix-like real table is outside the current
 descriptive/estimate parser routes, status should preserve it as a real table
 with an unsupported-route note instead of calling it a non-table layout
@@ -1325,10 +1288,15 @@ When a parse looks wrong, inspect the outputs in this order.
    whether the logical value candidates preserve the right source fragments and
    bboxes without changing the extracted grid.
 
-5. `resolved_tables.json`
+5. `body_row_label_candidates.json`
+   If row labels are split across physical rows, inspect this to see whether
+   logical label candidates preserve the right source fragments and bboxes
+   without changing the extracted or normalized grid.
+
+6. `resolved_tables.json`
    If one logical table spans pages, inspect this to see whether fragments were integrated, rejected, or left as singletons, and how resolved rows map back to source table rows.
 
-6. `table_continuation_column_checks.json`
+7. `table_continuation_column_checks.json`
    If a source fragment has explicit or narrow inferred continuation evidence, inspect this to see whether the normalized column count and schema-derived column headers are compatible.
 
 7. `table1_continuation_groups.json`, `merged_table1_tables.json`, and `continued_variable_integrations.json`

@@ -40,7 +40,10 @@ canonical extraction logic with explicit provenance.
   - Latest usage: 24 tables.
   - Status: keep, but rename mentally from fallback to primary ruled-table
     extraction. It uses positioned words, horizontal rules, value anchors, and
-    header-band geometry, which is the intended direction.
+    header-band geometry, which is the intended direction. Ordinary
+    `horizontal_rules` may include discontinuous same-y rule positions, but
+    `full_width_horizontal_rules` must require a continuous near-edge-to-near-edge
+    drawn rule so partial header rules are not misused as body separators.
 
 - `value_matrix_word_positions`
   - Code: `table1_parser/extract/pymupdf4llm_extractor.py::_refine_grid_from_value_matrix_word_positions`
@@ -105,9 +108,17 @@ canonical extraction logic with explicit provenance.
 
 - Collapsed explicit-grid word-position rescue
   - Metadata: `grid_refinement_source = "collapsed_explicit_grid_word_positions"`.
-  - Latest usage: 2 tables.
-  - Status: retire after hline/value-matrix extraction owns collapsed grid
-    reconstruction.
+  - Latest usage after ruled-body layout hardening and rule-continuity
+    classification: 0 tables in
+    `outputs/testpapers_batch_rule_continuity2_20260710`.
+  - Status: retire after hline/value-matrix or ruled body-layout extraction
+    owns collapsed grid reconstruction. Non-rotated three-rule tables with
+    agreeing header visual runs and body value starts now use
+    `grid_refinement_source = "ruled_body_layout_word_positions"` before this
+    older numeric-anchor path is tried. Current blocker: `stroke-p7-t1` now
+    reaches the ruled-body path but loses the row-label/value boundary, so the
+    next fix should derive that first boundary from drawn rule geometry and
+    body text positions rather than from header-run ordering.
 
 - Special model/estimate `word_positions_with_horizontal_rules`
   - Metadata: `grid_refinement_source = "word_positions_with_horizontal_rules"`.
@@ -146,67 +157,82 @@ shape after extraction.
 - Embedded label-count cell repair
   - Code: `table1_parser/normalize/pipeline.py::_repair_embedded_label_count_cells`
   - Metadata: `column_repairs.embedded_label_count_cells`.
-  - Status: retire after extraction assigns text to the correct label/value
-    columns.
+  - Status: retired. Embedded label/count splits should be represented by
+    coordinate-faithful extraction and later value/label candidate layers, not
+    by moving text between normalized-grid columns.
 
 - Vertical label continuation merge
   - Code: `table1_parser/normalize/pipeline.py::_repair_vertical_label_continuations`
   - Metadata: `column_repairs.vertical_label_continuations`.
-  - Latest usage: 13 tables.
-  - Status: high-priority removal candidate. Correct row extraction should
-    preserve wrapped labels without deleting visual rows downstream.
+  - Latest retained-run usage before retirement: 16 tables.
+  - Status: retired. Wrapped body row labels are now represented by
+    `body_row_label_candidates.json` after `ColumnHeaderSchema`; normalization
+    no longer deletes physical continuation rows or rewrites valued-row labels.
 
 - Split uncertainty columns
   - Code: `table1_parser/normalize/pipeline.py::_repair_split_uncertainty_columns`
   - Metadata: `column_repairs.split_uncertainty_columns`.
-  - Latest usage: 2 tables.
-  - Status: retire. Estimate and uncertainty fragments should be extracted as
-    one cell or modeled as typed value components, not merged by a grid repair.
+  - Latest retained-run usage before retirement: 2 tables.
+  - Status: retired. Estimate and uncertainty fragments remain physical grid
+    evidence and should be related by typed value components, not merged by
+    normalization.
+
+- Merged count-percent value columns
+  - Code: previous inline normalization block recorded as
+    `column_repairs.merged_columns`.
+  - Latest retained-run usage before retirement: 0 tables.
+  - Status: retired. Count/percent fragments belong in body-value candidates
+    or parsed value components, not normalized-grid column merging.
 
 - Trailing nondata column drop
   - Code: `table1_parser/normalize/pipeline.py::_drop_trailing_nondata_column`
   - Metadata: `column_repairs.trailing_nondata_column`.
-  - Latest usage: 1 table.
-  - Status: move to table-region/page-furniture ownership.
+  - Latest retained-run usage before retirement: 1 table.
+  - Status: retired. Extra right-side text must be excluded by extraction,
+    table-region ownership, or page-furniture handling, not dropped by
+    normalization.
 
 - Sparse nonmatrix value-column drop
   - Code: `table1_parser/normalize/pipeline.py::_drop_sparse_nonmatrix_value_columns`
   - Metadata: `column_repairs.sparse_nonmatrix_value_columns`.
-  - Status: retire by preventing page-margin or footer text from entering the
-    extracted grid.
+  - Latest retained-run usage before retirement: 1 table.
+  - Status: retired. Sparse physical columns remain in `NormalizedTable`;
+    nonmatrix ownership should be decided before normalization or represented
+    by later semantic routing.
 
 - Extra-wide value-column expansion
   - Code: `table1_parser/normalize/pipeline.py::_repair_extra_wide_value_column`
   - Metadata: `column_repairs.extra_wide_value_column`.
-  - Latest usage: 3 tables.
-  - Status: high-priority removal candidate. This belongs in positioned
-    extraction, not normalization.
+  - Status: retired. If positioned extraction cannot recover the visual
+    columns, the table should fail with preserved evidence rather than having
+    normalization synthesize columns from newline-stacked text.
 
 - Sparse stub label-column repair
   - Code: `table1_parser/normalize/pipeline.py::_repair_sparse_stub_label_column`
   - Metadata: `column_repairs.sparse_stub_label_column`.
-  - Latest usage: 1 table.
-  - Status: retire after extraction/table-region ownership can identify the
-    true row-label column.
+  - Latest retained-run usage before retirement: 1 table.
+  - Status: retired. The physical row-label/stub columns remain in the grid;
+    logical row-label assembly belongs in row-label candidates or semantic row
+    logic.
 
 - Split row-label field columns
   - Code: `table1_parser/normalize/pipeline.py::_repair_split_row_label_field_columns`
   - Metadata: `column_repairs.split_row_label_field_columns`.
-  - Latest usage: 1 table.
-  - Status: retire. This is already disabled when extraction provides
-    `header_row_geometry_roles`.
+  - Latest retained-run usage before retirement: 2 tables.
+  - Status: retired. Split physical label columns should not be merged during
+    normalization.
 
 - Merged split label columns
   - Code: inline normalization block recorded as
     `column_repairs.merged_split_label_columns`.
-  - Latest usage: 1 table.
-  - Status: retire with split row-label field repair.
+  - Latest retained-run usage before retirement: 1 table.
+  - Status: retired with split row-label field repair.
 
 - Dropped empty columns after repair
   - Code: normalization empty-column pruning after repair metadata is built.
   - Metadata: `column_repairs.dropped_empty_columns_after_repair`.
-  - Latest usage: 2 tables.
-  - Status: remove as earlier repair paths disappear.
+  - Status: retired with the value-fragment grid mutation paths that created
+    empty normalized columns.
 
 ## Header And Schema Compensations
 
@@ -262,15 +288,17 @@ diagnostic.
 After the current parser state is committed, hardening should proceed in small
 passes:
 
-1. Disable or remove normalization label-column shape repairs:
+1. Verify that retired normalization shape-repair paths remain absent:
+   `trailing_nondata_column`, `sparse_nonmatrix_value_columns`,
    `split_row_label_field_columns`, `merged_split_label_columns`, and
    `sparse_stub_label_column`.
-2. Move `extra_wide_value_column` responsibility into positioned extraction.
-3. Remove `split_uncertainty_columns` once value components can represent
-   estimate/uncertainty fragments without grid mutation.
-4. Verify that retired `caption_contaminated_backend_row_drop` and backend JSON
+2. Verify that retired value-fragment grid mutation paths remain absent:
+   `merged_columns`, `split_uncertainty_columns`,
+   `embedded_label_count_cells`, `extra_wide_value_column`, and
+   `dropped_empty_columns_after_repair`.
+3. Verify that retired `caption_contaminated_backend_row_drop` and backend JSON
    cell-grid survival remain absent in real-paper runs.
-5. Gate schema header/group fallback logic on missing extraction geometry.
+4. Gate schema header/group fallback logic on missing extraction geometry.
 
 Each pass should run the real-paper corpus and report exactly which real tables
 improve, regress, or become intentionally unsupported.
