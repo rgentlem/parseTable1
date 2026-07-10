@@ -23,7 +23,7 @@ Before changing JSON outputs or schemas, always read:
 Those files define the main development criteria:
 
 - keep extraction, normalization, heuristics, LLM interpretation, and validation as separate modules
-- preserve the pipeline shape `PDF -> ExtractedTable -> TableRegion -> NormalizedTable -> ColumnHeaderSchema -> ResolvedTableSet -> TableDefinition -> ParsedTable`
+- preserve the pipeline shape `PDF -> ExtractedTable -> TableRegion -> NormalizedTable -> ColumnHeaderSchema -> BodyElementCandidates -> ResolvedTableSet -> TableDefinition -> ParsedTable`
 - keep tables in structured JSON rather than switching to Markdown-first representations
 - preserve raw extracted data and original text
 - use deterministic parsing first and LLM refinement only for semantic disambiguation
@@ -75,6 +75,7 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Cell text annotations | `CellTextAnnotationTable` | Written now as `cell_text_annotations.json` by `parse` | Preserve superscript, subscript, and small marker geometry as extraction-side evidence without rewriting raw cell text |
 | Normalization | `NormalizedTable` | Written now as `normalized_tables.json` by `normalize` and `parse` | Clean rows, apply table-region row ownership when available, and derive row features |
 | Column header schema | `ColumnHeaderSchema` | Written now as `column_header_schemas.json` by `parse` | Persist parser-native leaf columns, spanning header groups, group-to-leaf relationships, raw cell evidence, and coordinates before semantic column projection |
+| Body element candidates | `BodyElementCandidate` | Written now as `body_element_candidates.json` by `parse` | Persist logical body-value candidates built over the settled column grid without changing extracted or normalized physical cells |
 | Resolved table set | `ResolvedTableSet` | Written now as `resolved_tables.json` by `parse` | Persist the semantic working table list after continuation resolution while preserving `normalized_tables.json` as full source evidence |
 | Table 1 continuation inspection | `Table1ContinuationGroup`, `NormalizedTable` | Written now as `table1_continuation_groups.json` and `merged_table1_tables.json` by `parse` | Persist source-fragment grouping and merged normalized-row review views for explicit or strongly inferred Table 1 continuations |
 | Continuation column compatibility | `TableContinuationColumnCheck` | Written now as `table_continuation_column_checks.json` by `parse` | Persist schema-derived source-fragment column-header compatibility checks for explicit or strongly inferred descriptive continuations |
@@ -82,7 +83,7 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Paper table inventory | `PaperTableInventory`, `PaperTableRecord` | Written now as `paper_table_inventory.json` by `parse` | Persist deterministic taxonomy predictions for the resolved semantic table list |
 | Table definition | `TableDefinition` | Written now as `table_definitions.json` by `parse` | Persist value-free row-variable, level, and column semantics |
 | Continued variable integration | `TableDefinition` | Written now as `continued_variable_integrations.json` by `parse` | Persist a source-fragment review view for compatible continued Table 1 fragments; this is not consumed by canonical semantic parsing now that `resolved_tables.json` feeds `TableDefinition` and `ParsedTable` |
-| Parsed source-cell values | `ParsedCellValue` | Written now as `parsed_cell_values.json` by `parse` | Persist source-grid cell value components keyed by table and row/column indices before semantic row/column value joins |
+| Parsed source-cell values | `ParsedCellValue` | Written now as `parsed_cell_values.json` by `parse` | Persist source-grid or candidate-derived value components keyed by table and row/column indices before semantic row/column value joins |
 | Paper context | `PaperTextStream`, `PaperSection`, `PaperTableMention`, `PaperVisual`, `PaperVisualReference`, `TableContext` | Written now as `paper_markdown.md`, `paper_text_stream.json`, `paper_sections.json`, `paper_table_mentions.json`, `paper_visual_inventory.json`, `paper_references.json`, and `table_contexts/*.json` by `parse` | Persist raw backend markdown, layout-aware column-ordered paper text, sections, pre-extraction table mention classification, actual in-paper visual objects, anchored table/figure references, and per-table retrieval bundles |
 | Paper bibliography | `PaperBibliography`, `BibliographyEntry`, `BibliographyReferenceMention` | Written now as `paper_bibliography.json` by `parse` | Persist the paper's own bibliography entries, numbered or unnumbered, and link observed numeric reference markers to numbered entries without creating a cross-paper citation-management layer |
 | Paper style profile | `PaperStyleProfile`, `PaperStyleDimension`, `PaperStyleCheck`, `PaperStyleEvidence` | Written now as `paper_style_profile.json` by `parse` | Persist document-level counts, examples, and consistency checks for footnote-marker, bibliography, caption-placement, and visual-reference conventions without changing extraction or link decisions |
@@ -93,8 +94,8 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Final parsed output | `ParsedTable` | Written now as `parsed_tables.json` by `parse` | Validated downstream structured table data |
 | Table processing status | `TableProcessingStatus`, `TableProcessingAttempt` | Written now as `table_processing_status.json` by `parse` | Persist resolved-table rescue attempts, source fragment IDs and diagnostics, terminal failure stage, and failure reason without overloading semantic artifacts |
 | Parse quality diagnostics | `ParseQualityReport` | Written now as `parse_quality_reports.json` by `parse` | Persist deterministic row, column, and value-pattern diagnostics without changing parse behavior |
-| Paper footnotes | `PaperFootnotes` | Written now as `paper_footnotes.json` by `parse` | Persist detected table-local footer regions from extracted rows and page-furniture-filtered PDF text blocks, footnote anchors, PyMuPDF text-block and cell-annotation definition marker evidence, table-footer block classification, page-furniture filter-stage metadata, math/unit/non-footnote-symbol suppression metadata, explicit glyph-key links, and structured conventional p-value-star inferences as reviewable evidence without rewriting table text or parsed values |
-| Paper page furniture | `PaperPageFurniture` | Written now as `paper_page_furniture.json` by `parse` | Persist repeated page text observations, clusters, and ignored regions used near the front of document processing to mask whole-paper markdown/context parsing, extraction, cell annotations, and footnote PDF-block collection before downstream artifacts are built |
+| Paper footnotes | `PaperFootnotes` | Written now as `paper_footnotes.json` by `parse` | Persist detected table-local footer regions from extracted rows and page-furniture-filtered `paper_text_stream.json` line groups, footnote anchors, text-stream and cell-annotation definition marker evidence, table-footer line-group classification, page-furniture filter-stage metadata, math/unit/non-footnote-symbol suppression metadata, and explicit glyph-key links as reviewable evidence without rewriting table text or parsed values |
+| Paper page furniture | `PaperPageFurniture` | Written now as `paper_page_furniture.json` by `parse` | Persist repeated page text observations, clusters, and ignored regions used near the front of document processing to mask whole-paper markdown/context parsing, extraction, cell annotations, and text-stream footer detection before downstream artifacts are built |
 
 Design note for future multitable support:
 
@@ -203,7 +204,8 @@ Design intent:
 - extraction may refine a coarse explicit backend grid when word geometry inside the table bbox, together with strong horizontal boundaries, supports a better row/column structure; if positioned PyMuPDF geometry cannot rebuild the grid, the backend cell grid is not emitted as a normal extracted table
 - full-width horizontal-rule metadata should be based on stroked line/rule geometry, not filled row highlighting or background shading
 - collapsed-grid word-position refinement chooses value-column anchors from repeated value-like numeric positions rather than one-off digit-bearing label tokens; when needed, it preserves a left label anchor and pulls nonnumeric label fragments back from value columns on rows whose only right-side value is a trailing statistic such as a p-value
-- when explicit column boundaries are absent, the first row-label/value boundary should come from the observed physical gap before the repeated first value-column anchor; parenthesized numeric expressions remain intact from open parenthesis through matching close parenthesis during anchor selection and cell assignment
+- when explicit column boundaries are absent, the first row-label/value boundary should come from the observed physical gap before the repeated first value-column anchor
+- extraction must remain a visual/coordinate-faithful artifact: if a printed value is split across physical cells or physical rows, `ExtractedTable` keeps those cells and coordinates as printed; logical value reconstruction belongs to `body_element_candidates.json` and later semantic/value parsing, not to extraction grid mutation
 - hline-led word-position refinement can rebuild small or large ruled explicit tables from PyMuPDF words when full-width rules provide stronger row-band evidence than the PyMuPDF4LLM cell grid; this records `metadata.grid_refinement_source = "hline_word_positions"` and preserves the original backend grid in refinement metadata
 - bbox-word positioned refinement can rebuild ordinary explicit table boxes from PyMuPDF words when no stronger hline/value-matrix path fires; this records `metadata.grid_refinement_source = "pymupdf_positioned_bbox_words"` and `metadata.canonical_extraction_layer = "pymupdf_positioned_geometry"`
 - rotated explicit tables may be refined in a table-local normalized coordinate frame; when that happens, `table_cells`, `row_bounds`, and `horizontal_rules` describe that local frame rather than raw page coordinates, while `geometry_transform_source_bbox`, `geometry_transform_transposed`, and `geometry_transform_applied` record the transform input needed to map page characters into the same frame
@@ -781,7 +783,7 @@ Design components:
 - `paper_markdown.md`
   raw backend markdown extracted from the full paper, with repeated page-furniture lines filtered out for inspection
 - `paper_text_stream.json`
-  layout-aware full-paper text from positioned PyMuPDF lines, with repeated page-furniture lines removed, page-level `column_boundaries`/`column_bands`, and lines ordered by page, column, then vertical position for any detected column count
+  layout-aware full-paper text from positioned PyMuPDF lines, with repeated page-furniture lines removed, page-level `column_boundaries`/`column_bands`, line-level bbox/role/style fields, minimal span records, and lines ordered by page, column, then vertical position for any detected column count
 - `paper_sections.json`
   sections derived from the layout-aware text stream when available, with heading level and simple role hints
 - `paper_table_mentions.json`
@@ -969,7 +971,75 @@ Design intent:
 - preserve stable variable identity fields so disagreements can be audited safely
 - keep the prompt payload compact; the saved input wrapper currently uses short payload keys such as `table` and `vars`
 
-## 11. `parsed_cell_values.json`
+## 11. `body_element_candidates.json`
+
+Current status:
+
+- canonical candidate schema exists now
+- written by the `parse` CLI command as `body_element_candidates.json`
+
+This artifact records logical body-value candidates after `ColumnHeaderSchema`
+has settled the column leaves and value columns. It does not rewrite
+`ExtractedTable` or `NormalizedTable`.
+
+Current CLI path:
+
+```text
+outputs/papers/<paper_stem>/body_element_candidates.json
+```
+
+This file is written by:
+
+- `table1-parser parse`
+
+Top-level record design components:
+
+- `candidate_id`
+- `source_table_index`
+- `source_table_id`
+- `anchor_row_idx`
+- `anchor_col_idx`
+- `kind`
+- `candidate_text`
+- `raw_fragments`
+- `source_cells`
+- `reason`
+- `confidence`
+- `notes`
+
+`source_cells` design components:
+
+- `source_table_index`
+- `source_table_id`
+- `row_idx`
+- `col_idx`
+- `original_row_idx`
+- `original_col_idx`
+- `text`
+- `cleaned_text`
+- `bbox`
+- `page_num`
+
+Initial candidate kinds include:
+
+- `single_cell`
+- `same_column_vertical_continuation`
+- `row_sequence_reconstruction`
+
+Design rules:
+
+- build candidates only after the column grid is available from
+  `ColumnHeaderSchema`
+- keep every candidate traceable to one or more physical source cells
+- allow one source cell to contribute to adjacent candidates when a PDF row
+  prints the tail of one value and the start of the next value in the same
+  physical cell
+- do not use candidate reconstruction to assign physical columns, physical
+  rows, or cell bounding boxes
+- use `candidate_text` for value-component parsing, while preserving
+  `raw_fragments` and `source_cells` for inspection
+
+## 12. `parsed_cell_values.json`
 
 Current status:
 
@@ -997,6 +1067,9 @@ Top-level record design components:
 - `row_idx`
 - `col_idx`
 - `raw_value`
+- `element_candidate_id`
+- `raw_fragments`
+- `source_cells`
 - `parse_pattern`
 - `components`
 - `confidence`
@@ -1031,7 +1104,9 @@ Initial component kinds include:
 
 Design rules:
 
-- preserve `raw_value` exactly as the source normalized cell text
+- preserve `raw_value` as the parser-facing value string that was parsed; for
+  multi-cell body element candidates, preserve the printed source fragments in
+  `raw_fragments` and `source_cells`
 - use parser-facing cleaned text only for matching and numeric extraction
 - do not duplicate variable names, level labels, column names, or header paths
   in this artifact
@@ -1304,7 +1379,7 @@ Current status:
 - canonical paper-level page-furniture schema exists now
 - written by the `parse` CLI command as `paper_page_furniture.json`
 - built before paper context parsing, table extraction, cell text annotation,
-  and footnote PDF-block collection
+  and text-stream footer detection
 - passed to positioned-text consumers as page-coordinate ignored regions before
   they group, classify, or persist downstream artifacts
 
@@ -1334,7 +1409,7 @@ Design intent:
 - preserve raw page text in observations
 - store generic ignored regions without classifying them as header, footer, watermark, or boilerplate
 - expose thresholds and diagnostics in `metadata`
-- provide extraction, cell-text annotation, and footnote-harvesting code with
+- provide extraction, cell-text annotation, and footer-detection code with
   page regions to suppress
 
 ## Trace Wrappers vs Canonical Payloads

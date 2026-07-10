@@ -46,15 +46,23 @@ The proposed R-side component is downstream of the JSON artifacts written by the
 Recommended conceptual flow:
 
 ```text
-column_header_schemas.json + table_definitions.json + parsed_tables.json (+ normalized_tables.json when useful)
--> ObservedTableOne
+resolved_tables.json + table_definitions.json + parsed_tables.json (+ optional review artifacts)
+-> PT1Paper
+-> PT1Table
 ```
 
 This keeps the Python parser and the R reconstruction layer separate.
 
 ## Main Purpose
 
-`ObservedTableOne` should be the R-side semantic container for one printed Table 1.
+`PT1Table` should be the R-side semantic container for one resolved printed
+Table 1.
+
+The table family it represents is defined more narrowly in
+`docs/design/table_one_epidemiological_description.md`: an epidemiological
+description table whose rows describe study-population characteristics, whose
+columns describe the overall population or strata, and whose cells contain
+descriptive summaries.
 
 It should:
 
@@ -113,34 +121,26 @@ This mirrors the useful distinction in `tableone`, while staying grounded in the
 
 ## Proposed Object
 
-Working R class name:
+Working R class names:
 
-- `ObservedTableOne`
+- `PT1Paper`
+- `PT1Table`
 
-Recommended top-level structure:
+Recommended table-level structure:
 
 - `table_id`
 - `title`
 - `caption`
-- `ContTable`
-- `CatTable`
-- `Footnotes`
-- `MetaData`
 - `metadata`
+- `column_groups`
 - `columns`
-- `continuous`
-- `categorical`
-- `footnotes`
-- `statistics`
-- `provenance`
-- `notes`
-- `overall_confidence`
+- `rows`
+- `values`
+- `diagnostics`
+- `raw`
 
-This should be implemented as an S3 object backed by a named list.
-`ContTable`, `CatTable`, `Footnotes`, and `MetaData` should be the
-tableone-style access surface if this object remains useful. Lower-case or
-scalar compatibility aliases should not be required; the object should consume
-canonical components directly.
+This should be implemented with S7 classes. Stored table views should use base R
+`data.frame` objects and ordinary lists, not tidyverse data structures.
 
 ## `metadata`
 
@@ -201,7 +201,8 @@ If later heuristics suggest such information, that can be stored only as optiona
 
 ## `columns`
 
-`columns` should describe the printed non-label columns in left-to-right order.
+`columns` should describe all resolved columns, including the row-label column,
+in left-to-right order.
 The column axis should come from `ColumnHeaderSchema` or from
 `TableDefinition.column_definition` records that were built from that schema.
 Observed-table code should not compare or interpret columns by reconstructing
@@ -210,14 +211,16 @@ header text locally.
 Each column entry should preserve:
 
 - `col_idx`
-- `column_name`
-- `column_label`
+- `leaf`
 - `header_leaf_id`
 - `header_leaf_label`
 - `header_group_ids`
 - `header_group_labels`
 - `header_path`
 - `role`
+- `measure_kind`
+- `stratum`
+- `measure_group`
 - `grouping_variable_hint`
 - `group_level_label`
 - `group_level_name`
@@ -225,12 +228,12 @@ Each column entry should preserve:
 - `statistic_subtype`
 - `confidence`
 
-For multirow printed headers, `column_label` is the leaf label. Parent
-headers should be read from `header_path` on each column and from
-`MetaData$column_header_spans`, which mirrors
-`TableDefinition.column_definition.header_spans`. R-side observed-table code
-should use those stored spans for tableone-style spanners rather than
-reconstructing hierarchy by splitting flattened labels.
+For multirow printed headers, `leaf` is the leaf label. Parent headers should
+be read from `header_path` on each column and from the separate
+`column_groups` data frame, which is derived from
+`TableDefinition.column_definition.header_spans`. R-side code should use those
+stored spans for tableone-style spanners rather than reconstructing hierarchy by
+splitting flattened labels.
 
 Column roles should remain close to the current parser semantics:
 
@@ -289,43 +292,19 @@ Each categorical value entry should preserve:
 
 No unprinted levels should be invented.
 
-## `statistics`
+## Statistic Columns
 
-`statistics` should preserve printed statistic columns separately from data columns.
+Printed statistic columns such as p-values, p-for-trend columns, and SMD columns
+should remain ordinary columns in the one-row-per-column view. Consumers can
+filter them by `role`, `inferred_role`, or `measure_kind` rather than requiring a
+separate canonical statistics object.
 
-Typical entries:
+## Footnotes
 
-- p-values
-- p for trend
-- SMD
-
-Each entry should preserve:
-
-- `variable_name`
-- `row_idx`
-- `column_name`
-- `col_idx`
-- `raw_value`
-- `statistic_type`
-- parsed numeric value when available
-- `confidence`
-
-## `footnotes`
-
-`Footnotes` should be an `ObservedFootnotes` S3 list filtered to the current
-table. It preserves:
-
-- `Anchors`
-- `Definitions`
-- `Links`
-- `MetaData`
-
-These records come from `paper_footnotes.json`. They are review evidence for
-glyph anchors and candidate definitions, not rewritten table text.
-When a table has continued fragments, `ObservedFootnotes` scopes records by the
-paper visual ID as well as the current fragment table ID. This keeps footer
-definitions that appear on `Table 1. (continued)` visible in the Table 1 object
-without treating the continuation label itself as a footnote.
+Footnotes come from `paper_footnotes.json`. They are review evidence for glyph
+anchors and candidate definitions, not rewritten table text. A future S7
+footnote view can attach those records to `PT1Table`, but the core table object
+should remain valid without requiring footnote artifacts.
 
 ## `provenance`
 
@@ -333,9 +312,9 @@ The component should record where its data came from.
 
 Recommended fields:
 
+- `resolved_table_source`
 - `table_definition_source`
 - `parsed_table_source`
-- `normalized_table_source`
 - `table_index`
 - `builder_version`
 
@@ -393,8 +372,8 @@ It also fits the current state of the repo:
 Likely future additions:
 
 - richer continuous summary parsing in R for `median [IQR]` and `median [range]`
-- R printers for `ObservedTableOne`
+- R printers for `PT1Table`
 - comparison helpers for multiple parser runs
-- optional coercion from `ObservedTableOne` into a `tableone`-like display object
+- optional coercion from `PT1Table` into a `tableone`-like display object
 
 Those should be layered on top of this observed-table contract, not mixed into the parser core.

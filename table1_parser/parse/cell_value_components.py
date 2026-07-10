@@ -3,18 +3,18 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Collection, Mapping
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Literal
 
 from table1_parser.heuristics.value_pattern_detector import detect_value_pattern
-from table1_parser.schemas import NormalizedTable, ParsedCellValue, ValueComponent
+from table1_parser.schemas import BodyElementCandidate, NormalizedTable, ParsedCellValue, ValueComponent
 from table1_parser.text_cleaning import clean_text
 
 
 INTEGER_TOKEN = r"(?:\d{1,3}(?:,\d{3})*|\d+)"
-DECIMAL_TOKEN = r"-?\d+(?:\.\d+)?"
-UNSIGNED_DECIMAL_TOKEN = r"\d+(?:\.\d+)?"
+DECIMAL_TOKEN = r"-?(?:\d{1,3}(?:,\d{3})*|\d+)(?:\.\d+)?"
+UNSIGNED_DECIMAL_TOKEN = r"(?:\d{1,3}(?:,\d{3})*|\d+)(?:\.\d+)?"
 FOOTNOTE_SUFFIX_TOKEN = r"(?:\s*(?:[*†‡§¶#{}|]+|[a-z]))*"
 COUNT_PCT_COMPONENT_PATTERN = re.compile(
     rf"^(?P<count>{INTEGER_TOKEN})\s*\(\s*(?P<percent>{UNSIGNED_DECIMAL_TOKEN})(?P<percent_symbol>\s*%)?\s*\){FOOTNOTE_SUFFIX_TOKEN}$",
@@ -101,7 +101,7 @@ def parse_cell_value_components(raw_value: str, summary_style_hint: str | None =
                 ),
                 ValueComponent(
                     kind="percent",
-                    value=float(match.group("percent")),
+                    value=_to_float(match.group("percent")),
                     raw_fragment=f"{match.group('percent')}{match.group('percent_symbol') or ''}",
                     relation="=",
                     confidence=0.96,
@@ -117,9 +117,9 @@ def parse_cell_value_components(raw_value: str, summary_style_hint: str | None =
             raw_value=raw_value,
             parse_pattern="median_iqr",
             components=[
-                ValueComponent(kind="median", value=float(match.group("median")), raw_fragment=match.group("median"), relation="=", confidence=0.94),
-                ValueComponent(kind="q1", value=float(match.group("q1")), raw_fragment=match.group("q1"), relation="=", confidence=0.94),
-                ValueComponent(kind="q3", value=float(match.group("q3")), raw_fragment=match.group("q3"), relation="=", confidence=0.94),
+                ValueComponent(kind="median", value=_to_float(match.group("median")), raw_fragment=match.group("median"), relation="=", confidence=0.94),
+                ValueComponent(kind="q1", value=_to_float(match.group("q1")), raw_fragment=match.group("q1"), relation="=", confidence=0.94),
+                ValueComponent(kind="q3", value=_to_float(match.group("q3")), raw_fragment=match.group("q3"), relation="=", confidence=0.94),
             ],
             confidence=max(detected.confidence, 0.94),
             notes=[],
@@ -176,7 +176,7 @@ def parse_cell_value_components(raw_value: str, summary_style_hint: str | None =
             components=[
                 ValueComponent(
                     kind="estimate",
-                    value=float(match.group("estimate")),
+                    value=_to_float(match.group("estimate")),
                     raw_fragment=match.group("estimate"),
                     relation="=",
                     confidence=0.75,
@@ -199,8 +199,15 @@ def parse_cell_value_components(raw_value: str, summary_style_hint: str | None =
 def build_parsed_cell_values(
     tables: list[NormalizedTable],
     value_column_indices_by_table_id: Mapping[str, Collection[int]] | None = None,
+    body_element_candidates: Sequence[BodyElementCandidate] | None = None,
 ) -> list[ParsedCellValue]:
     """Build source-indexed parsed cell values for normalized table body cells."""
+    if body_element_candidates is not None:
+        return _build_parsed_cell_values_from_candidates(
+            body_element_candidates,
+            value_column_indices_by_table_id=value_column_indices_by_table_id,
+        )
+
     parsed_values: list[ParsedCellValue] = []
     for table_index, table in enumerate(tables):
         body_rows = set(table.body_rows)
@@ -225,6 +232,7 @@ def build_parsed_cell_values(
                         row_idx=row_view.row_idx,
                         col_idx=col_idx,
                         raw_value=raw_value,
+                        raw_fragments=[raw_value],
                         parse_pattern=parsed.parse_pattern,
                         components=parsed.components,
                         confidence=parsed.confidence,
@@ -234,9 +242,54 @@ def build_parsed_cell_values(
     return parsed_values
 
 
+def _build_parsed_cell_values_from_candidates(
+    body_element_candidates: Sequence[BodyElementCandidate],
+    *,
+    value_column_indices_by_table_id: Mapping[str, Collection[int]] | None,
+) -> list[ParsedCellValue]:
+    parsed_values: list[ParsedCellValue] = []
+    for candidate in body_element_candidates:
+        allowed_columns = (
+            set(value_column_indices_by_table_id[candidate.source_table_id])
+            if value_column_indices_by_table_id is not None
+            and candidate.source_table_id in value_column_indices_by_table_id
+            else None
+        )
+        if allowed_columns is not None and candidate.anchor_col_idx not in allowed_columns:
+            continue
+        if not clean_text(candidate.candidate_text):
+            continue
+        parsed = parse_cell_value_components(candidate.candidate_text)
+        notes = list(parsed.notes)
+        if candidate.kind != "single_cell":
+            notes.append(f"body_element_candidate:{candidate.kind}")
+        parsed_values.append(
+            ParsedCellValue(
+                source_table_index=candidate.source_table_index,
+                source_table_id=candidate.source_table_id,
+                row_idx=candidate.anchor_row_idx,
+                col_idx=candidate.anchor_col_idx,
+                raw_value=candidate.candidate_text,
+                element_candidate_id=candidate.candidate_id,
+                raw_fragments=list(candidate.raw_fragments),
+                source_cells=list(candidate.source_cells),
+                parse_pattern=parsed.parse_pattern,
+                components=parsed.components,
+                confidence=parsed.confidence if candidate.confidence is None else min(parsed.confidence, candidate.confidence),
+                notes=notes,
+            )
+        )
+    return parsed_values
+
+
 def parsed_cell_values_to_payload(values: list[ParsedCellValue]) -> list[dict[str, object]]:
     """Serialize parsed cell value component records as JSON-friendly dictionaries."""
     return [value.model_dump(mode="json") for value in values]
+
+
+def _to_float(value: str) -> float:
+    """Parse a JSON numeric value from a printed number token."""
+    return float(value.replace(",", ""))
 
 
 def _parse_uncertainty_components(
@@ -274,14 +327,14 @@ def _parse_uncertainty_components(
             components=[
                 ValueComponent(
                     kind=primary_kind,
-                    value=float(match.group("primary")),
+                    value=_to_float(match.group("primary")),
                     raw_fragment=match.group("primary"),
                     relation="=",
                     confidence=confidence,
                 ),
                 ValueComponent(
                     kind=uncertainty_kind,
-                    value=float(match.group("uncertainty")),
+                    value=_to_float(match.group("uncertainty")),
                     raw_fragment=match.group("uncertainty"),
                     relation="=",
                     confidence=confidence if uncertainty_kind != "unknown" else min(confidence, 0.75),

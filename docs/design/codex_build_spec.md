@@ -16,6 +16,7 @@ PDF
 -> TableRegion
 -> NormalizedTable
 -> ColumnHeaderSchema
+-> BodyElementCandidates
 -> ResolvedTableSet
 -> TableDefinition
 -> ParsedTable
@@ -39,6 +40,10 @@ The stages must remain separate:
   columns, row-label columns, spanning header groups, group-to-leaf
   relationships, raw header evidence, source row/column evidence, and
   coordinates where available.
+- `BodyElementCandidates` is the first logical body-value layer. It is built
+  after the column grid is settled by `ColumnHeaderSchema`; it proposes
+  candidate value elements from one or more physical source cells while
+  preserving the physical grid and source-cell provenance.
 - `ResolvedTableSet` is the paper-level semantic working set. It preserves
   singleton tables, integrates accepted continuation fragments, rejects weak
   continuation candidates as inspectable singletons, and records source-row

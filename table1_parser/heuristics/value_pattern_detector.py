@@ -9,14 +9,15 @@ from table1_parser.text_cleaning import clean_text
 
 
 INTEGER_TOKEN = r"(?:\d{1,3}(?:,\d{3})*|\d+)"
-DECIMAL_TOKEN = r"\d+(?:\.\d+)?"
+DECIMAL_TOKEN = r"(?:\d{1,3}(?:,\d{3})*|\d+)(?:\.\d+)?"
+SIGNED_DECIMAL_TOKEN = rf"-?{DECIMAL_TOKEN}"
 FOOTNOTE_SUFFIX_TOKEN = r"(?:\s*(?:[*†‡§¶#{}|]+|[a-z]))*"
 COUNT_PCT_PATTERN = re.compile(rf"^{INTEGER_TOKEN}\s*\(\s*{DECIMAL_TOKEN}%?\s*\)$")
 MEAN_SD_PATTERN = re.compile(
-    rf"^-?\d+(?:\.\d+)?(?:\s*\(\s*-?\d+(?:\.\d+)?\s*\)|\s*±\s*-?\d+(?:\.\d+)?|\s+6\s+-?\d+(?:\.\d+)?){FOOTNOTE_SUFFIX_TOKEN}$"
+    rf"^{SIGNED_DECIMAL_TOKEN}(?:\s*\(\s*{SIGNED_DECIMAL_TOKEN}\s*\)|\s*±\s*{SIGNED_DECIMAL_TOKEN}|\s+6\s+{SIGNED_DECIMAL_TOKEN}){FOOTNOTE_SUFFIX_TOKEN}$"
 )
 MEDIAN_IQR_PATTERN = re.compile(
-    r"^-?\d+(?:\.\d+)?\s*\(\s*-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?\s*\)$"
+    rf"^{SIGNED_DECIMAL_TOKEN}\s*\(\s*{SIGNED_DECIMAL_TOKEN}\s*,\s*{SIGNED_DECIMAL_TOKEN}\s*\)$"
 )
 P_VALUE_PATTERN = re.compile(rf"^(?:[<>]=?\s*)?(?:0?\.\d+|\.\d+|1\.0+){FOOTNOTE_SUFFIX_TOKEN}$", re.IGNORECASE)
 N_ONLY_PATTERN = re.compile(rf"^{INTEGER_TOKEN}$")

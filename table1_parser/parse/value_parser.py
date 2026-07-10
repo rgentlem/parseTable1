@@ -83,11 +83,13 @@ def build_value_records(
                         row_idx=source_row_idx,
                         col_idx=column.col_idx,
                         raw_value=raw_value,
+                        raw_fragments=[raw_value],
                         parse_pattern=parsed_component.parse_pattern,
                         components=parsed_component.components,
                         confidence=parsed_component.confidence,
                         notes=parsed_component.notes,
                     )
+                value_raw_text = component_value.raw_value
                 semantic_components, semantic_notes = _semantic_components_for_variable(component_value.components, variable.summary_style_hint)
                 confidence_values = [component.confidence for component in semantic_components if component.confidence is not None]
                 if component_value.confidence is not None:
@@ -109,7 +111,7 @@ def build_value_records(
                         header_group_ids=column.header_group_ids,
                         header_group_labels=column.header_group_labels,
                         header_path=column.header_path,
-                        raw_value=raw_value,
+                        raw_value=value_raw_text,
                         parse_pattern=component_value.parse_pattern,
                         components=semantic_components,
                         confidence=confidence,

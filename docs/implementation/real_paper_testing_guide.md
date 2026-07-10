@@ -39,8 +39,8 @@ began splitting footnote definitions from structured marker evidence, including
 raised superscript markers in PDF character geometry and confirmed footer-cell
 marker prefixes. Page text is ordered page, column, then
 y-position, with page furniture removed before bibliography and table
-extraction, and before cell text annotation or footnote PDF-block collection
-consume page characters. The bibliography extractor reads numbered and
+extraction, and before cell text annotation or text-stream footer detection
+consume page geometry. The bibliography extractor reads numbered and
 hanging-indent reference lists through one positioned stream, supports
 references split across columns and pages, treats numbered offset labels as the
 same entry-start structure as unnumbered hanging-indent entries, and does not
@@ -119,21 +119,21 @@ Current footnote summary:
 PDFs: 27
 parse command failures: 0
 paper_footnotes:
-  anchors: 442
-  definitions: 211
-  links: 442
-  resolved links: 442
+  anchors: 464
+  definitions: 108
+  links: 464
+  resolved links: 398
   inferred links: 0
-  ambiguous links: 0
-  unresolved links: 0
-  math/unit anchors suppressed before footnote linking: 36
+  ambiguous links: 2
+  unresolved links: 64
+  math/unit anchors suppressed before footnote linking: 33
   subscript anchors suppressed before footnote linking: 7
   word-like subscript anchors suppressed before footnote linking: 0
-  citation-like anchors suppressed before footnote linking: 19
-  non-footnote symbol anchors suppressed before footnote linking: 0
-  PDF text blocks classified as table footers: 45
-  extracted-table footer records: 12
-  page-furniture filter stage: before_pdf_definition_block_construction (27 papers)
+  citation-like anchors suppressed before footnote linking: 0
+  non-footnote symbol anchors suppressed before footnote linking: 2
+  text-stream line groups classified as table footers: 104
+  extracted-table footer records: 10
+  page-furniture filter stage: before_paper_text_stream_footer_detection (27 papers)
 extraction page-furniture mask:
   extracted tables with mask metadata: 76
   page words removed before extraction/refinement: 1134

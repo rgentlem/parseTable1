@@ -776,48 +776,6 @@ def build_row_grid_from_lines(
                     max(existing_bbox[2], word_bbox[2]),
                     max(existing_bbox[3], word_bbox[3]),
                 )
-        source_column_index = 0
-        while source_column_index < row_width:
-            source_text = row_cells[source_column_index]
-            paren_balance = source_text.count("(") - source_text.count(")")
-            if not source_text.strip() or paren_balance <= 0:
-                source_column_index += 1
-                continue
-            merge_indices: list[int] = []
-            close_found = False
-            for lookahead_column_index in range(source_column_index + 1, row_width):
-                lookahead_text = row_cells[lookahead_column_index]
-                if not lookahead_text.strip():
-                    continue
-                paren_balance += lookahead_text.count("(") - lookahead_text.count(")")
-                merge_indices.append(lookahead_column_index)
-                if paren_balance <= 0:
-                    close_found = True
-                    break
-            if close_found:
-                for merge_column_index in merge_indices:
-                    row_cells[source_column_index] = " ".join(
-                        cell
-                        for cell in (
-                            row_cells[source_column_index],
-                            row_cells[merge_column_index],
-                        )
-                        if cell.strip()
-                    ).strip()
-                    source_bbox = row_bboxes[source_column_index]
-                    merge_bbox = row_bboxes[merge_column_index]
-                    if source_bbox is None:
-                        row_bboxes[source_column_index] = merge_bbox
-                    elif merge_bbox is not None:
-                        row_bboxes[source_column_index] = (
-                            min(source_bbox[0], merge_bbox[0]),
-                            min(source_bbox[1], merge_bbox[1]),
-                            max(source_bbox[2], merge_bbox[2]),
-                            max(source_bbox[3], merge_bbox[3]),
-                        )
-                    row_cells[merge_column_index] = ""
-                    row_bboxes[merge_column_index] = None
-            source_column_index += 1
         populated_indices = [index for index, cell in enumerate(row_cells) if cell.strip()]
         if len(populated_indices) >= 2 and row_width >= 4:
             rightmost_index = populated_indices[-1]
@@ -850,6 +808,7 @@ def build_row_grid_from_lines(
                     row_bboxes[index] = None
         rows.append(row_cells)
         bbox_rows.append(row_bboxes)
+
     normalized_rows = _normalize_rows(rows)
     max_cols = max((len(row) for row in normalized_rows), default=0)
     normalized_bboxes = [row + [None] * (max_cols - len(row)) for row in bbox_rows]

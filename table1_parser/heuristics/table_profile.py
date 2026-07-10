@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 
+from table1_parser.heuristics.body_element_views import table_with_body_element_candidates
 from table1_parser.heuristics.column_role_detector import detect_column_roles
 from table1_parser.heuristics.value_pattern_detector import detect_value_pattern
 from table1_parser.heuristics.variable_grouper import group_variable_blocks
-from table1_parser.schemas import NormalizedTable, TableProfile
+from table1_parser.schemas import BodyElementCandidate, NormalizedTable, TableProfile
 from table1_parser.text_cleaning import clean_text
 from table1_parser.validation.table_profile import validate_table_profile
 
@@ -35,8 +37,12 @@ ESTIMATE_CI_RANGE_PATTERN = re.compile(
 )
 
 
-def build_table_profile(table: NormalizedTable) -> TableProfile:
+def build_table_profile(
+    table: NormalizedTable,
+    body_element_candidates: Sequence[BodyElementCandidate] | None = None,
+) -> TableProfile:
     """Classify one normalized table into a supported semantic family."""
+    table = table_with_body_element_candidates(table, body_element_candidates)
     evidence: list[str] = []
     descriptive_score = 0
     estimate_score = 0
@@ -149,9 +155,18 @@ def build_table_profile(table: NormalizedTable) -> TableProfile:
     return validate_table_profile(profile)
 
 
-def build_table_profiles(tables: list[NormalizedTable]) -> list[TableProfile]:
+def build_table_profiles(
+    tables: list[NormalizedTable],
+    body_element_candidates: Sequence[BodyElementCandidate] | None = None,
+) -> list[TableProfile]:
     """Build deterministic route decisions for a list of normalized tables."""
-    return [build_table_profile(table) for table in tables]
+    candidates_by_table_id: dict[str, list[BodyElementCandidate]] = {}
+    for candidate in body_element_candidates or []:
+        candidates_by_table_id.setdefault(candidate.source_table_id, []).append(candidate)
+    return [
+        build_table_profile(table, body_element_candidates=candidates_by_table_id.get(table.table_id))
+        for table in tables
+    ]
 
 
 def table_profiles_to_payload(profiles: list[TableProfile]) -> list[dict[str, object]]:

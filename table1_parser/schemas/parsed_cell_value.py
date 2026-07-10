@@ -6,6 +6,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from table1_parser.schemas.body_element_candidate import BodyElementSourceCell
+
 
 ValueComponentKind = Literal[
     "count",
@@ -46,6 +48,9 @@ class ParsedCellValue(BaseModel):
     row_idx: int = Field(ge=0)
     col_idx: int = Field(ge=0)
     raw_value: str
+    element_candidate_id: str | None = None
+    raw_fragments: list[str] = Field(default_factory=list)
+    source_cells: list[BodyElementSourceCell] = Field(default_factory=list)
     parse_pattern: str | None = None
     components: list[ValueComponent] = Field(default_factory=list)
     confidence: float | None = Field(default=None, ge=0.0, le=1.0)

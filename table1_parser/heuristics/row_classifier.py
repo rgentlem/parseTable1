@@ -5,11 +5,12 @@ from __future__ import annotations
 import re
 from collections.abc import Sequence
 
+from table1_parser.heuristics.body_element_views import table_with_body_element_candidates
 from table1_parser.heuristics.column_role_detector import detect_column_roles
 from table1_parser.heuristics.level_detector import is_common_level_label, is_likely_level_row
 from table1_parser.heuristics.models import RowClassification
 from table1_parser.heuristics.value_pattern_detector import detect_value_pattern
-from table1_parser.schemas import NormalizedTable, RowView
+from table1_parser.schemas import BodyElementCandidate, NormalizedTable, RowView
 from table1_parser.text_cleaning import clean_text
 
 
@@ -500,8 +501,12 @@ def classify_row(
     return RowClassification(row_idx=row_view.row_idx, classification="unknown", confidence=0.45)
 
 
-def classify_rows(table: NormalizedTable) -> list[RowClassification]:
+def classify_rows(
+    table: NormalizedTable,
+    body_element_candidates: Sequence[BodyElementCandidate] | None = None,
+) -> list[RowClassification]:
     """Classify all normalized body rows in order."""
+    table = table_with_body_element_candidates(table, body_element_candidates)
     classifications: list[RowClassification] = []
     indentation_informative = indentation_is_informative(table)
     statistic_col_indices = {

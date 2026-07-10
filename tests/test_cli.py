@@ -10,12 +10,9 @@ from table1_parser import cli
 from table1_parser.llm.client import LLMConfigurationError
 from table1_parser.llm.variable_plausibility_schemas import LLMVariablePlausibilityTableReview
 from table1_parser.schemas import (
-    ColumnDefinition,
     ColumnHeaderSchema,
-    DefinedColumn,
     ExtractedTable,
     LLMVariablePlausibilityCallRecord,
-    FootnoteDefinitionCandidateLine,
     NormalizedTable,
     PaperFootnotes,
     PaperPageFurniture,
@@ -23,11 +20,9 @@ from table1_parser.schemas import (
     ParsedCellValue,
     ParsedTable,
     ResolvedTableSet,
-    RowView,
     TableCell,
     TableContext,
     TableDefinition,
-    TableProfile,
 )
 
 
@@ -139,22 +134,6 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
 
     monkeypatch.setattr(cli, "build_extractor", lambda _: FakeExtractor())
     _patch_paper_context(monkeypatch)
-    monkeypatch.setattr(
-        cli,
-        "build_paper_footnote_definition_blocks_from_pdf",
-        lambda _pdf_path, **_kwargs: [
-            FootnoteDefinitionCandidateLine(
-                line_id="page-1-block-99",
-                page_num=1,
-                raw_text="a Page-bottom note.",
-                source_scope="body_text",
-                bbox=(40.0, 730.0, 240.0, 742.0),
-                page_height=800.0,
-                line_index=99,
-                source_artifact="pymupdf_page_text_blocks",
-            )
-        ],
-    )
 
     exit_code = cli.main(["parse", str(pdf_path)])
 
@@ -260,15 +239,10 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     paper_footnotes_payload = json.loads(paper_footnotes_path.read_text(encoding="utf-8"))
     assert PaperFootnotes.model_validate(paper_footnotes_payload).paper_id == "paper"
     assert paper_footnotes_payload["anchors"] == []
-    assert len(paper_footnotes_payload["definitions"]) == 1
-    assert paper_footnotes_payload["definitions"][0]["source_scope"] == "page_note"
-    assert paper_footnotes_payload["definitions"][0]["definition_text"] == "Page-bottom note."
+    assert paper_footnotes_payload["definitions"] == []
     assert paper_footnotes_payload["links"] == []
-    assert paper_footnotes_payload["metadata"]["definition_line_count"] == 1
-    assert paper_footnotes_payload["metadata"]["page_furniture_filter_stage"] == (
-        "before_pdf_definition_block_construction"
-    )
-    assert paper_footnotes_payload["metadata"]["definition_count"] == 1
+    assert paper_footnotes_payload["metadata"]["definition_line_count"] == 0
+    assert paper_footnotes_payload["metadata"]["definition_count"] == 0
     assert paper_footnotes_payload["metadata"]["links_status"] == "built"
     paper_page_furniture_payload = json.loads(paper_page_furniture_path.read_text(encoding="utf-8"))
     assert PaperPageFurniture.model_validate(paper_page_furniture_payload).paper_id == "paper"
@@ -290,124 +264,6 @@ def test_cli_parse_writes_available_stage_outputs_in_one_pass(tmp_path, monkeypa
     assert table_inventory_payload["tables"][0]["table_category"] == "demographic_description"
     assert json.loads(table_context_path.read_text(encoding="utf-8"))["table_id"] == "tbl-1"
     assert captured.out == ""
-
-
-def test_cli_parse_marks_descriptive_tables_with_empty_definitions_as_failed(tmp_path, monkeypatch, capsys) -> None:
-    """Descriptive tables with zero variables or usable columns should write failed processing status."""
-    monkeypatch.chdir(tmp_path)
-    pdf_path = tmp_path / "paper.pdf"
-    pdf_path.write_text("placeholder")
-
-    normalized_table = NormalizedTable(
-        table_id="tbl-1",
-        title="Table 1",
-        caption="Baseline characteristics",
-        header_rows=[0],
-        body_rows=[1, 2],
-        row_views=[
-            RowView(
-                row_idx=1,
-                raw_cells=["Age, years", "52.1"],
-                first_cell_raw="Age, years",
-                first_cell_normalized="Age years",
-                first_cell_alpha_only="Age years",
-                nonempty_cell_count=2,
-                numeric_cell_count=1,
-                has_trailing_values=True,
-                indent_level=0,
-                likely_role="unknown",
-            ),
-            RowView(
-                row_idx=2,
-                raw_cells=["Male", "34"],
-                first_cell_raw="Male",
-                first_cell_normalized="Male",
-                first_cell_alpha_only="Male",
-                nonempty_cell_count=2,
-                numeric_cell_count=1,
-                has_trailing_values=True,
-                indent_level=0,
-                likely_role="unknown",
-            ),
-        ],
-        n_rows=3,
-        n_cols=2,
-        metadata={"cleaned_rows": [["Variable", "Overall"], ["Age, years", "52.1"], ["Male", "34"]]},
-    )
-
-    class FakeExtractor:
-        def extract(self, _: str, *, paper_page_furniture: object | None = None) -> list[ExtractedTable]:
-            return [_build_extracted_table()]
-
-    monkeypatch.setattr(cli, "build_extractor", lambda _: FakeExtractor())
-    monkeypatch.setattr(cli, "normalize_extracted_tables", lambda tables, table_regions=None: [normalized_table])
-    monkeypatch.setattr(
-        cli,
-        "build_table_profiles",
-        lambda tables: [
-            TableProfile(
-                table_id="tbl-1",
-                title="Table 1",
-                caption="Baseline characteristics",
-                table_family="descriptive_characteristics",
-                family_confidence=0.9,
-                evidence=["title_or_caption_mentions_characteristics"],
-                notes=[],
-            )
-        ],
-    )
-    monkeypatch.setattr(
-        cli,
-        "build_table_definitions",
-        lambda tables, column_schemas=None: [
-            TableDefinition(
-                table_id="tbl-1",
-                title="Table 1",
-                caption="Baseline characteristics",
-                variables=[],
-                column_definition=ColumnDefinition(
-                    columns=[DefinedColumn(col_idx=1, column_name="overall", column_label="Overall", inferred_role="unknown")]
-                ),
-                notes=[],
-                overall_confidence=None,
-            )
-        ],
-    )
-    monkeypatch.setattr(
-        cli,
-        "build_parsed_tables",
-        lambda tables, definitions, parsed_cell_values=None, row_provenance_by_table_id=None: [
-            ParsedTable(
-                table_id="tbl-1",
-                title="Table 1",
-                caption="Baseline characteristics",
-                variables=[],
-                columns=[],
-                values=[],
-                notes=[],
-                overall_confidence=None,
-            )
-        ],
-    )
-    _patch_paper_context(monkeypatch)
-
-    exit_code = cli.main(["parse", str(pdf_path)])
-
-    captured = capsys.readouterr()
-    processing_status_path = tmp_path / "outputs" / "papers" / "paper" / "table_processing_status.json"
-    table_definition_path = tmp_path / "outputs" / "papers" / "paper" / "table_definitions.json"
-    parsed_path = tmp_path / "outputs" / "papers" / "paper" / "parsed_tables.json"
-    processing_status_payload = json.loads(processing_status_path.read_text(encoding="utf-8"))
-    table_definition_payload = json.loads(table_definition_path.read_text(encoding="utf-8"))
-    parsed_payload = json.loads(parsed_path.read_text(encoding="utf-8"))
-
-    assert exit_code == 0
-    assert captured.out == ""
-    assert processing_status_payload[0]["status"] == "failed"
-    assert processing_status_payload[0]["failure_stage"] == "table_definition"
-    assert processing_status_payload[0]["failure_reason"] == "no_variables_for_descriptive_table"
-    assert "parse_failed:no_variables_for_descriptive_table" in table_definition_payload[0]["notes"]
-    assert "parse_failed:no_variables_for_descriptive_table" in parsed_payload[0]["notes"]
 
 
 def test_cli_review_variable_plausibility_writes_review_output_when_available(tmp_path, monkeypatch, capsys) -> None:

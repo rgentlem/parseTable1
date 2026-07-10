@@ -30,6 +30,7 @@ Today that directory may contain:
 - `cell_text_annotations.json`
 - `normalized_tables.json`
 - `column_header_schemas.json`
+- `body_element_candidates.json`
 - `resolved_tables.json`
 - `table1_continuation_groups.json`
 - `table_continuation_column_checks.json`
@@ -77,7 +78,7 @@ table extraction. Repeated page-furniture lines are removed from
 `paper_markdown.md` and `paper_text_stream.json`; `paper_sections.json` and
 bibliography entries are derived from the layout-aware text stream when
 available. The same artifact is passed into table extraction, cell text
-annotation, and footnote PDF-block collection as an early geometry mask. It is
+annotation, and text-stream footer detection as an early geometry mask. It is
 written even when no repeated page furniture is found.
 
 `paper_footnotes.json` records detected table-local footer regions, footnote
@@ -86,29 +87,31 @@ artifact. It is written even when no anchors or definitions are found.
 Definition candidates are fed first by footer rows preserved in
 `extracted_tables.json`: `find_table_footer_rows()` prefers rows below a
 bottom table rule that is itself below the last value-matrix row, then falls
-back to rows after the last value-matrix row when rule evidence is unavailable.
+back only to rows with structured marker geometry when rule evidence is
+unavailable.
 Rows that start a marker definition are grouped with adjacent continuation rows
 in extracted row order. Confirmed footer rows can carry marker-start evidence
 from cell-text annotation geometry when a raised marker begins the first
 populated footer cell; raw extracted strings that visually run the marker into
 the next word are preserved as provenance but do not define the marker.
 
-PyMuPDF contiguous page text blocks are the positioned PDF source, not isolated
-page lines. These blocks are built from normalized positioned characters after
-page-furniture filtering, so font-qualified Unicode recovery and glyph geometry
-are still available when a visual marker is collapsed into neighboring text.
-A table-footer finder uses table bboxes, horizontal overlap, vertical
-adjacency, and continuation-group visual identity to classify complete PDF text
-blocks as table-local footer blocks before glyph-key linking. PDF-classified
-table-footer blocks are also persisted as unsplit `footers` records, so review
-can inspect the same raw footer region that later produces split definition
-records.
-Remaining PDF text blocks can still become page-bottom notes. Candidate blocks
-may start with a marker or contain embedded marker definitions after nearby
-explanatory prose. If extracted text visually collapses a superscript marker
-into the following definition word, the definition split is based on the
-smaller raised marker glyph recorded in PyMuPDF character geometry or
-`cell_text_annotations.json`, not on the malformed word itself.
+`paper_text_stream.json` is the positioned text source for footer candidates
+that are absent from the extracted grid. The stream preserves visual lines,
+page/column order, line bbox, dominant font name, dominant font size, and
+document-level font-style counts after page-furniture filtering. A table-footer
+finder uses table bboxes, horizontal overlap, vertical adjacency,
+non-body-font evidence, and continuation-group visual identity to classify
+contiguous same-style line groups as table-local footers before glyph-key
+linking. Text-stream footer groups are also persisted as unsplit `footers`
+records, so review can inspect the same raw footer region that later produces
+split definition records.
+Other paper text lines are not consumed by `paper_footnotes.json`; this artifact
+is table-local. Candidate table-local groups may start with a marker or contain
+embedded marker definitions after nearby explanatory prose. If
+extracted text visually collapses a superscript marker into the following
+definition word, the definition split is based on the smaller raised marker
+glyph recorded in PyMuPDF character geometry or `cell_text_annotations.json`,
+not on the malformed word itself.
 Textual marker definitions such as `The asterisk indicates ...` remain valid
 local definition evidence. A single table-footer block can yield several
 definition records, for example `*`, `†`, `‡`, `§`, `**`, and `***`
@@ -119,10 +122,10 @@ R footnote review helpers filter by table fragment ID and by paper visual ID,
 so a table-number review includes footer records found on continued fragments
 such as `Table 1. (continued)` without treating the continuation label itself as
 a footnote definition.
-Numeric table-cell bibliography markers are removed from table-footnote link
-counts when they have no local table-note definition and match the paper's
-bibliography entries; they are represented instead through
-`paper_bibliography.json`.
+Numeric table-cell bibliography markers are preserved as anchors and remain
+unresolved when they have no local table-note definition. The linker can add
+review notes when their glyph keys also appear in the paper bibliography, but
+bibliographic resolution belongs in `paper_bibliography.json`.
 
 `paper_bibliography.json` records the paper's own bibliography entries,
 numbered or unnumbered, and observed numeric reference markers linked to
@@ -159,8 +162,8 @@ Numeric unit/exponent superscripts and subscripts such as `10^9`, `m^2`,
 `CO₂`, and `I²` are suppressed before footnote-anchor creation and counted in
 metadata. Multi-letter subscript words such as `P_Begg` and `P_Egger` are also
 kept out of the footnote anchor inventory.
-P-value asterisk markers without explicit definitions can be emitted as
-structured `inferred` links with conventional threshold meanings.
+P-value asterisk markers without explicit definitions remain unresolved.
+Conventional threshold meanings belong in a later interpretation layer.
 
 ## Why There Are Multiple Versions Of A Table
 
@@ -171,6 +174,8 @@ The parser deliberately keeps several versions of the same table because each st
   column headers, body content, and footer notes by geometry?
 - `NormalizedTable` answers: what cleaned table structure should downstream logic reason over?
 - `ColumnHeaderSchema` answers: how do normalized columns, leaf headers, and higher spanning header groups relate?
+- `BodyElementCandidate` answers: which physical body-cell fragments may form
+  one logical value element under the settled column grid?
 - `ResolvedTableSet` answers: which normalized fragments form the semantic working table list?
 - `TableProfile` answers: what kind of table does this appear to be?
 - `PaperTableInventory` answers: what broad paper-level category was assigned to each table number?
@@ -192,6 +197,7 @@ PDF
   -> table regions
   -> normalized tables
   -> column header schemas
+  -> body element candidates
   -> resolved tables
   -> parsed source-cell values
   -> Table 1 continuation inspection artifacts over source fragments
@@ -942,10 +948,31 @@ This makes it easier to:
 - support downstream matching and R-side table objects
 - compare deterministic semantics with future LLM semantics
 
-## Step 9: Parse Source-Cell Value Components
+## Step 9: Build Body Element Candidates
 
-After `ColumnHeaderSchema` exists, the parser builds `parsed_cell_values.json`
-from source normalized table body cells in schema-derived value columns.
+After `ColumnHeaderSchema` exists, the parser builds
+`body_element_candidates.json` over source normalized tables.
+
+This is the first body-value interpretation layer. It does not alter the
+extracted or normalized grid. Instead, it records candidate logical values from
+one or more physical source cells, including:
+
+- a normal single populated body cell
+- a value split vertically into a blank-label continuation row
+- a row text stream that can be split into exactly one candidate value per
+  settled value column
+
+Each candidate keeps its source cells, original row and column indices when
+known, bboxes when available, printed fragments, and candidate text.
+
+This lets later value parsing use good element-candidate text while R and
+Python inspection can still show what was physically printed in the PDF.
+
+## Step 10: Parse Source-Cell Value Components
+
+After body element candidates exist, the parser builds
+`parsed_cell_values.json` from those candidates in schema-derived value
+columns.
 
 This is deliberately earlier than the final semantic value join. Each record is
 keyed by:
@@ -955,9 +982,12 @@ keyed by:
 - row index
 - column index
 
-The record stores the original printed cell string plus typed components such as
+The record stores the parser-facing value string that was parsed plus typed
+components such as
 `count`, `percent`, `estimate`, `se`, `mean`, `sd`, `median`, `q1`, `q3`,
 `p_value`, `missing`, `text`, or `unknown`.
+When the value came from multiple physical cells, the record also stores the
+element candidate ID, printed fragments, and source-cell provenance.
 
 It does not store variable names, level labels, column names, or header paths.
 Those semantics belong to `TableDefinition` and `ColumnHeaderSchema`.
@@ -973,7 +1003,7 @@ This early component layer is useful for two reasons:
 Ambiguous shapes such as `52.3 (14.1)` remain conservative until semantic
 context can distinguish `mean (SD)` from `estimate (SE)`.
 
-## Step 10: Build `ParsedTable`
+## Step 11: Build `ParsedTable`
 
 `ParsedTable` is the final deterministic structured table output.
 
@@ -1048,7 +1078,7 @@ paper context parsing and table extraction.
 This paper-level artifact collects PyMuPDF page text lines, normalizes text only
 for matching, clusters repeated text in stable page-relative positions, and emits
 generic ignored regions. Paper text streaming, markdown filtering, table
-extraction, cell text annotation, and footnote PDF-block collection use those
+extraction, cell text annotation, and text-stream footer detection use those
 regions before downstream artifacts are built.
 
 ## Step 13: Build Paper-Level Document Context
@@ -1086,7 +1116,10 @@ This is the layout-aware full-paper text stream. It is built from positioned
 PyMuPDF lines, applies `paper_page_furniture.json`, detects page-level column
 bands, and orders text as page, column, then vertical position for any detected
 column count. It also records per-line bbox, page, column, role, and page-level
-column diagnostics plus `column_boundaries` and `column_bands`.
+column diagnostics plus `column_boundaries` and `column_bands`. Each line also
+preserves minimal span records with text, bbox, font name, font size, and flags
+so downstream geometry checks can use span-level evidence without reparsing the
+PDF.
 
 ### `paper_sections.json`
 
@@ -1272,49 +1305,58 @@ When a parse looks wrong, inspect the outputs in this order.
 2. `normalized_tables.json`
    If the raw grid was usable but header rows, edge trimming, split-value repair, or cleaned text are wrong, the problem is normalization.
 
-3. `resolved_tables.json`
+3. `column_header_schemas.json`
+   If the column leaves, p-value/statistic columns, or spanning header groups
+   are wrong, inspect this before body value candidates.
+
+4. `body_element_candidates.json`
+   If values are split across physical cells or rows, inspect this to see
+   whether the logical value candidates preserve the right source fragments and
+   bboxes without changing the extracted grid.
+
+5. `resolved_tables.json`
    If one logical table spans pages, inspect this to see whether fragments were integrated, rejected, or left as singletons, and how resolved rows map back to source table rows.
 
-4. `table_continuation_column_checks.json`
+6. `table_continuation_column_checks.json`
    If a source fragment has explicit or narrow inferred continuation evidence, inspect this to see whether the normalized column count and schema-derived column headers are compatible.
 
-5. `table1_continuation_groups.json`, `merged_table1_tables.json`, and `continued_variable_integrations.json`
+7. `table1_continuation_groups.json`, `merged_table1_tables.json`, and `continued_variable_integrations.json`
    Inspect these older review artifacts when you need a source-fragment view of continuation candidates, merged rows, or boundary reinterpretation evidence.
 
-6. `table_profiles.json`
+8. `table_profiles.json`
    If the table was routed to the wrong family, the problem is in routing.
 
-7. `paper_table_inventory.json`
+9. `paper_table_inventory.json`
    If a table is assigned to the wrong broad category, inspect this artifact's chosen category, confidence, and evidence.
 
-8. `table_definitions.json`
+10. `table_definitions.json`
    If row meanings or column meanings are wrong, the problem is in the semantic heuristics.
 
-9. `parsed_cell_values.json`
+11. `parsed_cell_values.json`
    If the printed cell components are wrong before semantic labels are attached, the problem is in source-cell value parsing.
 
-10. `parsed_tables.json`
+12. `parsed_tables.json`
    If source-cell components and row/column meanings are right but the final values are wrong, the problem is in the semantic value join.
 
-11. `table_processing_status.json`
+13. `table_processing_status.json`
    If a table is empty or incomplete, inspect this next to see which rescue paths were attempted and where failure was recorded.
 
-12. `parse_quality_reports.json`
+14. `parse_quality_reports.json`
    If the parse succeeded but the columns, p-values, headers, or row classifications look suspicious, inspect this artifact for deterministic quality warnings.
 
-13. `paper_footnotes.json`
+15. `paper_footnotes.json`
    If superscripts, subscripts, or note markers matter, inspect this artifact for detected table-local footer regions, anchors, candidate definitions, math/unit suppression metadata, and resolved, ambiguous, inferred, or unresolved glyph-key links.
 
-14. `paper_bibliography.json`
+16. `paper_bibliography.json`
    If numeric study/source markers look like bibliography references, inspect this artifact for the paper's fixed reference-list entries, observed marker links, and per-paper coverage diagnostics.
 
-15. `paper_page_furniture.json`
+17. `paper_page_furniture.json`
    If repeated page headers, footers, watermarks, or download notices may be contaminating extraction or note parsing, inspect this artifact for recurring clusters and ignored regions.
 
-16. `paper_markdown.md`, `paper_text_stream.json`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and `table_contexts/*.json`
+18. `paper_markdown.md`, `paper_text_stream.json`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and `table_contexts/*.json`
    If semantic context retrieval is weak, inspect these next.
 
-17. `table_variable_plausibility_llm.json`
+19. `table_variable_plausibility_llm.json`
    If deterministic variables were reasonable but the plausibility review looks wrong, the issue is in prompting, provider behavior, or validation for the standalone review command.
 
 ## Why This Pipeline Shape Is Worth Keeping

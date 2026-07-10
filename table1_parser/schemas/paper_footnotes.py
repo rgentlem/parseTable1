@@ -16,9 +16,7 @@ FootnoteSourceScope = Literal[
     "body_text",
 ]
 FootnoteGlyphKind = Literal["letter", "number", "symbol", "asterisk", "unknown"]
-FootnoteLinkStatus = Literal["resolved", "ambiguous", "unresolved", "inferred"]
-FootnoteInferenceType = Literal["p_value_significance"]
-FootnoteInferenceSource = Literal["conventional_p_value_star"]
+FootnoteLinkStatus = Literal["resolved", "ambiguous", "unresolved"]
 FootnoteDefinitionMarkerEvidenceType = Literal[
     "superscript_definition_marker",
     "extracted_footer_marker_text",
@@ -135,18 +133,6 @@ class FootnoteFooter(BaseModel):
     notes: list[str] = Field(default_factory=list)
 
 
-class FootnoteInferredMeaning(BaseModel):
-    """A structured conventional meaning inferred without an explicit definition."""
-
-    inference_type: FootnoteInferenceType
-    inference_source: FootnoteInferenceSource
-    meaning_text: str
-    marker_count: int | None = Field(default=None, ge=1)
-    p_value_threshold: float | None = Field(default=None, gt=0.0)
-    threshold_notation: str | None = None
-    evidence: list[str] = Field(default_factory=list)
-
-
 class FootnoteLink(BaseModel):
     """One anchor-to-definition link decision."""
 
@@ -158,7 +144,6 @@ class FootnoteLink(BaseModel):
     link_basis: list[str]
     confidence: float = Field(ge=0.0, le=1.0)
     definition_id: str | None = None
-    inferred_meaning: FootnoteInferredMeaning | None = None
     scope_distance: str | None = None
     notes: list[str] = Field(default_factory=list)
 

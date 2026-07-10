@@ -24,6 +24,9 @@ class PaperTextLine(BaseModel):
     column_count: int = Field(ge=1)
     role: PaperTextLineRole = "body"
     confidence: float = Field(default=0.8, ge=0.0, le=1.0)
+    dominant_font: str | None = None
+    dominant_font_size: float | None = None
+    spans: list[dict[str, Any]] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
 
 

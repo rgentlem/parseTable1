@@ -247,9 +247,11 @@ diagnostic.
     on uncaptioned adjacent fragments. Keep fail-closed diagnostics.
 
 - Conventional p-value star meanings
-  - Code: `table1_parser/paper_footnotes.py::_infer_p_value_star_meaning`.
-  - Status: keep only as explicit `link_status = "inferred"` review evidence.
-    Explicit footer definitions must override it.
+  - Previous code: `table1_parser/paper_footnotes.py::_infer_p_value_star_meaning`.
+  - Status: retired from the footnote extraction/link artifact. Observed
+    asterisk markers remain unresolved unless an explicit candidate definition
+    is found. Conventional statistical interpretation belongs in a later
+    interpretation layer.
 
 - Bibliography column/indent handling
   - Code: `table1_parser/paper_bibliography.py`.

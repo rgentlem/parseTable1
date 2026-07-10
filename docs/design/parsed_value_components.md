@@ -3,10 +3,11 @@
 This document defines a value-parsing artifact that records parsed table-cell
 contents before continuation fragments are joined.
 
-The goal is to parse the printed values once, preserve the raw cell text, and
-store the parsed numeric components in an index-addressable structure that can
-later be aligned with `ColumnHeaderSchema`, `TableDefinition`, continuation
-row provenance, and R/tableone-style display objects.
+The goal is to parse body value element candidates once, preserve the printed
+source fragments, and store the parsed numeric components in an
+index-addressable structure that can later be aligned with
+`ColumnHeaderSchema`, `TableDefinition`, continuation row provenance, and
+R/tableone-style display objects.
 
 ## Motivation
 
@@ -17,7 +18,10 @@ still be parsed locally.
 
 Therefore:
 
-- cell-value parsing should run on each normalized source table fragment
+- body element candidate construction should run after `ColumnHeaderSchema`,
+  before component parsing
+- cell-value parsing should run on each candidate from each normalized source
+  table fragment
 - value records should be keyed by source table and grid indices
 - continuation integration should remap already-parsed values by row provenance
 - variable names, level labels, column labels, and header paths should be
@@ -52,6 +56,9 @@ class ParsedCellValue(BaseModel):
     row_idx: int
     col_idx: int
     raw_value: str
+    element_candidate_id: str | None = None
+    raw_fragments: list[str] = []
+    source_cells: list[BodyElementSourceCell] = []
     parse_pattern: str | None = None
     components: list[ValueComponent] = []
     confidence: float | None = None
@@ -67,8 +74,10 @@ class ValueComponent(BaseModel):
     confidence: float | None = None
 ```
 
-`row_idx` and `col_idx` are source normalized-table indices. They are enough
-for alignment. Row and column labels belong in `TableDefinition` and
+`row_idx` and `col_idx` are the candidate anchor indices in the source
+normalized table. They are enough for alignment. When a candidate spans
+multiple physical cells, `raw_fragments` and `source_cells` preserve the
+printed evidence. Row and column labels belong in `TableDefinition` and
 `ColumnHeaderSchema`, not in this artifact.
 
 ## Component Semantics
@@ -207,6 +216,8 @@ The continuation-aware flow should be:
 
 ```text
 NormalizedTable fragments
+-> ColumnHeaderSchema
+-> body_element_candidates.json
 -> parsed_cell_values.json
 -> TableDefinition fragments
 -> continued_variable_integrations.json
@@ -217,12 +228,14 @@ NormalizedTable fragments
 Value parsing happens before joining. Semantic attachment happens after
 joining:
 
-1. Parse each source fragment's cells into component records.
-2. Keep records keyed by `source_table_index`, `source_table_id`, `row_idx`,
+1. Build source-fragment body element candidates over schema-derived value
+   columns.
+2. Parse each candidate's `candidate_text` into component records.
+3. Keep records keyed by `source_table_index`, `source_table_id`, `row_idx`,
    and `col_idx`.
-3. Build continuation row provenance during variable integration.
-4. Remap source value records to integrated row indices using provenance.
-5. Join remapped value records to variables, levels, and columns by index.
+4. Build continuation row provenance during variable integration.
+5. Remap source value records to integrated row indices using provenance.
+6. Join remapped value records to variables, levels, and columns by index.
 
 This avoids reparsing display strings and avoids forcing a continuation fragment
 to know its parent variable before the continuation boundary is interpreted.

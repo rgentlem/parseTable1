@@ -1,6 +1,8 @@
-# ObservedTableOne R Implementation Plan
+# parseTable1 R S7 Inspection Plan
 
-This document describes the implementation plan for an R-first component that consumes parser JSON artifacts and constructs an observed, print-canonical semantic object for one Table 1.
+This document describes the implementation plan for an R-first component that
+consumes parser JSON artifacts and constructs S7 inspection objects for resolved
+Table 1-style outputs.
 
 The target object is defined in:
 
@@ -8,13 +10,20 @@ The target object is defined in:
 
 ## Goal
 
-Implement an R-side builder that reads:
+Implement an R-side package layer that reads parser JSON artifacts and returns
+S7 objects for paper- and table-level inspection. The R layer consumes JSON only;
+it must not parse PDFs, repair extraction, or reinterpret partial artifacts as
+complete tables.
 
+Required table-level inputs are:
+
+- `resolved_tables.json`
 - `table_definitions.json`
 - `parsed_tables.json`
-- optionally `normalized_tables.json`
 
-and returns an `ObservedTableOne` object for one table.
+Optional inputs such as `normalized_tables.json`, `paper_footnotes.json`, and
+`table_processing_status.json` may be retained as source artifacts or
+diagnostic context.
 
 The implementation should live in the repository's `R/` directory and be written as package-oriented reusable functions rather than only as ad hoc scripts.
 
@@ -23,12 +32,12 @@ The implementation should live in the repository's `R/` directory and be written
 Implement:
 
 1. shared JSON-reading helpers in R
-2. an `ObservedTableOne` S3 constructor
-3. validation for the constructed object
-4. a builder from one `TableDefinition` + one `ParsedTable`
-5. a convenience builder from one paper output directory
-6. a compact print method for interactive inspection
-7. basic documentation in `docs/` and small package-oriented R files
+2. S7 classes for one paper output directory and one resolved logical table
+3. fail-closed validation for required JSON artifacts
+4. one base-R `data.frame` row per resolved column
+5. explicit multicolumn-header group views derived from header spans
+6. row, value, and diagnostic accessors
+7. package documentation and a vignette
 
 Do not implement yet:
 
@@ -44,6 +53,7 @@ The implementation should rely on saved JSON files, not Python imports.
 
 Required input files:
 
+- `outputs/papers/<paper_stem>/resolved_tables.json`
 - `outputs/papers/<paper_stem>/table_definitions.json`
 - `outputs/papers/<paper_stem>/parsed_tables.json`
 
@@ -85,118 +95,76 @@ Recommended reusable helpers:
 
 These should be package-safe and should not execute script logic on import.
 
-### Constructor and validator
+### Constructor And Validator
 
 Recommended core object functions:
 
-- `new_observed_table_one(...)`
-- `validate_observed_table_one(x)`
-- `print.ObservedTableOne(x, ...)`
+- `read_pt1_paper(paper_dir)`
+- `pt1_table(x, table_index = 0L)`
+- `validate_pt1_table(x)`
+- `pt1_column_groups(x)`
+- `pt1_columns(x)`
+- `pt1_rows(x)`
+- `pt1_values(x)`
+- `pt1_diagnostics(x)`
 
-The constructor should build a named list and assign class `ObservedTableOne`.
-It should expose tableone-style `ContTable`, `CatTable`, and `MetaData` fields,
-with the existing lower-case fields retained as compatibility aliases.
+The constructors should return S7 objects. Stored tabular views should be base R
+`data.frame` objects; do not introduce tidyverse dependencies.
 
-The validator should check:
+The table validator should check:
 
 - presence of `table_id`
-- list-shaped `metadata`
-- list-shaped `columns`
-- list-shaped `continuous`
-- list-shaped `categorical`
-- list-shaped `statistics`
-- coherent variable ordering
-
-### Builders
-
-Recommended public builders:
-
-- `build_observed_table_one(table_definition, parsed_table, normalized_table = NULL, provenance = NULL)`
-- `build_observed_table_one_from_paper_dir(paper_dir, table_index = 0L)`
-
-Recommended internal helpers:
-
-- `build_observed_metadata(table_definition, parsed_table)`
-- `build_observed_columns(table_definition, parsed_table)`
-- `build_observed_continuous(table_definition, parsed_table)`
-- `build_observed_categorical(table_definition, parsed_table)`
-- `build_observed_statistics(parsed_table, columns)`
+- positive resolved `n_rows` and `n_cols`
+- complete `header_spans`
+- exactly one leaf span for every resolved column
+- one row in `columns` for every resolved column
+- base R `data.frame` views for groups, columns, rows, values, and diagnostics
 
 ## Detailed Assembly Rules
 
-### Metadata assembly
+### Row Assembly
 
-Take row and semantic information from `table_definition`.
+Take row and semantic information from `table_definition$variables`.
 
-Populate:
+The row view should preserve:
 
-- `vars`
-- `logiFactors`
-- `varFactors`
-- `varNumerics`
-- `percentMissing`
-- `varLabels`
-- variable order from `table_definition$variables`
-- variable labels and names from the same
-- row spans from `row_start` and `row_end`
-- variable type from `variable_type`
-- summary style and units from `summary_style_hint` and `units_hint`
-- printed levels from `levels`
-- grouping info from `column_definition`, which must be derived from `ColumnHeaderSchema`
+- variable rows
+- categorical level rows
+- row indices
+- parent-variable links for levels
+- variable type and printed label
 
-Do not synthesize:
-
-- unprinted levels
-- upstream `factorVars`
-- original display settings
+Do not synthesize unprinted levels, original `factorVars`, or source-data
+display settings.
 
 ### Column assembly
 
-Prefer `table_definition$column_definition$columns` as the semantic source, and
-require that those columns come from the parser's `ColumnHeaderSchema` path.
-Observed-table code should not rebuild column meaning from local header text.
+Use `table_definition$column_definition$header_spans` as the structural source.
+The R layer must construct:
 
-If a column exists in `parsed_table$columns` but not in the definition, preserve it as best-effort fallback.
+- one row per multicolumn group span
+- one row per resolved leaf column, including the row-label column
 
-Columns should remain in left-to-right printed order.
+Each leaf column record should preserve its ancestor group path. If every
+resolved column does not have exactly one leaf span, table construction should
+fail with a structured diagnostic.
 
-### Continuous assembly
+### Value Assembly
 
-Use variables whose `variable_type` is `continuous` or whose printed row is currently represented as a single non-level row.
+Take values from `parsed_tables.json`. The value view should remain long and
+cell-oriented:
 
-Collect matching `parsed_table$values` records where:
-
-- `level_label` is `NULL`
-- column is not a statistic column
-
-Preserve:
-
-- raw cell text
-- parsed numeric slots
-- row and column coordinates
-- summary style hint from `table_definition`
-
-### Categorical assembly
-
-Use variables with printed `levels`.
-
-Collect matching `parsed_table$values` records keyed by:
-
-- `variable_name`
-- `level_label`
 - `row_idx`
 - `col_idx`
+- `variable_name`
+- `level_label`
+- `raw_value`
+- typed component summary from parser value components
+- confidence
 
-Preserve only printed levels.
-
-### Statistics assembly
-
-Use `parsed_table$columns` and `table_definition$column_definition$columns` to identify statistic columns such as:
-
-- `p_value`
-- `smd`
-
-Collect value records for those columns into a separate `statistics` block.
+Statistics such as p-values remain ordinary value rows tied to statistic
+columns; a later view can filter them by `pt1_columns(x)$measure_kind` or
+column role.
 
 ## Handling Current Parser Limitations
 
@@ -217,6 +185,10 @@ The R code should therefore:
 - keep notes for anything unresolved
 
 ## Package Orientation
+
+The R package should remain base R plus narrowly scoped imports such as
+`jsonlite` and `S7`. Do not use tidyverse packages in the implementation or
+vignettes.
 
 Even before a full R package is published, code in `R/` should move toward package style:
 
@@ -282,7 +254,7 @@ For this phase, the repository should gain:
 
 - one design doc
 - one implementation plan
-- package-oriented R helpers for JSON loading and `ObservedTableOne` construction
+- package-oriented R helpers for JSON loading and `PT1Paper`/`PT1Table` construction
 
 This is enough to establish the R-side component without changing the Python parser or its JSON schema.
 

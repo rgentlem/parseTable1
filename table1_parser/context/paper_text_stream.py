@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +19,8 @@ from table1_parser.schemas import PaperPageFurniture, PaperTextLine, PaperTextPa
 from table1_parser.text_cleaning import clean_text
 
 
+BODY_TEXT_STYLE_MIN_FONT_SIZE = 5.0
+BODY_TEXT_STYLE_MAX_FONT_SIZE = 18.0
 SECTION_HEADING_TEXTS = {
     "abstract",
     "introduction",
@@ -73,6 +76,7 @@ def build_paper_text_stream(
 
     stream_lines: list[PaperTextLine] = []
     stream_pages: list[PaperTextPage] = []
+    font_style_counts: Counter[tuple[str, float]] = Counter()
     removed_furniture_line_count = 0
     furniture_text_keys, furniture_text_patterns = _page_furniture_text_matchers(paper_page_furniture)
     try:
@@ -133,6 +137,19 @@ def build_paper_text_stream(
                     line_notes.append("bold_like_text")
                 if role == "heading":
                     line_notes.append("layout_section_heading")
+                for style_count in record.get("font_style_counts", []):
+                    if not isinstance(style_count, dict):
+                        continue
+                    record_font = style_count.get("font")
+                    record_font_size = style_count.get("font_size")
+                    record_character_count = int(style_count.get("character_count", 0) or 0)
+                    if (
+                        isinstance(record_font, str)
+                        and isinstance(record_font_size, (int, float))
+                        and record_character_count > 0
+                        and BODY_TEXT_STYLE_MIN_FONT_SIZE <= float(record_font_size) <= BODY_TEXT_STYLE_MAX_FONT_SIZE
+                    ):
+                        font_style_counts[(record_font, round(float(record_font_size), 1))] += record_character_count
                 stream_lines.append(
                     PaperTextLine(
                         line_id=f"page-{page_num}-line-{logical_index}",
@@ -146,6 +163,9 @@ def build_paper_text_stream(
                         column_count=column_count,
                         role=role,
                         confidence=0.86 if role == "heading" else 0.78,
+                        dominant_font=str(record["dominant_font"]) if isinstance(record.get("dominant_font"), str) else None,
+                        dominant_font_size=float(record["dominant_font_size"]) if isinstance(record.get("dominant_font_size"), (int, float)) else None,
+                        spans=list(record.get("spans", [])) if isinstance(record.get("spans"), list) else [],
                         notes=line_notes,
                     )
                 )
@@ -169,6 +189,16 @@ def build_paper_text_stream(
             close()
 
     markdown = paper_text_stream_to_markdown(stream_lines)
+    total_style_characters = sum(font_style_counts.values())
+    font_style_summary = [
+        {
+            "font": font,
+            "font_size": font_size,
+            "character_count": character_count,
+            "character_fraction": character_count / total_style_characters if total_style_characters else 0.0,
+        }
+        for (font, font_size), character_count in font_style_counts.most_common()
+    ]
     return PaperTextStream(
         paper_id=paper_id or Path(pdf_path).stem,
         source_pdf=Path(pdf_path).name,
@@ -181,6 +211,8 @@ def build_paper_text_stream(
             "page_count": len(stream_pages),
             "removed_page_furniture_line_count": removed_furniture_line_count,
             "column_order": "page_then_column_then_y",
+            "font_style_character_counts": font_style_summary,
+            "dominant_body_text_style": font_style_summary[0] if font_style_summary else None,
         },
     )
 
@@ -213,6 +245,8 @@ def _line_record_from_pymupdf_line(
     line_index: int,
 ) -> dict[str, object] | None:
     bbox_parts: list[tuple[float, float, float, float]] = []
+    span_counts: Counter[tuple[str, float]] = Counter()
+    span_records: list[dict[str, object]] = []
     bold_like = False
     for span in line.get("spans", []):
         if not isinstance(span, dict):
@@ -220,6 +254,25 @@ def _line_record_from_pymupdf_line(
         bbox = bbox_from_pymupdf_value(span.get("bbox"))
         if bbox is not None:
             bbox_parts.append(bbox)
+        span_text = str(span.get("text", ""))
+        visible_character_count = len("".join(span_text.split()))
+        span_font = span.get("font")
+        span_size = span.get("size")
+        span_flags = span.get("flags")
+        font = span_font if isinstance(span_font, str) and span_font.strip() else None
+        font_size = float(span_size) if isinstance(span_size, (int, float)) else None
+        if font is not None and font_size is not None and visible_character_count > 0:
+            span_counts[(font, round(font_size, 1))] += visible_character_count
+        if span_text and bbox is not None:
+            span_records.append(
+                {
+                    "text": span_text,
+                    "bbox": bbox,
+                    "font": font,
+                    "font_size": font_size,
+                    "flags": span_flags if isinstance(span_flags, int) else None,
+                }
+            )
         font = str(span.get("font", "")).lower()
         flags = span.get("flags")
         if "bold" in font or "semibold" in font or (isinstance(flags, int) and flags & 16):
@@ -228,6 +281,11 @@ def _line_record_from_pymupdf_line(
     text = clean_text(raw_text)
     if not text or not bbox_parts:
         return None
+    dominant_font = None
+    dominant_font_size = None
+    dominant_style_character_count = 0
+    if span_counts:
+        (dominant_font, dominant_font_size), dominant_style_character_count = span_counts.most_common(1)[0]
     return {
         "raw_text": raw_text,
         "text": text,
@@ -240,6 +298,18 @@ def _line_record_from_pymupdf_line(
         "block_index": block_index,
         "line_index": line_index,
         "bold_like": bold_like,
+        "dominant_font": dominant_font,
+        "dominant_font_size": dominant_font_size,
+        "dominant_style_character_count": dominant_style_character_count,
+        "spans": span_records,
+        "font_style_counts": [
+            {
+                "font": font,
+                "font_size": font_size,
+                "character_count": character_count,
+            }
+            for (font, font_size), character_count in span_counts.most_common()
+        ],
         "notes": [],
     }
 

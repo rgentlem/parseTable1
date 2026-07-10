@@ -2,18 +2,21 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from table1_parser.heuristics.table_definition_columns import build_column_definition
 from table1_parser.heuristics.table_definition_rows import build_defined_variables
-from table1_parser.schemas import ColumnHeaderSchema, NormalizedTable, TableDefinition
+from table1_parser.schemas import BodyElementCandidate, ColumnHeaderSchema, NormalizedTable, TableDefinition
 from table1_parser.validation.table_definition import validate_table_definition
 
 
 def build_table_definition(
     table: NormalizedTable,
     column_schema: ColumnHeaderSchema | None = None,
+    body_element_candidates: Sequence[BodyElementCandidate] | None = None,
 ) -> TableDefinition:
     """Build one deterministic TableDefinition from a normalized table."""
-    variables = build_defined_variables(table)
+    variables = build_defined_variables(table, body_element_candidates=body_element_candidates)
     column_definition = build_column_definition(table, column_schema)
     notes = ["rotated_table_layout"] if table.metadata.get("table_orientation") == "rotated" else []
     confidences = [variable.confidence for variable in variables if getattr(variable, "confidence", None) is not None]
@@ -34,12 +37,17 @@ def build_table_definition(
 def build_table_definitions(
     tables: list[NormalizedTable],
     column_schemas: list[ColumnHeaderSchema] | None = None,
+    body_element_candidates: Sequence[BodyElementCandidate] | None = None,
 ) -> list[TableDefinition]:
     """Build deterministic TableDefinition artifacts for a list of tables."""
+    candidates_by_table_id: dict[str, list[BodyElementCandidate]] = {}
+    for candidate in body_element_candidates or []:
+        candidates_by_table_id.setdefault(candidate.source_table_id, []).append(candidate)
     return [
         build_table_definition(
             table,
             column_schemas[index] if column_schemas is not None and index < len(column_schemas) else None,
+            body_element_candidates=candidates_by_table_id.get(table.table_id),
         )
         for index, table in enumerate(tables)
     ]

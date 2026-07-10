@@ -8,6 +8,11 @@ from table1_parser.schemas.column_header_schema import (
     ColumnHeaderRelationship,
     ColumnHeaderSchema,
 )
+from table1_parser.schemas.body_element_candidate import (
+    BodyElementCandidate,
+    BodyElementCandidateKind,
+    BodyElementSourceCell,
+)
 from table1_parser.schemas.cell_text_annotation import (
     CellTextAnnotation,
     CellTextAnnotationTable,
@@ -44,7 +49,6 @@ from table1_parser.schemas.paper_footnotes import (
     FootnoteFooter,
     FootnoteFooterRow,
     FootnoteGlyphKind,
-    FootnoteInferredMeaning,
     FootnoteLink,
     FootnoteLinkStatus,
     FootnoteSourceScope,
@@ -128,7 +132,6 @@ __all__ = [
     "FootnoteFooter",
     "FootnoteFooterRow",
     "FootnoteGlyphKind",
-    "FootnoteInferredMeaning",
     "FootnoteLink",
     "FootnoteLinkStatus",
     "FootnoteSourceScope",
@@ -156,6 +159,9 @@ __all__ = [
     "PageFurnitureRegion",
     "PageFurnitureTextObservation",
     "ColumnDefinition",
+    "BodyElementCandidate",
+    "BodyElementCandidateKind",
+    "BodyElementSourceCell",
     "ColumnHeaderCellEvidence",
     "ColumnHeaderDescriptor",
     "ColumnHeaderGroup",

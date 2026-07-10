@@ -89,9 +89,10 @@ The pipeline should therefore:
 `paper_markdown.md` is persisted backend evidence.
 
 `paper_text_stream.json` is the layout-aware document-context artifact. It
-records page-level column boundaries and bands and orders text as page, column,
-then vertical position. This column-order model is independent of whether a page
-has one, two, three, or more detected text columns.
+records page-level column boundaries and bands, per-line geometry/style, and
+minimal span records, then orders text as page, column, then vertical position.
+This column-order model is independent of whether a page has one, two, three,
+or more detected text columns.
 
 `paper_sections.json` is the structured interpretation of that layout-aware
 stream when available, falling back to markdown only when positioned text cannot

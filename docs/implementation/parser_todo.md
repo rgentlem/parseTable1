@@ -19,7 +19,29 @@ positioned extraction, caption/table-region ownership, page-furniture filtering,
 and explicit schema artifacts; fail closed with diagnostics when geometry is
 insufficient.
 
-1. [x] Add a parser-native column header schema artifact.
+1. [ ] Centralize positioned PDF text/geometry into one shared document pass.
+   Replace overlapping PyMuPDF document parses with a single positioned-text
+   artifact or in-memory object that preserves page, column, block, line, span,
+   character, bbox, font name, font size, flags, writing direction when
+   available, and raw/normalized text. Page furniture, captions, table
+   extraction, section text, bibliography, footnotes, and table metadata should
+   consume that shared evidence rather than independently rebuilding partial
+   line/block/font views. Stage this carefully: first define or reuse the shared
+   artifact without changing parser decisions, then use it narrowly for
+   footer/table-metadata detection with font-change and below-table geometry,
+   then migrate broader cleanup only after the artifact is stable.
+
+2. [ ] Take advantage of PDF tags when present.
+   Inspect PDF structure tags as extraction evidence when a paper exposes a
+   usable `/StructTreeRoot`, especially `<Table>`, `<TR>`, `<TH>`, `<TD>`,
+   `<Caption>`, and nearby `<P>` structure. Tags should be treated as
+   hard evidence when they align with geometry, not as a replacement for
+   coordinate-faithful extraction. Initial corpus check: 13/27 PDFs have a
+   structure tree, 11/27 expose table-structure tags, and only 3/27 expose
+   explicit caption tags, so tag support should opportunistically improve
+   extraction/caption ownership while the geometry path remains primary.
+
+3. [x] Add a parser-native column header schema artifact.
    Build `ColumnHeaderSchema` between `NormalizedTable` and `TableDefinition` so leaf columns, higher spanning header groups, group-to-leaf relationships, raw cell evidence, and coordinates are explicit before any tableone-style projection.
    Design note: `docs/design/column_header_schema.md`.
    Implementation plan: `docs/implementation/column_header_schema_implementation_plan.md`.
@@ -27,7 +49,7 @@ insufficient.
    Initial implementation is in place: `table1-parser parse` writes `column_header_schemas.json`, `TableDefinition` consumes it, continuation checks use schema-derived column headers, and tests cover Eke-like Table 1/Table 2 structures plus non-problem tables.
    Follow-up: Eke Tables 1-2 show that multi-line header stacks can produce wrong parent paths when rule-banded header rows are extracted as many short text fragments. The current parser now repairs obvious split estimate/uncertainty value columns, drops sparse non-matrix page-text columns and empty separator columns, removes tall/narrow numeric margin text before grid construction, groups leaf-header words into visual runs by small between-word spacing before assigning those runs to body-derived column extents, only merges wrapped leaf rows after geometry-based header inference, preserves normalized-to-original column identity in `source_col_indices`, moves short leading leaf fragments across adjacent column boundaries when structural or coordinate evidence supports it, trims sparse group rows out of the leaf-header stack, and persists `TableDefinition.column_definition.header_spans` plus per-column `header_path` so JSON no longer relies on flattened multirow labels. Remaining work should expose ambiguous leaf-band fragment assignments as structured candidates that deterministic code or later LLM inference can adjudicate; do not hard-code paper-specific vocabulary.
 
-2. [ ] Make continuations semantically real.
+4. [ ] Make continuations semantically real.
    One logical Table 1 spanning pages should feed `TableDefinition` and `ParsedTable`, rather than leaving page-level and continuation-page parses as separate semantic outputs.
    Design note: `docs/design/table_continuation_resolution.md`.
    Variable integration design: `docs/design/separated_variable_description_integration.md`.
@@ -55,11 +77,11 @@ insufficient.
    NHANES paper, page 4 and page 5 now resolve as one Table 1, while page 5
    Table 2 and page 6 Table 3 keep their own below-table captions.
 
-3. [x] Keep paper-page-furniture filtering near the front of document processing.
+5. [x] Keep paper-page-furniture filtering near the front of document processing.
    `paper_page_furniture.json` is now built before paper markdown,
    layout-aware text streaming, section parsing, bibliography extraction, and
    table extraction. It is also supplied before cell text annotation and
-   footnote PDF-block collection. Repeated page-furniture lines are removed
+   footnote text-stream footer detection. Repeated page-furniture lines are removed
    from `paper_markdown.md` and `paper_text_stream.json`; `paper_sections.json`
    are derived from the PyMuPDF layout-aware stream when available, and the
    artifact is supplied to the extractor as explicit ignore regions.
@@ -73,8 +95,8 @@ insufficient.
    Design contract, Pydantic schemas, positioned page-text collection,
    matching-text normalization, edge-band recurrence clustering,
    `paper_page_furniture.json` parse output, R inspection helpers, real-paper
-   review, early-filtered cell text annotation and footnote PDF-block
-   collection, and early extraction masking are in place.
+   review, early-filtered cell text annotation and text-stream footer
+   detection, and early extraction masking are in place.
    Recent table-mention update: `paper_table_mentions.json` is now built from
    the page-furniture-filtered layout-aware text stream before table extraction.
    It classifies `Table N` lines as caption candidates, continuation labels, or
@@ -86,13 +108,13 @@ insufficient.
    supposed value region is
    mostly multi-word prose fragments.
 
-4. [x] Retire broad trailing-row cleanup where page-furniture masking owns the issue.
+6. [x] Retire broad trailing-row cleanup where page-furniture masking owns the issue.
    `metadata.trailing_non_table_rows` is now limited to explicit trailing
    continuation-page notes. Broad large-gap/text-spread trimming after the final
    value row was removed so footer/page-furniture cleanup is owned by the early
    page-furniture mask rather than by a second heuristic path.
 
-5. [ ] Make table-region ownership the single source of caption/header/body/footer truth.
+7. [ ] Make table-region ownership the single source of caption/header/body/footer truth.
    Initial implementation is in place: `table_regions.json` is built after
    extraction and cell-text annotation, before normalization. `TableRegion`
    records geometry-derived caption rows, preamble rows, column-header rows,
@@ -122,11 +144,12 @@ insufficient.
    emitted 82 extracted tables, used `pymupdf_positioned_geometry` for all 82,
    and had 0 backend JSON grid survivors. The test suite no longer keeps
    backend-grid survival fixtures as acceptable parser behavior.
-   Positioned row-grid construction now keeps parenthesized numeric expressions
-   together from open parenthesis through matching close parenthesis and derives
-   the first row-label/value boundary from the observed gap before the repeated
-   first value-column anchor, rather than from a fake midpoint between the
-   leftmost row-label text and the first value column.
+   Positioned row-grid construction derives the first row-label/value boundary
+   from the observed gap before the repeated first value-column anchor, rather
+   than from a fake midpoint between the leftmost row-label text and the first
+   value column. It must keep the extracted grid coordinate-faithful: if a
+   printed value is split across physical cells or rows, extraction preserves
+   those cells and bboxes rather than joining them.
    Leaf-header reconstruction groups positioned words into small-gap visual
    runs before assigning each run to body-derived column extents. Anchors may
    define value-column extents upstream, but they do not glue visually separated
@@ -163,7 +186,7 @@ insufficient.
    but normalized column counts still differ. Add R inspection helpers only
    after the Python artifact stabilizes.
 
-6. [ ] Align parser route with table taxonomy.
+8. [ ] Align parser route with table taxonomy.
    `table_category` should drive routing once it is available. Current `table_family` is better understood as an early provisional parser-route signal; decide whether to rename, replace, or derive it from the paper table inventory.
    Recent update: obvious OR/CI estimate-result tables without title/caption
    signals now route through `TableProfile.table_family = "estimate_results"`
@@ -171,7 +194,7 @@ insufficient.
    structural support. In the latest corpus run, Asthma p6-t0 moved from
    `non_table_layout_candidate` to `analysis_outputs`.
 
-7. [ ] Add first-class support for data matrices.
+9. [ ] Add first-class support for data matrices.
    Tables categorized as `data_presentation` need a sibling semantic model/parser instead of being forced through Table 1 descriptive semantics or left as only normalized grids.
    Recent update: wide matrix-like real tables without title/caption signals are
    no longer marked as `non_table_layout_candidate` solely because Table 1
@@ -180,7 +203,7 @@ insufficient.
    categorized as `data_presentation`. Helicobacter p5-t0, p6-t0, and p7-t0 now
    follow this path.
 
-8. [ ] Model value semantics beyond count/percent.
+10. [ ] Model value semantics beyond count/percent.
    Add explicit handling for weighted population sizes, prevalence/percent estimates, age-standardized estimates, standard errors, and `N/A`/not-estimable values where appropriate.
    Design note: `docs/design/parsed_value_components.md`.
    Implementation plan: `docs/implementation/parsed_value_components_implementation_plan.md`.
@@ -189,38 +212,58 @@ insufficient.
    Do not preserve the old two-slot `ValueRecord` shape as canonical if it blocks the right design. The semantic value layer should become a component-aware joined view over source cell components, row/level semantics, and column semantics.
    Later paper typo/error review should consume the component layer, `ColumnHeaderSchema`, and `ParsedTable.values` once real review workflows identify concrete repeated checks. Do not add generic per-column profile artifacts or helper surfaces before those failure modes are known.
    Recent update: `ParsedTable.values` now preserves source-table provenance, row/column semantics, header paths, parse patterns, and typed value components without scalar compatibility aliases. Count-percent checks now operate on components, and `parsed_cell_values.json` records source-grid components without duplicating semantic row or column labels. The earlier validation-report and parsed-value-column-profile sidecars were removed as over-scoped for the current data-structure goal.
-9. [ ] Strengthen parent/level reasoning.
+   Recent body-element update: `body_element_candidates.json` now sits after
+   `ColumnHeaderSchema` and before `parsed_cell_values.json`. It records
+   single-cell candidates plus logical value candidates reconstructed from
+   same-column vertical continuations or row text streams that split into one
+   candidate per settled value column. The extracted and normalized physical
+   grids are not mutated; candidates carry source cells, fragments, bboxes when
+   available, and candidate text used by component parsing.
+11. [ ] Strengthen parent/level reasoning.
    Use table-local evidence such as repeated level blocks, blank or sparse parent rows, indentation, header value roles, continuation boundaries, and value-region shape. Indentation should be one strong signal, not the only signal.
 
-10. [ ] Clean up benign PDF text artifacts cautiously.
+12. [ ] Clean up benign PDF text artifacts cautiously.
    Some text-based PDFs include spreadsheet-like artifacts that should be normalized without hiding extraction evidence. Known examples:
    - U+FEFF zero-width no-break/BOM characters embedded in extracted table cells, likely from spreadsheet copy/paste into the source document. These currently survive into row labels such as Planetary Health rows with invisible trailing characters.
    - Single-row split label tails such as `Coronary heart disease, n` plus adjacent `(\%)`/`(%)` in the next cell when the fragment is physically adjacent to the row label and clearly before the first value column.
    Recent update: footnote-suffixed p-values such as `<0.001a` now count as p-value tokens for word-position column anchoring and value parsing, so a far-right p-value cluster is not collapsed into the last data column.
    Sidecar: `docs/design/cell_text_annotations.md` defines `cell_text_annotations.json` for superscript, subscript, and small-marker geometry; parse now populates page-coordinate cell-bbox annotations when PyMuPDF char geometry is available, and R inspection loads and displays the sidecar. Implementation checklist is in `docs/implementation/cell_text_annotations_implementation_plan.md`. Keep this separate from symbol canonicalization and value parsing.
-   Footnote follow-up: `docs/design/paper_footnotes.md` defines the `paper_footnotes.json` artifact contract, and `docs/implementation/paper_footnotes_implementation_plan.md` tracks the staged work. Core Python schemas, anchor/definition inventories, PyMuPDF text-block definition sources, glyph canonicalization, deterministic links, parse output, R data-frame helpers, `ObservedFootnotes` attachment, and real-PDF smoke passes are in place. Review found resolved, unresolved, and ambiguous real examples; links remain review-only and should not be consumed downstream until page-note boilerplate and repeated marginal text pruning are stronger.
+   Footnote follow-up: `docs/design/paper_footnotes.md` defines the `paper_footnotes.json` artifact contract, and `docs/implementation/paper_footnotes_implementation_plan.md` tracks the staged work. Core Python schemas, anchor inventories, table-local footer metadata, definition inventories, glyph canonicalization, deterministic links, parse output, R data-frame helpers, `ObservedFootnotes` attachment, and real-PDF smoke passes are in place. Review found resolved, unresolved, and ambiguous real examples; links remain review-only and should not be consumed downstream.
    Recent footnote update: table-local note lines can now define markers after leading explanatory prose, including embedded and bracketed markers such as `significance. a Represents ... b Represents ...` and `[a] ... [b] ...`. This resolves the `metabolic` Table 1 p-value superscripts against the local Chi-square and Kruskal-Wallis definitions while keeping links as review evidence only.
    Recent footer update: statistical-significance footer lines can now define repeated asterisk runs such as `* P value < 0.05, ** P value < 0.01, *** P value < 0.001`, and anchors attached to p-values preserve the visible asterisk count. This resolves the `stroke` Table 1-3 asterisk superscripts.
-   Recent symbol-footer update: known symbol markers such as `†`, `‡`, and `*` can now define any non-empty local footer text without semantic checks on the definition body. This resolves `cardiovascular` Table 1 double-dagger links and the anthropometric CKD dagger/star footer links; p-value semantics remain limited to the explicit conventional fallback for unresolved asterisk anchors.
+   Recent symbol-footer update: known symbol markers such as `†`, `‡`, and `*` can now define any non-empty local footer text without semantic checks on the definition body. This resolves `cardiovascular` Table 1 double-dagger links and the anthropometric CKD dagger/star footer links; p-value semantics belong in a later interpretation layer.
    Recent extracted-footer update: `paper_footnotes.json` now builds table-note definition source lines from extracted footer rows after the final value-matrix row, appending adjacent continuation rows in extracted row order. Same-table extracted footer definitions are preferred over duplicate same-table PDF-text definitions, which protects multiline rotated-table footers such as Eke Table 2.
-   Recent footer-block update: `paper_footnotes.json` now harvests PyMuPDF page text as contiguous blocks and classifies complete table-local footer blocks by table bbox adjacency and horizontal overlap before definition parsing. Continuation-group visual IDs are carried into footnote scoping, so a footer on a terminal uncaptioned fragment can resolve anchors from the earlier fragment of the same visual table. This resolves the Planetary Health Table 1 `*`, `†`, `‡`, and `§` links.
-   Recent footer-finder update: table-local extracted footers are now persisted in `paper_footnotes.json` under `footers` and surfaced in R through `footnote_footers_df()` and `show_paper_footnotes()`. `find_table_footer_rows()` uses existing row bounds plus full-width/horizontal rule geometry first, accepting rows below a rule only when the rule lies at or below the last value-matrix row and the region contains definition-like rows; otherwise it falls back to rows after the last value-matrix row. This keeps Eke page 4 body rows out of the footer while preserving the page 5 and page 7 footer regions for review.
-   Recent PDF-footer artifact update: filtered PyMuPDF blocks classified as table-local footers are now also persisted as unsplit `footers` records before definition splitting. This keeps metabolic and stroke from showing table-note definitions with an empty footer review artifact. R footnote review filters now match the selected table's visual ID as well as its fragment table ID, so Eke Table 1 and Table 2 reviews include footers found on their continued fragments without treating `Table 1. (continued)` as definition text.
+   Recent text-stream footer update: `paper_footnotes.json` now consumes
+   `paper_text_stream.json` line groups for footer metadata instead of running a
+   second PyMuPDF block parse. Candidate footer groups are contiguous visual
+   lines with the same non-body dominant font style, positioned below the table
+   bbox, horizontally overlapping the table, and bounded by the next extracted
+   table start or another structural line such as a section heading or figure
+   caption. Continuation-group visual IDs are carried into footnote scoping, so
+   a footer on a terminal uncaptioned fragment can resolve anchors from the
+   earlier fragment of the same visual table.
+   Recent footer-finder update: table-local extracted footers are now persisted in `paper_footnotes.json` under `footers` and surfaced in R through `footnote_footers_df()` and `show_paper_footnotes()`. `find_table_footer_rows()` uses existing row bounds plus full-width/horizontal rule geometry first, accepting rows below a rule only when the rule lies at or below the last value-matrix row; without rule evidence, extracted-row footer ownership is limited to structured marker geometry from cell-text annotations. Generic page-bottom and body-text blocks no longer produce table-footnote definitions.
+   Recent footer artifact update: text-stream footer line groups classified as
+   table-local footers are persisted as unsplit `footers` records before
+   definition splitting. R footnote review filters match the selected table's
+   visual ID as well as its fragment table ID, so continued-fragment footers can
+   be reviewed without treating `Table 1. (continued)` as definition text.
    Recent math/unit update: numeric superscripts and subscripts in expressions like `10^9`, `10^6`, `m^2`, `kg/m^2`, `CO₂`, `I²`, and `×10^9/L` are rejected before `FootnoteAnchor` creation. Subscript annotations are now generally suppressed as non-footnote anchors, including single-letter notation such as `S_I`/`AIR_g` and multi-letter subscript words such as `P_Begg`/`P_Egger`. They remain visible in `cell_text_annotations.json` with original glyph case; `paper_footnotes.json` records suppression counts in `math_unit_anchor_suppression_count`, `subscript_anchor_suppression_count`, and `word_like_subscript_anchor_suppression_count`.
    Recent symbol-font update: PyMuPDF char extraction now applies font-qualified Unicode normalization before word/grid reconstruction for known embedded symbol-font codes such as `±`, `×`, `−`, and `<`. Inline marker detection accepts same-height trailing glyphs attached to numeric/comparator text including `±` values and preserves marker font metadata. In the focused Ethnic Differences run, `S_I` and `AIR_g` remain suppressed subscript annotations, while the marker-font `x` resolves against the local `xP < ...` footer definition.
-   Recent p-value-star update: after math/unit rejection and explicit local footnote linking, `*`, `**`, and `***` attached to p-value cells/columns receive structured conventional fallback meanings with thresholds `10^-1`, `10^-2`, and `10^-3`. Explicit footer definitions override the fallback, and R-facing output exposes whether the interpretation was explicit or conventional.
-   Bibliographic reference follow-up: `paper_bibliography.json` now preserves the paper's own bibliography entries, numbered or unnumbered, from the PyMuPDF layout-aware text stream and links numeric table-cell study/source/header markers to numbered entries when no local table-note definition exists. The footnote linker suppresses citation-like numeric table-cell markers with matching numbered bibliography entries from table-footnote link counts, while the original marker evidence remains visible in `cell_text_annotations.json` and linked in `paper_bibliography.json`. Reference-list extraction uses one layout stream: read page, then column, then vertical position; start entries at the column left edge, with either a numeric label or the first author/organization line; keep indented rows open across column and page breaks; and fall back to markdown-derived sections only when the positioned text stream cannot produce entries. The bibliography pass is now the only source of reference-region evidence used by table extraction: if entries are found, bibliography-owned source lines and entry bboxes are passed into extraction so positioned words/chars can be removed before table candidate construction; if no bibliography is found, extraction does not run a separate raw-text `References` scan. The current full 27-PDF run, `outputs/testpapers_batch_20260709_bib_region_mask`, has 1308 bibliography entries, 0 empty bibliographies, and 0 bibliography diagnostics.
+   Recent footnote-scope update: conventional p-value-star inference has been removed from `paper_footnotes.json`. Observed `*`, `**`, and `***` markers are preserved as anchors and remain unresolved unless an explicit candidate definition is found; conventional statistical interpretation belongs in a later interpretation layer.
+   Bibliographic reference follow-up: `paper_bibliography.json` now preserves the paper's own bibliography entries, numbered or unnumbered, from the PyMuPDF layout-aware text stream. Numeric table-cell study/source/header markers are no longer removed from `paper_footnotes.json` just because their glyphs overlap bibliography labels. The footnote linker now keeps those anchors and marks them unresolved without a same-table or same-visual definition, adding review notes such as `possible_bibliographic_reference`; bibliography matching belongs in `paper_bibliography.json`. Reference-list extraction uses one layout stream: read page, then column, then vertical position; start entries at the column left edge, with either a numeric label or the first author/organization line; keep indented rows open across column and page breaks; and fall back to markdown-derived sections only when the positioned text stream cannot produce entries. The bibliography pass is now the only source of reference-region evidence used by table extraction: if entries are found, bibliography-owned source lines and entry bboxes are passed into extraction so positioned words/chars can be removed before table candidate construction; if no bibliography is found, extraction does not run a separate raw-text `References` scan. The current full 27-PDF run, `outputs/testpapers_batch_20260709_bib_region_mask`, has 1308 bibliography entries, 0 empty bibliographies, and 0 bibliography diagnostics.
    Future work: harvest numeric bibliography reference markers from body text and captions into the same per-paper artifact, then validate one-to-one coverage for numbered lists: every observed numeric reference marker should resolve to a numbered bibliography entry, and every numbered bibliography entry should have at least one observed marker. Add author-year body citation harvesting separately against preserved unnumbered entries. Record coverage gaps as diagnostics without introducing any cross-paper citation-management layer.
-   Footnote-style update: `paper_footnotes.json` now splits local caption/footer definitions from structured marker evidence before falling back to text parsing. PyMuPDF footer blocks are built from positioned characters, and extracted footer rows can use `cell_text_annotations.json` when a raised superscript marker begins the first populated footer cell. Raw damaged strings where the marker runs into the following word are preserved as source text but do not define the marker. Extracted footer rows can still contribute weaker text evidence from confirmed statistical marker prefixes such as `xP < ...`. Structured marker evidence is merged with ordinary symbol markers in the same footer block, so an upright `* p < 0.05` definition is not dropped just because the same block also contains a raised `†` definition, as in the anthropometric CKD Table 1 footer. Textual marker definitions such as `The asterisk indicates ...` remain valid local definition evidence. The parser also preserves symbol-block splitting across variable whitespace before `†`, `‡`, `§`, and similar markers, while avoiding all-caps acronym false splits such as `eGFR`; vertical-bar glyph artifacts attached to rotated numeric cells are suppressed as non-footnote symbols. Current page-furniture handling filters positioned text before PDF definition blocks are built; the full 27-PDF run, `outputs/testpapers_batch_20260709_bib_region_mask`, records `page_furniture_filter_stage = before_pdf_definition_block_construction` for all papers, has 442 resolved footnote links, 0 inferred, 0 unresolved, and 0 ambiguous links, and `paper_style_profile.json` footnote-link coverage passes for all 27 papers.
+   Footnote-style update: `paper_footnotes.json` now splits local caption/footer definitions from structured marker evidence before falling back to text parsing. Extracted footer rows can use `cell_text_annotations.json` when a raised superscript marker begins the first populated footer cell. Raw damaged strings where the marker runs into the following word are preserved as source text but do not define the marker. Extracted footer rows can still contribute weaker text evidence from confirmed statistical marker prefixes such as `xP < ...`. Structured marker evidence is merged with ordinary symbol markers in the same footer group, so an upright `* p < 0.05` definition is not dropped just because the same group also contains a raised `†` definition, as in the anthropometric CKD Table 1 footer. Textual marker definitions such as `The asterisk indicates ...` remain valid local definition evidence. The parser also preserves symbol-block splitting across variable whitespace before `†`, `‡`, `§`, and similar markers, while avoiding all-caps acronym false splits such as `eGFR`; vertical-bar glyph artifacts attached to rotated numeric cells are suppressed as non-footnote symbols.
    Treat these as normalization follow-ups, not emergency parser changes. Preserve raw extraction, add focused repairs with provenance, and avoid broad rules that could merge real value columns into labels.
 
-11. [ ] Add known-failure regression fixtures.
+13. [ ] Add known-failure regression fixtures.
    Create stable real-paper or minimal extracted-table fixtures for specific failures and structural variants that have actually mattered in parser review. Focus on cases that protect parser behavior from silent regressions, not broad unit testing for its own sake. For value components, cover only the patterns and artifact contracts that are tied to real failures or review workflows.
    Recent cleanup: removed broad scaffold/schema/provider/synthetic/display smoke tests and kept the suite focused on parser structural regressions, artifact contracts, and LLM identity-safety checks. Future tests should continue to justify themselves as known-failure protections or important artifact contracts.
 
-12. [ ] Improve R inspection workflow.
+14. [ ] Improve R inspection workflow.
    Provide R-native review objects and display methods that make variables, levels, columns, parse notes, category/route decisions, and diagnostics easy to inspect during corpus review.
    Current direction: defer new R helper work until real usage of the component-native artifacts shows which views are needed. Decide whether `ObservedTableOne` remains the right R inspection object before extending it. Any R surface should consume canonical components directly and should not require parser scalar compatibility aliases. Avoid many tiny specialized helpers unless repeated review workflows justify them.
+   Design note: `docs/design/table_one_epidemiological_description.md` now defines the narrower Table One target as an epidemiological description table with explicit population/denominator, column, row, cell, and footnote components. Future R inspection work should use that scope before adding body classes or validation methods.
    Recent update: `show_table_structure()` now treats structured header spans, per-column header paths, and deterministic variable row spans as the default structure view, including the row-label leaf column from `ColumnHeaderSchema`, while raw normalized header rows remain opt-in provenance/debug evidence through `include_raw_header_rows = TRUE`.
 
 ## Notes
@@ -234,8 +277,8 @@ insufficient.
   the other column.
 - Recent document-processing update: repeated page furniture is built near the
   front of parse processing and passed to paper text streaming, markdown
-  filtering, table extraction, cell text annotation, and footnote PDF-block
-  collection before those stages build downstream artifacts. Broad trailing
+  filtering, table extraction, cell text annotation, and text-stream footer
+  detection before those stages build downstream artifacts. Broad trailing
   large-gap/text-spread cleanup after the final value row has been retired;
   `metadata.trailing_non_table_rows` now records only explicit trailing
   continuation-page notes.
@@ -313,8 +356,9 @@ insufficient.
   inferred links, 7 ambiguous links, 11 unresolved links, 39 math/unit anchor
   suppressions, 2 word-like subscript suppressions, 56 PDF text blocks
   classified as table footers, and 48 page-furniture definition-block
-  suppressions from the older late-filter path. Current page-furniture handling
-  filters positioned text before footnote definition blocks are built.
+  suppressions from the retired late-filter path. Current footer detection uses
+  page-furniture-filtered `paper_text_stream.json` line groups rather than PDF
+  block harvesting.
   `parse_quality_reports.json` reports
   `header_body_split_rule_disagreement` when the hline and value-anchor
   candidates both exist and disagree, except when the hline body start only

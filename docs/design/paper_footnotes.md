@@ -38,7 +38,8 @@ The parser should write a valid empty artifact when no candidates are found.
 ## Footer Record
 
 A footer is a table-local footer region detected from extracted table geometry
-or from positioned PDF text blocks that were classified as local table footers.
+or from positioned `paper_text_stream.json` line groups that were classified as
+local table footers.
 It is persisted so R review can validate the footer boundary before reviewing
 definition splitting or anchor links. Footer records preserve the unsplit raw
 region; definition records split marker meanings from that same region.
@@ -71,14 +72,14 @@ Footer detection should use existing table geometry first. When extracted
 `row_bounds` and full-width/horizontal rules are available, the footer starts
 below a rule only if that rule is at or below the last detected value-matrix
 row. This prevents header/body separators from being mistaken for footer
-boundaries. The region is accepted only when rows below the boundary contain at
-least one definition-like marker row. If rule evidence is unavailable, the
-fallback footer region starts after the last value-matrix row and is accepted
-only when it also contains definition-like rows. If extracted table rows do not
-contain the footer but PyMuPDF block geometry classifies a complete text block
-as a table-local footer, the filtered PDF block is also persisted as a footer
-record with `source_artifact = "pymupdf_page_text_blocks"` and
-`detection_basis = "pdf_text_block_after_table_bbox"`.
+boundaries. Rows below that boundary are persisted as table-local footer
+metadata without requiring marker-like wording. If rule evidence is unavailable,
+extracted-row footer ownership is limited to rows with structured marker
+geometry from cell-text annotations. If extracted table rows do not contain the
+footer, `paper_text_stream.json` can supply footer candidates as contiguous
+non-body styled visual lines below the table body. Those line groups are
+persisted as footer records with `source_artifact = "paper_text_stream.json"`
+and `detection_basis = "paper_text_stream_lines_after_table_bbox"`.
 
 ## Anchor Record
 
@@ -162,33 +163,15 @@ Initial math/unit exponent rule:
   example of this general subscript suppression rule; letter footnote markers
   are single visible superscript or inline glyphs.
 
-## P-Value Significance Stars
+## Marker Interpretation
 
-After math/unit notation has been rejected, asterisks attached to p-value cells
-should be treated as statistical-significance markers even when no explicit
-footer definition is found.
-
-Initial p-value star rule:
-
-- Apply only when the anchor is attached to a p-value cell, p-value column, or
-  p-value-like text such as `<0.001`, `0.04`, `P value`, `_p_`, or a column
-  whose `ColumnHeaderSchema` leaf/header path identifies it as a p-value.
-- Preserve the ordinary footnote-linking path first. If a local table/footer
-  definition exists for `*`, `**`, or `***`, link to it and use the explicit
-  definition as the source of meaning.
-- If no explicit definition exists, emit a structured fallback interpretation
-  rather than leaving the marker as an unresolved footnote. The fallback should
-  record that the meaning is conventional and inferred from p-value context.
-- The conventional fallback is:
-  - `*`: p-value threshold at `10^-1`
-  - `**`: p-value threshold at `10^-2`
-  - `***`: p-value threshold at `10^-3`
-- Do not apply this fallback to asterisks attached to row labels, captions,
-  bibliography/source names, non-p-value numeric cells, or prose unless the
-  p-value context is explicit.
-- Keep the visual marker evidence unchanged in `cell_text_annotations.json`.
-  Any downstream R object should expose both the observed marker and whether its
-  meaning came from an explicit table definition or the conventional fallback.
+This artifact does not infer marker meaning. After math/unit notation has been
+rejected, observed superscripts and inline markers are carried forward as
+anchors and linked only to explicit candidate definitions. If no explicit
+definition is found, the link remains unresolved. Conventional meanings, such
+as p-value significance-star thresholds, belong in a later interpretation layer
+that consumes the preserved anchors, table-local note blocks, and explicit
+definition evidence.
 
 ## Definition Record
 
@@ -222,34 +205,38 @@ Optional fields:
 - `source_artifact`
 - `notes`
 
-Definition candidates may be built from typed source blocks before they are
-promoted into definition records. Source blocks should preserve raw text, page,
+Definition candidates are built only from source blocks that have already been
+scoped as table-local metadata, caption text, or another explicit local note
+source. Generic body-text and page-bottom blocks are not promoted to table-note
+definitions in this artifact. Source blocks should preserve raw text, page,
 optional bbox and page height, source scope, source ID, table ID, visual ID, and
 source artifact. Extracted table footer regions are persisted in `footers`;
 definition source lines are then built from those footer rows. The parse command
 builds source blocks first from extracted table footer rows, then from PyMuPDF
 page text geometry. Extracted-table footer rows are identified structurally by
 `find_table_footer_rows()`: prefer rows below a bottom table rule that is itself
-below the last value-matrix row, then fall back to rows after the last
-value-matrix row when rule evidence is unavailable. Within that region, a row
-that starts or embeds a definition marker opens a table-note block, and adjacent
-following rows without a new marker are appended as continuation text until the
-next marker block.
-PyMuPDF geometry is consumed as normalized positioned characters grouped into
-contiguous text blocks rather than isolated flattened page lines. The character
-stream is filtered with `paper_page_furniture.json` ignored regions before it is
-grouped into candidate blocks.
-`find_table_footer_definition_blocks()` classifies complete PDF text blocks as
-table-local footer blocks when they sit just below a table bbox, overlap the
-table horizontally, and do not cross into the next table region. Those same
-PDF-classified table-footer blocks are persisted in `footers` as unsplit footer
-regions before they are split into definition records. This keeps review
-artifacts aligned when the extraction grid omits a visual table footer but
-positioned PDF text captures it.
+below the last value-matrix row; without rule evidence, accept extracted footer
+rows only when cell-text annotation geometry supplies a structured marker at
+the first populated footer cell. Within that region, a row that starts or
+embeds a definition marker opens a table-note block, and adjacent following
+rows without a new marker are appended as continuation text until the next
+marker block.
+`paper_text_stream.json` provides page-furniture-filtered visual lines with
+line bbox, page/column order, dominant font name, dominant font size, minimal
+span records, and document-level font-style counts.
+`find_table_footer_definition_lines()`
+classifies contiguous same-style non-body line groups as table-local footers
+when they sit just below a table bbox, overlap the table horizontally, and stop
+before the next extracted table start or another structural text boundary such
+as a section heading or figure caption. Those text-stream footer groups are
+persisted in `footers` as unsplit footer regions before they are split into
+definition records. This keeps review artifacts aligned when the extraction
+grid omits a visual table footer but the layout-aware text stream captures it.
 Continuation-group identity can supply the parent visual ID for an uncaptioned
 continued fragment, so a footer on the terminal fragment can resolve anchors on
-earlier fragments of the same visual table. Remaining page-text blocks can be
-classified as page-bottom notes.
+earlier fragments of the same visual table. Remaining page-text blocks are not
+consumed by `paper_footnotes.json`; a later paper-note layer can own them if
+needed.
 Candidate source blocks may start with a marker, or may contain embedded marker
 definitions after preceding abbreviation or significance prose, such as
 `significance. a Represents ... b Represents ...`. When the visual PDF has a
@@ -272,8 +259,7 @@ local definition evidence later justifies treating them as table-note markers.
 Statistical footer lines can define repeated asterisk runs such as `*`, `**`,
 and `***` in one comma-separated line; these are split into separate definition
 records with `asterisk:1`, `asterisk:2`, and `asterisk:3` glyph keys. P-value
-semantics are special only for the conventional fallback applied to unresolved
-asterisk anchors after explicit definition matching fails.
+semantics are not inferred by this artifact.
 Distinct symbol markers in one contiguous footer block, such as `* Race ...
 †Education ... ‡Smoking ... §Income ...`, are split into separate definition
 records without requiring whitespace between the glyph and definition body.
@@ -313,7 +299,6 @@ Required fields:
 Optional fields:
 
 - `definition_id`
-- `inferred_meaning`
 - `scope_distance`
 - `notes`
 
@@ -321,21 +306,11 @@ Allowed `link_status` values:
 
 - `resolved`
 - `ambiguous`
-- `inferred`
 - `unresolved`
 
 `definition_id` is present only for resolved links. Ambiguous links keep all
 candidates in `candidate_definition_ids`. Unresolved links keep the anchor
-visible with an empty candidate list. Inferred links have no definition ID and
-carry an `inferred_meaning` object.
-
-`inferred_meaning` is used only when a stronger non-footnote classification and
-explicit definition matching have already run. The first supported inference is
-`p_value_significance` from `conventional_p_value_star`, with fields for
-`meaning_text`, `marker_count`, numeric `p_value_threshold`,
-`threshold_notation`, and evidence strings. This preserves the observed marker
-while distinguishing conventional interpretation from explicit table-footer
-definitions.
+visible with an empty candidate list.
 
 ## Glyph Fields
 
@@ -372,11 +347,10 @@ definition; otherwise leave them unresolved with a note that they may be
 bibliographic references. Bibliography matching should be handled by a separate
 citation/reference artifact, not by the footnote linker.
 
-If no explicit definition exists for `*`, `**`, or `***`, the linker may emit an
-`inferred` link only when the anchor is a body-cell asterisk in p-value context.
-The conventional thresholds are `10^-1`, `10^-2`, and `10^-3`, respectively.
-Explicit same-table, same-visual, same-page, or paper-level definitions always
-take precedence over this fallback.
+If no explicit definition exists for `*`, `**`, or `***`, the linker should
+leave the anchor unresolved. Conventional p-value-star thresholds should be
+handled by a later interpretation layer, not by the footnote extraction/link
+artifact.
 
 ## Current Consumption Status
 

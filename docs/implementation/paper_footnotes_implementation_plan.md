@@ -35,8 +35,11 @@ Non-scope:
    - Preserve unresolved anchors; do not drop weak evidence.
 
 4. [x] Extract definition candidates
-   - Detect table-local note lines near table bounds.
-   - Detect page-bottom notes and caption-attached notes.
+   - Detect table-local note/footer lines from extracted table geometry and
+     positioned `paper_text_stream.json` line groups near table bounds.
+   - Detect caption-attached notes.
+   - Do not promote generic page-bottom or body-text blocks into this
+     table-local artifact.
    - Record raw text, cleaned text, bbox, page, source kind, and source ID.
 
 5. [x] Canonicalize glyph keys
@@ -53,7 +56,8 @@ Non-scope:
    - Add `paper_footnotes.json` to the parse artifacts.
    - Include an empty valid artifact when no candidates are found.
    - Update parse walkthrough and output docs when the file is emitted.
-   - Feed PyMuPDF page text lines into definition candidates for table-local notes and page-bottom notes.
+   - Feed PyMuPDF page text blocks through geometry-based table-footer
+     classification before definition parsing.
 
 8. [x] Add R loading and data frames
    - Load `paper_footnotes.json` in `load_paper_outputs()`.
@@ -94,20 +98,14 @@ Non-scope:
      `math_unit_anchor_suppression_count`; the 2026-07-01 stroke spot check
      suppresses 7 unit/exponent candidates before footnote linking.
 
-13. [x] Add conventional p-value star fallback interpretation
-   - After math/unit rejection and explicit footnote linking, treat asterisks in
-     p-value context as statistical-significance markers even if no footer
-     definition exists.
-   - Explicit local definitions still take precedence.
-   - Fallback mapping: `*` -> p-value threshold `10^-1`, `**` -> `10^-2`,
-     `***` -> `10^-3`.
-   - Store the result as structured inferred evidence for R inspection; do not
-     rewrite table cell text or parsed values.
-   - Add focused tests for p-value-column anchors with no explicit footer and
-     non-p-value asterisks that must remain ordinary footnote candidates.
-   - Implemented: links can now have `link_status = "inferred"` with an
-     `inferred_meaning` object. Explicit definitions still override the
-     fallback, and R inspection helpers expose inference fields.
+13. [x] Retire conventional p-value star fallback interpretation
+   - Current pass preserves observed markers and explicit links only.
+   - Asterisks in p-value context remain unresolved when no explicit local
+     definition is found.
+   - Conventional p-value-star thresholds belong in a later interpretation
+     layer that consumes preserved anchors and table-local note blocks.
+   - The earlier inferred-link tests were removed because they encoded an
+     interpretation behavior outside the current artifact scope.
 
 14. [x] Accept known symbol-marker footer definitions without semantic body checks
    - Treat `†`, `‡`, `§`, `¶`, `#`, `|`, and asterisk runs as structural
@@ -116,8 +114,8 @@ Non-scope:
    - Keep stricter body-start filtering for letter and numeric marker lines,
      where false positives are more common.
    - Do not add p-value-specific requirements to definition harvesting.
-     P-value semantics are limited to the existing conventional fallback for
-     unresolved asterisk anchors after explicit definition matching fails.
+     P-value semantics belong in a later interpretation layer, not this
+     extraction/link artifact.
    - Implemented: the 2026-07-01 corpus run in
      `outputs/testpapers_footer_blocks_20260701_final` resolves the
      `cardiovascular` Table 1 double-dagger footer and the anthropometric CKD
@@ -133,12 +131,13 @@ Non-scope:
      definitions during linking, so global PDF-text duplicates do not make a
      fuller table-local definition ambiguous.
 
-16. [x] Add a table-footer block finder for PDF text geometry
-   - Harvest PyMuPDF page text as contiguous text blocks rather than isolated
-     lines.
-   - Classify complete PDF text blocks as table-local footers when they are
-     vertically adjacent to a table bbox, overlap the table horizontally, and do
-     not cross into the next table region.
+16. [x] Add a table-footer line-group finder for positioned text geometry
+   - Consume page-furniture-filtered `paper_text_stream.json` lines rather than
+     running a separate PDF block parse.
+   - Classify contiguous same-style non-body line groups as table-local footers
+     when they are vertically adjacent to a table bbox, overlap the table
+     horizontally, and do not cross into the next table or structural text
+     boundary.
    - Carry Table 1 continuation-group visual IDs into footnote scoping so a
      footer on an uncaptioned terminal fragment can resolve anchors from earlier
      fragments of the same visual table.

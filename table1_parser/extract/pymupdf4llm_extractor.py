@@ -1569,10 +1569,12 @@ def _refine_grid_from_value_matrix_word_positions(
     if value_matrix_geometry is None:
         return None
     boundaries, value_anchors = value_matrix_geometry
+    grid_geometry: dict[str, object] = {}
     refined_rows, refined_cell_bboxes = build_row_grid_from_lines(
         lines,
         page_chars=clipped_chars,
         column_start_boundaries=boundaries,
+        geometry_out=grid_geometry,
     )
     if not refined_rows:
         return None
@@ -1727,10 +1729,12 @@ def _refine_grid_from_hline_word_positions(
             for index in range(len(value_anchors) - 1)
         ],
     ]
+    grid_geometry: dict[str, object] = {}
     refined_rows, refined_cell_bboxes = build_row_grid_from_lines(
         lines,
         page_chars=clipped_chars,
         column_start_boundaries=boundaries,
+        geometry_out=grid_geometry,
     )
     if not refined_rows:
         return None
@@ -2445,10 +2449,12 @@ def _refine_explicit_table_candidate_grid(
                             clustered_starts[-1] = (clustered_starts[-1] + start) / 2.0
                     if len(clustered_starts) >= max_raw_cols + 4:
                         column_start_boundaries = clustered_starts[1:]
+            grid_geometry: dict[str, object] = {}
             refined_rows, refined_cell_bboxes = build_row_grid_from_lines(
                 refined_lines,
                 page_chars=working_chars,
                 column_start_boundaries=column_start_boundaries,
+                geometry_out=grid_geometry,
             )
             if refined_rows:
                 keep_indices = [

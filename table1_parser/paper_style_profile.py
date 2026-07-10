@@ -432,8 +432,7 @@ def _style_checks(
         footnote_status = "pass"
         footnote_message = (
             f"Footnote marker style {footnote_marker_style.likely_style} has "
-            f"{link_status_counts.get('resolved', 0)} resolved and "
-            f"{link_status_counts.get('inferred', 0)} inferred links, with no unresolved or ambiguous links."
+            f"{link_status_counts.get('resolved', 0)} resolved links, with no unresolved or ambiguous links."
         )
     else:
         footnote_status = "warning"

@@ -6,7 +6,6 @@ from table1_parser.paper_footnotes import (
     build_paper_footnote_anchor_inventory,
     build_paper_footnote_definition_candidates,
     build_paper_footnote_definition_lines_from_extracted_tables,
-    build_paper_footnote_definition_lines_from_pdf,
     glyph_fields,
     link_paper_footnotes,
 )
@@ -238,7 +237,10 @@ def test_build_definition_candidates_from_table_local_and_caption_notes() -> Non
             line_id="page-2-line-10",
             page_num=2,
             raw_text="a Table-local note text.",
-            source_scope="body_text",
+            source_scope="table_note",
+            source_id="tbl-1:note:0",
+            table_id="tbl-1",
+            visual_id="paper_visual:table:1",
             bbox=(52.0, 142.0, 210.0, 152.0),
             page_height=800.0,
             source_artifact="pymupdf4llm_layout",
@@ -285,7 +287,10 @@ def test_build_definition_candidates_from_embedded_table_note_markers() -> None:
                 "significance. a Represents the use of the Chi-square test. "
                 "b Represents the use of the Kruskal-Wallis test"
             ),
-            source_scope="body_text",
+            source_scope="table_note",
+            source_id="tbl-1:note:0",
+            table_id="tbl-1",
+            visual_id="paper_visual:table:1",
             bbox=(52.0, 540.0, 530.0, 552.0),
             page_height=800.0,
             source_artifact="pymupdf_page_text_lines",
@@ -351,7 +356,10 @@ def test_build_definition_candidates_from_statistical_star_footer() -> None:
                 "WBC, white blood cell; PLT, platelet. "
                 "* P value < 0.05, ** P value < 0.01, *** P value < 0.001"
             ),
-            source_scope="body_text",
+            source_scope="table_note",
+            source_id="tbl-1:note:0",
+            table_id="tbl-1",
+            visual_id="paper_visual:table:1",
             bbox=(52.0, 506.0, 530.0, 516.0),
             page_height=800.0,
             source_artifact="pymupdf_page_text_lines",
@@ -387,238 +395,6 @@ def test_build_definition_candidates_from_symbol_footer_without_semantic_body_ru
     assert len(definitions) == 1
     assert definitions[0].glyph_key == "symbol:double_dagger"
     assert definitions[0].definition_text == "compared with the reference group."
-
-
-def test_build_definition_candidates_from_extracted_multiline_footer_rows() -> None:
-    """Extracted footer rows should define multiline table-local notes in row order."""
-    def row(row_idx: int, *texts: str) -> list[TableCell]:
-        return [
-            TableCell(row_idx=row_idx, col_idx=col_idx, text=text)
-            for col_idx, text in enumerate(texts)
-        ]
-
-    extracted_table = ExtractedTable(
-        table_id="tbl-1",
-        source_pdf="paper.pdf",
-        page_num=7,
-        title="Table 1",
-        caption="Table 1",
-        n_rows=6,
-        n_cols=4,
-        cells=[
-            *row(0, "Variable", "Overall", "Group", "P value"),
-            *row(1, "Age", "52 (4)", "53 (5)", "0.1"),
-            *row(2, "Sex", "48 (2)", "51 (3)", "0.04"),
-            *row(3, "† Full footer begins", "with 2009 applied to", "2012 records"),
-            *row(4, "all selected quadrants."),
-            *row(5, "‡ Second footer text."),
-        ],
-        extraction_backend="pymupdf4llm",
-        metadata={"table_number": 1},
-    )
-    table_lines = build_paper_footnote_definition_lines_from_extracted_tables([extracted_table])
-    page_duplicate_line = FootnoteDefinitionCandidateLine(
-        line_id="page-7-line-30",
-        page_num=7,
-        raw_text="† Short page-line footer.",
-        source_scope="table_note",
-        source_id="tbl-1:note:page",
-        table_id="tbl-1",
-        source_artifact="pymupdf_page_text_lines",
-    )
-
-    definitions = build_paper_footnote_definition_candidates(
-        [*table_lines, page_duplicate_line],
-        [extracted_table],
-    )
-    linked = link_paper_footnotes(
-        PaperFootnotes(
-            paper_id="paper",
-            source_pdf="paper.pdf",
-            anchors=[
-                FootnoteAnchor(
-                    anchor_id="anchor:dagger",
-                    glyph_raw="†",
-                    glyph_key="symbol:dagger",
-                    glyph_kind="symbol",
-                    glyph_codepoints=["U+2020"],
-                    source_scope="table_cell",
-                    source_id="tbl-1:r1:c1",
-                    page_num=7,
-                    confidence=0.95,
-                    table_id="tbl-1",
-                )
-            ],
-            definitions=definitions,
-        )
-    )
-
-    assert [line.source_id for line in table_lines] == [
-        "tbl-1:footer:r3-r4",
-        "tbl-1:footer:r5",
-    ]
-    assert table_lines[0].raw_text == (
-        "† Full footer begins with 2009 applied to 2012 records all selected quadrants."
-    )
-    assert [
-        (definition.glyph_key, definition.definition_text, definition.source_artifact)
-        for definition in definitions
-    ] == [
-        (
-            "symbol:dagger",
-            "Full footer begins with 2009 applied to 2012 records all selected quadrants.",
-            "extracted_tables.json",
-        ),
-        ("symbol:double_dagger", "Second footer text.", "extracted_tables.json"),
-        ("symbol:dagger", "Short page-line footer.", "pymupdf_page_text_lines"),
-    ]
-    assert linked.links[0].link_status == "resolved"
-    assert linked.links[0].definition_id == definitions[0].definition_id
-    assert linked.links[0].scope_distance == "same_table_extracted_footer"
-
-
-def test_table_note_candidate_does_not_steal_next_table_header() -> None:
-    """A next-table header inside the prior table note zone should not become a note."""
-    first_table = ExtractedTable(
-        table_id="tbl-1",
-        source_pdf="paper.pdf",
-        page_num=7,
-        title="Table 1",
-        caption="Table 1",
-        n_rows=1,
-        n_cols=2,
-        cells=[
-            TableCell(row_idx=0, col_idx=0, text="Variable", bbox=(50.0, 100.0, 120.0, 112.0)),
-            TableCell(row_idx=0, col_idx=1, text="Value", bbox=(500.0, 420.0, 530.0, 432.0)),
-        ],
-        extraction_backend="pymupdf4llm",
-        metadata={"table_number": 1},
-    )
-    next_table = ExtractedTable(
-        table_id="tbl-2",
-        source_pdf="paper.pdf",
-        page_num=7,
-        title="Table 2",
-        caption="Table 2",
-        n_rows=1,
-        n_cols=2,
-        cells=[
-            TableCell(row_idx=0, col_idx=0, text="Variable", bbox=(50.0, 480.0, 120.0, 492.0)),
-            TableCell(row_idx=0, col_idx=1, text="P value", bbox=(500.0, 490.0, 530.0, 502.0)),
-        ],
-        extraction_backend="pymupdf4llm",
-        metadata={"table_number": 2},
-    )
-    definitions = build_paper_footnote_definition_candidates(
-        [
-            FootnoteDefinitionCandidateLine(
-                line_id="page-7-line-30",
-                page_num=7,
-                raw_text="P value",
-                source_scope="body_text",
-                bbox=(500.0, 490.0, 530.0, 502.0),
-                page_height=800.0,
-            )
-        ],
-        [first_table, next_table],
-    )
-
-    assert definitions == []
-
-
-def test_build_definition_candidates_from_page_bottom_notes_and_skips_body_text() -> None:
-    """Page-bottom notes should be preserved, while unrelated body text is ignored."""
-    lines = [
-        FootnoteDefinitionCandidateLine(
-            line_id="page-4-bottom",
-            page_num=4,
-            raw_text="† Page-bottom note text.",
-            source_scope="body_text",
-            bbox=(40.0, 730.0, 240.0, 742.0),
-            page_height=800.0,
-        ),
-        FootnoteDefinitionCandidateLine(
-            line_id="page-4-body",
-            page_num=4,
-            raw_text="a Body prose that is not a local note.",
-            source_scope="body_text",
-            bbox=(40.0, 300.0, 240.0, 312.0),
-            page_height=800.0,
-        ),
-    ]
-
-    definitions = build_paper_footnote_definition_candidates(lines)
-
-    assert len(definitions) == 1
-    assert definitions[0].source_scope == "page_note"
-    assert definitions[0].source_id == "page-4-bottom"
-    assert definitions[0].glyph_key == "symbol:dagger"
-    assert definitions[0].definition_text == "Page-bottom note text."
-
-
-def test_build_definition_lines_from_pdf_collects_positioned_marker_blocks(monkeypatch) -> None:
-    """PyMuPDF page text blocks should remain contiguous definition candidates."""
-
-    class FakeRect:
-        height = 800.0
-
-    class FakePage:
-        rect = FakeRect()
-
-    class FakeDocument:
-        page_count = 1
-        closed = False
-
-        def load_page(self, page_index: int) -> FakePage:
-            assert page_index == 0
-            return FakePage()
-
-        def close(self) -> None:
-            self.closed = True
-
-    fake_document = FakeDocument()
-    positioned_chars: list[dict[str, object]] = []
-    text_lines = [
-        ("a Table note text.", 50.0, 140.0),
-        ("significance. a Represents the Chi-square test.", 50.0, 160.0),
-        ("HbA1c: glycated hemoglobin. p -values in bold.", 50.0, 180.0),
-        ("Body prose without a marker.", 50.0, 300.0),
-        ("112.0 [90.0, 138.0]", 50.0, 400.0),
-        ("† Bottom note text.", 40.0, 730.0),
-    ]
-    for line_index, (line_text, x0, top) in enumerate(text_lines):
-        for char_offset, char_text in enumerate(line_text):
-            positioned_chars.append(
-                {
-                    "text": char_text,
-                    "x0": x0 + char_offset * 5.0,
-                    "x1": x0 + char_offset * 5.0 + 4.0,
-                    "top": top,
-                    "bottom": top + 12.0,
-                    "char_height": 12.0,
-                    "char_index": len(positioned_chars),
-                    "block_index": 0,
-                    "line_index": line_index,
-                    "span_index": 0,
-                    "char_in_span_index": char_offset,
-                }
-            )
-    monkeypatch.setattr("table1_parser.paper_footnotes.open_pymupdf_document", lambda _: fake_document)
-    monkeypatch.setattr("table1_parser.paper_footnotes.extract_page_chars", lambda *_args, **_kwargs: positioned_chars)
-
-    lines = build_paper_footnote_definition_lines_from_pdf("paper.pdf")
-
-    assert fake_document.closed is True
-    assert len(lines) == 1
-    assert lines[0].line_id == "page-1-block-0"
-    assert lines[0].raw_text == (
-        "a Table note text. significance. a Represents the Chi-square test. "
-        "HbA1c: glycated hemoglobin. p -values in bold. Body prose without a marker. "
-        "112.0 [90.0, 138.0] † Bottom note text."
-    )
-    assert lines[0].bbox == (40.0, 140.0, 284.0, 742.0)
-    assert lines[0].page_height == 800.0
-    assert lines[0].source_artifact == "pymupdf_page_text_blocks"
 
 
 def test_definition_candidates_do_not_split_decimal_values_as_numbered_notes() -> None:
@@ -820,131 +596,6 @@ def test_link_paper_footnotes_preserves_unresolved_anchors() -> None:
     assert linked.links[0].candidate_definition_ids == []
     assert linked.links[0].link_basis == ["no_matching_glyph_key"]
     assert linked.metadata["unresolved_link_count"] == 1
-
-
-def test_link_paper_footnotes_infers_conventional_p_value_star_without_definition() -> None:
-    """P-value star markers should have a conventional fallback when no footer definition exists."""
-    footnotes = PaperFootnotes(
-        paper_id="paper",
-        source_pdf="paper.pdf",
-        anchors=[
-            FootnoteAnchor(
-                anchor_id="anchor:pvalue",
-                glyph_raw="**",
-                glyph_key="asterisk:2",
-                glyph_kind="asterisk",
-                glyph_codepoints=["U+002A", "U+002A"],
-                source_scope="table_cell",
-                source_id="tbl-1:r4:c3",
-                page_num=2,
-                confidence=0.9,
-                table_id="tbl-1",
-                source_role="body_cell",
-                text_context="P value",
-                attached_to_text="<0.01",
-            )
-        ],
-        definitions=[],
-    )
-
-    linked = link_paper_footnotes(footnotes)
-
-    link = linked.links[0]
-    assert link.link_status == "inferred"
-    assert link.definition_id is None
-    assert link.candidate_definition_ids == []
-    assert link.link_basis == ["no_matching_glyph_key", "conventional_p_value_star"]
-    assert link.inferred_meaning is not None
-    assert link.inferred_meaning.inference_type == "p_value_significance"
-    assert link.inferred_meaning.inference_source == "conventional_p_value_star"
-    assert link.inferred_meaning.marker_count == 2
-    assert link.inferred_meaning.p_value_threshold == 0.01
-    assert link.inferred_meaning.threshold_notation == "10^-2"
-    assert linked.metadata["inferred_link_count"] == 1
-    assert linked.metadata["unresolved_link_count"] == 0
-
-
-def test_link_paper_footnotes_keeps_non_p_value_star_unresolved_without_definition() -> None:
-    """Non-p-value asterisk anchors should not receive the p-value fallback."""
-    footnotes = PaperFootnotes(
-        paper_id="paper",
-        source_pdf="paper.pdf",
-        anchors=[
-            FootnoteAnchor(
-                anchor_id="anchor:value",
-                glyph_raw="*",
-                glyph_key="asterisk:1",
-                glyph_kind="asterisk",
-                glyph_codepoints=["U+002A"],
-                source_scope="table_cell",
-                source_id="tbl-1:r4:c2",
-                page_num=2,
-                confidence=0.9,
-                table_id="tbl-1",
-                source_role="body_cell",
-                text_context="Mean",
-                attached_to_text="45.2",
-            )
-        ],
-        definitions=[],
-    )
-
-    linked = link_paper_footnotes(footnotes)
-
-    assert linked.links[0].link_status == "unresolved"
-    assert linked.links[0].inferred_meaning is None
-    assert linked.metadata["inferred_link_count"] == 0
-    assert linked.metadata["unresolved_link_count"] == 1
-
-
-def test_link_paper_footnotes_explicit_definition_overrides_p_value_star_fallback() -> None:
-    """A local footer definition should be preferred over the conventional fallback."""
-    footnotes = PaperFootnotes(
-        paper_id="paper",
-        source_pdf="paper.pdf",
-        anchors=[
-            FootnoteAnchor(
-                anchor_id="anchor:pvalue",
-                glyph_raw="***",
-                glyph_key="asterisk:3",
-                glyph_kind="asterisk",
-                glyph_codepoints=["U+002A", "U+002A", "U+002A"],
-                source_scope="table_cell",
-                source_id="tbl-1:r4:c3",
-                page_num=2,
-                confidence=0.9,
-                table_id="tbl-1",
-                source_role="body_cell",
-                text_context="P value",
-                attached_to_text="<0.001",
-            )
-        ],
-        definitions=[
-            FootnoteDefinition(
-                definition_id="definition:star3",
-                glyph_raw="***",
-                glyph_key="asterisk:3",
-                glyph_kind="asterisk",
-                glyph_codepoints=["U+002A", "U+002A", "U+002A"],
-                source_scope="table_note",
-                source_id="tbl-1:note:0",
-                page_num=2,
-                raw_text="*** P value < 0.001",
-                clean_text="*** P value < 0.001",
-                definition_text="P value < 0.001",
-                confidence=0.8,
-                table_id="tbl-1",
-            )
-        ],
-    )
-
-    linked = link_paper_footnotes(footnotes)
-
-    assert linked.links[0].link_status == "resolved"
-    assert linked.links[0].definition_id == "definition:star3"
-    assert linked.links[0].inferred_meaning is None
-    assert linked.metadata["resolved_link_count"] == 1
-    assert linked.metadata["inferred_link_count"] == 0
 
 
 def test_link_paper_footnotes_does_not_paper_level_link_numeric_row_label_citation() -> None:

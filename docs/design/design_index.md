@@ -25,7 +25,8 @@ Then use the documents below as needed.
   Extraction-side sidecar artifact for superscripts, subscripts, and small marker symbols attached to table cells.
 
 - `docs/design/paper_footnotes.md`
-  Contract for `paper_footnotes.json`: anchors, definitions, glyph-key links, inferred p-value-star meanings, source scopes, suppression metadata, and R surface.
+  Contract for `paper_footnotes.json`: anchors, table-local footer metadata,
+  definitions, glyph-key links, source scopes, suppression metadata, and R surface.
 
 - `docs/design/paper_page_furniture.md`
   Contract for `paper_page_furniture.json`: repeated page text observations, clusters, ignored regions, and structural recurrence evidence.
@@ -101,6 +102,12 @@ Then use the documents below as needed.
 
 - `docs/design/observed_tableone_component.md`
   Design for the downstream R-first, print-canonical semantic object built from parser JSON outputs.
+
+- `docs/design/table_one_epidemiological_description.md`
+  Scope and conceptual component model for Table One as an epidemiological description table: population, columns, rows, cells, and footnotes.
+
+- `docs/design/GuidelinesforTable1.pdf`
+  Local reference paper, "Who is in this study, anyway? Guidelines for a useful Table 1"; consider it when updating Table 1 parsing documentation, Table One semantics, or R-side Table One inspection design.
 
 - `docs/implementation/table_definition_implementation_plan.md`
   Implementation plan for the SQL-query-oriented `TableDefinition` phase, including row-variable, categorical-level, and column-definition goals.

@@ -51,6 +51,8 @@ from table1_parser.llm import LLMConfigurationError, build_llm_client
 from table1_parser.llm.variable_plausibility_parser import LLMVariablePlausibilityTableReviewParser
 from table1_parser.normalize import normalize_extracted_tables, normalized_tables_to_payload, write_normalized_tables
 from table1_parser.parse import (
+    body_element_candidates_to_payload,
+    build_body_element_candidates,
     build_parsed_cell_values,
     build_parsed_tables,
     parsed_cell_values_to_payload,
@@ -58,12 +60,11 @@ from table1_parser.parse import (
 )
 from table1_parser.paper_footnotes import (
     build_paper_footnote_anchor_inventory,
-    build_paper_footnote_definition_blocks_from_pdf,
     build_paper_footnote_definition_candidates,
     build_paper_footnote_definition_lines_from_extracted_tables,
     build_paper_footnote_footers_from_extracted_tables,
-    build_paper_footnote_footers_from_pdf_blocks,
-    find_table_footer_definition_blocks,
+    build_paper_footnote_footers_from_text_stream_lines,
+    find_table_footer_definition_lines,
     link_paper_footnotes,
     paper_footnotes_to_payload,
 )
@@ -80,6 +81,7 @@ from table1_parser.resolved_tables import build_resolved_table_set
 from table1_parser.schemas import (
     CellTextAnnotationTable,
     ColumnHeaderSchema,
+    BodyElementCandidate,
     ExtractedTable,
     BibliographyEntry,
     LLMVariablePlausibilityCallRecord,
@@ -136,6 +138,7 @@ class PaperParseArtifacts:
     source_table_definitions: list[TableDefinition]
     table_definitions: list[TableDefinition]
     continued_variable_integrations: list[TableDefinition]
+    body_element_candidates: list[BodyElementCandidate]
     parsed_cell_values: list[ParsedCellValue]
     parsed_tables: list[ParsedTable]
     parse_quality_reports: list[ParseQualityReport]
@@ -629,9 +632,19 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         }
         for schema in column_header_schemas
     }
+    body_element_candidates = build_body_element_candidates(
+        normalized_tables,
+        column_header_schemas,
+        extracted_tables,
+    )
     parsed_cell_values = build_parsed_cell_values(
         normalized_tables,
         value_column_indices_by_table_id=value_column_indices_by_table_id,
+        body_element_candidates=body_element_candidates,
+    )
+    resolved_body_element_candidates = build_body_element_candidates(
+        resolved_tables,
+        resolved_column_header_schemas,
     )
     table1_continuation_groups, merged_table1_tables = build_table1_continuation_artifacts(
         normalized_tables,
@@ -659,29 +672,20 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
             cell_text_annotations=cell_text_annotations,
         )
     )
-    pdf_footnote_definition_blocks = build_paper_footnote_definition_blocks_from_pdf(
-        pdf_path,
-        paper_page_furniture=paper_page_furniture,
-    )
-    table_footer_pdf_definition_blocks = find_table_footer_definition_blocks(
-        pdf_footnote_definition_blocks,
+    table_footer_text_stream_definition_lines = find_table_footer_definition_lines(
         extracted_tables,
         table1_continuation_groups=table1_continuation_groups,
+        paper_text_stream=paper_text_stream,
     )
-    table_footer_pdf_block_ids = {line.line_id for line in table_footer_pdf_definition_blocks}
-    page_footnote_definition_lines = [
-        line for line in pdf_footnote_definition_blocks if line.line_id not in table_footer_pdf_block_ids
-    ]
     paper_footnote_definition_lines = [
         *table_local_footnote_definition_lines,
-        *table_footer_pdf_definition_blocks,
-        *page_footnote_definition_lines,
+        *table_footer_text_stream_definition_lines,
     ]
-    pdf_table_footers = build_paper_footnote_footers_from_pdf_blocks(
-        table_footer_pdf_definition_blocks,
+    text_stream_table_footers = build_paper_footnote_footers_from_text_stream_lines(
+        table_footer_text_stream_definition_lines,
         existing_footers=extracted_table_footers,
     )
-    table_footers = [*extracted_table_footers, *pdf_table_footers]
+    table_footers = [*extracted_table_footers, *text_stream_table_footers]
     paper_footnote_definitions = build_paper_footnote_definition_candidates(
         paper_footnote_definition_lines,
         extracted_tables,
@@ -697,18 +701,16 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
                     "source_artifacts": sorted(
                         {
                             *paper_footnotes.metadata.get("source_artifacts", []),
-                            "pymupdf_page_text_blocks",
+                            "paper_text_stream.json",
                             "paper_page_furniture.json",
                         }
                     ),
-                    "page_furniture_filter_stage": "before_pdf_definition_block_construction",
+                    "page_furniture_filter_stage": "before_paper_text_stream_footer_detection",
                     "footer_count": len(table_footers),
                     "footer_count_from_extracted_tables": len(extracted_table_footers),
-                    "footer_count_from_pdf_blocks": len(pdf_table_footers),
+                    "footer_count_from_text_stream": len(text_stream_table_footers),
                     "definition_line_count_from_extracted_tables": len(table_local_footnote_definition_lines),
-                    "definition_block_count_from_pdf": len(pdf_footnote_definition_blocks),
-                    "definition_footer_block_count_from_pdf": len(table_footer_pdf_definition_blocks),
-                    "definition_line_count_from_pdf": len(pdf_footnote_definition_blocks),
+                    "definition_line_count_from_text_stream": len(table_footer_text_stream_definition_lines),
                     "definition_line_count": len(paper_footnote_definition_lines),
                     "definition_count": len(paper_footnote_definitions),
                     "definitions_status": "built",
@@ -717,11 +719,22 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         ),
         bibliography_label_keys={entry.label_key for entry in bibliography_entries},
     )
-    table_profiles = build_table_profiles(resolved_tables)
+    table_profiles = build_table_profiles(
+        resolved_tables,
+        body_element_candidates=resolved_body_element_candidates,
+    )
     parse_quality_reports = []
+    body_element_candidates_by_table_id: dict[str, list[BodyElementCandidate]] = {}
+    for candidate in body_element_candidates:
+        body_element_candidates_by_table_id.setdefault(candidate.source_table_id, []).append(candidate)
     for table_index, table in enumerate(normalized_tables):
-        row_classifications = classify_rows(table)
-        variable_blocks = group_variable_blocks(table, classifications=row_classifications)
+        table_candidates = body_element_candidates_by_table_id.get(table.table_id)
+        row_classifications = classify_rows(table, body_element_candidates=table_candidates)
+        variable_blocks = group_variable_blocks(
+            table,
+            classifications=row_classifications,
+            body_element_candidates=table_candidates,
+        )
         column_roles = detect_column_roles(table)
         parse_quality_reports.append(
             build_parse_quality_report(
@@ -743,8 +756,16 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         if resolved_table.source_table_ids
         and resolved_table.source_table_ids[0] in parse_quality_report_by_table_id
     ]
-    source_table_definitions = build_table_definitions(normalized_tables, column_header_schemas)
-    table_definitions = build_table_definitions(resolved_tables, resolved_column_header_schemas)
+    source_table_definitions = build_table_definitions(
+        normalized_tables,
+        column_header_schemas,
+        body_element_candidates=body_element_candidates,
+    )
+    table_definitions = build_table_definitions(
+        resolved_tables,
+        resolved_column_header_schemas,
+        body_element_candidates=resolved_body_element_candidates,
+    )
     continued_variable_integrations = build_continued_variable_integrations(
         normalized_tables,
         source_table_definitions,
@@ -799,6 +820,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         source_table_definitions=source_table_definitions,
         table_definitions=table_definitions,
         continued_variable_integrations=continued_variable_integrations,
+        body_element_candidates=body_element_candidates,
         parsed_cell_values=parsed_cell_values,
         parsed_tables=parsed_tables,
         parse_quality_reports=parse_quality_reports,
@@ -877,6 +899,7 @@ def _write_parse_outputs(
     table_profile_output_path = paper_dir / "table_profiles.json"
     table_definition_output_path = paper_dir / "table_definitions.json"
     continued_variable_integration_output_path = paper_dir / "continued_variable_integrations.json"
+    body_element_candidates_output_path = paper_dir / "body_element_candidates.json"
     parsed_cell_values_output_path = paper_dir / "parsed_cell_values.json"
     parsed_output_path = paper_dir / "parsed_tables.json"
     processing_status_output_path = paper_dir / "table_processing_status.json"
@@ -908,7 +931,10 @@ def _write_parse_outputs(
         artifacts.resolved_parse_quality_reports,
         table_processing_statuses,
     )
-    source_table_profiles = build_table_profiles(artifacts.normalized_tables)
+    source_table_profiles = build_table_profiles(
+        artifacts.normalized_tables,
+        body_element_candidates=artifacts.body_element_candidates,
+    )
     table_continuation_column_checks = build_table_continuation_column_checks(
         artifacts.normalized_tables,
         artifacts.extracted_tables,
@@ -961,6 +987,10 @@ def _write_parse_outputs(
             indent=2,
         )
         + "\n",
+        encoding="utf-8",
+    )
+    body_element_candidates_output_path.write_text(
+        json.dumps(body_element_candidates_to_payload(artifacts.body_element_candidates), indent=2) + "\n",
         encoding="utf-8",
     )
     parsed_cell_values_output_path.write_text(

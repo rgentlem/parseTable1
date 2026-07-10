@@ -14,10 +14,6 @@ from table1_parser.text_cleaning import clean_text
 RULE_TOLERANCE = 3.0
 CAPTION_TOKEN_PATTERN = re.compile(r"[A-Za-z0-9]+")
 TABLE_CAPTION_PATTERN = re.compile(r"^\s*table\s*\d+\b", re.IGNORECASE)
-FOOTER_START_PATTERN = re.compile(
-    r"^\s*(?:[*†‡§¶#]|\[[A-Za-z*†‡§¶#]+\]|notes?[:.])",
-    re.IGNORECASE,
-)
 
 
 def build_table_regions(
@@ -299,23 +295,13 @@ def _footer_rows(
     for rule_y in rules:
         rows_above = [row_idx for row_idx in body_rows if row_bounds[row_idx][1] <= rule_y + RULE_TOLERANCE]
         rows_below = [row_idx for row_idx in body_rows if row_bounds[row_idx][0] >= rule_y - RULE_TOLERANCE]
-        if rows_above and rows_below and any(_is_value_matrix_row(grid[row_idx]) for row_idx in rows_above):
-            last_value_above = max(
-                (row_idx for row_idx in rows_above if _is_value_matrix_row(grid[row_idx])),
-                default=None,
-            )
-            leading_footer_rows = [
-                row_idx
-                for row_idx in rows_above
-                if last_value_above is not None
-                and row_idx > last_value_above
-                and row_bounds[row_idx][1] >= rule_y - 18.0
-                and not _is_value_matrix_row(grid[row_idx])
-                and (row_idx in footer_marker_rows or _looks_like_footer_start(grid[row_idx]))
-            ]
-            candidate_footer_rows = [*leading_footer_rows, *rows_below]
-            if _looks_like_footer_region(grid, candidate_footer_rows, footer_marker_rows=footer_marker_rows):
-                return candidate_footer_rows, rule_y, "after_body_footer_rule"
+        if (
+            rows_above
+            and rows_below
+            and any(_is_value_matrix_row(grid[row_idx]) for row_idx in rows_above)
+            and not any(_is_value_matrix_row(grid[row_idx]) for row_idx in rows_below)
+        ):
+            return rows_below, rule_y, "after_body_footer_rule"
 
     value_rows = [row_idx for row_idx in body_rows if _is_value_matrix_row(grid[row_idx])]
     if not value_rows:
@@ -324,9 +310,9 @@ def _footer_rows(
     footer_rows = [
         row_idx
         for row_idx in body_rows
-        if row_idx > last_value and _value_like_count(grid[row_idx][1:]) == 0
+        if row_idx > last_value and row_idx in footer_marker_rows and _value_like_count(grid[row_idx][1:]) == 0
     ]
-    return (footer_rows, None, "after_last_value_matrix_row") if footer_rows else ([], None, "no_footer_rows")
+    return (footer_rows, None, "after_last_value_matrix_row_with_structured_marker") if footer_rows else ([], None, "no_footer_rows")
 
 
 def _row_regions(
@@ -399,37 +385,6 @@ def _is_value_like(value: str) -> bool:
     if pattern != "unknown":
         return True
     return any(char.isdigit() for char in text) and sum(char.isalpha() for char in text) <= 3
-
-
-def _looks_like_footer_start(row: list[str]) -> bool:
-    text = _row_text(row)
-    if FOOTER_START_PATTERN.search(text):
-        return True
-    if re.search(r"^\s*[A-Za-z][A-Za-z0-9/ -]{0,24}\s*[:=]", text):
-        return True
-    if re.search(r";\s*[A-Za-z][A-Za-z0-9/ -]{0,24}\s*[:=]", text):
-        return True
-    if re.search(r"\b(?:not applicable|confidence interval|standard error|asterisk indicates)\b", text, re.IGNORECASE):
-        return True
-    return False
-
-
-def _looks_like_footer_region(
-    grid: list[list[str]],
-    row_indices: list[int],
-    *,
-    footer_marker_rows: set[int],
-) -> bool:
-    sample = row_indices[: min(5, len(row_indices))]
-    if not sample:
-        return False
-    if sum(_is_value_matrix_row(grid[row_idx]) for row_idx in sample) > len(sample) // 2:
-        return False
-    if any(row_idx in footer_marker_rows for row_idx in sample[:3]):
-        return True
-    if any(_looks_like_footer_start(grid[row_idx]) for row_idx in sample[:3]):
-        return True
-    return False
 
 
 def _row_matches_caption(row: list[str], table: ExtractedTable) -> bool:

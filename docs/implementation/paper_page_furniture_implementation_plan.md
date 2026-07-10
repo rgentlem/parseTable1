@@ -63,8 +63,8 @@ Non-scope:
    - Review found repeated interior table values/model-note lines; clustering now requires an edge-band location to avoid suppressing body/table-note text later.
 
 8. [x] Integrate into footnote finding
-   - Pass page-furniture regions into cell text annotation and footnote PDF-block harvesting before those artifacts are built.
-   - Remove repeated-furniture characters before grouping table-cell markers or PyMuPDF definition blocks.
+   - Pass page-furniture regions into cell text annotation and text-stream footer detection before those artifacts are built.
+   - Remove repeated-furniture characters before grouping table-cell markers or footer line groups.
    - Do not keep separate late footnote cleanup paths for overlapping table-cell anchors or definition lines.
    - Implementation: `paper_footnotes.json` records `page_furniture_filter_stage`, while the source character and table-row filtering happens before anchor and definition construction.
 
