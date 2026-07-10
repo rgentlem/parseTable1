@@ -218,6 +218,16 @@ insufficient.
    Implementation plan: `docs/implementation/parsed_value_components_implementation_plan.md`.
    Direction: parse source-table cells into index-keyed value-component records before continuation fragments are joined. Do not duplicate row/column labels or variable names in the cell-value artifact; attach semantics later by joining on source/integrated row and column provenance.
    Add the component artifact early in the parse flow, after `ColumnHeaderSchema` and before semantic row/column value joins, so later paper-review diagnostics can assess value patterns without depending on a completed semantic parse.
+   Current incremental support: count-percent recognition accepts decimal
+   count components when the percent component has an explicit `%`, preserving
+   ordinary `mean (SD)` cells such as `52.3 (14.1)`. Parser-facing p-value
+   header role matching strips trailing footnote-marker suffixes such as
+   `p-value2` or `p-Value 2` while leaving raw header text and
+   `cell_text_annotations.json` / `paper_footnotes.json` marker association
+   intact. Row classification and table profiling now consume
+   `ColumnHeaderSchema`-derived column roles when available, so p-value and
+   statistic columns are excluded consistently during categorical block
+   detection.
    Do not preserve the old two-slot `ValueRecord` shape as canonical if it blocks the right design. The semantic value layer should become a component-aware joined view over source cell components, row/level semantics, and column semantics.
    Later paper typo/error review should consume the component layer, `ColumnHeaderSchema`, and `ParsedTable.values` once real review workflows identify concrete repeated checks. Do not add generic per-column profile artifacts or helper surfaces before those failure modes are known.
    Recent update: `ParsedTable.values` now preserves source-table provenance, row/column semantics, header paths, parse patterns, and typed value components without scalar compatibility aliases. Count-percent checks now operate on components, and `parsed_cell_values.json` records source-grid components without duplicating semantic row or column labels. The earlier validation-report and parsed-value-column-profile sidecars were removed as over-scoped for the current data-structure goal.

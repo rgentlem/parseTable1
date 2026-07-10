@@ -12,7 +12,8 @@ INTEGER_TOKEN = r"(?:\d{1,3}(?:,\d{3})*|\d+)"
 DECIMAL_TOKEN = r"(?:\d{1,3}(?:,\d{3})*|\d+)(?:\.\d+)?"
 SIGNED_DECIMAL_TOKEN = rf"-?{DECIMAL_TOKEN}"
 FOOTNOTE_SUFFIX_TOKEN = r"(?:\s*(?:[*†‡§¶#{}|]+|[a-z]))*"
-COUNT_PCT_PATTERN = re.compile(rf"^{INTEGER_TOKEN}\s*\(\s*{DECIMAL_TOKEN}%?\s*\)$")
+INTEGER_COUNT_PCT_PATTERN = re.compile(rf"^{INTEGER_TOKEN}\s*\(\s*{DECIMAL_TOKEN}%?\s*\)$")
+DECIMAL_COUNT_PCT_PATTERN = re.compile(rf"^{DECIMAL_TOKEN}\s*\(\s*{DECIMAL_TOKEN}%\s*\)$")
 MEAN_SD_PATTERN = re.compile(
     rf"^{SIGNED_DECIMAL_TOKEN}(?:\s*\(\s*{SIGNED_DECIMAL_TOKEN}\s*\)|\s*±\s*{SIGNED_DECIMAL_TOKEN}|\s+6\s+{SIGNED_DECIMAL_TOKEN}){FOOTNOTE_SUFFIX_TOKEN}$"
 )
@@ -33,7 +34,7 @@ def detect_value_pattern(raw_value: str) -> ValuePatternGuess:
 
     if MEDIAN_IQR_PATTERN.fullmatch(lowered):
         return ValuePatternGuess(raw_value=raw_value, pattern="median_iqr", confidence=0.95)
-    if COUNT_PCT_PATTERN.fullmatch(lowered):
+    if INTEGER_COUNT_PCT_PATTERN.fullmatch(lowered) or DECIMAL_COUNT_PCT_PATTERN.fullmatch(lowered):
         return ValuePatternGuess(raw_value=raw_value, pattern="count_pct", confidence=0.95)
     if value.startswith("<") or value.startswith(">"):
         if P_VALUE_PATTERN.fullmatch(lowered):

@@ -11,6 +11,10 @@ from table1_parser.text_cleaning import clean_text
 P_VALUE_HEADER_PATTERN = re.compile(r"^p(?:\s*value|\s+for\s+trend|\s*trend)?$")
 HEADER_MARKUP_PATTERN = re.compile(r"[_*`]+")
 HEADER_HYPHEN_PATTERN = re.compile(r"\s*-\s*")
+HEADER_NAMED_P_FOOTNOTE_SUFFIX_PATTERN = re.compile(
+    r"^(?P<base>p(?:\s*value|\s+for\s+trend|\s*trend))\s*(?:\d+|[a-z]|[*†‡§¶#{}|]+)$"
+)
+HEADER_BARE_P_FOOTNOTE_SUFFIX_PATTERN = re.compile(r"^(?P<base>p)\s*(?:\d+|[*†‡§¶#{}|]+)$")
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,7 +29,14 @@ def canonicalize_header_match_text(value: str) -> str:
     """Return a parser-facing header string for role matching only."""
     cleaned = HEADER_MARKUP_PATTERN.sub("", clean_text(value).lower())
     cleaned = HEADER_HYPHEN_PATTERN.sub(" ", cleaned)
-    return clean_text(cleaned)
+    cleaned = clean_text(cleaned)
+    named_p_match = HEADER_NAMED_P_FOOTNOTE_SUFFIX_PATTERN.fullmatch(cleaned)
+    if named_p_match is not None:
+        return clean_text(named_p_match.group("base"))
+    bare_p_match = HEADER_BARE_P_FOOTNOTE_SUFFIX_PATTERN.fullmatch(cleaned)
+    if bare_p_match is not None:
+        return clean_text(bare_p_match.group("base"))
+    return cleaned
 
 
 def detect_p_value_header(label: str, col_idx: int, n_cols: int) -> PValueHeaderMatch | None:

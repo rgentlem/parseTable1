@@ -16,7 +16,11 @@ def build_table_definition(
     body_element_candidates: Sequence[BodyElementCandidate] | None = None,
 ) -> TableDefinition:
     """Build one deterministic TableDefinition from a normalized table."""
-    variables = build_defined_variables(table, body_element_candidates=body_element_candidates)
+    variables = build_defined_variables(
+        table,
+        body_element_candidates=body_element_candidates,
+        column_schema=column_schema,
+    )
     column_definition = build_column_definition(table, column_schema)
     notes = ["rotated_table_layout"] if table.metadata.get("table_orientation") == "rotated" else []
     confidences = [variable.confidence for variable in variables if getattr(variable, "confidence", None) is not None]

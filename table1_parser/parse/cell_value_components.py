@@ -16,8 +16,12 @@ INTEGER_TOKEN = r"(?:\d{1,3}(?:,\d{3})*|\d+)"
 DECIMAL_TOKEN = r"-?(?:\d{1,3}(?:,\d{3})*|\d+)(?:\.\d+)?"
 UNSIGNED_DECIMAL_TOKEN = r"(?:\d{1,3}(?:,\d{3})*|\d+)(?:\.\d+)?"
 FOOTNOTE_SUFFIX_TOKEN = r"(?:\s*(?:[*†‡§¶#{}|]+|[a-z]))*"
-COUNT_PCT_COMPONENT_PATTERN = re.compile(
+INTEGER_COUNT_PCT_COMPONENT_PATTERN = re.compile(
     rf"^(?P<count>{INTEGER_TOKEN})\s*\(\s*(?P<percent>{UNSIGNED_DECIMAL_TOKEN})(?P<percent_symbol>\s*%)?\s*\){FOOTNOTE_SUFFIX_TOKEN}$",
+    re.IGNORECASE,
+)
+DECIMAL_COUNT_PCT_COMPONENT_PATTERN = re.compile(
+    rf"^(?P<count>{UNSIGNED_DECIMAL_TOKEN})\s*\(\s*(?P<percent>{UNSIGNED_DECIMAL_TOKEN})(?P<percent_symbol>\s*%)\s*\){FOOTNOTE_SUFFIX_TOKEN}$",
     re.IGNORECASE,
 )
 INTEGER_COMPONENT_PATTERN = re.compile(rf"^(?P<count>{INTEGER_TOKEN}){FOOTNOTE_SUFFIX_TOKEN}$", re.IGNORECASE)
@@ -86,7 +90,7 @@ def parse_cell_value_components(raw_value: str, summary_style_hint: str | None =
             notes=[],
         )
 
-    match = COUNT_PCT_COMPONENT_PATTERN.fullmatch(cleaned)
+    match = INTEGER_COUNT_PCT_COMPONENT_PATTERN.fullmatch(cleaned) or DECIMAL_COUNT_PCT_COMPONENT_PATTERN.fullmatch(cleaned)
     if match is not None:
         return CellValueComponentParse(
             raw_value=raw_value,
@@ -94,7 +98,7 @@ def parse_cell_value_components(raw_value: str, summary_style_hint: str | None =
             components=[
                 ValueComponent(
                     kind="count",
-                    value=float(int(match.group("count").replace(",", ""))),
+                    value=_to_float(match.group("count")),
                     raw_fragment=match.group("count"),
                     relation="=",
                     confidence=0.96,

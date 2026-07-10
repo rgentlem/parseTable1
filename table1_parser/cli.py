@@ -754,6 +754,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     table_profiles = build_table_profiles(
         resolved_tables,
         body_element_candidates=resolved_body_element_candidates,
+        column_schemas=resolved_column_header_schemas,
     )
     parse_quality_reports = []
     body_element_candidates_by_table_id: dict[str, list[BodyElementCandidate]] = {}
@@ -761,13 +762,19 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         body_element_candidates_by_table_id.setdefault(candidate.source_table_id, []).append(candidate)
     for table_index, table in enumerate(normalized_tables):
         table_candidates = body_element_candidates_by_table_id.get(table.table_id)
-        row_classifications = classify_rows(table, body_element_candidates=table_candidates)
+        column_schema = column_header_schemas[table_index] if table_index < len(column_header_schemas) else None
+        row_classifications = classify_rows(
+            table,
+            body_element_candidates=table_candidates,
+            column_schema=column_schema,
+        )
         variable_blocks = group_variable_blocks(
             table,
             classifications=row_classifications,
             body_element_candidates=table_candidates,
+            column_schema=column_schema,
         )
-        column_roles = detect_column_roles(table)
+        column_roles = detect_column_roles(table, column_schema=column_schema)
         parse_quality_reports.append(
             build_parse_quality_report(
                 table,
@@ -968,6 +975,7 @@ def _write_parse_outputs(
     source_table_profiles = build_table_profiles(
         artifacts.normalized_tables,
         body_element_candidates=artifacts.body_element_candidates,
+        column_schemas=artifacts.column_header_schemas,
     )
     table_continuation_column_checks = build_table_continuation_column_checks(
         artifacts.normalized_tables,

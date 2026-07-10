@@ -10,7 +10,7 @@ from table1_parser.heuristics.level_detector import detect_level_row_indices
 from table1_parser.heuristics.models import RowClassification, VariableBlock
 from table1_parser.heuristics.row_classifier import classify_rows, indentation_is_informative
 from table1_parser.heuristics.value_pattern_detector import detect_value_pattern
-from table1_parser.schemas import BodyElementCandidate, NormalizedTable, RowView
+from table1_parser.schemas import BodyElementCandidate, ColumnHeaderSchema, NormalizedTable, RowView
 from table1_parser.text_cleaning import clean_text
 
 
@@ -192,10 +192,11 @@ def group_variable_blocks(
     table: NormalizedTable,
     classifications: list[RowClassification] | None = None,
     body_element_candidates: Sequence[BodyElementCandidate] | None = None,
+    column_schema: ColumnHeaderSchema | None = None,
 ) -> list[VariableBlock]:
     """Group normalized body rows into candidate variables."""
     table = table_with_body_element_candidates(table, body_element_candidates)
-    classifications = classifications or classify_rows(table)
+    classifications = classifications or classify_rows(table, column_schema=column_schema)
     classifications_by_row = {
         classification.row_idx: classification.classification for classification in classifications
     }

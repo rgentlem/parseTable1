@@ -9,7 +9,7 @@ from table1_parser.heuristics.body_element_views import table_with_body_element_
 from table1_parser.heuristics.value_pattern_detector import detect_value_pattern
 from table1_parser.heuristics.variable_grouper import group_variable_blocks
 from table1_parser.normalize.text_normalizer import normalize_label_text
-from table1_parser.schemas import BodyElementCandidate, DefinedLevel, DefinedVariable, NormalizedTable
+from table1_parser.schemas import BodyElementCandidate, ColumnHeaderSchema, DefinedLevel, DefinedVariable, NormalizedTable
 from table1_parser.text_cleaning import clean_text
 
 
@@ -31,13 +31,14 @@ KNOWN_BINARY_LEVELS = {
 def build_defined_variables(
     table: NormalizedTable,
     body_element_candidates: Sequence[BodyElementCandidate] | None = None,
+    column_schema: ColumnHeaderSchema | None = None,
 ) -> list[DefinedVariable]:
     """Build value-free variable definitions from a normalized table."""
     row_views_by_idx = {row_view.row_idx: row_view for row_view in table.row_views}
     candidate_table = table_with_body_element_candidates(table, body_element_candidates)
     candidate_row_views_by_idx = {row_view.row_idx: row_view for row_view in candidate_table.row_views}
     variables: list[DefinedVariable] = []
-    for block in group_variable_blocks(candidate_table):
+    for block in group_variable_blocks(candidate_table, column_schema=column_schema):
         parent_row = row_views_by_idx[block.variable_row_idx]
         candidate_parent_row = candidate_row_views_by_idx[block.variable_row_idx]
         variable_label = block.variable_label

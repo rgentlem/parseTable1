@@ -9,7 +9,7 @@ from table1_parser.heuristics.body_element_views import table_with_body_element_
 from table1_parser.heuristics.column_role_detector import detect_column_roles
 from table1_parser.heuristics.value_pattern_detector import detect_value_pattern
 from table1_parser.heuristics.variable_grouper import group_variable_blocks
-from table1_parser.schemas import BodyElementCandidate, NormalizedTable, TableProfile
+from table1_parser.schemas import BodyElementCandidate, ColumnHeaderSchema, NormalizedTable, TableProfile
 from table1_parser.text_cleaning import clean_text
 from table1_parser.validation.table_profile import validate_table_profile
 
@@ -40,6 +40,7 @@ ESTIMATE_CI_RANGE_PATTERN = re.compile(
 def build_table_profile(
     table: NormalizedTable,
     body_element_candidates: Sequence[BodyElementCandidate] | None = None,
+    column_schema: ColumnHeaderSchema | None = None,
 ) -> TableProfile:
     """Classify one normalized table into a supported semantic family."""
     table = table_with_body_element_candidates(table, body_element_candidates)
@@ -99,12 +100,12 @@ def build_table_profile(
         descriptive_score += 1
         evidence.append("body_contains_multiple_count_percent_cells")
 
-    variable_blocks = group_variable_blocks(table)
+    variable_blocks = group_variable_blocks(table, column_schema=column_schema)
     if any(block.level_row_indices for block in variable_blocks):
         descriptive_score += 2
         evidence.append("row_structure_contains_parent_level_blocks")
 
-    column_roles = detect_column_roles(table)
+    column_roles = detect_column_roles(table, column_schema=column_schema)
     if any(role.role in {"overall", "group", "comparison_group"} for role in column_roles):
         descriptive_score += 1
         evidence.append("header_contains_group_or_overall_columns")
@@ -158,14 +159,19 @@ def build_table_profile(
 def build_table_profiles(
     tables: list[NormalizedTable],
     body_element_candidates: Sequence[BodyElementCandidate] | None = None,
+    column_schemas: list[ColumnHeaderSchema] | None = None,
 ) -> list[TableProfile]:
     """Build deterministic route decisions for a list of normalized tables."""
     candidates_by_table_id: dict[str, list[BodyElementCandidate]] = {}
     for candidate in body_element_candidates or []:
         candidates_by_table_id.setdefault(candidate.source_table_id, []).append(candidate)
     return [
-        build_table_profile(table, body_element_candidates=candidates_by_table_id.get(table.table_id))
-        for table in tables
+        build_table_profile(
+            table,
+            body_element_candidates=candidates_by_table_id.get(table.table_id),
+            column_schema=column_schemas[index] if column_schemas is not None and index < len(column_schemas) else None,
+        )
+        for index, table in enumerate(tables)
     ]
 
 
