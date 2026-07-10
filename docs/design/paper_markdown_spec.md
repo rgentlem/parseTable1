@@ -4,10 +4,12 @@ This document defines the intent of `paper_markdown.md`, the paper-level markdow
 
 ## Purpose
 
-`paper_markdown.md` is the raw backend markdown view of the paper. The
-canonical ordered document-context source for sections, bibliography extraction,
-visual references, variable inventory, and table-context retrieval is
-`paper_text_stream.json` when PyMuPDF positioned text is available.
+`paper_markdown.md` is the lightweight markdown view rendered from
+`paper_text_stream.json`. The canonical ordered document-context source for
+sections, bibliography extraction, visual references, variable inventory, and
+table-context retrieval is the shared PyMuPDF positioned geometry pass persisted
+as `paper_positioned_document.json` and projected through
+`paper_text_stream.json`.
 
 It exists to support:
 
@@ -24,14 +26,19 @@ It is not the source of truth for table grid syntax.
 
 The file is produced from:
 
-- `pymupdf4llm.to_markdown(...)`
+- `paper_positioned_document.json`
+- `paper_page_furniture.json`
+- `paper_text_stream.json`
 
-The parser builds `paper_page_furniture.json` before this artifact and removes
-markdown lines that match repeated page-furniture clusters. The same furniture
-artifact is also applied to `paper_text_stream.json`, which is the preferred
-source for downstream document order.
+The parser builds one shared PyMuPDF positioned-document pass first. Page
+furniture detection consumes that shared evidence, extraction and cell
+annotation consume its words/chars/rules, then `paper_text_stream.json` filters
+repeated furniture lines and orders text by page, detected column, and vertical
+position. `paper_markdown.md` is rendered from that filtered stream.
 
-No other PDF backend should be used for the markdown extraction itself.
+There is no `pymupdf4llm.to_markdown(...)` fallback. If PyMuPDF positioned text
+cannot produce the paper text stream, the parser should fail closed rather than
+building downstream document-context artifacts from a second markdown path.
 
 ## Output Path
 
@@ -41,8 +48,7 @@ outputs/papers/<paper_stem>/paper_markdown.md
 
 ## Design Rules
 
-- Preserve the full-paper markdown structure as extracted, except for repeated
-  page-furniture lines identified in `paper_page_furniture.json`.
+- Preserve the full-paper markdown view rendered from the filtered text stream.
 - Allow only conservative repair of a small set of known extractor glyph-to-Unicode failures in text, such as a replacement character standing in for a threshold comparator.
 - Do not rewrite it into a table-specific format.
 - Do not use it as a replacement for `ExtractedTable` or `NormalizedTable`.
@@ -68,7 +74,7 @@ Examples:
 
 The pipeline should therefore:
 
-- preserve the extracted markdown structure with only conservative glyph repair
+- preserve the rendered markdown view with only conservative glyph repair
 - treat these repairs as extractor-symbol recovery, not as a general-purpose file-encoding pass
 - derive layout-aware structure in `paper_text_stream.json` and
   `paper_sections.json`
@@ -86,7 +92,8 @@ The pipeline should therefore:
 
 ## Relationship To Section Parsing
 
-`paper_markdown.md` is persisted backend evidence.
+`paper_markdown.md` is a persisted view over structured positioned-text
+evidence.
 
 `paper_text_stream.json` is the layout-aware document-context artifact. It
 records page-level column boundaries and bands, per-line geometry/style, and
@@ -95,8 +102,8 @@ This column-order model is independent of whether a page has one, two, three,
 or more detected text columns.
 
 `paper_sections.json` is the structured interpretation of that layout-aware
-stream when available, falling back to markdown only when positioned text cannot
-be read.
+stream. The parser no longer falls back to backend markdown when positioned text
+cannot be read.
 
 Page furniture filtering removes repeated running headers, footers, watermarks,
 and similar recurring non-content lines. It should not be used as the semantic

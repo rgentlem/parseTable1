@@ -83,7 +83,8 @@ Later stages use the `NormalizedTable` to make progressively stronger interpreta
 - deterministic routing classifies the resolved table family
 - deterministic heuristics build a `TableDefinition` from resolved tables using
   the column schema
-- paper markdown is chunked into sections and table-focused retrieval bundles
+- the positioned paper text stream is rendered into markdown-like sections and
+  table-focused retrieval bundles
 - a paper-level variable inventory collects candidate variables from text, captions, and tables
 - optional LLM interpretation can later refine ambiguous structure
 - validation checks that the interpretation is consistent with the real table

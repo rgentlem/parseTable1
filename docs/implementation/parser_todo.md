@@ -19,7 +19,7 @@ positioned extraction, caption/table-region ownership, page-furniture filtering,
 and explicit schema artifacts; fail closed with diagnostics when geometry is
 insufficient.
 
-1. [ ] Centralize positioned PDF text/geometry into one shared document pass.
+1. [x] Centralize positioned PDF text/geometry into one shared document pass.
    Replace overlapping PyMuPDF document parses with a single positioned-text
    artifact or in-memory object that preserves page, column, block, line, span,
    character, bbox, font name, font size, flags, writing direction when
@@ -30,6 +30,15 @@ insufficient.
    artifact without changing parser decisions, then use it narrowly for
    footer/table-metadata detection with font-change and below-table geometry,
    then migrate broader cleanup only after the artifact is stable.
+   Implemented stage: `paper_positioned_document.json` is now built once at the
+   front of `parse`, `extract`, and `normalize`; it preserves lines, spans,
+   words, chars, page text, and horizontal rule segments. Page-furniture
+   detection, `paper_text_stream.json`, extraction geometry, and
+   `cell_text_annotations.json` consume that shared evidence; `paper_markdown.md`
+   is rendered from the text stream; and the old `pymupdf4llm.to_markdown()`
+   paper-context fallback has been removed. Remaining follow-up is to keep
+   opportunistic PDF tag support aligned with this artifact rather than adding
+   another page parse.
 
 2. [ ] Take advantage of PDF tags when present.
    Inspect PDF structure tags as extraction evidence when a paper exposes a
@@ -251,7 +260,7 @@ insufficient.
    Recent math/unit update: numeric superscripts and subscripts in expressions like `10^9`, `10^6`, `m^2`, `kg/m^2`, `CO₂`, `I²`, and `×10^9/L` are rejected before `FootnoteAnchor` creation. Subscript annotations are now generally suppressed as non-footnote anchors, including single-letter notation such as `S_I`/`AIR_g` and multi-letter subscript words such as `P_Begg`/`P_Egger`. They remain visible in `cell_text_annotations.json` with original glyph case; `paper_footnotes.json` records suppression counts in `math_unit_anchor_suppression_count`, `subscript_anchor_suppression_count`, and `word_like_subscript_anchor_suppression_count`.
    Recent symbol-font update: PyMuPDF char extraction now applies font-qualified Unicode normalization before word/grid reconstruction for known embedded symbol-font codes such as `±`, `×`, `−`, and `<`. Inline marker detection accepts same-height trailing glyphs attached to numeric/comparator text including `±` values and preserves marker font metadata. In the focused Ethnic Differences run, `S_I` and `AIR_g` remain suppressed subscript annotations, while the marker-font `x` resolves against the local `xP < ...` footer definition.
    Recent footnote-scope update: conventional p-value-star inference has been removed from `paper_footnotes.json`. Observed `*`, `**`, and `***` markers are preserved as anchors and remain unresolved unless an explicit candidate definition is found; conventional statistical interpretation belongs in a later interpretation layer.
-   Bibliographic reference follow-up: `paper_bibliography.json` now preserves the paper's own bibliography entries, numbered or unnumbered, from the PyMuPDF layout-aware text stream. Numeric table-cell study/source/header markers are no longer removed from `paper_footnotes.json` just because their glyphs overlap bibliography labels. The footnote linker now keeps those anchors and marks them unresolved without a same-table or same-visual definition, adding review notes such as `possible_bibliographic_reference`; bibliography matching belongs in `paper_bibliography.json`. Reference-list extraction uses one layout stream: read page, then column, then vertical position; start entries at the column left edge, with either a numeric label or the first author/organization line; keep indented rows open across column and page breaks; and fall back to markdown-derived sections only when the positioned text stream cannot produce entries. The bibliography pass is now the only source of reference-region evidence used by table extraction: if entries are found, bibliography-owned source lines and entry bboxes are passed into extraction so positioned words/chars can be removed before table candidate construction; if no bibliography is found, extraction does not run a separate raw-text `References` scan. The current full 27-PDF run, `outputs/testpapers_batch_20260709_bib_region_mask`, has 1308 bibliography entries, 0 empty bibliographies, and 0 bibliography diagnostics.
+   Bibliographic reference follow-up: `paper_bibliography.json` now preserves the paper's own bibliography entries, numbered or unnumbered, from the PyMuPDF layout-aware text stream. Numeric table-cell study/source/header markers are no longer removed from `paper_footnotes.json` just because their glyphs overlap bibliography labels. The footnote linker now keeps those anchors and marks them unresolved without a same-table or same-visual definition, adding review notes such as `possible_bibliographic_reference`; bibliography matching belongs in `paper_bibliography.json`. Reference-list extraction uses one layout stream: read page, then column, then vertical position; start entries at the column left edge, with either a numeric label or the first author/organization line; and keep indented rows open across column and page breaks. The bibliography pass is now the only source of reference-region evidence used by table extraction: if entries are found, bibliography-owned source lines and entry bboxes are passed into extraction so positioned words/chars can be removed before table candidate construction; if no bibliography is found, extraction does not run a separate raw-text `References` scan. The current full 27-PDF run, `outputs/testpapers_batch_20260709_bib_region_mask`, has 1308 bibliography entries, 0 empty bibliographies, and 0 bibliography diagnostics.
    Future work: harvest numeric bibliography reference markers from body text and captions into the same per-paper artifact, then validate one-to-one coverage for numbered lists: every observed numeric reference marker should resolve to a numbered bibliography entry, and every numbered bibliography entry should have at least one observed marker. Add author-year body citation harvesting separately against preserved unnumbered entries. Record coverage gaps as diagnostics without introducing any cross-paper citation-management layer.
    Footnote-style update: `paper_footnotes.json` now splits local caption/footer definitions from structured marker evidence before falling back to text parsing. Extracted footer rows can use `cell_text_annotations.json` when a raised superscript marker begins the first populated footer cell. Raw damaged strings where the marker runs into the following word are preserved as source text but do not define the marker. Extracted footer rows can still contribute weaker text evidence from confirmed statistical marker prefixes such as `xP < ...`. Structured marker evidence is merged with ordinary symbol markers in the same footer group, so an upright `* p < 0.05` definition is not dropped just because the same group also contains a raised `†` definition, as in the anthropometric CKD Table 1 footer. Textual marker definitions such as `The asterisk indicates ...` remain valid local definition evidence. The parser also preserves symbol-block splitting across variable whitespace before `†`, `‡`, `§`, and similar markers, while avoiding all-caps acronym false splits such as `eGFR`; vertical-bar glyph artifacts attached to rotated numeric cells are suppressed as non-footnote symbols.
    Treat these as normalization follow-ups, not emergency parser changes. Preserve raw extraction, add focused repairs with provenance, and avoid broad rules that could merge real value columns into labels.
@@ -293,9 +302,8 @@ insufficient.
   layout-aware, page-furniture-filtered PyMuPDF text lines, page-level
   `column_boundaries` and `column_bands`, and orders pages as page, column, then
   y-position for any detected column count. `paper_sections.json` and
-  bibliography entry extraction consume this stream when available, while
-  `paper_markdown.md` remains a filtered backend-markdown evidence artifact and
-  is no longer authoritative for document order.
+  bibliography entry extraction consume this stream. `paper_markdown.md` is now
+  a rendered view of the stream rather than a backend-markdown fallback.
 - Recent document-structure follow-up: page furniture should remove repeated
   running headers, footers, watermarks, and other recurring non-content. It
   should not classify one-off section headings. Add a coarse document-outline

@@ -84,7 +84,7 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Table definition | `TableDefinition` | Written now as `table_definitions.json` by `parse` | Persist value-free row-variable, level, and column semantics |
 | Continued variable integration | `TableDefinition` | Written now as `continued_variable_integrations.json` by `parse` | Persist a source-fragment review view for compatible continued Table 1 fragments; this is not consumed by canonical semantic parsing now that `resolved_tables.json` feeds `TableDefinition` and `ParsedTable` |
 | Parsed source-cell values | `ParsedCellValue` | Written now as `parsed_cell_values.json` by `parse` | Persist source-grid or candidate-derived value components keyed by table and row/column indices before semantic row/column value joins |
-| Paper context | `PaperTextStream`, `PaperSection`, `PaperTableMention`, `PaperVisual`, `PaperVisualReference`, `TableContext` | Written now as `paper_markdown.md`, `paper_text_stream.json`, `paper_sections.json`, `paper_table_mentions.json`, `paper_visual_inventory.json`, `paper_references.json`, and `table_contexts/*.json` by `parse` | Persist raw backend markdown, layout-aware column-ordered paper text, sections, pre-extraction table mention classification, actual in-paper visual objects, anchored table/figure references, and per-table retrieval bundles |
+| Paper context | `PaperPositionedDocument`, `PaperTextStream`, `PaperSection`, `PaperTableMention`, `PaperVisual`, `PaperVisualReference`, `TableContext` | Written now as `paper_positioned_document.json`, `paper_markdown.md`, `paper_text_stream.json`, `paper_sections.json`, `paper_table_mentions.json`, `paper_visual_inventory.json`, `paper_references.json`, and `table_contexts/*.json` by `parse` | Persist one shared positioned-text pass, the filtered layout-aware text stream and markdown view derived from it, sections, pre-extraction table mention classification, actual in-paper visual objects, anchored table/figure references, and per-table retrieval bundles |
 | Paper bibliography | `PaperBibliography`, `BibliographyEntry`, `BibliographyReferenceMention` | Written now as `paper_bibliography.json` by `parse` | Persist the paper's own bibliography entries, numbered or unnumbered, and link observed numeric reference markers to numbered entries without creating a cross-paper citation-management layer |
 | Paper style profile | `PaperStyleProfile`, `PaperStyleDimension`, `PaperStyleCheck`, `PaperStyleEvidence` | Written now as `paper_style_profile.json` by `parse` | Persist document-level counts, examples, and consistency checks for footnote-marker, bibliography, caption-placement, and visual-reference conventions without changing extraction or link decisions |
 | Paper variable inventory | `PaperVariableInventory`, `VariableMention`, `VariableCandidate` | Written now as `paper_variable_inventory.json` by `parse` | Persist the paper-level candidate variable reference list with explicit text/table provenance |
@@ -742,13 +742,13 @@ Design intent:
 Current status:
 
 - written by the `parse` CLI command
-- derived primarily from the layout-aware PyMuPDF text stream, with backend
-  markdown retained as inspection/fallback evidence, not from the table grid
-  itself
+- derived from one shared PyMuPDF positioned-text document pass, not from the
+  table grid and not from a separate backend markdown path
 
 Current CLI paths:
 
 ```text
+outputs/papers/<paper_stem>/paper_positioned_document.json
 outputs/papers/<paper_stem>/paper_markdown.md
 outputs/papers/<paper_stem>/paper_text_stream.json
 outputs/papers/<paper_stem>/paper_sections.json
@@ -763,6 +763,8 @@ outputs/papers/<paper_stem>/table_contexts/table_<n>_context.json
 
 Canonical models:
 
+- `PaperPositionedDocument`
+- child models: `PaperPositionedPage`, `PaperPositionedLine`, `PaperPositionedSpan`
 - `PaperSection`
 - `PaperTextStream`
 - child models: `PaperTextLine`, `PaperTextPage`
@@ -780,10 +782,22 @@ Canonical models:
 
 Design components:
 
+- `paper_positioned_document.json`
+  shared whole-paper PyMuPDF positioned text pass with page sizes, visual lines,
+  span text, bboxes, font names, font sizes, flags, line direction/orientation,
+  words, characters, horizontal rule segments, and raw/cleaned text. Downstream
+  paper-context, extraction, and annotation stages should consume this artifact
+  or a typed projection of it instead of reopening the PDF for another
+  positioned-geometry pass.
 - `paper_markdown.md`
-  raw backend markdown extracted from the full paper, with repeated page-furniture lines filtered out for inspection
+  markdown view rendered from `paper_text_stream.json`; there is no
+  `pymupdf4llm.to_markdown()` fallback
 - `paper_text_stream.json`
-  layout-aware full-paper text from positioned PyMuPDF lines, with repeated page-furniture lines removed, page-level `column_boundaries`/`column_bands`, line-level bbox/role/style fields, minimal span records, and lines ordered by page, column, then vertical position for any detected column count
+  layout-aware full-paper text projected from `paper_positioned_document.json`,
+  with repeated page-furniture lines removed, page-level
+  `column_boundaries`/`column_bands`, line-level bbox/role/style fields,
+  minimal span records, and lines ordered by page, column, then vertical
+  position for any detected column count
 - `paper_sections.json`
   sections derived from the layout-aware text stream when available, with heading level and simple role hints
 - `paper_table_mentions.json`
@@ -841,13 +855,15 @@ Design intent:
 - support future LLM semantic interpretation with compact retrieved evidence
 - help readers distinguish references to actual in-paper tables and figures from unresolved or bibliographic mentions
 - avoid tying retrieval to exact section names like `Methods`
-- preserve `paper_markdown.md` as the paper-level markdown artifact, allowing only conservative glyph repair, and move derived structure into `paper_sections.json`
+- preserve `paper_markdown.md` as a paper-level markdown view over the
+  positioned text stream, and move derived structure into `paper_sections.json`
 - preserve a JSON-first, inspectable context path alongside the table path
 
 Variation note:
 
 - papers may use different section names, heading levels, and table-reference styles
-- that variation should be handled in section parsing and retrieval, not by redefining the meaning of `paper_markdown.md` beyond conservative glyph repair
+- that variation should be handled in section parsing and retrieval, not by
+  introducing a second markdown extraction path
 - `docs/design/paper_markdown_spec.md` is the design reference for this artifact
 
 ## 9. `table_variable_plausibility_llm.json`

@@ -71,15 +71,24 @@ built from extracted table entries, row bounds, cell bboxes when needed, and
 horizontal rules after page-furniture filtering. Table captions and titles are
 represented here as table identity/component evidence, not as column headers.
 
+`paper_positioned_document.json` records the shared PyMuPDF positioned text pass
+for the whole paper: pages, visual lines, span text, bboxes, font names, font
+sizes, flags, line directions, words, characters, and horizontal rule segments.
+It is built before paper furniture, text streaming, section parsing,
+bibliography extraction, table mention detection, table extraction context, and
+cell text annotation.
+
 `paper_page_furniture.json` records repeated page text observations, recurrence
-clusters, and generic ignored regions. It is built before paper markdown,
-layout-aware text streaming, section parsing, bibliography extraction, and
-table extraction. Repeated page-furniture lines are removed from
-`paper_markdown.md` and `paper_text_stream.json`; `paper_sections.json` and
-bibliography entries are derived from the layout-aware text stream when
-available. The same artifact is passed into table extraction, cell text
-annotation, and text-stream footer detection as an early geometry mask. It is
-written even when no repeated page furniture is found.
+clusters, and generic ignored regions. It is built from
+`paper_positioned_document.json` before layout-aware text streaming, section
+parsing, bibliography extraction, and table extraction. Repeated page-furniture
+lines are removed from `paper_text_stream.json`, and `paper_markdown.md` is
+rendered from that filtered stream. Table extraction consumes the positioned
+document's words, chars, page text, and rule segments; cell text annotation
+consumes the same positioned characters. The page-furniture artifact is still
+passed into table extraction, cell text annotation, and text-stream footer
+detection as an early geometry mask. It is written even when no repeated page
+furniture is found.
 
 `paper_footnotes.json` records detected table-local footer regions, footnote
 anchors, candidate definitions, and glyph-key links as a paper-level review
@@ -95,7 +104,9 @@ from cell-text annotation geometry when a raised marker begins the first
 populated footer cell; raw extracted strings that visually run the marker into
 the next word are preserved as provenance but do not define the marker.
 
-`paper_text_stream.json` is the positioned text source for footer candidates
+`paper_text_stream.json` is the filtered and layout-ordered view of
+`paper_positioned_document.json`. It is also the positioned text source for
+footer candidates
 that are absent from the extracted grid. The stream preserves visual lines,
 page/column order, line bbox, dominant font name, dominant font size, and
 document-level font-style counts after page-furniture filtering. A table-footer
@@ -190,8 +201,8 @@ The current implemented flow for `parse` is:
 
 ```text
 PDF
-  -> paper page furniture
-  -> paper text stream / markdown / sections / bibliography
+  -> paper positioned document
+  -> paper page furniture / text stream / markdown / sections / bibliography
   -> extracted tables
   -> cell text annotations
   -> table regions
@@ -1090,12 +1101,12 @@ This is separate from table extraction.
 The current paper-context path is:
 
 ```text
-PDF -> paper_page_furniture.json -> paper_text_stream.json -> paper_markdown.md -> paper_sections.json -> paper_table_mentions.json -> paper_bibliography.json -> paper_visual_inventory.json -> paper_references.json -> paper_style_profile.json -> paper_variable_inventory.json -> table_contexts/*.json
+PDF -> paper_positioned_document.json -> paper_page_furniture.json -> paper_text_stream.json -> paper_markdown.md -> paper_sections.json -> paper_table_mentions.json -> paper_bibliography.json -> paper_visual_inventory.json -> paper_references.json -> paper_style_profile.json -> paper_variable_inventory.json -> table_contexts/*.json
 ```
 
 ### `paper_markdown.md`
 
-This is the full-paper backend markdown artifact, produced from `pymupdf4llm`.
+This is the full-paper markdown view rendered from `paper_text_stream.json`.
 
 It is not the canonical table grid.
 
@@ -1106,9 +1117,11 @@ It is used for:
 - variable-term retrieval
 - future semantic grounding
 
-Only conservative glyph repair and repeated page-furniture line removal are
-allowed here. This artifact is not meant to become the canonical paper-order
-model.
+The markdown file is not a separate extraction backend. There is no
+`pymupdf4llm.to_markdown()` fallback; if PyMuPDF positioned text cannot produce
+the stream, the parser fails closed instead of building document context from a
+second markdown path. This artifact is not meant to become the canonical
+paper-order model.
 
 ### `paper_text_stream.json`
 
@@ -1125,8 +1138,7 @@ PDF.
 
 The layout-aware stream is rendered to lightweight markdown and split into a
 linear list of sections, with simple role hints such as methods-like or
-results-like. If positioned text cannot be read, the parser falls back to
-filtered `paper_markdown.md`.
+results-like.
 
 This gives the parser a document structure that is easier to retrieve from than raw markdown alone.
 
@@ -1149,8 +1161,7 @@ external supplementary material rather than an extractable in-paper table.
 ### `paper_bibliography.json`
 
 The parser extracts the paper's bibliography entries from the positioned text
-stream before table extraction begins, falling back to layout-stream-derived
-sections only when the positioned stream cannot produce entries. Reference-list
+stream before table extraction begins. Reference-list
 pages are read as page, column, then vertical position; entries remain open
 across column and page breaks until the next left-edge entry start is found.
 For numbered lists that start may be a bracketed, dotted, or bare numeric label;
@@ -1353,7 +1364,7 @@ When a parse looks wrong, inspect the outputs in this order.
 17. `paper_page_furniture.json`
    If repeated page headers, footers, watermarks, or download notices may be contaminating extraction or note parsing, inspect this artifact for recurring clusters and ignored regions.
 
-18. `paper_markdown.md`, `paper_text_stream.json`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and `table_contexts/*.json`
+18. `paper_positioned_document.json`, `paper_markdown.md`, `paper_text_stream.json`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and `table_contexts/*.json`
    If semantic context retrieval is weak, inspect these next.
 
 19. `table_variable_plausibility_llm.json`

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -87,13 +88,17 @@ def extract_page_text(page: Any) -> str:
         return ""
 
 
-def extract_page_words(page: Any) -> list[dict[str, object]]:
+def extract_page_words(
+    page: Any,
+    *,
+    page_chars: Sequence[Mapping[str, object]] | None = None,
+) -> list[dict[str, object]]:
     """Extract normalized positioned words from a PyMuPDF page."""
     try:
         raw_words = page.get_text("words") or []
     except Exception:
         return []
-    page_chars = extract_page_chars(page)
+    chars = list(page_chars) if page_chars is not None else extract_page_chars(page)
     words: list[dict[str, object]] = []
     for word in raw_words:
         if not isinstance(word, (list, tuple)) or len(word) < 5:
@@ -102,7 +107,7 @@ def extract_page_words(page: Any) -> list[dict[str, object]]:
         word_text = str(text).strip()
         chars_in_word = [
             char
-            for char in page_chars
+            for char in chars
             if float(char["x0"]) >= float(x0) - 0.5
             and float(char["x1"]) <= float(x1) + 0.5
             and float(char["top"]) >= float(top) - 0.5

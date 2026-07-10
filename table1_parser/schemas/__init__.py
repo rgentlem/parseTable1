@@ -40,6 +40,14 @@ from table1_parser.schemas.paper_bibliography import (
 )
 from table1_parser.schemas.paper_table_inventory import PaperTableInventory, PaperTableRecord, TableCategory
 from table1_parser.schemas.paper_table_mentions import PaperTableMention, TableMentionKind
+from table1_parser.schemas.paper_positioned_document import (
+    PaperPositionedChar,
+    PaperPositionedDocument,
+    PaperPositionedLine,
+    PaperPositionedPage,
+    PaperPositionedSpan,
+    PaperPositionedWord,
+)
 from table1_parser.schemas.paper_text_stream import PaperTextLine, PaperTextLineRole, PaperTextPage, PaperTextStream
 from table1_parser.schemas.paper_footnotes import (
     FootnoteAnchor,
@@ -142,6 +150,12 @@ __all__ = [
     "PaperBibliography",
     "PaperFootnotes",
     "PaperPageFurniture",
+    "PaperPositionedChar",
+    "PaperPositionedDocument",
+    "PaperPositionedLine",
+    "PaperPositionedPage",
+    "PaperPositionedSpan",
+    "PaperPositionedWord",
     "PaperStyleCheck",
     "PaperStyleDimension",
     "PaperStyleEvidence",

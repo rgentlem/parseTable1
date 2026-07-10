@@ -4,9 +4,10 @@ This document lists the implementation steps for the LLM semantic inference phas
 
 ## 1. Add document-context extraction
 
-- extract `pymupdf4llm` markdown for the full paper
-- write `paper_markdown.md`
-- parse markdown headings into `paper_sections.json`
+- build the shared positioned paper text stream
+- write `paper_positioned_document.json`, `paper_text_stream.json`, and rendered
+  `paper_markdown.md`
+- parse rendered stream headings into `paper_sections.json`
 
 ## 2. Add table-focused retrieval
 
@@ -62,7 +63,7 @@ outputs/papers/<paper_stem>/
 
 ## 9. Add tests
 
-- markdown and section extraction
+- positioned text streaming and section parsing
 - `Table X` retrieval
 - LLM input and output schema validation
 - row/column safety validation

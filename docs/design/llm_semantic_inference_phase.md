@@ -69,16 +69,19 @@ Use two parallel views of the same paper:
 
 2. Document context view
 
-- `pymupdf4llm` markdown
+- `paper_positioned_document.json`
+- `paper_text_stream.json`
+- rendered `paper_markdown.md`
 - section headings
 - paragraphs near table references
 - table notes and footnotes
 
 The first view supports syntax. The second supports semantics.
 
-## Why Use `pymupdf4llm` Markdown
+## Why Use Rendered Paper Markdown
 
-Markdown should be used for document context because it is easier to:
+Markdown rendered from the positioned text stream should be used for readable
+document context because it is easier to:
 
 - identify headings and subheadings
 - chunk the paper into sections
@@ -86,9 +89,12 @@ Markdown should be used for document context because it is easier to:
 - retrieve local prose around variable names and column labels
 - send readable evidence to the LLM
 
-It should not replace the structured table extraction path.
+It should not replace the structured table extraction path or the positioned
+text stream. The parser should not introduce a second backend markdown
+extraction path for semantic context.
 
-The persisted markdown artifact is `paper_markdown.md`. Its design intent and variation rules are defined in `docs/design/paper_markdown_spec.md`.
+The persisted markdown artifact is `paper_markdown.md`. Its design intent and
+variation rules are defined in `docs/design/paper_markdown_spec.md`.
 
 ## Output Layout
 
@@ -99,6 +105,8 @@ outputs/papers/<paper_stem>/
   extracted_tables.json
   normalized_tables.json
   table_definitions.json
+  paper_positioned_document.json
+  paper_text_stream.json
   paper_markdown.md
   paper_sections.json
   paper_variable_inventory.json
@@ -107,7 +115,8 @@ outputs/papers/<paper_stem>/
     table_1_context.json
 ```
 
-This keeps all paper-specific artifacts together and avoids recomputing markdown extraction.
+This keeps all paper-specific artifacts together and avoids recomputing
+positioned text extraction.
 
 When `LLM_DEBUG=true`, semantic-LLM debug artifacts should be written under a timestamped run directory inside the paper output directory, for example:
 
@@ -217,7 +226,8 @@ Current simplification:
 Keep the LLM phase split into small modules:
 
 - `table1_parser/context/`
-  markdown extraction, section parsing, paper-level variable inventory building, and `Table X` retrieval
+  positioned text streaming, rendered markdown views, section parsing,
+  paper-level variable inventory building, and `Table X` retrieval
 - `table1_parser/llm/`
   semantic schemas, prompt building, and provider calls
 - `table1_parser/adjudication/`

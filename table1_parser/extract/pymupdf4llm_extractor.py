@@ -23,14 +23,9 @@ from table1_parser.extract.layout_fallback import (
     trim_trailing_non_table_rows,
 )
 from table1_parser.extract.pymupdf_page_adapter import (
-    extract_clipped_line_directions,
-    extract_page_chars,
-    extract_page_rule_segments,
-    extract_page_text,
-    extract_page_words,
     join_pymupdf_line_spans,
-    open_pymupdf_document,
 )
+from table1_parser.context.paper_positioned_document import build_paper_positioned_document
 from table1_parser.extract.table_detector import (
     DetectedTableCandidate,
     _caption_for_index,
@@ -48,6 +43,8 @@ from table1_parser.schemas import (
     BibliographyEntry,
     ExtractedTable,
     PaperPageFurniture,
+    PaperPositionedDocument,
+    PaperPositionedPage,
     PaperTableMention,
     PaperTextStream,
     TableCell,
@@ -231,6 +228,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
         pdf_path: str,
         *,
         paper_page_furniture: PaperPageFurniture | None = None,
+        paper_positioned_document: PaperPositionedDocument | None = None,
         paper_table_mentions: Sequence[PaperTableMention] | None = None,
         paper_text_stream: PaperTextStream | None = None,
         bibliography_entries: Sequence[BibliographyEntry] | None = None,
@@ -240,6 +238,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
             candidates = self._detect_table_candidates(
                 pdf_path,
                 paper_page_furniture=paper_page_furniture,
+                paper_positioned_document=paper_positioned_document,
                 paper_table_mentions=paper_table_mentions,
                 paper_text_stream=paper_text_stream,
                 bibliography_entries=bibliography_entries,
@@ -298,6 +297,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
         pdf_path: str,
         *,
         paper_page_furniture: PaperPageFurniture | None = None,
+        paper_positioned_document: PaperPositionedDocument | None = None,
         paper_table_mentions: Sequence[PaperTableMention] | None = None,
         paper_text_stream: PaperTextStream | None = None,
         bibliography_entries: Sequence[BibliographyEntry] | None = None,
@@ -318,43 +318,42 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
         }
         if not pages:
             return []
+        positioned_document = paper_positioned_document or build_paper_positioned_document(pdf_path)
+        positioned_pages_by_num = {
+            page.page_num: page
+            for page in positioned_document.pages
+        }
         candidates: list[DetectedTableCandidate] = []
-        try:
-            document = open_pymupdf_document(pdf_path)
-        except Exception:
-            document = None
         try:
             bibliography_masks_by_page = _bibliography_evidence_masks_by_page(
                 bibliography_entries,
                 paper_text_stream,
             )
-            front_matter_intervals = _front_matter_intervals_by_page(document)
+            front_matter_intervals = _front_matter_intervals_by_page(positioned_document)
             for page_num, payload_page in sorted(pages.items()):
-                page = None
-                if document is not None and 0 <= page_num - 1 < getattr(document, "page_count", 0):
-                    page = document.load_page(page_num - 1)
+                positioned_page = positioned_pages_by_num.get(page_num)
                 page_boxes = payload_page.get("boxes", []) or []
                 page_text = _collect_page_text(page_boxes)
-                extracted_page_text = ""
-                if page is not None:
-                    extracted_page_text = extract_page_text(page)
-                    if extracted_page_text and extracted_page_text not in page_text:
-                        page_text = f"{page_text}\n{extracted_page_text}".strip()
+                extracted_page_text = positioned_page.text if positioned_page is not None else ""
+                if extracted_page_text and extracted_page_text not in page_text:
+                    page_text = f"{page_text}\n{extracted_page_text}".strip()
                 page_word_mask_metadata: dict[str, object] | None = None
                 page_char_mask_metadata: dict[str, object] | None = None
-                if page is None:
+                page_word_bibliography_mask_metadata: dict[str, object] | None = None
+                page_char_bibliography_mask_metadata: dict[str, object] | None = None
+                if positioned_page is None:
                     page_words = []
                     page_chars = []
                     page_rule_segments = []
                     page_stroked_rule_segments = []
                 else:
                     page_words, page_word_mask_metadata = filter_positioned_items_for_page_furniture(
-                        extract_page_words(page),
+                        _positioned_page_words(positioned_page),
                         paper_page_furniture,
                         page_num=page_num,
                     )
                     page_chars, page_char_mask_metadata = filter_positioned_items_for_page_furniture(
-                        _extract_page_chars_with_page_num(page, page_num),
+                        _positioned_page_chars(positioned_page),
                         paper_page_furniture,
                         page_num=page_num,
                     )
@@ -368,8 +367,8 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                         bibliography_masks_by_page.get(page_num),
                         item_kind="char",
                     )
-                    page_rule_segments = extract_page_rule_segments(page)
-                    page_stroked_rule_segments = extract_page_rule_segments(page, include_filled=False)
+                    page_rule_segments = list(positioned_page.rule_segments)
+                    page_stroked_rule_segments = list(positioned_page.stroked_rule_segments)
                 page_item_furniture_mask = {
                     key: value
                     for key, value in {
@@ -381,8 +380,8 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                 page_item_bibliography_mask = {
                     key: value
                     for key, value in {
-                        "word_items": page_word_bibliography_mask_metadata if page is not None else None,
-                        "char_items": page_char_bibliography_mask_metadata if page is not None else None,
+                        "word_items": page_word_bibliography_mask_metadata,
+                        "char_items": page_char_bibliography_mask_metadata,
                     }.items()
                     if value is not None
                 }
@@ -480,7 +479,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                         caption_placement = None
                         caption_distance = None
                     cell_bboxes = _coerce_cell_bboxes(table.get("cells") or [])
-                    orientation_metadata = _infer_table_orientation_metadata(page, bbox)
+                    orientation_metadata = _infer_table_orientation_metadata(positioned_page, bbox)
                     refinement = _refine_explicit_table_candidate_grid(
                         raw_rows=raw_rows,
                         cell_bboxes=cell_bboxes,
@@ -693,7 +692,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                     rotated_block_candidate = _build_rotated_block_candidate_from_mixed_table_box(
                         page_num=page_num,
                         table_index=table_index,
-                        page=page,
+                        positioned_page=positioned_page,
                         page_text=page_text,
                         page_words=page_words,
                         page_chars=page_chars,
@@ -710,17 +709,16 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                 if page_candidates:
                     candidates.extend(page_candidates)
 
-            for page_index in range(getattr(document, "page_count", 0) if document is not None else 0):
-                page_num = page_index + 1
-                page = document.load_page(page_index)
+            for page_num in sorted(positioned_pages_by_num):
+                positioned_page = positioned_pages_by_num[page_num]
                 payload_page = pages.get(page_num, {})
                 page_boxes = payload_page.get("boxes", []) or []
                 page_text = _collect_page_text(page_boxes)
-                extracted_page_text = extract_page_text(page)
+                extracted_page_text = positioned_page.text
                 if extracted_page_text and extracted_page_text not in page_text:
                     page_text = f"{page_text}\n{extracted_page_text}".strip()
-                page_words = extract_page_words(page)
-                page_chars = _extract_page_chars_with_page_num(page, page_num)
+                page_words = _positioned_page_words(positioned_page)
+                page_chars = _positioned_page_chars(positioned_page)
                 bibliography_mask = bibliography_masks_by_page.get(page_num)
                 page_words, page_word_bibliography_mask_metadata = _filter_positioned_items_for_bibliography(
                     page_words,
@@ -732,7 +730,7 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                     bibliography_mask,
                     item_kind="char",
                 )
-                page_rule_segments = extract_page_rule_segments(page, include_filled=False)
+                page_rule_segments = list(positioned_page.stroked_rule_segments)
                 text_layout_candidates = _build_column_band_text_layout_candidates(
                     page_num=page_num,
                     page_text=page_text,
@@ -772,15 +770,13 @@ class PyMuPDF4LLMExtractor(BaseExtractor):
                                     "extractor_used": self.backend_name,
                                     "fallback_used": False,
                                     "bibliography_evidence_mask": bibliography_mask_metadata or None,
-                                    **_infer_table_orientation_metadata(page, candidate.bbox),
+                                    **_infer_table_orientation_metadata(positioned_page, candidate.bbox),
                                 }
                             }
                         )
                     )
-        finally:
-            close = getattr(document, "close", None)
-            if callable(close):
-                close()
+        except Exception:
+            return []
         return candidates
 
     def _build_extracted_table(
@@ -940,7 +936,7 @@ def _build_rotated_block_candidate_from_mixed_table_box(
     *,
     page_num: int,
     table_index: int,
-    page: Any,
+    positioned_page: PaperPositionedPage | None,
     page_text: str,
     page_words: list[dict[str, object]],
     page_chars: list[dict[str, object]],
@@ -953,7 +949,7 @@ def _build_rotated_block_candidate_from_mixed_table_box(
     paper_page_furniture: PaperPageFurniture | None,
 ) -> DetectedTableCandidate | None:
     """Recover a rotated table block when PyMuPDF4LLM emits a mixed-orientation table box."""
-    if page is None or source_bbox is None:
+    if positioned_page is None or source_bbox is None:
         return None
     if source_candidate.metadata.get("table_orientation") == "rotated":
         return None
@@ -961,7 +957,7 @@ def _build_rotated_block_candidate_from_mixed_table_box(
     if not isinstance(signals, dict) or not signals.get("caption_match"):
         return None
 
-    rotated_orientation = _find_rotated_text_block_in_bbox(page, source_bbox)
+    rotated_orientation = _find_rotated_text_block_in_bbox(positioned_page, source_bbox)
     rotated_bbox = _as_bbox(rotated_orientation.get("rotated_text_block_bbox")) if rotated_orientation else None
     if rotated_orientation is None or rotated_bbox is None:
         return None
@@ -1057,25 +1053,26 @@ def _build_rotated_block_candidate_from_mixed_table_box(
 
 
 def _find_rotated_text_block_in_bbox(
-    page: Any,
+    positioned_page: PaperPositionedPage,
     bbox: tuple[float, float, float, float],
 ) -> dict[str, Any] | None:
     """Find a contiguous rotated text block inside a larger mixed-orientation bbox."""
-    try:
-        raw_blocks = (page.get_text("dict") or {}).get("blocks", [])
-    except Exception:
-        return None
-
     candidates_by_direction: dict[str, list[tuple[tuple[float, float, float, float], int, int]]] = {
         "vertical_text_up": [],
         "vertical_text_down": [],
     }
-    for block in raw_blocks:
-        if not isinstance(block, dict) or block.get("type", 0) != 0:
+    lines_by_block: dict[int, list[object]] = {}
+    for line in positioned_page.lines:
+        if line.block_index is None:
             continue
-        block_bbox = _as_bbox(block.get("bbox"))
-        if block_bbox is None:
-            continue
+        lines_by_block.setdefault(line.block_index, []).append(line)
+    for block_lines in lines_by_block.values():
+        block_bbox = (
+            min(line.bbox[0] for line in block_lines),
+            min(line.bbox[1] for line in block_lines),
+            max(line.bbox[2] for line in block_lines),
+            max(line.bbox[3] for line in block_lines),
+        )
         if (
             min(block_bbox[2], bbox[2]) <= max(block_bbox[0], bbox[0])
             or min(block_bbox[3], bbox[3]) <= max(block_bbox[1], bbox[1])
@@ -1084,14 +1081,10 @@ def _find_rotated_text_block_in_bbox(
         horizontal_count = 0
         vertical_up_count = 0
         vertical_down_count = 0
-        for line in block.get("lines", []):
-            if not isinstance(line, dict):
+        for line in block_lines:
+            if line.direction is None:
                 continue
-            direction = line.get("dir")
-            if not isinstance(direction, (list, tuple)) or len(direction) != 2:
-                continue
-            dx = float(direction[0])
-            dy = float(direction[1])
+            dx, dy = line.direction
             if abs(dx) >= 0.8 and abs(dy) <= 0.2:
                 horizontal_count += 1
                 continue
@@ -1145,11 +1138,11 @@ def _find_rotated_text_block_in_bbox(
 
 
 def _infer_table_orientation_metadata(
-    page: Any,
+    positioned_page: PaperPositionedPage | None,
     bbox: tuple[float, float, float, float] | None,
 ) -> dict[str, Any]:
     """Infer table text orientation from PyMuPDF line-direction metadata."""
-    directions = extract_clipped_line_directions(page, bbox)
+    directions = _positioned_line_directions_in_bbox(positioned_page, bbox)
     if not directions:
         return {
             "table_orientation": "unknown",
@@ -1187,16 +1180,18 @@ def _infer_table_orientation_metadata(
             else "vertical_text_down"
         )
         rotated_text_block_bboxes: list[tuple[float, float, float, float]] = []
-        try:
-            raw_blocks = (page.get_text("dict") or {}).get("blocks", [])
-        except Exception:
-            raw_blocks = []
-        for block in raw_blocks:
-            if not isinstance(block, dict):
+        lines_by_block: dict[int, list[object]] = {}
+        for line in positioned_page.lines if positioned_page is not None else []:
+            if line.block_index is None:
                 continue
-            block_bbox = _as_bbox(block.get("bbox"))
-            if block_bbox is None:
-                continue
+            lines_by_block.setdefault(line.block_index, []).append(line)
+        for block_lines in lines_by_block.values():
+            block_bbox = (
+                min(line.bbox[0] for line in block_lines),
+                min(line.bbox[1] for line in block_lines),
+                max(line.bbox[2] for line in block_lines),
+                max(line.bbox[3] for line in block_lines),
+            )
             if (
                 min(block_bbox[2], bbox[2]) <= max(block_bbox[0], bbox[0])
                 or min(block_bbox[3], bbox[3]) <= max(block_bbox[1], bbox[1])
@@ -1204,14 +1199,10 @@ def _infer_table_orientation_metadata(
                 continue
             matching_line_count = 0
             directed_line_count = 0
-            for line in block.get("lines", []):
-                if not isinstance(line, dict):
+            for line in block_lines:
+                if line.direction is None:
                     continue
-                direction = line.get("dir")
-                if not isinstance(direction, (list, tuple)) or len(direction) != 2:
-                    continue
-                dx = float(direction[0])
-                dy = float(direction[1])
+                dx, dy = line.direction
                 directed_line_count += 1
                 if (
                     abs(dy) >= 0.8
@@ -2558,26 +2549,55 @@ def _column_count(candidate: DetectedTableCandidate) -> int:
     return max((len(row) for row in candidate.raw_rows), default=0)
 
 
-def _front_matter_intervals_by_page(document: Any | None) -> dict[int, tuple[float, float]]:
+def _positioned_page_words(page: PaperPositionedPage) -> list[dict[str, object]]:
+    """Project positioned-document words into the dict shape used by extraction heuristics."""
+    return [word.model_dump(mode="json") for word in page.words]
+
+
+def _positioned_page_chars(page: PaperPositionedPage) -> list[dict[str, object]]:
+    """Project positioned-document chars into the dict shape used by extraction heuristics."""
+    return [char.model_dump(mode="json", exclude_none=True) for char in page.chars]
+
+
+def _positioned_line_directions_in_bbox(
+    positioned_page: PaperPositionedPage | None,
+    bbox: tuple[float, float, float, float] | None,
+) -> list[tuple[float, float]]:
+    """Return positioned line directions whose line bboxes intersect the bbox."""
+    if positioned_page is None or bbox is None:
+        return []
+    directions: list[tuple[float, float]] = []
+    for line in positioned_page.lines:
+        if line.direction is None:
+            continue
+        line_bbox = line.bbox
+        if (
+            min(line_bbox[2], bbox[2]) <= max(line_bbox[0], bbox[0])
+            or min(line_bbox[3], bbox[3]) <= max(line_bbox[1], bbox[1])
+        ):
+            continue
+        directions.append(line.direction)
+    return directions
+
+
+def _front_matter_intervals_by_page(
+    positioned_document: PaperPositionedDocument | None,
+) -> dict[int, tuple[float, float]]:
     """Return page y-intervals between the abstract heading and introduction heading."""
-    if document is None:
+    if positioned_document is None:
         return {}
 
     abstract_location: tuple[int, float] | None = None
     introduction_location: tuple[int, float] | None = None
-    page_bottoms: dict[int, float] = {}
+    page_bottoms = {
+        page.page_num: page.page_height
+        for page in positioned_document.pages
+    }
 
-    page_count = int(getattr(document, "page_count", 0) or 0)
-    for zero_based_page_num in range(page_count):
+    for page in positioned_document.pages:
+        page_num = page.page_num
         try:
-            page = document.load_page(zero_based_page_num)
-        except Exception:
-            continue
-        page_num = zero_based_page_num + 1
-        page_rect = getattr(page, "rect", None)
-        page_bottoms[page_num] = float(getattr(page_rect, "height", 0.0) or 0.0)
-        try:
-            lines = build_word_lines(extract_page_words(page))
+            lines = build_word_lines(_positioned_page_words(page))
         except Exception:
             continue
         for line in lines:
@@ -2672,14 +2692,6 @@ def _collect_page_text(page_boxes: list[dict[str, Any]]) -> str:
         if text:
             texts.append(text)
     return "\n".join(texts)
-
-
-def _extract_page_chars_with_page_num(page: Any, page_num: int) -> list[dict[str, object]]:
-    """Extract PyMuPDF chars and attach one-based page provenance."""
-    chars = extract_page_chars(page)
-    for char in chars:
-        char.setdefault("page_num", page_num)
-    return chars
 
 
 def _extract_box_text(box: dict[str, Any]) -> str:

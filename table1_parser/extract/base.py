@@ -10,6 +10,7 @@ from table1_parser.schemas import (
     BibliographyEntry,
     ExtractedTable,
     PaperPageFurniture,
+    PaperPositionedDocument,
     PaperTableMention,
     PaperTextStream,
 )
@@ -24,6 +25,7 @@ class BaseExtractor(ABC):
         pdf_path: str,
         *,
         paper_page_furniture: PaperPageFurniture | None = None,
+        paper_positioned_document: PaperPositionedDocument | None = None,
         paper_table_mentions: Sequence[PaperTableMention] | None = None,
         paper_text_stream: PaperTextStream | None = None,
         bibliography_entries: Sequence[BibliographyEntry] | None = None,

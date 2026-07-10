@@ -71,23 +71,27 @@ assembly. Existing continuation outputs remain review/provenance artifacts.
 
 ## Mandatory Page-Furniture Filtering Rule
 
-`paper_page_furniture.json` must be built near the front of document
-processing, immediately after the parser has opened the PDF and before any
-stage derives paper text, markdown, sections, bibliography entries, visual
-references, table candidates, cell text annotations, footnote definition
-blocks, style profiles, variable inventories, or table contexts.
+`paper_positioned_document.json` must be built as the first shared
+whole-document positioned-text pass when `table1-parser parse` starts.
+`paper_page_furniture.json` must then be built from that shared evidence before
+any stage derives paper text, markdown, sections, bibliography entries, visual
+references, table candidates, cell text annotations, footnote definition lines,
+style profiles, variable inventories, or table contexts.
 
 Every stage that consumes positioned PDF text, words, characters, or extracted
 grid rows must receive the paper-page-furniture artifact and apply its ignored
 regions before deriving downstream artifacts. Page-furniture filtering is an
 early document-processing invariant, not a late cleanup path.
 
-If a new source path reads PDF text directly, thread `PaperPageFurniture` into
-that path and filter the source geometry before grouping, classification,
-linking, or artifact construction. Do not add downstream exceptions that remove
-headers, footers, download notices, marginal text, or other repeated furniture
-after those strings have already entered bibliography, section, table,
-footnote, or annotation artifacts.
+If a new source path needs page text, lines, spans, words, characters, or rule
+segments, consume
+`PaperPositionedDocument` or a typed projection of it instead of opening the PDF
+for another positioned-geometry pass. Thread `PaperPageFurniture` into that
+path and filter the source geometry before grouping, classification, linking,
+or artifact construction. Do not add downstream exceptions that remove headers,
+footers, download notices, marginal text, or other repeated furniture after
+those strings have already entered bibliography, section, table, footnote, or
+annotation artifacts.
 
 ## Mandatory Column-Header Rule
 

@@ -23,11 +23,11 @@ Bibliography entry extraction should run before table extraction because it
 depends on the whole-paper document stream, not on table grids. The primary
 source is `paper_text_stream.json`: positioned PyMuPDF lines filtered through
 `paper_page_furniture.json` and ordered by page, column, then vertical position.
-Markdown-derived sections are retained only as a fallback when the positioned
-stream cannot produce entries. Later table-cell annotation and footnote
-processing can then link numeric table markers to already-known numbered
-bibliography entries. The same bibliography pass is the only source of the
-reference-region evidence used by table extraction: when entries are found,
+There is no backend-markdown fallback for bibliography entry extraction. Later
+table-cell annotation and footnote processing can then link numeric table
+markers to already-known numbered bibliography entries. The same bibliography
+pass is the only source of the reference-region evidence used by table
+extraction: when entries are found,
 table extraction receives bibliography-owned source-line IDs and entry bboxes
 and removes positioned bibliography words/chars before candidate construction;
 when entries are not found, no bibliography-derived suppression is applied. The
@@ -37,6 +37,7 @@ The implemented flow is:
 
 ```text
 PDF
+-> paper_positioned_document.json
 -> paper_page_furniture.json
 -> paper_text_stream.json
 -> paper_markdown.md
@@ -98,11 +99,10 @@ reference-list pages are read as page, column, then vertical position; a new
 entry begins at the column's left edge, either with a visible numeric label or
 with the first author/organization text in a hanging-indent list. Continuation
 rows remain indented and entries can span column and page boundaries. Inline
-starts such as `References 1. Author...`, bracketed/dotted/bare numeric labels,
-and simple markdown-table fallback entries are supported when positioned text is
-unavailable. Extraction metadata records numbering style, low entry counts,
-nonsequential numeric labels, unusually long entries, and observed reference
-markers whose numbers exceed the extracted numbered bibliography.
+starts such as `References 1. Author...` and bracketed/dotted/bare numeric
+labels are supported. Extraction metadata records numbering style, low entry
+counts, nonsequential numeric labels, unusually long entries, and observed
+reference markers whose numbers exceed the extracted numbered bibliography.
 
 ## Reference Mention Record
 

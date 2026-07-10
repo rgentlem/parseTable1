@@ -139,7 +139,10 @@ Then use the documents below as needed.
 ## Supporting References
 
 - `docs/design/paper_markdown_spec.md`
-  Design intent for raw `paper_markdown.md` and layout-aware `paper_text_stream.json`, including expected variation in section naming, heading structure, page-furniture filtering, and multi-column paper order.
+  Design intent for `paper_positioned_document.json`, layout-aware
+  `paper_text_stream.json`, and rendered `paper_markdown.md`, including
+  expected variation in section naming, heading structure, page-furniture
+  filtering, and multi-column paper order.
 
 - `docs/design/paper_visual_references.md`
   Planned paper-level visual-object and visual-reference artifacts for resolving table/figure mentions to actual in-paper tables and figures, preserving stable anchors for nearby text access, and later linking figure-image artifacts.
@@ -206,7 +209,7 @@ Then use the documents below as needed.
   read `docs/design/parsing_process.md` and `docs/design/paper_parse_walkthrough.md`.
   Keep both documents aligned with the current implementation, not just the intended architecture.
 
-- If you are changing markdown extraction, section parsing, table/figure reference collection, or table-context retrieval:
+- If you are changing positioned text streaming, rendered markdown views, section parsing, table/figure reference collection, or table-context retrieval:
   read `docs/design/paper_markdown_spec.md`, `docs/design/paper_visual_references.md`, `docs/design/paper_variable_inventory.md`, and `docs/design/llm_semantic_inference_phase.md`.
 
 - If you are changing paper-level variable search, section-priority logic, or cross-table semantic support:

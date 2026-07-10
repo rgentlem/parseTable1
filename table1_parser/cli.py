@@ -27,13 +27,13 @@ from table1_parser.continued_variable_integration import (
 )
 from table1_parser.context import (
     annotate_visual_reference_checks,
+    build_paper_positioned_document,
     build_paper_text_stream,
     build_paper_table_mentions,
     build_paper_visual_inventory,
     build_table_contexts,
     build_paper_variable_inventory,
     collect_paper_visual_references,
-    extract_paper_markdown,
     paper_variable_inventory_to_payload,
     paper_sections_to_payload,
     paper_table_mentions_to_payload,
@@ -90,6 +90,7 @@ from table1_parser.schemas import (
     PaperFootnotes,
     PaperBibliography,
     PaperPageFurniture,
+    PaperPositionedDocument,
     PaperSection,
     PaperStyleProfile,
     PaperTableMention,
@@ -120,6 +121,18 @@ DEFAULT_OUTPUT_DIR = Path("outputs")
 
 
 @dataclass(slots=True)
+class PaperContextArtifacts:
+    """Shared paper-level context artifacts built from one positioned text pass."""
+
+    paper_positioned_document: PaperPositionedDocument
+    paper_page_furniture: PaperPageFurniture
+    paper_text_stream: PaperTextStream
+    paper_sections: list[PaperSection]
+    paper_table_mentions: list[PaperTableMention]
+    bibliography_entries: list[BibliographyEntry]
+
+
+@dataclass(slots=True)
 class PaperParseArtifacts:
     """All deterministic parse artifacts for one paper."""
 
@@ -147,6 +160,7 @@ class PaperParseArtifacts:
     paper_footnotes: PaperFootnotes
     paper_bibliography: PaperBibliography
     paper_page_furniture: PaperPageFurniture
+    paper_positioned_document: PaperPositionedDocument
     paper_style_profile: PaperStyleProfile
     paper_text_stream: PaperTextStream
     paper_markdown: str
@@ -245,6 +259,7 @@ def _extract_tables_with_context(
     pdf_path: str,
     *,
     paper_page_furniture: PaperPageFurniture | None,
+    paper_positioned_document: PaperPositionedDocument | None = None,
     paper_table_mentions: list[PaperTableMention] | None = None,
     paper_text_stream: PaperTextStream | None = None,
     bibliography_entries: Sequence[BibliographyEntry] | None = None,
@@ -263,6 +278,10 @@ def _extract_tables_with_context(
         parameter.kind == inspect.Parameter.VAR_KEYWORD
         for parameter in signature.parameters.values()
     )
+    supports_positioned_document = "paper_positioned_document" in signature.parameters or any(
+        parameter.kind == inspect.Parameter.VAR_KEYWORD
+        for parameter in signature.parameters.values()
+    )
     supports_bibliography_entries = "bibliography_entries" in signature.parameters or any(
         parameter.kind == inspect.Parameter.VAR_KEYWORD
         for parameter in signature.parameters.values()
@@ -274,6 +293,8 @@ def _extract_tables_with_context(
         keyword_arguments["paper_table_mentions"] = paper_table_mentions
     if supports_text_stream:
         keyword_arguments["paper_text_stream"] = paper_text_stream
+    if supports_positioned_document:
+        keyword_arguments["paper_positioned_document"] = paper_positioned_document
     if supports_bibliography_entries:
         keyword_arguments["bibliography_entries"] = bibliography_entries
     return extract(pdf_path, **keyword_arguments)
@@ -284,32 +305,56 @@ def _extract_payload(tables: list[ExtractedTable]) -> list[dict[str, object]]:
     return [table.model_dump(mode="json") for table in tables]
 
 
+def _build_paper_context_artifacts(pdf_path: str) -> PaperContextArtifacts:
+    """Build shared paper-context artifacts from one positioned PyMuPDF text pass."""
+    paper_stem = Path(pdf_path).stem
+    paper_positioned_document = build_paper_positioned_document(pdf_path, paper_id=paper_stem)
+    if paper_positioned_document.page_count <= 0 or not any(page.lines for page in paper_positioned_document.pages):
+        raise RuntimeError("PyMuPDF positioned text extraction failed; cannot parse paper context.")
+    paper_page_furniture = build_paper_page_furniture(
+        pdf_path,
+        paper_id=paper_stem,
+        paper_positioned_document=paper_positioned_document,
+    )
+    paper_text_stream = build_paper_text_stream(
+        pdf_path,
+        paper_page_furniture=paper_page_furniture,
+        paper_positioned_document=paper_positioned_document,
+        paper_id=paper_stem,
+    )
+    if not paper_text_stream.markdown.strip():
+        raise RuntimeError("PyMuPDF positioned text stream did not produce paper_markdown.md.")
+    paper_sections = parse_markdown_sections(paper_text_stream.markdown)
+    paper_table_mentions = build_paper_table_mentions(paper_text_stream)
+    bibliography_entries = build_bibliography_entries_from_text_stream(paper_text_stream)
+    if not bibliography_entries:
+        bibliography_entries = build_bibliography_entries_from_sections(paper_sections)
+    return PaperContextArtifacts(
+        paper_positioned_document=paper_positioned_document,
+        paper_page_furniture=paper_page_furniture,
+        paper_text_stream=paper_text_stream,
+        paper_sections=paper_sections,
+        paper_table_mentions=paper_table_mentions,
+        bibliography_entries=bibliography_entries,
+    )
+
+
 def _handle_extract(args: argparse.Namespace) -> int:
     """Run extraction and serialize the extracted output."""
     if _validate_pdf_path(args.pdf_path) is None:
         return 1
 
-    extractor = _build_default_extractor()
-    paper_page_furniture = build_paper_page_furniture(args.pdf_path, paper_id=Path(args.pdf_path).stem)
-    paper_text_stream = build_paper_text_stream(
-        args.pdf_path,
-        paper_page_furniture=paper_page_furniture,
-        paper_id=Path(args.pdf_path).stem,
-    )
-    paper_table_mentions = build_paper_table_mentions(paper_text_stream)
-    paper_sections = parse_markdown_sections(paper_text_stream.markdown)
-    bibliography_entries = build_bibliography_entries_from_text_stream(paper_text_stream)
-    if not bibliography_entries:
-        bibliography_entries = build_bibliography_entries_from_sections(paper_sections)
-
     try:
+        extractor = _build_default_extractor()
+        paper_context = _build_paper_context_artifacts(args.pdf_path)
         tables = _extract_tables_with_context(
             extractor,
             args.pdf_path,
-            paper_page_furniture=paper_page_furniture,
-            paper_table_mentions=paper_table_mentions,
-            paper_text_stream=paper_text_stream,
-            bibliography_entries=bibliography_entries,
+            paper_page_furniture=paper_context.paper_page_furniture,
+            paper_positioned_document=paper_context.paper_positioned_document,
+            paper_table_mentions=paper_context.paper_table_mentions,
+            paper_text_stream=paper_context.paper_text_stream,
+            bibliography_entries=paper_context.bibliography_entries,
         )
     except Exception as exc:
         _print_stderr(_error_payload(str(exc)))
@@ -333,33 +378,26 @@ def _handle_normalize(args: argparse.Namespace) -> int:
 
     try:
         extractor = _build_default_extractor()
-        paper_page_furniture = build_paper_page_furniture(args.pdf_path, paper_id=Path(args.pdf_path).stem)
-        paper_text_stream = build_paper_text_stream(
-            args.pdf_path,
-            paper_page_furniture=paper_page_furniture,
-            paper_id=Path(args.pdf_path).stem,
-        )
-        paper_table_mentions = build_paper_table_mentions(paper_text_stream)
-        paper_sections = parse_markdown_sections(paper_text_stream.markdown)
-        bibliography_entries = build_bibliography_entries_from_text_stream(paper_text_stream)
-        if not bibliography_entries:
-            bibliography_entries = build_bibliography_entries_from_sections(paper_sections)
+        paper_context = _build_paper_context_artifacts(args.pdf_path)
         extracted_tables = _extract_tables_with_context(
             extractor,
             args.pdf_path,
-            paper_page_furniture=paper_page_furniture,
-            paper_table_mentions=paper_table_mentions,
-            paper_text_stream=paper_text_stream,
-            bibliography_entries=bibliography_entries,
+            paper_page_furniture=paper_context.paper_page_furniture,
+            paper_positioned_document=paper_context.paper_positioned_document,
+            paper_table_mentions=paper_context.paper_table_mentions,
+            paper_text_stream=paper_context.paper_text_stream,
+            bibliography_entries=paper_context.bibliography_entries,
         )
         cell_text_annotations = build_cell_text_annotation_tables_from_pdf(
             args.pdf_path,
             extracted_tables,
-            paper_page_furniture=paper_page_furniture,
+            paper_page_furniture=paper_context.paper_page_furniture,
+            paper_positioned_document=paper_context.paper_positioned_document,
         )
         table_regions = build_table_regions(
             extracted_tables,
-            paper_page_furniture=paper_page_furniture,
+            paper_text_stream=paper_context.paper_text_stream,
+            paper_page_furniture=paper_context.paper_page_furniture,
             cell_text_annotations=cell_text_annotations,
         )
         normalized_tables = normalize_extracted_tables(extracted_tables, table_regions=table_regions)
@@ -537,27 +575,20 @@ def _handle_review_variable_plausibility(args: argparse.Namespace) -> int:
 def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     """Run the deterministic parse pipeline and build the paper-level context artifacts."""
     paper_stem = Path(pdf_path).stem
-    paper_page_furniture = build_paper_page_furniture(pdf_path, paper_id=paper_stem)
-    paper_text_stream = build_paper_text_stream(
-        pdf_path,
-        paper_page_furniture=paper_page_furniture,
-        paper_id=paper_stem,
-    )
-    try:
-        paper_markdown = extract_paper_markdown(pdf_path, paper_page_furniture=paper_page_furniture)
-    except Exception:  # noqa: BLE001
-        paper_markdown = ""
-    section_markdown = paper_text_stream.markdown or paper_markdown
-    paper_sections = parse_markdown_sections(section_markdown)
-    paper_table_mentions = build_paper_table_mentions(paper_text_stream)
-    bibliography_entries = build_bibliography_entries_from_text_stream(paper_text_stream)
-    if not bibliography_entries:
-        bibliography_entries = build_bibliography_entries_from_sections(paper_sections)
+    paper_context = _build_paper_context_artifacts(pdf_path)
+    paper_positioned_document = paper_context.paper_positioned_document
+    paper_page_furniture = paper_context.paper_page_furniture
+    paper_text_stream = paper_context.paper_text_stream
+    paper_markdown = paper_text_stream.markdown
+    paper_sections = paper_context.paper_sections
+    paper_table_mentions = paper_context.paper_table_mentions
+    bibliography_entries = paper_context.bibliography_entries
     extractor = _build_default_extractor()
     extracted_tables = _extract_tables_with_context(
         extractor,
         pdf_path,
         paper_page_furniture=paper_page_furniture,
+        paper_positioned_document=paper_positioned_document,
         paper_table_mentions=paper_table_mentions,
         paper_text_stream=paper_text_stream,
         bibliography_entries=bibliography_entries,
@@ -566,6 +597,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         pdf_path,
         extracted_tables,
         paper_page_furniture=paper_page_furniture,
+        paper_positioned_document=paper_positioned_document,
     )
     table_regions = build_table_regions(
         extracted_tables,
@@ -829,6 +861,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         paper_footnotes=paper_footnotes,
         paper_bibliography=paper_bibliography,
         paper_page_furniture=paper_page_furniture,
+        paper_positioned_document=paper_positioned_document,
         paper_style_profile=paper_style_profile,
         paper_text_stream=paper_text_stream,
         paper_markdown=paper_markdown,
@@ -908,6 +941,7 @@ def _write_parse_outputs(
     paper_footnotes_output_path = paper_dir / "paper_footnotes.json"
     paper_bibliography_output_path = paper_dir / "paper_bibliography.json"
     paper_page_furniture_output_path = paper_dir / "paper_page_furniture.json"
+    paper_positioned_document_output_path = paper_dir / "paper_positioned_document.json"
     paper_style_profile_output_path = paper_dir / "paper_style_profile.json"
     paper_text_stream_output_path = paper_dir / "paper_text_stream.json"
     paper_markdown_output_path = paper_dir / "paper_markdown.md"
@@ -1027,6 +1061,10 @@ def _write_parse_outputs(
     )
     paper_page_furniture_output_path.write_text(
         json.dumps(paper_page_furniture_to_payload(artifacts.paper_page_furniture), indent=2) + "\n",
+        encoding="utf-8",
+    )
+    paper_positioned_document_output_path.write_text(
+        json.dumps(artifacts.paper_positioned_document.model_dump(mode="json"), indent=2) + "\n",
         encoding="utf-8",
     )
     paper_style_profile_output_path.write_text(

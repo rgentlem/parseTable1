@@ -5,10 +5,17 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping, Sequence
 from statistics import median
+from table1_parser.context.paper_positioned_document import build_paper_positioned_document
 from table1_parser.extract.layout_fallback import normalize_positioned_geometry_for_rotation
-from table1_parser.extract.pymupdf_page_adapter import extract_page_chars, open_pymupdf_document
 from table1_parser.page_furniture_mask import filter_positioned_items_for_page_furniture
-from table1_parser.schemas import CellTextAnnotation, CellTextAnnotationTable, ExtractedTable, PaperPageFurniture, TableCell
+from table1_parser.schemas import (
+    CellTextAnnotation,
+    CellTextAnnotationTable,
+    ExtractedTable,
+    PaperPageFurniture,
+    PaperPositionedDocument,
+    TableCell,
+)
 
 
 MARKER_SYMBOLS = {"*", "†", "‡", "§", "¶", "#", "|", "{", "}"}
@@ -32,33 +39,23 @@ def build_cell_text_annotation_tables_from_pdf(
     extracted_tables: Sequence[ExtractedTable],
     *,
     paper_page_furniture: PaperPageFurniture | None = None,
+    paper_positioned_document: PaperPositionedDocument | None = None,
 ) -> list[CellTextAnnotationTable]:
-    """Build cell text annotation artifacts using PyMuPDF character geometry."""
+    """Build cell text annotation artifacts using shared positioned character geometry."""
     page_chars_by_page: dict[int, list[dict[str, object]]] = {}
     diagnostic: str | None = None
-    try:
-        document = open_pymupdf_document(pdf_path)
-    except Exception:  # noqa: BLE001
-        document = None
+    positioned_document = paper_positioned_document or build_paper_positioned_document(pdf_path)
+    if positioned_document.page_count <= 0:
         diagnostic = "char_geometry_unavailable"
-    if document is not None:
-        try:
-            page_count = int(getattr(document, "page_count", 0))
-            for page_index in range(page_count):
-                page_num = page_index + 1
-                page = document.load_page(page_index)
-                page_chars_by_page[page_num], _metadata = filter_positioned_items_for_page_furniture(
-                    extract_page_chars(page, page_num=page_num),
-                    paper_page_furniture,
-                    page_num=page_num,
-                )
-        except Exception:  # noqa: BLE001
-            page_chars_by_page = {}
-            diagnostic = "char_geometry_unavailable"
-        finally:
-            close = getattr(document, "close", None)
-            if callable(close):
-                close()
+    for page in positioned_document.pages:
+        page_chars = [char.model_dump(mode="json", exclude_none=True) for char in page.chars]
+        page_chars_by_page[page.page_num], _metadata = filter_positioned_items_for_page_furniture(
+            page_chars,
+            paper_page_furniture,
+            page_num=page.page_num,
+        )
+    if diagnostic is None and not any(page_chars_by_page.values()):
+        diagnostic = "char_geometry_unavailable"
 
     tables = build_cell_text_annotation_tables(extracted_tables, page_chars_by_page)
     if diagnostic is None:
@@ -213,7 +210,7 @@ def build_cell_text_annotation_tables(
                     annotations.append(_annotation_from_group(cell, chars, group))
 
         metadata: dict[str, object] = {
-            "source": "pymupdf_char_geometry",
+            "source": "paper_positioned_document_char_geometry",
             "coordinate_frame": coordinate_frame,
             "diagnostics": diagnostics,
         }

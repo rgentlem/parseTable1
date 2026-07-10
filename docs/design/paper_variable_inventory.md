@@ -87,11 +87,13 @@ Current flow:
 
 ```text
 PDF
+-> paper_positioned_document.json
+-> paper_text_stream.json
+-> paper_markdown.md
+-> paper_sections.json
 -> ExtractedTable
 -> NormalizedTable
 -> deterministic TableDefinition
--> paper_markdown.md
--> paper_sections.json
 -> paper_variable_inventory.json
 -> per-table context bundles
 -> one-table-at-a-time semantic LLM interpretation
@@ -189,6 +191,8 @@ outputs/papers/<paper_stem>/paper_variable_inventory.json
 
 This should be a paper-level artifact written next to:
 
+- `paper_positioned_document.json`
+- `paper_text_stream.json`
 - `paper_markdown.md`
 - `paper_sections.json`
 - `table_definitions.json`

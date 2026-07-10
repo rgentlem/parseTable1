@@ -5,16 +5,12 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from table1_parser.extract.pymupdf_page_adapter import (
-    bbox_from_pymupdf_value,
-    join_pymupdf_line_spans,
-    open_pymupdf_document,
-)
 from table1_parser.schemas import (
     PageFurnitureCluster,
     PageFurnitureRegion,
     PageFurnitureTextObservation,
     PaperPageFurniture,
+    PaperPositionedDocument,
 )
 
 
@@ -33,109 +29,63 @@ def normalize_page_furniture_text(raw_text: str, *, page_num: int | None = None)
     )
 
 
-def collect_page_furniture_text_observations(pdf_path: str) -> tuple[list[PageFurnitureTextObservation], int]:
+def collect_page_furniture_text_observations(
+    pdf_path: str,
+    *,
+    paper_positioned_document: PaperPositionedDocument | None = None,
+) -> tuple[list[PageFurnitureTextObservation], int]:
     """Collect positioned page text lines as page-furniture observations plus PDF page count."""
-    try:
-        document = open_pymupdf_document(pdf_path)
-    except Exception:  # noqa: BLE001
-        return [], 0
+    from table1_parser.context.paper_positioned_document import build_paper_positioned_document
+
+    positioned_document = paper_positioned_document or build_paper_positioned_document(pdf_path)
 
     observations: list[PageFurnitureTextObservation] = []
-    page_count = 0
-    try:
-        page_count = int(getattr(document, "page_count", 0))
-        for page_index in range(page_count):
-            page_num = page_index + 1
-            try:
-                page = document.load_page(page_index)
-                page_dict = page.get_text("dict") or {}
-            except Exception:  # noqa: BLE001
+    for page in positioned_document.pages:
+        if page.page_width <= 0.0 or page.page_height <= 0.0:
+            continue
+        for line in page.lines:
+            normalized_text = normalize_page_furniture_text(line.raw_text, page_num=page.page_num)
+            if not normalized_text:
                 continue
-
-            page_rect = getattr(page, "rect", None)
-            if page_rect is None:
-                continue
-            if hasattr(page_rect, "width") and hasattr(page_rect, "height"):
-                page_width = float(page_rect.width)
-                page_height = float(page_rect.height)
-            elif all(hasattr(page_rect, attr) for attr in ("x0", "y0", "x1", "y1")):
-                page_width = float(page_rect.x1) - float(page_rect.x0)
-                page_height = float(page_rect.y1) - float(page_rect.y0)
-            elif isinstance(page_rect, (list, tuple)) and len(page_rect) == 4:
-                page_width = float(page_rect[2]) - float(page_rect[0])
-                page_height = float(page_rect[3]) - float(page_rect[1])
-            else:
-                continue
-            if page_width <= 0.0 or page_height <= 0.0:
-                continue
-
-            page_line_index = 0
-            for block_index, block in enumerate(page_dict.get("blocks", [])):
-                for page_line in block.get("lines", []):
-                    bbox_parts: list[tuple[float, float, float, float]] = []
-                    for span in page_line.get("spans", []):
-                        if not isinstance(span, dict):
-                            continue
-                        bbox = bbox_from_pymupdf_value(span.get("bbox"))
-                        if bbox is not None:
-                            bbox_parts.append(bbox)
-                    raw_text = join_pymupdf_line_spans(page_line.get("spans", []))
-                    current_line_index = page_line_index
-                    page_line_index += 1
-                    if not raw_text or not bbox_parts:
-                        continue
-                    normalized_text = normalize_page_furniture_text(raw_text, page_num=page_num)
-                    if not normalized_text:
-                        continue
-                    bbox = (
-                        min(part[0] for part in bbox_parts),
-                        min(part[1] for part in bbox_parts),
-                        max(part[2] for part in bbox_parts),
-                        max(part[3] for part in bbox_parts),
-                    )
-                    direction = page_line.get("dir")
-                    orientation = None
-                    if isinstance(direction, (list, tuple)) and len(direction) == 2:
-                        orientation = f"{float(direction[0]):.3f},{float(direction[1]):.3f}"
-                    observations.append(
-                        PageFurnitureTextObservation(
-                            observation_id=f"page-{page_num}-line-{current_line_index}",
-                            page_num=page_num,
-                            raw_text=raw_text,
-                            normalized_text=normalized_text,
-                            bbox=bbox,
-                            relative_bbox=(
-                                bbox[0] / page_width,
-                                bbox[1] / page_height,
-                                bbox[2] / page_width,
-                                bbox[3] / page_height,
-                            ),
-                            page_width=page_width,
-                            page_height=page_height,
-                            orientation=orientation,
-                            block_index=block_index,
-                            line_index=current_line_index,
-                            source_artifact="pymupdf_page_text_lines",
-                        )
-                    )
-    finally:
-        close = getattr(document, "close", None)
-        if callable(close):
-            close()
-    return observations, page_count
+            observations.append(
+                PageFurnitureTextObservation(
+                    observation_id=line.line_id,
+                    page_num=page.page_num,
+                    raw_text=line.raw_text,
+                    normalized_text=normalized_text,
+                    bbox=line.bbox,
+                    relative_bbox=(
+                        line.bbox[0] / page.page_width,
+                        line.bbox[1] / page.page_height,
+                        line.bbox[2] / page.page_width,
+                        line.bbox[3] / page.page_height,
+                    ),
+                    page_width=page.page_width,
+                    page_height=page.page_height,
+                    orientation=line.orientation,
+                    block_index=line.block_index,
+                    line_index=line.page_line_index,
+                    source_artifact="paper_positioned_document.json",
+                )
+            )
+    return observations, positioned_document.page_count
 
 
 def build_paper_page_furniture(
     pdf_path: str,
     *,
     paper_id: str | None = None,
+    paper_positioned_document: PaperPositionedDocument | None = None,
     min_pages: int = 3,
     min_page_fraction: float = 0.5,
     relative_position_tolerance: float = 0.02,
     relative_edge_margin: float = 0.06,
 ) -> PaperPageFurniture:
     """Build the paper-level page-furniture artifact."""
-    observations, page_count = collect_page_furniture_text_observations(pdf_path)
+    observations, page_count = collect_page_furniture_text_observations(
+        pdf_path,
+        paper_positioned_document=paper_positioned_document,
+    )
     clusters, ignored_regions = cluster_page_furniture_observations(
         observations,
         page_count=page_count or None,
@@ -157,7 +107,7 @@ def build_paper_page_furniture(
         clusters=clusters,
         ignored_regions=ignored_regions,
         metadata={
-            "source_artifacts": ["pymupdf_page_text_lines"],
+            "source_artifacts": ["paper_positioned_document.json"],
             "observation_count": len(observations),
             "cluster_count": len(clusters),
             "ignored_region_count": len(ignored_regions),

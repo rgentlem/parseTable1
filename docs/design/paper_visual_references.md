@@ -13,14 +13,20 @@ Readers often need to answer questions such as:
 - does a prose mention such as `Figure 2` refer to a figure in this paper or to another cited paper?
 - what caption belongs to a figure, even before figure-image extraction exists?
 
-The current paper-context path already persists `paper_markdown.md`, `paper_sections.json`, and per-table context bundles. The new capability should extend that path with explicit visual-object and visual-reference artifacts instead of embedding this logic inside the table parser.
+The current paper-context path persists `paper_positioned_document.json`,
+`paper_text_stream.json`, `paper_markdown.md`, `paper_sections.json`, and
+per-table context bundles. The visual-reference capability should extend that
+path with explicit visual-object and visual-reference artifacts instead of
+embedding this logic inside the table parser.
 
 ## Conceptual Flow
 
 The planned document-context flow is:
 
 ```text
-paper_markdown.md
+paper_positioned_document.json
+  -> paper_text_stream.json
+  -> paper_markdown.md
   -> paper_sections.json
   -> paper_visual_inventory.json
   -> paper_references.json
@@ -363,7 +369,9 @@ Embedding a compact copy in `table_contexts/*.json` is optional convenience beha
 
 ## Relationship To Existing Artifacts
 
-`paper_markdown.md` remains the raw document-context artifact.
+`paper_positioned_document.json` and `paper_text_stream.json` remain the
+structured document-context artifacts. `paper_markdown.md` is a rendered view of
+the filtered text stream.
 
 `paper_sections.json` remains the structured section view.
 
