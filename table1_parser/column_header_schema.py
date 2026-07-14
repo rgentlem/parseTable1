@@ -14,6 +14,7 @@ from table1_parser.schemas import (
     ColumnHeaderRelationship,
     ColumnHeaderSchema,
     ExtractedTable,
+    HeaderStructureCandidate,
     NormalizedTable,
     PaperPositionedDocument,
     TableCell,
@@ -49,6 +50,7 @@ def build_column_header_schema(
     table: NormalizedTable,
     extracted_table: ExtractedTable | None = None,
     paper_positioned_document: PaperPositionedDocument | None = None,
+    header_structure_candidate: HeaderStructureCandidate | None = None,
 ) -> ColumnHeaderSchema:
     """Build one parser-native column header schema from a normalized table."""
     diagnostics: list[str] = []
@@ -725,6 +727,85 @@ def build_column_header_schema(
         diagnostics=list(dict.fromkeys(diagnostics)),
         confidence=_schema_confidence(diagnostics, leaves, groups),
     )
+    if header_structure_candidate is not None:
+        candidate_leaves = sorted(
+            header_structure_candidate.leaf_candidates,
+            key=lambda leaf: leaf.leaf_index,
+        )
+        inherited = [
+            leaf for leaf in candidate_leaves if leaf.label_source == "inherited_continuation"
+        ]
+        schema_leaves = {leaf.col_idx: leaf for leaf in schema.leaves}
+        if (
+            inherited
+            and [leaf.leaf_index for leaf in candidate_leaves]
+            == list(range(table.n_cols))
+            and set(schema_leaves) == set(range(table.n_cols))
+        ):
+            candidate_columns = {leaf.leaf_id: leaf.leaf_index for leaf in candidate_leaves}
+            linked_groups: list[ColumnHeaderGroup] = []
+            linked_relationships: list[ColumnHeaderRelationship] = []
+            for candidate_group in header_structure_candidate.group_candidates:
+                columns = sorted(
+                    candidate_columns[leaf_id]
+                    for leaf_id in candidate_group.leaf_ids
+                    if leaf_id in candidate_columns
+                )
+                if not columns or columns != list(range(columns[0], columns[-1] + 1)):
+                    continue
+                group_id = f"{schema.schema_id}:group:{len(linked_groups)}"
+                linked_groups.append(
+                    ColumnHeaderGroup(
+                        group_id=group_id,
+                        table_id=table.table_id,
+                        row_idx=min(header_structure_candidate.header_row_indices, default=0),
+                        label=candidate_group.label,
+                        name=_normalize_header_name(candidate_group.label)
+                        or f"group_{len(linked_groups)}",
+                        col_start=columns[0],
+                        col_end=columns[-1],
+                        leaf_col_indices=columns,
+                        inference_rule="explicit_cell_span",
+                        confidence=0.95,
+                    )
+                )
+                for column in columns:
+                    linked_relationships.append(
+                        ColumnHeaderRelationship(
+                            relationship_id=(
+                                f"{schema.schema_id}:relationship:{len(linked_relationships)}"
+                            ),
+                            table_id=table.table_id,
+                            parent_group_id=group_id,
+                            child_leaf_id=f"{schema.schema_id}:leaf:{column}",
+                            leaf_col_idx=column,
+                            confidence=0.95,
+                        )
+                    )
+            inherited_indices = ",".join(str(leaf.leaf_index) for leaf in inherited)
+            schema = schema.model_copy(
+                update={
+                    "leaves": [
+                        schema_leaves[leaf.leaf_index].model_copy(
+                            update={
+                                "leaf_label": clean_text(leaf.label),
+                                "leaf_name": _normalize_header_name(leaf.label)
+                                or f"column_{leaf.leaf_index}",
+                                "evidence_ids": [],
+                            }
+                        )
+                        for leaf in candidate_leaves
+                    ],
+                    "groups": linked_groups,
+                    "relationships": linked_relationships,
+                    "diagnostics": [
+                        *schema.diagnostics,
+                        f"inherited_continuation_leaf_labels:{inherited_indices}",
+                        "effective_header_from_header_structure_candidate",
+                    ],
+                    "confidence": 0.95,
+                }
+            )
     return validate_column_header_schema(schema)
 
 
@@ -732,6 +813,7 @@ def build_column_header_schemas(
     tables: list[NormalizedTable],
     extracted_tables: list[ExtractedTable] | None = None,
     paper_positioned_document: PaperPositionedDocument | None = None,
+    header_structure_candidates: list[HeaderStructureCandidate] | None = None,
 ) -> list[ColumnHeaderSchema]:
     """Build column header schemas for normalized tables while preserving order."""
     return [
@@ -739,6 +821,12 @@ def build_column_header_schemas(
             table,
             extracted_tables[index] if extracted_tables is not None and index < len(extracted_tables) else None,
             paper_positioned_document,
+            (
+                header_structure_candidates[index]
+                if header_structure_candidates is not None
+                and index < len(header_structure_candidates)
+                else None
+            ),
         )
         for index, table in enumerate(tables)
     ]

@@ -312,10 +312,13 @@ Positioned runs that cover one anchor remain leaf labels; runs or individual
 partial rules that cover multiple contiguous anchors can become groups.
 Same-row peers partition a repeated group row only when local rule evidence
 already supports that structure. Header text cannot independently add columns.
-The artifact remains diagnostic: a missing or disagreeing header candidate
-cannot reject or alter the canonical `ExtractedTable`, and neither
-`TableRegion` nor the accepted post-normalization `ColumnHeaderSchema`
-consumes it yet.
+The artifact remains non-operative for physical extraction: a missing or
+disagreeing header candidate cannot reject or alter the canonical
+`ExtractedTable`. After final geometry, an adjacent continuation with matching
+group spans and a complete one-to-one occupancy leaf axis may inherit only
+blank candidate labels. Those leaves retain their local blanks and source
+provenance, and `ColumnHeaderSchema` consumes that effective candidate rather
+than reconstructing the missing text.
 
 Two points matter here.
 
@@ -586,11 +589,11 @@ checks described above. They may also confirm an already-finalized parent axis
 for an explicit continuation under the complete header, anchor, page-order, and
 per-line band-support checks.
 
-Persisted header structure remains diagnostic. Occupancy and leaf evidence are
-operative during canonical extraction, and token starts only corroborate an
-axis already established by stronger positioned geometry. The persisted
-post-extraction header artifact remains an inspectable view and does not perform
-downstream repair or gate canonical extraction.
+Persisted header structure does not gate physical extraction. Occupancy and
+leaf evidence are operative during canonical extraction, and token starts only
+corroborate an axis already established by stronger positioned geometry. The
+only current schema consumer is provenance-bearing blank-label inheritance for
+a structurally aligned continuation; normalization performs no repair.
 
 ## Step 4: Normalization
 

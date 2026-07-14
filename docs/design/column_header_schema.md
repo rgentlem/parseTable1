@@ -75,6 +75,13 @@ parent spanning-group row. The resolved table inherits the parent's complete
 tree only after that exact leaf match. A conflicting continuation group is not
 discarded or overridden.
 
+An adjacent continuation may also inherit locally blank candidate leaf labels
+when its complete occupancy leaf axis, nonblank labels, and repeated group spans
+uniquely align with the parent. The candidate retains the blank local label and
+parent table, leaf, page, and structural evidence. Schema construction consumes
+that effective candidate only for this provenance-bearing case; it does not
+alter the physical grid or infer missing text independently.
+
 ## Relationship To Tableone-Style Projection
 
 A tableone-style object is not the same thing as a column header schema. The

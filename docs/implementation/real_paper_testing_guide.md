@@ -36,12 +36,14 @@ copy with `system.file("extdata", "NutritionEx.pdf", package = "parseTable1")`.
 
 ## Current Reference Baseline
 
-Current canonical-axis validation checkpoint:
+Current continuation-header checkpoint:
 
 ```text
-outputs/testpapers_batch_canonical_axis_validation_final_20260714
+outputs/testpapers_batch_header_inheritance_recovered_20260714
 ```
 
+Its physical comparison baseline is
+`outputs/testpapers_batch_canonical_axis_validation_final_20260714`.
 All 28 parse commands completed and emitted 92 non-empty accepted physical
 tables. Fifty-six tables preserve positioned cells after column-count and
 header-cell bbox validation, 29 use occupancy materialization, and seven use
@@ -75,10 +77,12 @@ reconstruction reduced the 23 cross-band header-run concerns to two. Those
 survivors were caption/table-ownership symptoms in `cobaltpaper.pdf`, PDF page
 3; the current extraction restores the five real Cobalt tables. The current
 candidate corpus has no cross-band header-run or Cobalt header concern. Its only
-non-stub missing-header case is the eight blank local child labels in printed
-Table 2 (continued) on PDF page 13 of `periodontis2.pdf`. The remaining header
-task is continuation inheritance for those labels, not a new finalizer cleanup
-or generic gap rule.
+non-stub missing-header case was the eight blank local child labels in printed
+Table 2 (continued) on PDF page 13 of `periodontis2.pdf`. Only that table now
+inherits labels, with local blanks and parent-leaf provenance retained. It keeps
+its 22 x 11 physical grid and resolves with PDF page 12 as one 38 x 11 table.
+All other non-timestamp artifacts change only within `periodontis2.pdf` as a
+consequence of that integration.
 
 Current numeric edge-furniture checkpoint:
 

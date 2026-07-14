@@ -31,6 +31,14 @@ class HeaderLeafCandidate(BaseModel):
     occupancy_band_ids: list[str] = Field(default_factory=list)
     occupancy_alignment: Literal["one_to_one"]
     marker_ids: list[str] = Field(default_factory=list)
+    label_source: Literal["local_positioned_text", "inherited_continuation"] = (
+        "local_positioned_text"
+    )
+    local_label: str | None = None
+    inherited_from_table_id: str | None = None
+    inherited_from_leaf_id: str | None = None
+    inherited_from_page_num: int | None = Field(default=None, ge=1)
+    inheritance_evidence: list[str] = Field(default_factory=list)
 
 
 class HeaderGroupCandidate(BaseModel):

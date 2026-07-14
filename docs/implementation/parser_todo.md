@@ -11,6 +11,8 @@ Current corpus-driven hardening guide:
 real-paper review loop across extraction, normalization, continuation handling,
 table semantics, footnote/reference artifacts, and mixed-family routing. The
 current retained reference run is
+`outputs/testpapers_batch_header_inheritance_recovered_20260714`; its physical
+comparison baseline is
 `outputs/testpapers_batch_canonical_axis_validation_final_20260714`.
 
 Fallback/removal inventory:
@@ -74,10 +76,13 @@ of hypertension- A NHANES cross-sectional study.pdf` remains 48 x 5 plus 14 x
 table. Token-start evidence is therefore retained: it is useful only as
 corroboration inside these strict geometric checks. The finalized corpus has no
 cross-band header-run concern and no Cobalt header concern. Its only non-stub
-missing-header case is the eight intentionally blank local child labels in
-printed Table 2 (continued) on PDF page 13 of `periodontis2.pdf`. Return now to
-continuation inheritance for those labels; do not add another finalizer repair
-or generic header-gap rule.
+missing-header case was the eight intentionally blank local child labels in
+printed Table 2 (continued) on PDF page 13 of `periodontis2.pdf`. The recovered
+header-candidate step now inherits only those labels after adjacent identity,
+complete occupancy-leaf alignment, compatible nonblank leaves, and matching
+group spans. The existing resolver then integrates PDF pages 12–13 as one 38 x
+11 table. All 92 physical extracts and earlier geometry artifacts are unchanged;
+no other table inherits a label.
 
 Phase A is complete: each selected `ExtractedTable` now carries compact
 `table_positioned_evidence` references into the shared PyMuPDF positioned
@@ -325,6 +330,8 @@ the positioned document artifact.
    boundary. The existing post-normalization `ColumnHeaderSchema` remains the
    accepted column model and should validate or reject the preliminary
    candidate rather than independently reconstructing a competing header.
+   Detailed cutover checklist:
+   `docs/implementation/header_geometry_to_column_schema_checklist.md`.
 
 4. [ ] Make continuations semantically real.
    One logical Table 1 spanning pages should feed `TableDefinition` and `ParsedTable`, rather than leaving page-level and continuation-page parses as separate semantic outputs.

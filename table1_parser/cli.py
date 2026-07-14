@@ -62,6 +62,7 @@ from table1_parser.leaf_column_candidates import (
 from table1_parser.header_structure_candidates import (
     build_header_structure_candidates,
     header_structure_candidates_to_payload,
+    inherit_adjacent_continuation_leaf_labels,
 )
 from table1_parser.normalize import normalize_extracted_tables, normalized_tables_to_payload, write_normalized_tables
 from table1_parser.parse import (
@@ -472,11 +473,16 @@ def _build_canonical_extraction_artifacts(
         leaf_column_candidates=provisional.leaf_column_candidates,
         token_start_evidence=provisional.token_start_evidence,
     )
-    return _build_table_geometry_artifacts(
+    final = _build_table_geometry_artifacts(
         pdf_path,
         canonical_tables,
         paper_context,
     )
+    final.header_structure_candidates = inherit_adjacent_continuation_leaf_labels(
+        final.extracted_tables,
+        final.header_structure_candidates,
+    )
+    return final
 
 
 def _build_paper_context_artifacts(pdf_path: str) -> PaperContextArtifacts:
@@ -754,6 +760,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         normalized_tables,
         extracted_tables,
         paper_positioned_document,
+        header_structure_candidates,
     )
     resolved_table_set = build_resolved_table_set(normalized_tables, column_header_schemas)
     resolved_tables = [resolved_table.table for resolved_table in resolved_table_set.resolved_tables]

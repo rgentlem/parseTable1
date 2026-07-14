@@ -108,6 +108,144 @@ def _cluster_header_evidence(
     return clusters
 
 
+def inherit_adjacent_continuation_leaf_labels(
+    extracted_tables: Sequence[ExtractedTable],
+    candidates: Sequence[HeaderStructureCandidate],
+) -> list[HeaderStructureCandidate]:
+    """Fill blank leaves only for an established adjacent continuation structure."""
+    updated = list(candidates)
+    candidate_index = {candidate.table_id: index for index, candidate in enumerate(updated)}
+    ordered_tables = sorted(extracted_tables, key=lambda table: table.page_num)
+    for parent_table, continuation_table in zip(
+        ordered_tables,
+        ordered_tables[1:],
+        strict=False,
+    ):
+        parent_number = parent_table.metadata.get("table_number")
+        continuation_number = continuation_table.metadata.get(
+            "continuation_of_table_number"
+        ) or continuation_table.metadata.get("table_number")
+        if (
+            continuation_table.page_num != parent_table.page_num + 1
+            or not isinstance(parent_number, int)
+            or isinstance(parent_number, bool)
+            or parent_number < 1
+            or (
+                continuation_number is not None
+                and continuation_number != parent_number
+            )
+            or (
+                (continuation_table.title or continuation_table.caption)
+                and continuation_number != parent_number
+            )
+        ):
+            continue
+        parent_index = candidate_index.get(parent_table.table_id)
+        continuation_index = candidate_index.get(continuation_table.table_id)
+        if parent_index is None or continuation_index is None:
+            continue
+        parent = updated[parent_index]
+        continuation = updated[continuation_index]
+        parent_leaves = sorted(parent.leaf_candidates, key=lambda leaf: leaf.leaf_index)
+        continuation_leaves = sorted(
+            continuation.leaf_candidates,
+            key=lambda leaf: leaf.leaf_index,
+        )
+        expected_indices = list(range(parent_table.n_cols))
+        if (
+            parent_table.n_cols != continuation_table.n_cols
+            or [leaf.leaf_index for leaf in parent_leaves] != expected_indices
+            or [leaf.leaf_index for leaf in continuation_leaves] != expected_indices
+            or any(not leaf.occupancy_band_ids for leaf in [*parent_leaves, *continuation_leaves])
+        ):
+            continue
+        parent_leaf_index = {leaf.leaf_id: leaf.leaf_index for leaf in parent_leaves}
+        continuation_leaf_index = {
+            leaf.leaf_id: leaf.leaf_index for leaf in continuation_leaves
+        }
+        parent_groups = sorted(
+            (
+                clean_text(group.label).casefold(),
+                tuple(sorted(parent_leaf_index[leaf_id] for leaf_id in group.leaf_ids)),
+            )
+            for group in parent.group_candidates
+            if group.leaf_ids and all(leaf_id in parent_leaf_index for leaf_id in group.leaf_ids)
+        )
+        continuation_groups = sorted(
+            (
+                clean_text(group.label).casefold(),
+                tuple(
+                    sorted(
+                        continuation_leaf_index[leaf_id]
+                        for leaf_id in group.leaf_ids
+                    )
+                ),
+            )
+            for group in continuation.group_candidates
+            if group.leaf_ids
+            and all(leaf_id in continuation_leaf_index for leaf_id in group.leaf_ids)
+        )
+        explicit_identity = continuation_number == parent_number
+        if (
+            (not explicit_identity and (not parent_groups or parent_groups != continuation_groups))
+            or any(
+                clean_text(local.label)
+                and clean_text(source.label)
+                and clean_text(local.label).casefold() != clean_text(source.label).casefold()
+                for source, local in zip(parent_leaves, continuation_leaves, strict=True)
+            )
+        ):
+            continue
+        inherited_indices = [
+            local.leaf_index
+            for source, local in zip(parent_leaves, continuation_leaves, strict=True)
+            if not clean_text(local.label) and clean_text(source.label)
+        ]
+        if not inherited_indices:
+            continue
+        evidence = [
+            f"adjacent_pages:{parent_table.page_num}->{continuation_table.page_num}",
+            (
+                f"explicit_same_table_identity:{parent_number}"
+                if explicit_identity
+                else f"existing_uncaptioned_adjacent_identity:{parent_number}"
+            ),
+            f"complete_one_to_one_occupancy_leaf_alignment:{len(parent_leaves)}",
+            f"matching_header_group_spans:{len(parent_groups)}",
+            "nonblank_local_leaf_labels_compatible",
+        ]
+        updated[continuation_index] = continuation.model_copy(
+            update={
+                "leaf_candidates": [
+                    local.model_copy(
+                        update={
+                            "label": source.label,
+                            "label_source": "inherited_continuation",
+                            "local_label": local.label,
+                            "inherited_from_table_id": parent_table.table_id,
+                            "inherited_from_leaf_id": source.leaf_id,
+                            "inherited_from_page_num": parent_table.page_num,
+                            "inheritance_evidence": evidence,
+                        }
+                    )
+                    if local.leaf_index in inherited_indices
+                    else local
+                    for source, local in zip(
+                        parent_leaves,
+                        continuation_leaves,
+                        strict=True,
+                    )
+                ],
+                "diagnostics": [
+                    *continuation.diagnostics,
+                    "inherited_blank_continuation_leaf_labels:"
+                    + ",".join(str(index) for index in inherited_indices),
+                ],
+            }
+        )
+    return updated
+
+
 def build_header_structure_candidates(
     extracted_tables: Sequence[ExtractedTable],
     *,
@@ -1723,4 +1861,21 @@ def header_structure_candidates_to_payload(
     candidates: Sequence[HeaderStructureCandidate],
 ) -> list[dict[str, object]]:
     """Serialize header structure candidates as JSON-friendly records."""
-    return [candidate.model_dump(mode="json") for candidate in candidates]
+    payload = [candidate.model_dump(mode="json") for candidate in candidates]
+    for candidate, item in zip(candidates, payload, strict=True):
+        for leaf, leaf_payload in zip(
+            candidate.leaf_candidates,
+            item["leaf_candidates"],
+            strict=True,
+        ):
+            if leaf.label_source == "local_positioned_text":
+                for key in (
+                    "label_source",
+                    "local_label",
+                    "inherited_from_table_id",
+                    "inherited_from_leaf_id",
+                    "inherited_from_page_num",
+                    "inheritance_evidence",
+                ):
+                    leaf_payload.pop(key, None)
+    return payload

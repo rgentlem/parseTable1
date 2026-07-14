@@ -550,12 +550,15 @@ Phase H checkpoint:
   commit rise from 14 to 46, and no prior exact match regresses. Printed Table 1
   on PDF pages 5-6 of `Systemic inflammation markers and the prevalence of
   hypertension- A NHANES cross-sectional study.pdf` remains a compatible 48 x
-  5 plus 14 x 5 continuation and resolves to 61 x 5. Return to missing
-  continuation-child header inheritance: the finalized candidate corpus has no
-  cross-band header-run or Cobalt header concern, and its only non-stub missing-
-  header case is the eight blank local child labels in printed Table 2
-  (continued) on PDF page 13 of `periodontis2.pdf`. Do not add another finalizer
-  repair.
+  5 plus 14 x 5 continuation and resolves to 61 x 5.
+- Continuation-child inheritance is recovered in
+  `outputs/testpapers_batch_header_inheritance_recovered_20260714`. Printed
+  Table 2 on PDF page 13 of `periodontis2.pdf` inherits only columns 3–10 from
+  PDF page 12 after complete occupancy-leaf alignment, compatible local labels,
+  and matching group spans. Local blanks and source provenance remain in the
+  candidate. Its 22 x 11 grid is unchanged and the pair resolves as one 38 x 11
+  table. No other table inherits a label, and all earlier physical artifacts
+  match the canonical-axis baseline.
 
 ## I. Attach Markers To Stable Elements
 
@@ -575,6 +578,9 @@ Completion evidence:
   visible marker or its provenance.
 
 ## J. Build Final Table Regions And Logical Candidates
+
+Detailed cutover checklist:
+`docs/implementation/header_geometry_to_column_schema_checklist.md`.
 
 - [ ] Build `TableRegion` using the selected grid and
       `HeaderStructureCandidate` evidence.
