@@ -1,5 +1,10 @@
 # Split Label Column Repair Design Spec
 
+Retired: this normalization-stage repair is no longer implemented. Physical
+left-side label columns are preserved in `NormalizedTable`; extraction should
+own wrong column boundaries, and logical row-label assembly should be expressed
+later through row-label candidates or semantic row logic.
+
 ## Purpose
 
 Repair tables where the extractor splits one logical left-side row label into two adjacent label columns.

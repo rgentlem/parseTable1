@@ -19,6 +19,15 @@ For parsing design intentions and newer semantic-table planning notes, also read
 
 docs/design/design_index.md
 
+When working on documentation about Table 1 parsing, Table One semantics, or
+R-side Table One inspection objects, also read:
+
+docs/design/table_one_epidemiological_description.md
+
+This Markdown design note provides context for documentation-level decisions
+about what Table 1 represents. It is not, by itself, approval to change parser
+logic.
+
 Before starting parser work, also check:
 
 docs/implementation/parser_todo.md
@@ -101,16 +110,38 @@ When asked to run examples, real papers, all papers, or the corpus, use:
 Find PDFs recursively under that directory. Do not assume only one
 subdirectory.
 
+Also include the package example PDF:
+
+```text
+/Users/robert/Projects/Epiconnector/parseTable1/inst/extdata/NutritionEx.pdf
+```
+
+This is the single canonical copy used for corpus testing and future R
+vignettes. Do not duplicate it under `testpapers`. The complete current corpus
+is therefore 27 external PDFs plus this package example, for 28 PDFs total.
+Installed R code can locate it with
+`system.file("extdata", "NutritionEx.pdf", package = "parseTable1")`.
+
 For broad parser changes, prefer testing against this corpus when practical,
 especially before commits that change parse outputs, schemas, value parsing,
 normalization, or table semantics.
 
-When running multiple real-paper PDFs from the corpus, use bounded parallel
+When running multiple real-paper PDFs from the corpus, including the package
+example above, use bounded parallel
 workers by default so available CPU cores are used efficiently. A reasonable
 default is up to 6 concurrent `table1-parser parse` processes, capped by the
 number of PDFs and available cores. Use a serial run only when debugging a
 single failure, reproducing ordering-sensitive behavior, or when parallelism is
 causing resource problems.
+
+### Paper naming in reports
+
+Never identify a corpus paper to the user by an author surname, an internal
+paper ID, a directory stem, or an invented abbreviation. Always give the exact
+source PDF filename, the verified PDF page number, and the printed table number
+when available. An internal table ID may be included only after that complete
+identification. If a filename is unwieldy, repeat it anyway unless the user has
+explicitly chosen a shorter name in the current discussion.
 
 ## Parser Output Directory
 
@@ -275,6 +306,55 @@ retirement criterion in:
 ```text
 docs/implementation/fallback_inventory.md
 ```
+
+### Preserve extraction unless evidence requires change
+
+The primary project maxim is: extract accurately, then do nothing to the
+extraction unless strong direct evidence shows that a change is necessary.
+
+- Preserve extracted cells, coordinates, physical rows, physical columns, and
+  source text by default.
+- Treat disagreement with downstream semantics, expected table shape, or a
+  preferred interpretation as a diagnostic, not as evidence that extraction
+  should be rewritten.
+- Require hard PDF evidence before changing extraction: positioned
+  line/span/character geometry, individual rule segments, PDF tags, or another
+  equally direct source artifact.
+- Introduce new geometric evidence first as a non-operative, inspectable
+  artifact. Validate it across the real-paper corpus before allowing it to
+  alter extraction or row/column ownership.
+- When evidence is absent or ambiguous, preserve the extract and fail closed
+  with structured diagnostics. Do not guess, smooth, merge, shift, or repair
+  the physical grid.
+- Any approved extraction change must preserve raw provenance and demonstrate
+  that corpus differences occur only in the intended direction.
+
+### Use shared positioned PDF evidence
+
+Parser work should make full use of PyMuPDF line/span/character evidence:
+text, bounding boxes, block and line indices, font names, font sizes, flags,
+writing direction when available, and page/column geometry. Do not replace
+this with ad hoc cleaned-string rules when line/span evidence can answer the
+question structurally.
+
+Prefer one shared PDF text/geometry pass per document that collects the
+positioned evidence needed by page furniture, captions, table extraction,
+section text, bibliography, footnotes, and table metadata. Avoid adding
+independent document parses that rebuild overlapping line/block/font views
+unless there is a documented reason. If a second pass is temporarily necessary,
+record why it exists and what artifact or refactor will retire it.
+
+The staged direction for this redesign is:
+
+1. First define or reuse a single positioned-text artifact that preserves the
+   line/span/font/character fields needed by downstream consumers.
+2. Then consume that artifact for narrow footer/table-metadata detection,
+   using font change plus geometry below the table or ending horizontal rule.
+3. Only after that artifact is stable should broader extraction, caption,
+   bibliography, or semantic-routing cleanup move onto it.
+
+This direction is architectural guidance, not blanket approval to change parser
+logic. Parser logic changes still require the approval gate above.
 
 ### No paper-specific parsing shortcuts
 

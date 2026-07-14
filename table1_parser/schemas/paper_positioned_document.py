@@ -25,6 +25,8 @@ class PaperPositionedWord(BaseModel):
     x1: float
     top: float
     bottom: float
+    block_index: int | None = Field(default=None, ge=0)
+    line_index: int | None = Field(default=None, ge=0)
 
 
 class PaperPositionedChar(BaseModel):

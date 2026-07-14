@@ -11,7 +11,7 @@ def _candidate_key(candidate: DetectedTableCandidate) -> tuple[int, int]:
 
 
 def _positioned_source_preference(candidate: DetectedTableCandidate) -> int:
-    """Prefer canonical positioned-text candidates over rough backend-box hints."""
+    """Prefer strongly bounded positioned-text candidates."""
     layout_source = str(candidate.metadata.get("layout_source") or "")
     if (
         layout_source.startswith("pymupdf_text_positions")
@@ -20,8 +20,6 @@ def _positioned_source_preference(candidate: DetectedTableCandidate) -> int:
         return 3
     if layout_source.startswith("sideways_text_positions"):
         return 3
-    if str(candidate.metadata.get("canonical_extraction_layer") or "") == "pymupdf_positioned_geometry":
-        return 2
     return 1
 
 
@@ -39,29 +37,6 @@ def select_top_candidates(
     ):
         key = _candidate_key(candidate)
         existing = selected.get(key)
-        if existing is not None:
-            candidate_layout_source = str(candidate.metadata.get("layout_source") or "")
-            existing_layout_source = str(existing.metadata.get("layout_source") or "")
-            candidate_is_uncaptioned_rule_block = (
-                candidate_layout_source.startswith("pymupdf_text_positions")
-                and candidate.metadata.get("uncaptioned_segment_source") == "horizontal_rule_block"
-            )
-            existing_is_captioned_positioned_candidate = (
-                existing_layout_source.startswith("pymupdf_text_positions")
-                and existing.metadata.get("uncaptioned_segment_source") != "horizontal_rule_block"
-            )
-            if (
-                candidate_layout_source == "pymupdf4llm_json"
-                and existing_is_captioned_positioned_candidate
-            ):
-                selected[key] = candidate
-                continue
-            if (
-                existing_layout_source == "pymupdf4llm_json"
-                and candidate_layout_source.startswith("pymupdf_text_positions")
-                and not candidate_is_uncaptioned_rule_block
-            ):
-                continue
         if (
             existing is None
             or candidate.score > existing.score

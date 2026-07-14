@@ -14,6 +14,7 @@ from table1_parser.schemas import (
     PaperPositionedDocument,
     PaperPositionedLine,
     PaperTextLine,
+    PaperTextOrientationGroup,
     PaperTextPage,
     PaperTextStream,
 )
@@ -104,11 +105,83 @@ def build_paper_text_stream(
                 continue
             page_line_records.append(line_record)
 
-        column_count, column_boundaries, column_bands, diagnostics = _detect_page_columns(
-            page_line_records,
-            page.page_width,
-        )
-        ordered_records = _order_page_lines(page_line_records, column_boundaries, page.page_width)
+        records_by_orientation: dict[str, list[dict[str, object]]] = {
+            "upright": [],
+            "vertical_text_up": [],
+            "vertical_text_down": [],
+        }
+        for record in page_line_records:
+            orientation = _line_orientation(record.get("direction"))
+            record["orientation"] = orientation
+            records_by_orientation[orientation].append(record)
+
+        ordered_groups: list[tuple[tuple[float, float], list[dict[str, object]]]] = []
+        orientation_groups: list[PaperTextOrientationGroup] = []
+        diagnostics = list(page.diagnostics)
+        upright_columns: tuple[int, list[float], list[tuple[float, float]]] | None = None
+        for orientation in ("upright", "vertical_text_up", "vertical_text_down"):
+            source_records = records_by_orientation[orientation]
+            if not source_records:
+                continue
+            group_id = f"page-{page.page_num}-orientation-{orientation}"
+            source_left = min(float(record["bbox"][0]) for record in source_records)
+            source_top = min(float(record["bbox"][1]) for record in source_records)
+            source_right = max(float(record["bbox"][2]) for record in source_records)
+            source_bottom = max(float(record["bbox"][3]) for record in source_records)
+            group_source_bbox = (source_left, source_top, source_right, source_bottom)
+            canonical_width = page.page_width if orientation == "upright" else source_bottom - source_top
+            canonical_height = page.page_height if orientation == "upright" else source_right - source_left
+            oriented_records: list[dict[str, object]] = []
+            for record in source_records:
+                record_source_bbox = record["bbox"]
+                oriented_records.append(
+                    {
+                        **record,
+                        "source_bbox": record_source_bbox,
+                        "bbox": _canonical_bbox(
+                            record_source_bbox,
+                            orientation=orientation,
+                            orientation_source_bbox=group_source_bbox,
+                        ),
+                        "orientation_group_id": group_id,
+                    }
+                )
+            group_column_count, group_boundaries, group_bands, group_diagnostics = _detect_page_columns(
+                oriented_records,
+                canonical_width,
+            )
+            ordered_records = _order_page_lines(oriented_records, group_boundaries, canonical_width)
+            for record in ordered_records:
+                record["group_column_count"] = group_column_count
+            ordered_groups.append(((source_top, source_left), ordered_records))
+            orientation_groups.append(
+                PaperTextOrientationGroup(
+                    group_id=group_id,
+                    orientation=orientation,
+                    source_bbox=group_source_bbox,
+                    canonical_width=canonical_width,
+                    canonical_height=canonical_height,
+                    line_count=len(ordered_records),
+                    column_count=group_column_count,
+                    column_boundaries=group_boundaries,
+                    column_bands=group_bands,
+                )
+            )
+            diagnostics.extend(group_diagnostics)
+            if orientation == "upright":
+                upright_columns = (group_column_count, group_boundaries, group_bands)
+            else:
+                diagnostics.append(f"orientation_aware_ordering:{orientation}:lines={len(ordered_records)}")
+
+        ordered_records = [
+            record
+            for _, group_records in sorted(ordered_groups, key=lambda item: item[0])
+            for record in group_records
+        ]
+        if upright_columns is None:
+            column_count, column_boundaries, column_bands = 1, [], [(0.0, page.page_width)]
+        else:
+            column_count, column_boundaries, column_bands = upright_columns
         for logical_index, record in enumerate(ordered_records):
             text = str(record["text"])
             role = "heading" if _looks_like_section_heading(text, bool(record.get("bold_like"))) else "body"
@@ -118,6 +191,9 @@ def build_paper_text_stream(
                 line_notes.append("bold_like_text")
             if role == "heading":
                 line_notes.append("layout_section_heading")
+            orientation = str(record.get("orientation") or "upright")
+            if orientation != "upright":
+                line_notes.append(f"orientation_group:{orientation}")
             for style_count in record.get("font_style_counts", []):
                 if not isinstance(style_count, dict):
                     continue
@@ -133,15 +209,19 @@ def build_paper_text_stream(
                     font_style_counts[(record_font, round(float(record_font_size), 1))] += record_character_count
             stream_lines.append(
                 PaperTextLine(
-                    line_id=f"page-{page.page_num}-line-{logical_index}",
+                    line_id=str(record["source_line_id"]),
                     page_num=page.page_num,
                     block_index=int(record["block_index"]) if isinstance(record.get("block_index"), int) else None,
                     line_index=int(record["line_index"]) if isinstance(record.get("line_index"), int) else None,
                     raw_text=str(record["raw_text"]),
                     text=text,
-                    bbox=record["bbox"],
+                    bbox=record["source_bbox"],
+                    canonical_bbox=record["bbox"],
+                    direction=record.get("direction"),
+                    orientation=orientation,
+                    orientation_group_id=str(record["orientation_group_id"]),
                     column_index=column_index,
-                    column_count=column_count,
+                    column_count=int(record["group_column_count"]),
                     role=role,
                     confidence=0.86 if role == "heading" else 0.78,
                     dominant_font=str(record["dominant_font"]) if isinstance(record.get("dominant_font"), str) else None,
@@ -161,7 +241,8 @@ def build_paper_text_stream(
                 column_bands=column_bands,
                 line_count=len(ordered_records),
                 removed_page_furniture_line_count=removed_on_page,
-                diagnostics=[*page.diagnostics, *diagnostics],
+                orientation_groups=orientation_groups,
+                diagnostics=list(dict.fromkeys(diagnostics)),
             )
         )
 
@@ -187,7 +268,7 @@ def build_paper_text_stream(
             "line_count": len(stream_lines),
             "page_count": len(stream_pages),
             "removed_page_furniture_line_count": removed_furniture_line_count,
-            "column_order": "page_then_column_then_y",
+            "column_order": "page_then_orientation_group_then_column_then_y",
             "font_style_character_counts": font_style_summary,
             "dominant_body_text_style": font_style_summary[0] if font_style_summary else None,
         },
@@ -218,9 +299,11 @@ def paper_text_stream_to_markdown(lines: list[PaperTextLine]) -> str:
 
 def _line_record_from_positioned_line(line: PaperPositionedLine) -> dict[str, object]:
     return {
+        "source_line_id": line.line_id,
         "raw_text": line.raw_text,
         "text": line.text,
         "bbox": line.bbox,
+        "direction": line.direction,
         "block_index": line.block_index,
         "line_index": line.line_index,
         "bold_like": line.bold_like,
@@ -231,6 +314,30 @@ def _line_record_from_positioned_line(line: PaperPositionedLine) -> dict[str, ob
         "font_style_counts": list(line.font_style_counts),
         "notes": list(line.notes),
     }
+
+
+def _line_orientation(direction: object) -> str:
+    if isinstance(direction, (list, tuple)) and len(direction) == 2:
+        dx = float(direction[0])
+        dy = float(direction[1])
+        if abs(dy) > abs(dx):
+            return "vertical_text_up" if dy < 0.0 else "vertical_text_down"
+    return "upright"
+
+
+def _canonical_bbox(
+    bbox: object,
+    *,
+    orientation: str,
+    orientation_source_bbox: tuple[float, float, float, float],
+) -> tuple[float, float, float, float]:
+    left, top, right, bottom = (float(value) for value in bbox)
+    source_left, source_top, source_right, source_bottom = orientation_source_bbox
+    if orientation == "vertical_text_up":
+        return (source_bottom - bottom, left - source_left, source_bottom - top, right - source_left)
+    if orientation == "vertical_text_down":
+        return (top - source_top, source_right - right, bottom - source_top, source_right - left)
+    return (left, top, right, bottom)
 
 def _page_furniture_text_matchers(
     paper_page_furniture: PaperPageFurniture | None,

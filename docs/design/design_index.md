@@ -106,9 +106,6 @@ Then use the documents below as needed.
 - `docs/design/table_one_epidemiological_description.md`
   Scope and conceptual component model for Table One as an epidemiological description table: population, columns, rows, cells, and footnotes.
 
-- `docs/design/GuidelinesforTable1.pdf`
-  Local reference paper, "Who is in this study, anyway? Guidelines for a useful Table 1"; consider it when updating Table 1 parsing documentation, Table One semantics, or R-side Table One inspection design.
-
 - `docs/implementation/table_definition_implementation_plan.md`
   Implementation plan for the SQL-query-oriented `TableDefinition` phase, including row-variable, categorical-level, and column-definition goals.
 
@@ -126,6 +123,12 @@ Then use the documents below as needed.
 
 - `docs/implementation/collapsed_grid_refinement_implementation_plan.md`
   Narrow implementation plan for consolidating duplicated rotated/upright collapsed-grid refinement logic in the extractor.
+
+- `docs/implementation/table_geometry_reconstruction_checklist.md`
+  Ordered checklist for table-local marker inventory, body occupancy evidence,
+  optional token-start evaluation, leaf-column candidates, preliminary
+  LaTeX-like header structure, canonical extraction, marker attachment, footer
+  resolution, and corpus verification.
 
 - `docs/implementation/sideways_table_extraction_implementation_spec.md`
   Concrete implementation plan for extracting visually landscape tables drawn sideways on portrait pages.

@@ -189,8 +189,6 @@ Use stable names for existing paths.
 ### Normalization
 
 - `edge_column_trim`
-- `split_value_column_repair`
-- `drop_empty_columns_after_repair`
 - `glyph_repair`
 
 ### TableDefinition

@@ -23,7 +23,7 @@ Before changing JSON outputs or schemas, always read:
 Those files define the main development criteria:
 
 - keep extraction, normalization, heuristics, LLM interpretation, and validation as separate modules
-- preserve the pipeline shape `PDF -> ExtractedTable -> TableRegion -> NormalizedTable -> ColumnHeaderSchema -> BodyElementCandidates / BodyRowLabelCandidates -> ResolvedTableSet -> TableDefinition -> ParsedTable`
+- preserve the pipeline shape `PDF -> ExtractedTable -> TableBoundaryProposal -> TableRegion -> NormalizedTable -> ColumnHeaderSchema -> BodyElementCandidates / BodyRowLabelCandidates -> ResolvedTableSet -> TableDefinition -> ParsedTable`
 - keep tables in structured JSON rather than switching to Markdown-first representations
 - preserve raw extracted data and original text
 - use deterministic parsing first and LLM refinement only for semantic disambiguation
@@ -71,7 +71,12 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Layer | Canonical type | Current file status | Main purpose |
 | --- | --- | --- | --- |
 | Extraction | `ExtractedTable` | Written now as `extracted_tables.json` by `extract` and `parse` | Preserve raw table grid and cell provenance |
+| Boundary proposal | `TableBoundaryProposal` | Written now as `table_boundary_proposals.json` by `parse` | Persist canonical geometry alternatives used to establish or compare provisional body intervals, plus review concerns and selected edges |
 | Table region ownership | `TableRegion` | Written now as `table_regions.json` by `parse` | Persist geometry-derived row ownership for captions, preamble rows, column-header bands, body rows, and footer/note bands before normalization consumes them |
+| Body occupancy | `BodyOccupancyTable` | Written now as `body_occupancy.json` by `parse` | Persist raw physical-body-line occupancy in character-width-derived x bins plus exact font-qualified zero-gap evidence, without smoothing or downstream grid changes |
+| Leaf-column candidates | `LeafColumnCandidateTable` | Written now as `leaf_column_candidates.json` by `parse` | Persist provisional stub/value bands from exact zero-occupancy gaps at least two observed table-font spaces wide, with supporting unmerged rule endpoints, without changing the extracted grid |
+| Header-structure candidates | `HeaderStructureCandidate` | Written now as `header_structure_candidates.json` by `parse` | Persist positioned leaf/header evidence, preserving a complete flat canonical header cell-for-cell and otherwise classifying one-leaf labels and contiguous multileaf groups from observed anchors, per-band evidence, and individual partial rules; retain unresolved fragments and post-assignment diagnostics without changing the accepted column schema |
+| Token-start evidence | `TokenStartEvidenceTable` | Written now as `token_start_evidence.json` by `parse` | Persist exact ordinary-token left edges by physical body line for tables already carrying refinement signals; corroborate only an axis already established by stronger positioned geometry and never infer a separator independently |
 | Cell text annotations | `CellTextAnnotationTable` | Written now as `cell_text_annotations.json` by `parse` | Preserve superscript, subscript, and small marker geometry as extraction-side evidence without rewriting raw cell text |
 | Normalization | `NormalizedTable` | Written now as `normalized_tables.json` by `normalize` and `parse` | Clean rows, apply table-region row ownership when available, and derive row features |
 | Column header schema | `ColumnHeaderSchema` | Written now as `column_header_schemas.json` by `parse` | Persist parser-native leaf columns, spanning header groups, group-to-leaf relationships, raw cell evidence, and coordinates before semantic column projection |
@@ -146,7 +151,7 @@ Top-level shape:
 Canonical model:
 
 - `ExtractedTable`
-- child model: `TableCell`
+- child models: `TableCell`, `TableCaptionRegion`, `TableCaptionBinding`
 
 Top-level design components:
 
@@ -164,6 +169,8 @@ Important current `metadata` keys produced by extraction may include:
 
 - `candidate_score`
 - `caption_source`
+- `caption_region`
+- `caption_binding`
 - `table_number`
 - `is_continuation`
 - `continuation_of_table_number`
@@ -183,6 +190,52 @@ Important current `metadata` keys produced by extraction may include:
 - `page_furniture_overlap`
 - `page_furniture_mask`
 - `trailing_non_table_rows`
+- `table_positioned_evidence`
+- `canonical_grid_selection`
+
+`metadata.canonical_grid_selection` records the accepted row and column source,
+selected boundaries and bands, token-start evaluation status, and structured
+diagnostics. For a strictly confirmed explicit continuation it may also record
+`continuation_parent_band_confirmation`: the parent table/page, matching leaf
+header rows, parent and continuation value anchors, their maximum delta and
+font-scaled tolerance, and the body-line token support that allowed the
+continuation to reuse the parent's canonical leaf bands. A locally confirmed
+positioned axis records `local_positioned_axis_confirmation`, including the
+positioned and occupancy counts, positioned boundaries, repeated value anchors,
+qualifying physical header rows and line-start columns, and per-column body-row
+token support. `positioned_grid_validation` records repeated header-cell bboxes
+that are wholly contained by different occupancy leaves when that hard conflict
+rejects otherwise equal-count positioned cell ownership.
+
+`metadata.table_positioned_evidence` is a compact, typed table-local projection
+of `paper_positioned_document.json`. It records the candidate page-space bbox,
+positioned line IDs, line/span references, page-local word and character
+indices, individual rule-segment indices, and the text-mask artifacts applied
+before projection. Each source-reference list has a positionally aligned list
+of canonical bboxes or rule segments. `canonical_transform` records the source
+bbox, orientation, and six-value affine matrix used to map page coordinates
+into the table's `paper_text_orientation_group` frame. Candidate, evidence,
+caption, and structural-scope bounds are retained in both page and canonical
+coordinates. The structural scope is only the union of evidence and caption
+bounds; its rule segments remain individual unclassified records.
+
+The projection duplicates geometry only, not text or font payloads. Consumers
+resolve those through the source references into the shared PyMuPDF artifact.
+Upright and rotated tables expose the same canonical fields; upright tables use
+an identity transform. This record does not classify rows, columns, or rules
+and does not change the extracted grid.
+
+`metadata.caption_region` records the complete caption assembled from
+`paper_text_stream.json`: its source mention, ordered source line IDs, preserved
+line text, page-space union bbox, canonical orientation-group bbox, orientation,
+and column. `metadata.caption_binding` records the above/below assignment,
+distance, mention and orientation-group IDs, and canonical table/caption bboxes.
+Caption discovery and binding do not use PyMuPDF4LLM text boxes or page-text
+fallbacks. A caption must have line-initial table-label evidence and bind to the
+table in the same canonical geometry. Adjacent caption lines stop at the first
+table rule without merging or promoting partial rule segments. These metadata
+records do not remove caption-like rows from the extracted grid; later region
+ownership handles that separately.
 
 `TableCell` design components:
 
@@ -233,7 +286,162 @@ Design intent:
   `metadata.trailing_non_table_rows`. Broad footer/furniture cleanup belongs to
   the earlier page-furniture mask, not to value-gap trailing-row heuristics.
 
-## 2. `table_regions.json`
+### `cell_text_annotations.json`
+
+`cell_text_annotations.json` is the sparse extraction-side marker occurrence
+inventory. Each table record contains visual superscript, subscript, and
+attached-symbol candidates detected from shared PyMuPDF character geometry.
+Every occurrence has a stable annotation ID, canonical glyph key, physical
+source-cell ID, bbox, source character indices, source line/span references,
+and font evidence. These records preserve visual identity and provenance only:
+they do not remove glyphs from raw text or decide whether a marker is a
+footnote, citation, mathematical notation, unit exponent, or artifact. Later
+footer resolution consumes the same glyph keys.
+
+## 2. `table_boundary_proposals.json`
+
+`table_boundary_proposals.json` records provisional geometry evidence in the
+canonical orientation-group frame. Each table record includes canonical table,
+caption, row, stub, and value bounds; retained rule-level candidates with
+references to individual unmerged source segments; adjacent row indices; rule
+coverage; immediate font-change evidence; and review concerns. Repeated body
+rule patterns remain available in `table_positioned_evidence` and are not
+copied into this smaller proposal artifact.
+
+The artifact also records the header/body and body/footer row edges selected by
+`TableRegion` beside the retained alternatives. It does not judge a selected
+edge unsupported merely because the compact proposal omitted that candidate.
+One supported body/footer model establishes the provisional body directly. If
+multiple canonical body intervals remain plausible, `TableRegion` compares
+their raw occupancy valleys and selects the largest interval among tied best
+models.
+
+A `body_footer` candidate is limited to the final retained rule and may record
+`following_text_line_ids`, `following_text_bbox`, and
+`following_text_styles`. These fields reference the immediate, canonically
+positioned changed-font band below the rule. Known captions, later tables, and
+section headings stop the band. The text remains uninterpreted.
+
+Each proposal also records `credible_rule_geometry` and
+`coherent_positioned_grid`. The proposal is built before row-region ownership.
+If both are false, `TableRegion` fails closed with empty header/body/footer
+bands, and normalization preserves that decision rather than invoking its
+standalone header detector. Selected region edges are attached to the proposal
+afterward for inspection.
+
+## Body Occupancy Diagnostic
+
+The occupancy builder first evaluates competing canonical body intervals when
+boundary evidence leaves more than one credible model. A single supported
+body/footer model bypasses this comparison. After `TableRegion` is finalized,
+`body_occupancy.json` records the selected body interval before normalization.
+Each `BodyOccupancyTable` records the
+canonical table-local x extent, a character-width-derived bin width, physical
+body-line provenance and bounds, a raw binary line-by-bin matrix, per-bin line
+counts and proportions, and exactly linked marker occurrences excluded from
+the calculation. It also records the dominant body font and size, the median
+observed space-glyph width for that style, whether that width came from the
+table evidence or the paper-wide positioned document, and exact internal
+zero-occupancy intervals at least two such spaces wide. Wrapped lines remain
+distinct physical lines.
+
+The artifact is evidence only. It does not smooth counts, fill gaps, choose
+columns, alter `ExtractedTable`, or feed normalization or semantic parsing.
+Qualified exact-gap counts may choose among already-proposed body intervals,
+with the largest interval winning a tie. Marker exclusions require exact
+`source_char_indices`; unmatched markers remain visible and are reported rather
+than removed by proximity.
+
+## Leaf-Column Candidate Diagnostic
+
+`leaf_column_candidates.json` is built directly from `body_occupancy.json` and
+the canonical unmerged rule segments referenced by `ExtractedTable`. Exact
+character-box gaps with no ordinary body character are separator candidates
+only when their width is at least twice the median observed space width for the
+dominant table font and size. This avoids dependence on the arbitrary origin of
+the diagnostic x bins. Separator midpoints define contiguous provisional band
+extents, with the leftmost band identified as the stub candidate. Individual
+horizontal-rule endpoints are attached only when they fall inside a separator.
+
+The artifact does not use token starts, header text, expected column counts,
+value syntax, or semantic vocabulary. It does not select or rewrite the
+`ExtractedTable` grid and has no downstream consumer. A table with no complete
+font-qualified zero-occupancy gap records
+`no_qualified_zero_occupancy_column_separator` and emits no provisional grid
+rather than receiving a guessed split.
+
+## Header-Structure Candidate Diagnostic
+
+`header_structure_candidates.json` normally aligns positioned header words
+with the provisional leaf bands, with one preliminary leaf per occupancy band.
+After canonical extraction, a complete flat header is preserved directly when
+there is exactly one header row, every selected canonical column already has a
+non-empty extracted cell, and the selected axis is supported by the local leaf
+count or a confirmed continuation parent. That row yields one evidence record
+and one leaf per canonical cell; it is not regrouped by a word-height gap
+threshold. A continuation using confirmed parent bands records those parent
+band IDs on its leaves and retains any local occupancy-count disagreement as a
+concern.
+
+Incomplete and multilevel headers retain the provisional path. Positioned
+header runs attach to the band with greatest horizontal overlap; multiple runs
+assigned to the same band are assembled in visual order. This lets fragments
+such as `OR` and `95% CI` describe one leaf when body occupancy provides no
+separator between them. The candidate also retains source text evidence,
+multicolumn groups built from individual partial rules, explicit group-to-leaf
+relationships, and wrapped fragments assembled only when horizontal overlap
+and intervening-rule geometry support the join.
+
+Header marker attachments record the marker ID, source evidence IDs, all
+candidate leaf or group node IDs, an optional selected node, and a status of
+`linked`, `ambiguous`, or `unresolved`. The parser does not fall back to the
+nearest leaf when source evidence cannot identify one node.
+
+Outside a complete flat canonical header, words from one intact header run
+that cross candidate band boundaries are not divided. The artifact records
+`header_evidence_words_cross_occupancy_bands` with the source evidence ID and
+affected bands. A band without attached header text is also explicit. These
+signals support later Phase F review but do not create, merge, or split leaves.
+
+This artifact is diagnostic only. It is not consumed by `TableRegion`,
+normalization, `ColumnHeaderSchema`, continuation resolution, or semantic
+parsing.
+
+## Token-Start Evidence
+
+`token_start_evidence.json` contains one `TokenStartEvidenceTable` per physical
+table. Exact token starts are calculated only when Phase E or Phase G already
+reports a grid-count disagreement, a cross-band header run, a non-stub band
+without header text, an ambiguous header attachment, or a candidate diagnostic.
+A blank stub label alone does not trigger token measurement.
+
+Token starts do not independently create separators. They may corroborate a
+strongly ruled local positioned axis that has already been established by
+repeated value anchors and distinct physical header-line starts. The label
+column must occur on every measured body line and every value column must occur
+on at least three body rows. They may also confirm already-established parent
+leaf bands for an explicit next-page continuation when the parent and
+continuation provisional leaf headers and column counts match, value anchors
+align within the observed character scale, and every inherited value band
+contains a token on every continuation body line. If any check fails, ordinary
+local occupancy/leaf selection remains in force.
+
+Each observation identifies the positioned source word, the first ordinary
+source character, source line and extracted row, exact canonical x coordinate,
+word bbox, and containing occupancy band. Observations are grouped by the same
+canonical physical lines used by `body_occupancy.json`. Exact marker character
+links are excluded before selecting the first ordinary character. The artifact
+also provides raw start-count and distinct-line-count vectors on the existing
+diagnostic occupancy bins; exact observations remain authoritative when a bin
+boundary divides nearby starts.
+
+Token starts are supporting evidence only. Repeated starts can expose a first
+value column hidden inside a broad stub band, but compound values such as an
+estimate followed by a confidence interval also produce repeated starts inside
+one legitimate leaf. The artifact therefore does not cluster starts, smooth
+counts, create separators, split bands, or alter any downstream parser output.
+
+## 3. `table_regions.json`
 
 Current CLI path:
 
@@ -286,7 +494,7 @@ Important fields:
 - `diagnostics`: structured notes when rows are unassigned or fallback logic was
   needed
 
-## 3. `NormalizedTable` JSON
+## 4. `NormalizedTable` JSON
 
 Current status:
 
@@ -792,17 +1000,28 @@ Design components:
 - `paper_text_stream.json`
   layout-aware full-paper text projected from `paper_positioned_document.json`,
   with repeated page-furniture lines removed, page-level
-  `column_boundaries`/`column_bands`, line-level bbox/role/style fields,
-  minimal span records, and lines ordered by page, column, then vertical
-  position for any detected column count
+  `column_boundaries`/`column_bands`, orientation-group metadata, original
+  source line IDs and page-space bboxes, canonical upright bboxes for rotated
+  groups, line-level role/style fields, and minimal span records. Lines are
+  ordered by page, orientation group, column, then vertical position; contextual
+  adjacency cannot cross page or orientation-group boundaries.
 - `paper_sections.json`
   sections derived from the layout-aware text stream when available, with heading level and simple role hints
 - `paper_table_mentions.json`
   pre-extraction table mention records derived from the layout-aware text stream,
   including whether each `Table N` line is likely a caption candidate,
-  continuation label, or prose reference. Extraction consumes this artifact so a
-  prose sentence split across lines, such as `is shown in` followed by
-  `Table 5.`, cannot seed a text-position table candidate.
+  continuation label, or prose reference, with the source line ID and bbox.
+  Extraction consumes this artifact and rejects proposed caption lines by bbox
+  overlap, so a prose sentence split across lines, such as `is shown in`
+  followed by `Table 5.`, cannot seed a text-position table candidate even when
+  raw and normalized glyph representations differ.
+
+The positioned document, orientation-aware text stream, extracted tables,
+normalized tables, and resolved continuation set are cumulative artifacts.
+Canonical orientation is a derived coordinate projection, not a rewrite of raw
+PDF geometry or extracted cell text. R consumers should retain raw
+positioned/extracted records alongside normalized and continuation-resolved
+views.
 - `paper_bibliography.json`
   per-paper bibliography entries extracted from the positioned text stream
   before table extraction, plus table-cell numeric reference markers linked to

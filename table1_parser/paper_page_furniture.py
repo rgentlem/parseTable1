@@ -8,21 +8,26 @@ from pathlib import Path
 from table1_parser.schemas import (
     PageFurnitureCluster,
     PageFurnitureRegion,
+    PageFurnitureRuleRegion,
     PageFurnitureTextObservation,
     PaperPageFurniture,
     PaperPositionedDocument,
 )
 
 
+_NUMERIC_LINE_RE = re.compile(r"\d+")
 _PAGE_NUMBER_TOKEN_RE = re.compile(r"(?<![A-Za-z0-9.])\d+(?![A-Za-z0-9.])")
 
 
 def normalize_page_furniture_text(raw_text: str, *, page_num: int | None = None) -> str:
     """Normalize page text only for page-furniture matching."""
     normalized_text = " ".join(raw_text.split())
-    if page_num is None or not normalized_text:
+    if not normalized_text:
         return normalized_text
-
+    if _NUMERIC_LINE_RE.fullmatch(normalized_text):
+        return "<page_num>"
+    if page_num is None:
+        return normalized_text
     return _PAGE_NUMBER_TOKEN_RE.sub(
         lambda match: "<page_num>" if int(match.group(0)) == page_num else match.group(0),
         normalized_text,
@@ -64,7 +69,7 @@ def collect_page_furniture_text_observations(
                     page_height=page.page_height,
                     orientation=line.orientation,
                     block_index=line.block_index,
-                    line_index=line.page_line_index,
+                    line_index=line.line_index,
                     source_artifact="paper_positioned_document.json",
                 )
             )
@@ -80,8 +85,15 @@ def build_paper_page_furniture(
     min_page_fraction: float = 0.5,
     relative_position_tolerance: float = 0.02,
     relative_edge_margin: float = 0.06,
+    relative_repeated_bottom_margin: float = 0.10,
 ) -> PaperPageFurniture:
     """Build the paper-level page-furniture artifact."""
+    if paper_positioned_document is None:
+        from table1_parser.context.paper_positioned_document import (
+            build_paper_positioned_document,
+        )
+
+        paper_positioned_document = build_paper_positioned_document(pdf_path)
     observations, page_count = collect_page_furniture_text_observations(
         pdf_path,
         paper_positioned_document=paper_positioned_document,
@@ -93,7 +105,89 @@ def build_paper_page_furniture(
         min_page_fraction=min_page_fraction,
         relative_position_tolerance=relative_position_tolerance,
         relative_edge_margin=relative_edge_margin,
+        relative_repeated_bottom_margin=relative_repeated_bottom_margin,
     )
+    min_rule_page_fraction = 0.8
+    rule_relative_position_tolerance = 0.005
+    rule_groups: list[
+        dict[
+            int,
+            tuple[
+                tuple[float, float, float, float],
+                tuple[float, float, float, float],
+            ],
+        ]
+    ] = []
+    for page in paper_positioned_document.pages:
+        for segment in page.stroked_rule_segments:
+            left = min(float(segment[0]), float(segment[2]))
+            top = min(float(segment[1]), float(segment[3]))
+            right = max(float(segment[0]), float(segment[2]))
+            bottom = max(float(segment[1]), float(segment[3]))
+            width = right - left
+            height = bottom - top
+            center_y = (top + bottom) / 2.0
+            if width <= height:
+                continue
+            if not (
+                center_y <= page.page_height * relative_edge_margin
+                or center_y
+                >= page.page_height * (1.0 - relative_repeated_bottom_margin)
+            ):
+                continue
+            relative_bbox = (
+                left / page.page_width,
+                top / page.page_height,
+                right / page.page_width,
+                bottom / page.page_height,
+            )
+            for group in rule_groups:
+                representative_relative_bbox = next(iter(group.values()))[1]
+                if all(
+                    abs(relative_bbox[index] - representative_relative_bbox[index])
+                    <= rule_relative_position_tolerance
+                    for index in range(4)
+                ):
+                    group[page.page_num] = ((left, top, right, bottom), relative_bbox)
+                    break
+            else:
+                rule_groups.append(
+                    {page.page_num: ((left, top, right, bottom), relative_bbox)}
+                )
+
+    ignored_rule_regions: list[PageFurnitureRuleRegion] = []
+    rule_cluster_count = 0
+    for observations_by_page in rule_groups:
+        recurrence_page_nums = sorted(observations_by_page)
+        page_fraction = len(recurrence_page_nums) / page_count if page_count else 0.0
+        if len(recurrence_page_nums) < min_pages or page_fraction < min_rule_page_fraction:
+            continue
+        rule_cluster_count += 1
+        rule_cluster_id = f"page-furniture-rule-{rule_cluster_count}"
+        confidence = round(min(0.99, 0.5 + page_fraction * 0.5), 3)
+        recurrence_basis = [
+            "stroked_horizontal_rule",
+            "stable_relative_position",
+            "page_edge_band",
+            f"min_pages={min_pages}",
+            f"min_page_fraction={min_rule_page_fraction:.2f}",
+            f"relative_position_tolerance={rule_relative_position_tolerance:.3f}",
+        ]
+        for page_num in recurrence_page_nums:
+            bbox, relative_bbox = observations_by_page[page_num]
+            ignored_rule_regions.append(
+                PageFurnitureRuleRegion(
+                    region_id=f"{rule_cluster_id}-page-{page_num}",
+                    rule_cluster_id=rule_cluster_id,
+                    page_num=page_num,
+                    bbox=bbox,
+                    relative_bbox=relative_bbox,
+                    recurrence_page_nums=recurrence_page_nums,
+                    page_fraction=round(page_fraction, 3),
+                    confidence=confidence,
+                    recurrence_basis=recurrence_basis,
+                )
+            )
     diagnostics = []
     if not observations:
         diagnostics.append("no_page_text_observations")
@@ -106,17 +200,22 @@ def build_paper_page_furniture(
         observations=observations,
         clusters=clusters,
         ignored_regions=ignored_regions,
+        ignored_rule_regions=ignored_rule_regions,
         metadata={
             "source_artifacts": ["paper_positioned_document.json"],
             "observation_count": len(observations),
             "cluster_count": len(clusters),
             "ignored_region_count": len(ignored_regions),
+            "ignored_rule_region_count": len(ignored_rule_regions),
             "page_count": page_count,
             "thresholds": {
                 "min_pages": min_pages,
                 "min_page_fraction": min_page_fraction,
                 "relative_position_tolerance": relative_position_tolerance,
                 "relative_edge_margin": relative_edge_margin,
+                "relative_repeated_bottom_margin": relative_repeated_bottom_margin,
+                "min_rule_page_fraction": min_rule_page_fraction,
+                "rule_relative_position_tolerance": rule_relative_position_tolerance,
             },
             "diagnostics": diagnostics,
         },
@@ -131,6 +230,7 @@ def cluster_page_furniture_observations(
     min_page_fraction: float = 0.5,
     relative_position_tolerance: float = 0.02,
     relative_edge_margin: float = 0.06,
+    relative_repeated_bottom_margin: float = 0.10,
 ) -> tuple[list[PageFurnitureCluster], list[PageFurnitureRegion]]:
     """Cluster repeated page text by normalized content and stable relative position."""
     if not observations:
@@ -211,12 +311,26 @@ def cluster_page_furniture_observations(
             representative_relative_bbox = tuple(
                 sum(observation.relative_bbox[index] for observation in text_group) / len(text_group) for index in range(4)
             )
-            if not (
+            in_standard_edge_band = (
                 representative_relative_bbox[0] <= relative_edge_margin
                 or representative_relative_bbox[1] <= relative_edge_margin
                 or representative_relative_bbox[2] >= 1.0 - relative_edge_margin
                 or representative_relative_bbox[3] >= 1.0 - relative_edge_margin
-            ):
+            )
+            in_repeated_bottom_band = (
+                recurrence_scope == "all_pages"
+                and page_fraction >= min_page_fraction
+                and representative_relative_bbox[3] >= 1.0 - relative_repeated_bottom_margin
+            )
+            if normalized_text == "<page_num>":
+                if recurrence_scope not in {"all_pages", "odd_pages", "even_pages"}:
+                    continue
+                if not (
+                    representative_relative_bbox[1] <= relative_edge_margin
+                    or representative_relative_bbox[3] >= 1.0 - relative_edge_margin
+                ):
+                    continue
+            if not (in_standard_edge_band or in_repeated_bottom_band):
                 continue
             confidence = round(min(0.99, 0.5 + (scope_page_fraction * 0.5)), 3)
             recurrence_basis = [
@@ -227,6 +341,10 @@ def cluster_page_furniture_observations(
                 f"min_page_fraction={min_page_fraction:.2f}",
                 f"relative_edge_margin={relative_edge_margin:.2f}",
             ]
+            if in_repeated_bottom_band and not in_standard_edge_band:
+                recurrence_basis.append(
+                    f"relative_repeated_bottom_margin={relative_repeated_bottom_margin:.2f}"
+                )
             if orientation is not None:
                 recurrence_basis.append(f"orientation={orientation}")
             clusters.append(

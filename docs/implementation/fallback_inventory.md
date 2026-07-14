@@ -35,6 +35,15 @@ canonical extraction logic with explicit provenance.
 
 ### Keep Or Convert To Canonical Extraction
 
+- Explicit-continuation parent-band confirmation
+  - Code: `table1_parser/extract/canonical_extraction.py::_confirmed_continuation_parent_leaf_candidate`
+  - Status: canonical extraction evidence arbitration, not a fallback or
+    downstream repair. It can reuse only an already-finalized parent axis and
+    requires explicit continuation identity, consecutive pages, matching
+    provisional leaf headers and width, font-scaled value-anchor alignment,
+    and token support in every inherited value band on every body line. Failure
+    of any check leaves ordinary local occupancy/leaf selection unchanged.
+
 - `hline_word_positions`
   - Code: `table1_parser/extract/pymupdf4llm_extractor.py::_refine_grid_from_hline_word_positions`
   - Latest usage: 24 tables.

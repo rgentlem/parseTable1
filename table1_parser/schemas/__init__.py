@@ -1,5 +1,10 @@
 """Pydantic schema exports for the Table 1 parser."""
 
+from table1_parser.schemas.body_occupancy import (
+    BodyOccupancyGap,
+    BodyOccupancyLine,
+    BodyOccupancyTable,
+)
 from table1_parser.schemas.column_header_schema import (
     ColumnHeaderCellEvidence,
     ColumnHeaderDescriptor,
@@ -13,16 +18,47 @@ from table1_parser.schemas.body_element_candidate import (
     BodyElementCandidateKind,
     BodyElementSourceCell,
 )
+from table1_parser.schemas.body_row_label_candidate import (
+    BodyRowLabelCandidate,
+    BodyRowLabelCandidateKind,
+    BodyRowLabelSourceCell,
+)
 from table1_parser.schemas.cell_text_annotation import (
     CellTextAnnotation,
     CellTextAnnotationTable,
     CellTextAnnotationType,
 )
-from table1_parser.schemas.document_context import PaperSection, RetrievedPassage, TableContext
-from table1_parser.schemas.extracted_table import ExtractedTable, TableCell
+from table1_parser.schemas.document_context import (
+    PaperSection,
+    RetrievedPassage,
+    TableContext,
+)
+from table1_parser.schemas.extracted_table import (
+    ExtractedTable,
+    PositionedSpanReference,
+    TableCaptionBinding,
+    TableCaptionRegion,
+    TableCanonicalTransform,
+    TableCell,
+    TablePositionedEvidence,
+)
 from table1_parser.schemas.llm_variable_plausibility_monitoring import (
     LLMVariablePlausibilityCallRecord,
     LLMVariablePlausibilityMonitoringReport,
+)
+from table1_parser.schemas.leaf_column_candidate import (
+    LeafColumnBandCandidate,
+    LeafColumnCandidateTable,
+    LeafColumnRuleEndpointEvidence,
+    LeafColumnSeparatorCandidate,
+)
+from table1_parser.schemas.header_structure_candidate import (
+    HeaderGroupCandidate,
+    HeaderLeafCandidate,
+    HeaderMarkerAttachmentCandidate,
+    HeaderStructureCandidate,
+    HeaderStructureRelationship,
+    HeaderTextEvidence,
 )
 from table1_parser.schemas.normalized_table import NormalizedTable, RowView
 from table1_parser.schemas.paper_variable_inventory import (
@@ -38,8 +74,15 @@ from table1_parser.schemas.paper_bibliography import (
     BibliographyReferenceMention,
     PaperBibliography,
 )
-from table1_parser.schemas.paper_table_inventory import PaperTableInventory, PaperTableRecord, TableCategory
-from table1_parser.schemas.paper_table_mentions import PaperTableMention, TableMentionKind
+from table1_parser.schemas.paper_table_inventory import (
+    PaperTableInventory,
+    PaperTableRecord,
+    TableCategory,
+)
+from table1_parser.schemas.paper_table_mentions import (
+    PaperTableMention,
+    TableMentionKind,
+)
 from table1_parser.schemas.paper_positioned_document import (
     PaperPositionedChar,
     PaperPositionedDocument,
@@ -48,7 +91,14 @@ from table1_parser.schemas.paper_positioned_document import (
     PaperPositionedSpan,
     PaperPositionedWord,
 )
-from table1_parser.schemas.paper_text_stream import PaperTextLine, PaperTextLineRole, PaperTextPage, PaperTextStream
+from table1_parser.schemas.paper_text_stream import (
+    PaperTextLine,
+    PaperTextLineRole,
+    PaperTextOrientation,
+    PaperTextOrientationGroup,
+    PaperTextPage,
+    PaperTextStream,
+)
 from table1_parser.schemas.paper_footnotes import (
     FootnoteAnchor,
     FootnoteDefinition,
@@ -66,6 +116,7 @@ from table1_parser.schemas.paper_page_furniture import (
     PageFurnitureCluster,
     PageFurnitureRecurrenceScope,
     PageFurnitureRegion,
+    PageFurnitureRuleRegion,
     PageFurnitureTextObservation,
     PaperPageFurniture,
 )
@@ -75,7 +126,10 @@ from table1_parser.schemas.paper_style_profile import (
     PaperStyleEvidence,
     PaperStyleProfile,
 )
-from table1_parser.schemas.paper_visual_references import PaperVisual, PaperVisualReference
+from table1_parser.schemas.paper_visual_references import (
+    PaperVisual,
+    PaperVisualReference,
+)
 from table1_parser.schemas.parsed_cell_value import (
     ParsedCellValue,
     ValueComponent,
@@ -118,16 +172,37 @@ from table1_parser.schemas.table_region import (
     TableRegionRow,
     TableRegionRowRole,
 )
-from table1_parser.schemas.table_continuation_column_check import TableContinuationColumnCheck
-from table1_parser.schemas.table1_continuation import Table1ContinuationGroup, Table1ContinuationMember
+from table1_parser.schemas.table_boundary_proposal import (
+    TableBoundaryCandidate,
+    TableBoundaryProposal,
+    TableBoundaryRole,
+    TableBoundaryRuleReference,
+    TableRuleSource,
+)
+from table1_parser.schemas.table_continuation_column_check import (
+    TableContinuationColumnCheck,
+)
+from table1_parser.schemas.table1_continuation import (
+    Table1ContinuationGroup,
+    Table1ContinuationMember,
+)
 from table1_parser.schemas.table_processing_status import (
     SourceFragmentDiagnostic,
     TableProcessingAttempt,
     TableProcessingStatus,
 )
 from table1_parser.schemas.table_profile import TableProfile
+from table1_parser.schemas.token_start_evidence import (
+    TokenStartEvidenceTable,
+    TokenStartEvaluationReason,
+    TokenStartLineEvidence,
+    TokenStartObservation,
+)
 
 __all__ = [
+    "BodyOccupancyGap",
+    "BodyOccupancyLine",
+    "BodyOccupancyTable",
     "ExtractedTable",
     "BibliographyEntry",
     "BibliographyMentionLinkStatus",
@@ -145,11 +220,22 @@ __all__ = [
     "FootnoteSourceScope",
     "LLMVariablePlausibilityCallRecord",
     "LLMVariablePlausibilityMonitoringReport",
+    "LeafColumnBandCandidate",
+    "LeafColumnCandidateTable",
+    "LeafColumnRuleEndpointEvidence",
+    "LeafColumnSeparatorCandidate",
+    "HeaderGroupCandidate",
+    "HeaderLeafCandidate",
+    "HeaderMarkerAttachmentCandidate",
+    "HeaderStructureCandidate",
+    "HeaderStructureRelationship",
+    "HeaderTextEvidence",
     "NormalizedTable",
     "PaperSection",
     "PaperBibliography",
     "PaperFootnotes",
     "PaperPageFurniture",
+    "PageFurnitureRuleRegion",
     "PaperPositionedChar",
     "PaperPositionedDocument",
     "PaperPositionedLine",
@@ -165,6 +251,8 @@ __all__ = [
     "PaperTableMention",
     "PaperTextLine",
     "PaperTextLineRole",
+    "PaperTextOrientation",
+    "PaperTextOrientationGroup",
     "PaperTextPage",
     "PaperTextStream",
     "PaperVariableInventory",
@@ -176,6 +264,9 @@ __all__ = [
     "BodyElementCandidate",
     "BodyElementCandidateKind",
     "BodyElementSourceCell",
+    "BodyRowLabelCandidate",
+    "BodyRowLabelCandidateKind",
+    "BodyRowLabelSourceCell",
     "ColumnHeaderCellEvidence",
     "ColumnHeaderDescriptor",
     "ColumnHeaderGroup",
@@ -219,6 +310,11 @@ __all__ = [
     "Table1ContinuationGroup",
     "Table1ContinuationMember",
     "TableCell",
+    "TableCaptionBinding",
+    "TableCaptionRegion",
+    "TableCanonicalTransform",
+    "PositionedSpanReference",
+    "TablePositionedEvidence",
     "TableCategory",
     "TableMentionKind",
     "TableProcessingAttempt",
@@ -226,6 +322,11 @@ __all__ = [
     "TableRegion",
     "TableRegionRow",
     "TableRegionRowRole",
+    "TableBoundaryCandidate",
+    "TableBoundaryProposal",
+    "TableBoundaryRole",
+    "TableBoundaryRuleReference",
+    "TableRuleSource",
     "VariableCandidate",
     "VariableMention",
     "VariableMentionRole",
@@ -234,4 +335,8 @@ __all__ = [
     "ValueRecord",
     "ValueRelation",
     "TableProfile",
+    "TokenStartEvidenceTable",
+    "TokenStartEvaluationReason",
+    "TokenStartLineEvidence",
+    "TokenStartObservation",
 ]

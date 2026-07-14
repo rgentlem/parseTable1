@@ -193,16 +193,11 @@ def build_table_processing_statuses(
             or bool(isinstance(extracted_signals, dict) and extracted_signals.get("table_1_match"))
             or "title_or_caption_mentions_characteristics" in table_profile.evidence
         )
-        column_repairs = normalized_table.metadata.get("column_repairs", {})
-        extra_wide_value_column_repair = (
-            column_repairs.get("extra_wide_value_column") if isinstance(column_repairs, dict) else None
-        )
-        extra_wide_value_column_repaired = isinstance(extra_wide_value_column_repair, dict)
         stacked_value_cells_unrepaired = any(
             isinstance(cell, str) and cell.count("\n") >= 4
             for row in extracted_rows
             for cell in row[1:]
-        ) and not extra_wide_value_column_repaired
+        )
         extraction_inadequate = (
             extracted_table.n_rows <= 1
             or (is_descriptive_candidate and extracted_table.n_rows <= 3 and extracted_table.n_cols <= 2)
@@ -212,10 +207,6 @@ def build_table_processing_statuses(
         text_cleaning_provenance = normalized_table.metadata.get("text_cleaning_provenance", {})
         dropped_leading_cols = int(normalized_table.metadata.get("dropped_leading_cols", 0))
         dropped_trailing_cols = int(normalized_table.metadata.get("dropped_trailing_cols", 0))
-        merged_columns = column_repairs.get("merged_columns", []) if isinstance(column_repairs, dict) else []
-        dropped_repaired_cols = (
-            column_repairs.get("dropped_empty_columns_after_repair", []) if isinstance(column_repairs, dict) else []
-        )
         normalization_inadequate = (
             not normalized_table.body_rows
             or (is_descriptive_candidate and len(normalized_table.body_rows) <= 1)
@@ -231,27 +222,7 @@ def build_table_processing_statuses(
         attempts = [
             TableProcessingAttempt(
                 stage="extraction",
-                name="explicit_grid_refinement",
-                considered=extracted_metadata.get("layout_source") == "pymupdf4llm_json",
-                ran=bool(extracted_metadata.get("explicit_grid_refined_from_words")),
-                succeeded=bool(extracted_metadata.get("explicit_grid_refined_from_words")) and not extraction_inadequate,
-                note=str(extracted_metadata.get("grid_refinement_source")) if extracted_metadata.get("grid_refinement_source") else None,
-            ),
-            TableProcessingAttempt(
-                stage="extraction",
-                name="low_quality_candidate_text_layout_rescue",
-                considered=bool(
-                    extracted_metadata.get("layout_source") in {"pymupdf4llm_json", "pymupdf_text_positions_rescue"}
-                    and isinstance(extracted_signals, dict)
-                    and extracted_signals.get("caption_match")
-                ),
-                ran=extracted_metadata.get("layout_source") == "pymupdf_text_positions_rescue",
-                succeeded=extracted_metadata.get("layout_source") == "pymupdf_text_positions_rescue" and not extraction_inadequate,
-                note="replacement_candidate_selected" if extracted_metadata.get("layout_source") == "pymupdf_text_positions_rescue" else None,
-            ),
-            TableProcessingAttempt(
-                stage="extraction",
-                name="page_text_layout_fallback",
+                name="positioned_geometry_extraction",
                 considered=extracted_metadata.get("layout_source") == "pymupdf_text_positions",
                 ran=extracted_metadata.get("layout_source") == "pymupdf_text_positions",
                 succeeded=extracted_metadata.get("layout_source") == "pymupdf_text_positions" and not extraction_inadequate,
@@ -264,38 +235,6 @@ def build_table_processing_statuses(
                 ran=bool(dropped_leading_cols or dropped_trailing_cols),
                 succeeded=bool(dropped_leading_cols or dropped_trailing_cols),
                 note=f"leading={dropped_leading_cols}, trailing={dropped_trailing_cols}" if dropped_leading_cols or dropped_trailing_cols else None,
-            ),
-            TableProcessingAttempt(
-                stage="normalization",
-                name="split_value_column_repair",
-                considered=True,
-                ran=any(int(item.get("merged_row_count", 0)) > 0 for item in merged_columns if isinstance(item, dict)),
-                succeeded=any(int(item.get("merged_row_count", 0)) > 0 for item in merged_columns if isinstance(item, dict)),
-                note=(
-                    f"merged_columns={sum(1 for item in merged_columns if isinstance(item, dict) and int(item.get('merged_row_count', 0)) > 0)}"
-                    if any(int(item.get("merged_row_count", 0)) > 0 for item in merged_columns if isinstance(item, dict))
-                    else None
-                ),
-            ),
-            TableProcessingAttempt(
-                stage="normalization",
-                name="extra_wide_value_column_repair",
-                considered=True,
-                ran=extra_wide_value_column_repaired,
-                succeeded=extra_wide_value_column_repaired,
-                note=(
-                    f"value_columns={int(extra_wide_value_column_repair.get('created_value_columns', 0))}"
-                    if extra_wide_value_column_repaired
-                    else None
-                ),
-            ),
-            TableProcessingAttempt(
-                stage="normalization",
-                name="drop_empty_columns_after_repair",
-                considered=True,
-                ran=bool(dropped_repaired_cols),
-                succeeded=bool(dropped_repaired_cols),
-                note=f"dropped={len(dropped_repaired_cols)}" if dropped_repaired_cols else None,
             ),
             TableProcessingAttempt(
                 stage="normalization",

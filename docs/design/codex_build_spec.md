@@ -17,6 +17,7 @@ PDF
 -> NormalizedTable
 -> ColumnHeaderSchema
 -> BodyElementCandidates
+-> BodyRowLabelCandidates
 -> ResolvedTableSet
 -> TableDefinition
 -> ParsedTable
@@ -44,6 +45,10 @@ The stages must remain separate:
   after the column grid is settled by `ColumnHeaderSchema`; it proposes
   candidate value elements from one or more physical source cells while
   preserving the physical grid and source-cell provenance.
+- `BodyRowLabelCandidates` is the sibling logical body-label layer. It is built
+  after the column grid is settled by `ColumnHeaderSchema`; it proposes
+  candidate row labels from adjacent physical body rows while preserving the
+  physical grid and source-cell provenance.
 - `ResolvedTableSet` is the paper-level semantic working set. It preserves
   singleton tables, integrates accepted continuation fragments, rejects weak
   continuation candidates as inspectable singletons, and records source-row
@@ -53,6 +58,21 @@ The stages must remain separate:
   `ColumnHeaderSchema`, without extracting values.
 - `ParsedTable` combines the normalized grid, table definition, and value
   parsing into final structured value records.
+
+The current geometry path also writes four non-operative diagnostics after
+`TableRegion`: `body_occupancy.json`, `leaf_column_candidates.json`, and
+`header_structure_candidates.json`, followed by `token_start_evidence.json`.
+`HeaderStructureCandidate` preserves
+preliminary leaves, partial-rule groups, wrapped fragments, source-supported
+marker attachments, and cross-band header diagnostics. Preliminary leaves are
+defined by exact zero-occupancy gaps at least two observed space-glyph widths
+wide in the dominant table font and size; positioned header text attaches to
+the resulting bands but does not create additional physical columns.
+`TokenStartEvidenceTable` records exact ordinary-token left edges only for
+tables already carrying grid or header refinement signals. It does not infer
+separators. These artifacts do not alter `ExtractedTable` or feed
+normalization, `ColumnHeaderSchema`, or semantic parsing. Phase H requires
+separate approval before any candidate grid can become canonical extraction.
 
 For continued-table work, the confirmed semantic working path is:
 

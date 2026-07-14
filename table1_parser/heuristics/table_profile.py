@@ -9,7 +9,7 @@ from table1_parser.heuristics.body_element_views import table_with_body_element_
 from table1_parser.heuristics.column_role_detector import detect_column_roles
 from table1_parser.heuristics.value_pattern_detector import detect_value_pattern
 from table1_parser.heuristics.variable_grouper import group_variable_blocks
-from table1_parser.schemas import BodyElementCandidate, ColumnHeaderSchema, NormalizedTable, TableProfile
+from table1_parser.schemas import BodyElementCandidate, BodyRowLabelCandidate, ColumnHeaderSchema, NormalizedTable, TableProfile
 from table1_parser.text_cleaning import clean_text
 from table1_parser.validation.table_profile import validate_table_profile
 
@@ -40,10 +40,11 @@ ESTIMATE_CI_RANGE_PATTERN = re.compile(
 def build_table_profile(
     table: NormalizedTable,
     body_element_candidates: Sequence[BodyElementCandidate] | None = None,
+    body_row_label_candidates: Sequence[BodyRowLabelCandidate] | None = None,
     column_schema: ColumnHeaderSchema | None = None,
 ) -> TableProfile:
     """Classify one normalized table into a supported semantic family."""
-    table = table_with_body_element_candidates(table, body_element_candidates)
+    table = table_with_body_element_candidates(table, body_element_candidates, body_row_label_candidates)
     evidence: list[str] = []
     descriptive_score = 0
     estimate_score = 0
@@ -159,16 +160,21 @@ def build_table_profile(
 def build_table_profiles(
     tables: list[NormalizedTable],
     body_element_candidates: Sequence[BodyElementCandidate] | None = None,
+    body_row_label_candidates: Sequence[BodyRowLabelCandidate] | None = None,
     column_schemas: list[ColumnHeaderSchema] | None = None,
 ) -> list[TableProfile]:
     """Build deterministic route decisions for a list of normalized tables."""
     candidates_by_table_id: dict[str, list[BodyElementCandidate]] = {}
     for candidate in body_element_candidates or []:
         candidates_by_table_id.setdefault(candidate.source_table_id, []).append(candidate)
+    label_candidates_by_table_id: dict[str, list[BodyRowLabelCandidate]] = {}
+    for candidate in body_row_label_candidates or []:
+        label_candidates_by_table_id.setdefault(candidate.source_table_id, []).append(candidate)
     return [
         build_table_profile(
             table,
             body_element_candidates=candidates_by_table_id.get(table.table_id),
+            body_row_label_candidates=label_candidates_by_table_id.get(table.table_id),
             column_schema=column_schemas[index] if column_schemas is not None and index < len(column_schemas) else None,
         )
         for index, table in enumerate(tables)

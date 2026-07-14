@@ -176,14 +176,6 @@ def _detect_separator_rule_headers(
         else:
             first_body_numeric_trailing_count = sum(bool(re.search(r"\d", cell)) for cell in first_body_trailing)
             first_body_alpha_trailing_count = sum(bool(re.search(r"[A-Za-z]", cell)) for cell in first_body_trailing)
-            if not first_body_has_left_label or (
-                first_body_trailing
-                and (
-                    first_body_numeric_trailing_count == 0
-                    or (first_body_alpha_trailing_count > 1 and first_body_numeric_trailing_count < 2)
-                )
-            ):
-                continue
             support_row_idx = next(
                 (
                     row_idx
@@ -196,9 +188,34 @@ def _detect_separator_rule_headers(
             )
             if support_row_idx is None or support_row_idx - first_body_row_idx > 3:
                 continue
+            support_value_indices = [
+                cell_idx
+                for cell_idx, cell in enumerate(rows[support_row_idx])
+                if cell_idx > 0 and _is_value_like_cell(cell)
+            ]
+            first_body_occupied_indices = [
+                cell_idx
+                for cell_idx, cell in enumerate(first_body_row)
+                if _clean_cell(cell)
+            ]
+            text_starter_within_stub = (
+                first_body_numeric_trailing_count == 0
+                and bool(support_value_indices)
+                and bool(first_body_occupied_indices)
+                and max(first_body_occupied_indices) < min(support_value_indices)
+            )
+            if not first_body_has_left_label or (
+                first_body_trailing
+                and not text_starter_within_stub
+                and (
+                    first_body_numeric_trailing_count == 0
+                    or (first_body_alpha_trailing_count > 1 and first_body_numeric_trailing_count < 2)
+                )
+            ):
+                continue
             body_support = (
                 "label_only_body_starter_with_value_rows"
-                if not first_body_trailing
+                if not first_body_trailing or text_starter_within_stub
                 else "sparse_body_starter_with_value_rows"
             )
         body_rows = [row_idx for row_idx in range(first_body_row_idx, len(rows)) if row_idx not in set(note_rows)]

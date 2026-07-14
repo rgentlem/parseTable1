@@ -33,8 +33,10 @@ The file is produced from:
 The parser builds one shared PyMuPDF positioned-document pass first. Page
 furniture detection consumes that shared evidence, extraction and cell
 annotation consume its words/chars/rules, then `paper_text_stream.json` filters
-repeated furniture lines and orders text by page, detected column, and vertical
-position. `paper_markdown.md` is rendered from that filtered stream.
+repeated furniture lines, partitions each page by writing direction, projects
+rotated groups into upright local coordinates, and orders text by page,
+orientation group, detected group-local column, and vertical position.
+`paper_markdown.md` is rendered from that filtered stream.
 
 There is no `pymupdf4llm.to_markdown(...)` fallback. If PyMuPDF positioned text
 cannot produce the paper text stream, the parser should fail closed rather than
@@ -96,10 +98,19 @@ The pipeline should therefore:
 evidence.
 
 `paper_text_stream.json` is the layout-aware document-context artifact. It
-records page-level column boundaries and bands, per-line geometry/style, and
-minimal span records, then orders text as page, column, then vertical position.
-This column-order model is independent of whether a page has one, two, three,
-or more detected text columns.
+records orientation groups, group-local column boundaries and bands, original
+source line IDs/page-space bboxes, canonical bboxes, per-line geometry/style,
+and minimal source span records. It orders text as page, orientation group,
+column, then vertical position. The raw positioned document remains unchanged;
+the canonical orientation is a derived reading-order projection.
+
+The extraction caption path consumes this stream directly. Caption labels are
+recognized from line/span evidence, bound to table candidates in the canonical
+orientation-group frame, and expanded through adjacent lines only until table
+rule geometry begins. Backend text boxes and backend page-text caption
+fallbacks are not caption sources. Raw line text and page coordinates remain
+unchanged in the stream even when span order or font separation provides the
+evidence needed to recognize a label.
 
 `paper_sections.json` is the structured interpretation of that layout-aware
 stream. The parser no longer falls back to backend markdown when positioned text

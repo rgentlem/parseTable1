@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from collections.abc import Sequence
 
-from table1_parser.schemas import PaperTableMention, PaperTextLine
+from table1_parser.schemas import PaperTableMention
 from table1_parser.text_cleaning import clean_text
 
 
@@ -43,19 +43,59 @@ def build_paper_table_mentions(paper_text_stream: object) -> list[PaperTableMent
         if not text:
             continue
         line_notes = list(getattr(line, "notes", []) or [])
+        mention_text = text
+        spans = [
+            span
+            for span in list(getattr(line, "spans", []) or [])
+            if isinstance(span, dict) and str(span.get("text", ""))
+        ]
+        span_order_text = clean_text("".join(str(span["text"]) for span in spans))
+        if (
+            span_order_text
+            and CAPTION_LINE_START_PATTERN.match(span_order_text)
+            and not CAPTION_LINE_START_PATTERN.match(mention_text)
+        ):
+            mention_text = span_order_text
+            line_notes.append("span_order_table_label")
+        nonspace_spans = [span for span in spans if str(span["text"]).strip()]
+        if len(nonspace_spans) >= 4:
+            first_text = str(nonspace_spans[0]["text"]).strip()
+            number_text = str(nonspace_spans[1]["text"]).strip()
+            separator_text = str(nonspace_spans[2]["text"]).strip()
+            number_font = str(nonspace_spans[1].get("font") or "")
+            separator_font = str(nonspace_spans[2].get("font") or "")
+            following_font = str(nonspace_spans[3].get("font") or "")
+            if (
+                first_text.lower() == "table"
+                and re.fullmatch(r"[A-Za-z]?\d+[A-Za-z]?[.:]?", number_text)
+                and len(separator_text) == 1
+                and separator_font
+                and separator_font != number_font
+                and separator_font != following_font
+            ):
+                mention_text = clean_text(
+                    " ".join(
+                        [first_text, number_text]
+                        + [str(span["text"]).strip() for span in nonspace_spans[3:]]
+                    )
+                )
+                line_notes.append("isolated_table_label_separator_span")
         line_is_heading = getattr(line, "role", "body") == "heading" or "layout_section_heading" in line_notes
         in_supplementary_information = bool(
             active_heading and SUPPLEMENTARY_INFORMATION_HEADING_PATTERN.search(active_heading)
         )
-        for match_index, match in enumerate(TABLE_MENTION_PATTERN.finditer(text)):
+        for match_index, match in enumerate(TABLE_MENTION_PATTERN.finditer(mention_text)):
             if not match.group("label"):
                 continue
             previous_line = _adjacent_line(lines, line_index, -1)
             next_line = _adjacent_line(lines, line_index, 1)
-            local_prefix = clean_text(text[: match.start()])
-            local_suffix = clean_text(text[match.end() :])
+            local_prefix = clean_text(mention_text[: match.start()])
+            local_suffix = clean_text(mention_text[match.end() :])
             previous_text = clean_text(getattr(previous_line, "text", "")) if previous_line is not None else ""
-            line_starts_with_label = CAPTION_LINE_START_PATTERN.match(text) is not None and match.start() <= 2
+            line_starts_with_label = (
+                CAPTION_LINE_START_PATTERN.match(mention_text) is not None
+                and match.start() <= 2
+            )
             bold_or_heading = getattr(line, "role", "body") == "heading" or "bold_like_text" in line_notes
             cue: str | None = None
             if CONTINUATION_PATTERN.search(text):
@@ -120,6 +160,7 @@ def build_paper_table_mentions(paper_text_stream: object) -> list[PaperTableMent
                         page_num=int(getattr(line, "page_num")),
                         line_ids=[str(getattr(context_line, "line_id")) for context_line in context_lines],
                         source_line_id=str(getattr(line, "line_id")),
+                        source_line_bbox=tuple(getattr(line, "bbox")),
                         source_line_text=text,
                         context_text=context_text,
                         matched_text=match.group("label"),
@@ -145,7 +186,15 @@ def _adjacent_line(lines: Sequence[object], line_index: int, offset: int) -> obj
     adjacent_index = line_index + offset
     if adjacent_index < 0 or adjacent_index >= len(lines):
         return None
-    return lines[adjacent_index]
+    line = lines[line_index]
+    adjacent = lines[adjacent_index]
+    if getattr(adjacent, "page_num", None) != getattr(line, "page_num", None):
+        return None
+    line_group_id = getattr(line, "orientation_group_id", None)
+    adjacent_group_id = getattr(adjacent, "orientation_group_id", None)
+    if line_group_id is not None and adjacent_group_id != line_group_id:
+        return None
+    return adjacent
 
 
 def _table_numbers(raw_numbers: str) -> list[str]:

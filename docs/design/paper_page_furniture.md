@@ -1,6 +1,6 @@
 # Paper Page Furniture Artifact
 
-Design contract for repeated non-table page text and regions.
+Design contract for repeated non-table page text, page-edge rules, and regions.
 
 ## Purpose
 
@@ -12,6 +12,11 @@ cell-text annotations, or later extraction cleanup.
 The artifact does not need to classify the repeated text before footnote use.
 For suppression, repeated headers, footers, watermarks, marginal text, and
 download/license notices are all treated as repeated page regions.
+
+The artifact also records stroked horizontal rules in a stable top edge or
+repeated-bottom band position on at least 80% of document pages. These rules remain in
+`paper_positioned_document.json` but are excluded from table-candidate rule
+geometry so journal header/footer separators cannot become table boundaries.
 
 ## File
 
@@ -38,6 +43,7 @@ the same ignored regions before they build downstream artifacts.
   "observations": [],
   "clusters": [],
   "ignored_regions": [],
+  "ignored_rule_regions": [],
   "metadata": {
     "source_artifacts": [],
     "thresholds": {},
@@ -75,9 +81,10 @@ Optional fields:
 region as page-width/page-height fractions, so repeated positions can be compared
 across pages with slightly different sizes.
 
-`normalized_text` is only a matching key. It collapses whitespace and may mask
-the current PDF page-number token as `<page_num>`. `raw_text` preserves the
-observed text.
+`normalized_text` is only a matching key. It collapses whitespace and maps a
+standalone numeric line to `<page_num>` without requiring the printed number to
+equal the PDF page index. Existing embedded PDF-index masking remains available
+for repeated mixed-text lines. `raw_text` preserves the observed text.
 
 The top-level metadata `page_count` should come from the PDF document page
 count, not from the highest page number with extractable text observations.
@@ -132,6 +139,12 @@ Optional fields:
 Downstream code should use `ignored_regions` for geometric overlap checks
 instead of recomputing cluster positions.
 
+`ignored_rule_regions` contains page-specific source bboxes, relative bboxes,
+the recurrence page set and fraction, and the shared rule-cluster identifier.
+Only recurrent stroked horizontal rules in the ordinary top edge or wider
+repeated-bottom band qualify; isolated table rules and rules recurring on an
+arbitrary page subset remain available to table extraction.
+
 ## Recurrence Rule
 
 Initial clustering should require both:
@@ -156,6 +169,12 @@ headers. In that case `page_fraction` may be low across the full paper, but
 `scope_page_fraction` can be high within `recurrence_scope = "odd_pages"` or
 `"even_pages"`.
 
+A variable standalone numeric line may become `<page_num>` furniture only when
+it is in the top or bottom edge band and recurs over `all_pages`, `odd_pages`,
+or `even_pages`. Arbitrary `page_subset` recurrence is insufficient because
+continued tables can place changing numeric values at stable near-edge
+positions on several consecutive pages.
+
 ## Consumption Status
 
 Extraction uses this artifact before candidate refinement. It records
@@ -164,3 +183,5 @@ and `page_furniture_mask` metadata when positioned words, chars, or explicit-gri
 rows are removed. Cell-text annotation and text-stream footer detection consume
 the same regions before grouping annotations or footer line groups, so repeated
 page furniture is not reintroduced as small markers or definition lines.
+Recurrent edge-rule regions are applied only to candidate rule segments; they do
+not remove text, cells, or the raw positioned rule evidence.

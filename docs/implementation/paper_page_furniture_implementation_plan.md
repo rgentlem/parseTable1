@@ -33,6 +33,8 @@ Non-scope:
 
 3. [x] Normalize text for clustering
    - Collapse whitespace and remove volatile page numbers only as matching features.
+   - Map standalone numeric lines to one matching key independently of the PDF
+     page index while retaining the observed number in `raw_text`.
    - Keep raw text unchanged in the artifact.
    - Avoid vocabulary-specific cleanup.
    - Implementation: `normalize_page_furniture_text()` writes the matching key used in observations.
@@ -41,6 +43,8 @@ Non-scope:
    - Group text observations with similar normalized text and overlapping page-relative regions.
    - Require recurrence across multiple pages, such as at least 3 pages or at least 50-70% of pages.
    - Evaluate all-page, odd-page, and even-page recurrence because printed running headers can alternate by page parity.
+   - Require standalone variable numeric lines to use one of those broad or
+     parity scopes in a top/bottom edge band; reject arbitrary page subsets.
    - Record matched page numbers and representative bbox.
    - Implementation: `cluster_page_furniture_observations()` returns in-memory clusters and ignored regions.
 
@@ -61,6 +65,12 @@ Non-scope:
    - Verify repeated regions are stable enough to suppress only their own text.
    - Real-paper pass: 28 PDFs, 0 failures. Eke, metabolic, Ethnic Differences, periodontis2, cobaltpaper, and OPEandRA were included.
    - Review found repeated interior table values/model-note lines; clustering now requires an edge-band location to avoid suppressing body/table-note text later.
+   - Current numeric-edge checkpoint:
+     `outputs/testpapers_batch_numeric_edge_furniture_refined_20260713`.
+     Forty-four printed page-number lines in five PDFs are newly suppressed;
+     all 91 previously extracted tables retain identical dimensions, cell text,
+     and cell coordinates. The Systemic inflammation paper gains one expected
+     collapsed page-5 candidate for the separate rule-region investigation.
 
 8. [x] Integrate into footnote finding
    - Pass page-furniture regions into cell text annotation and text-stream footer detection before those artifacts are built.
@@ -82,3 +92,23 @@ Non-scope:
    - Retire broad large-gap/text-spread trailing-row cleanup after the final
      value row; `metadata.trailing_non_table_rows` now records only explicit
      trailing continuation-page notes.
+
+## Current Decisions And Deferred Recovery
+
+- The ordinary page-edge candidate band remains 6% on every side. A bottom
+  line may be discovered within 10% of the page edge only when the same text
+  has `all_pages` recurrence and covers at least 50% of all document pages.
+  The broader rule is bottom-only because a blanket 10% band incorrectly
+  admitted repeated table headers, row labels, p-values, and table notes in the
+  28-paper corpus.
+- Positioned words and characters are removed by exact PyMuPDF block/line
+  provenance when available. Bbox masking is reserved for objects, such as
+  explicit grid cells, that lack source-line identity. This prevents a
+  horizontal furniture line from deleting characters belonging to a rotated
+  table that crosses the same page-space bbox.
+- Deferred option: after a furniture cluster has first been established by
+  strict recurrence and edge evidence, search the remaining pages for the same
+  normalized text in a wider nearby region. Such a pass may add occurrences to
+  an already proven cluster; it must not broaden initial candidate discovery.
+  No such recovery pass is implemented because the current corpus does not
+  require it.

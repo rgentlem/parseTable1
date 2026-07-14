@@ -15,7 +15,9 @@ from table1_parser.schemas import (
     ColumnHeaderSchema,
     ExtractedTable,
     NormalizedTable,
+    PaperPositionedDocument,
     TableCell,
+    TablePositionedEvidence,
 )
 from table1_parser.text_cleaning import clean_text
 from table1_parser.validation.column_header_schema import validate_column_header_schema
@@ -27,6 +29,8 @@ NON_ALNUM_PATTERN = re.compile(r"[^A-Za-z0-9]+")
 ALPHA_BOUNDARY_SEPARATOR_PATTERN = re.compile(r"(?<=[A-Za-z])[^A-Za-z0-9\s]+(?=[A-Za-z])")
 HEADER_MARKUP_PATTERN = re.compile(r"[*_`]+")
 HEADER_SPACE_PATTERN = re.compile(r"\s+")
+HEADER_TRAILING_SPLIT_HYPHEN_PATTERN = re.compile(r"\s+[-–—]\s*$")
+HEADER_LEADING_SPLIT_HYPHEN_PATTERN = re.compile(r"(^|[\s(,;:])[-–—]\s+(?=[A-Za-z]+[)\]])")
 LABEL_COLUMN_TOKENS = {"characteristic", "characteristics", "variable", "variables", "factor", "covariate"}
 
 
@@ -44,6 +48,7 @@ class _HeaderRun(NamedTuple):
 def build_column_header_schema(
     table: NormalizedTable,
     extracted_table: ExtractedTable | None = None,
+    paper_positioned_document: PaperPositionedDocument | None = None,
 ) -> ColumnHeaderSchema:
     """Build one parser-native column header schema from a normalized table."""
     diagnostics: list[str] = []
@@ -62,6 +67,10 @@ def build_column_header_schema(
     trusted_separator_header_rows = (
         isinstance(header_detection, dict)
         and header_detection.get("source") == "horizontal_rule_separator"
+    )
+    trusted_region_header_rows = (
+        isinstance(header_detection, dict)
+        and header_detection.get("source") == "table_region"
     )
     header_row_roles = _header_row_geometry_roles(table.metadata, len(grid))
 
@@ -125,6 +134,9 @@ def build_column_header_schema(
                 f"rows={','.join(map(str, trailing_declared_header_rows_after_geometry))}"
             )
         skipped_leaf_header_rows: list[int] = []
+    elif trusted_region_header_rows:
+        usable_header_rows = list(header_rows)
+        skipped_leaf_header_rows = []
     else:
         usable_header_rows = [
             row_idx
@@ -267,12 +279,171 @@ def build_column_header_schema(
                     leaf_header_row_indices = stacked_rows
                     diagnostics.append(f"merged_wrapped_leaf_header_rows:rows={','.join(map(str, stacked_rows))}")
     leaf_header_row_set = set(leaf_header_row_indices)
+    leaf_stack_start = min(leaf_header_row_indices) if leaf_header_row_indices else leaf_header_row_idx
 
     schema_id = f"{table.table_id}:column_header_schema"
     original_col_indices = _original_col_indices(table, extracted_table)
     leaf_extra_evidence_positions: dict[tuple[int, int], list[int]] = {}
     leaf_label_overrides: dict[int, str] = {}
+    row_spanning_leaf_positions: dict[int, list[tuple[int, int]]] = {}
     same_row_group_overrides: list[_HeaderRun] = []
+    group_grid = [list(row) for row in grid]
+    leaf_labeled_cols = [
+        col_idx
+        for col_idx in range(1, table.n_cols)
+        if any(_grid_cell(grid, row_idx, col_idx) for row_idx in leaf_header_row_indices)
+    ]
+    for col_idx in range(1, table.n_cols):
+        if col_idx in leaf_labeled_cols:
+            continue
+        source_row_idx = next(
+            (
+                row_idx
+                for row_idx in sorted(usable_header_rows, reverse=True)
+                if leaf_stack_start is not None
+                and row_idx < leaf_stack_start
+                and _grid_cell(grid, row_idx, col_idx)
+            ),
+            None,
+        )
+        if source_row_idx is None:
+            continue
+        leaf_label_overrides[col_idx] = _grid_cell(grid, source_row_idx, col_idx)
+        row_spanning_leaf_positions[col_idx] = [(source_row_idx, col_idx)]
+        group_grid[source_row_idx][col_idx] = ""
+
+    suffix_row_spanning_cols: list[int] = []
+    for col_idx in range(table.n_cols - 1, 0, -1):
+        if col_idx not in row_spanning_leaf_positions:
+            break
+        suffix_row_spanning_cols.insert(0, col_idx)
+    if (
+        suffix_row_spanning_cols
+        and paper_positioned_document is not None
+        and extracted_table is not None
+    ):
+        raw_positioned_evidence = extracted_table.metadata.get("table_positioned_evidence")
+        positioned_page = next(
+            (
+                page
+                for page in paper_positioned_document.pages
+                if page.page_num == extracted_table.page_num
+            ),
+            None,
+        )
+        if isinstance(raw_positioned_evidence, dict) and positioned_page is not None:
+            positioned_evidence = TablePositionedEvidence.model_validate(
+                raw_positioned_evidence
+            )
+            source_row_idx = max(
+                row_spanning_leaf_positions[col_idx][0][0]
+                for col_idx in suffix_row_spanning_cols
+            )
+            canonical_row_bounds = table.metadata.get("row_bounds")
+            dy = 0.0
+            old_source_bbox = extracted_table.metadata.get(
+                "geometry_transform_source_bbox"
+            )
+            new_source_bbox = (
+                positioned_evidence.canonical_transform.source_bbox
+                if positioned_evidence.canonical_transform is not None
+                else None
+            )
+            if (
+                extracted_table.metadata.get("geometry_coordinate_frame")
+                == "table_local_rotated_normalized"
+                and isinstance(old_source_bbox, (list, tuple))
+                and len(old_source_bbox) == 4
+                and new_source_bbox is not None
+            ):
+                old_left, _, old_right, _ = (
+                    float(value) for value in old_source_bbox
+                )
+                new_left, _, new_right, _ = new_source_bbox
+                if positioned_evidence.rotation_direction == "vertical_text_up":
+                    dy = old_left - new_left
+                elif positioned_evidence.rotation_direction == "vertical_text_down":
+                    dy = new_right - old_right
+            if (
+                isinstance(canonical_row_bounds, list)
+                and source_row_idx < len(canonical_row_bounds)
+                and isinstance(canonical_row_bounds[source_row_idx], (list, tuple))
+                and len(canonical_row_bounds[source_row_idx]) == 2
+            ):
+                row_top = float(canonical_row_bounds[source_row_idx][0]) + dy
+                row_bottom = float(canonical_row_bounds[source_row_idx][1]) + dy
+                words = [
+                    (positioned_page.words[word_idx].text, bbox)
+                    for word_idx, bbox in zip(
+                        positioned_evidence.word_indices,
+                        positioned_evidence.canonical_word_bboxes,
+                        strict=False,
+                    )
+                    if word_idx < len(positioned_page.words)
+                    and row_top - 1.0
+                    <= (bbox[1] + bbox[3]) / 2.0
+                    <= row_bottom + 1.0
+                ]
+                if words:
+                    words.sort(key=lambda item: item[1][0])
+                    gap_limit = max(
+                        4.0,
+                        median(bbox[3] - bbox[1] for _, bbox in words) * 0.75,
+                    )
+                    runs: list[list[tuple[str, tuple[float, float, float, float]]]] = []
+                    for word in words:
+                        if not runs or word[1][0] - runs[-1][-1][1][2] > gap_limit:
+                            runs.append([word])
+                        else:
+                            runs[-1].append(word)
+                    if len(runs) >= len(suffix_row_spanning_cols):
+                        runs = runs[-len(suffix_row_spanning_cols) :]
+                        source_positions = [
+                            (source_row_idx, col_idx)
+                            for col_idx in suffix_row_spanning_cols
+                        ]
+                        for col_idx, run in zip(
+                            suffix_row_spanning_cols,
+                            runs,
+                            strict=True,
+                        ):
+                            leaf_label_overrides[col_idx] = clean_text(
+                                " ".join(word for word, _ in run)
+                            )
+                            row_spanning_leaf_positions[col_idx] = source_positions
+
+    if (
+        suffix_row_spanning_cols
+        and leaf_labeled_cols
+        and leaf_labeled_cols == list(
+            range(min(leaf_labeled_cols), suffix_row_spanning_cols[0])
+        )
+    ):
+        group_positions = tuple(
+            (row_idx, col_idx)
+            for row_idx in sorted(usable_header_rows)
+            if leaf_stack_start is not None and row_idx < leaf_stack_start
+            for col_idx in leaf_labeled_cols
+            if _grid_cell(group_grid, row_idx, col_idx)
+        )
+        group_label = clean_text(
+            " ".join(_grid_cell(group_grid, row_idx, col_idx) for row_idx, col_idx in group_positions)
+        )
+        if group_label:
+            same_row_group_overrides.append(
+                _HeaderRun(
+                    min(row_idx for row_idx, _ in group_positions),
+                    max(row_idx for row_idx, _ in group_positions),
+                    min(leaf_labeled_cols),
+                    max(leaf_labeled_cols),
+                    group_label,
+                    group_positions,
+                    "explicit_cell_span",
+                    0.92,
+                )
+            )
+            for row_idx, col_idx in group_positions:
+                group_grid[row_idx][col_idx] = ""
     body_comma_pair_support: set[tuple[int, int]] = set()
     for left_col_idx in range(1, table.n_cols - 1):
         paired_body_rows = 0
@@ -341,8 +512,6 @@ def build_column_header_schema(
     metadata_cells = table.metadata.get("table_cells")
     evidence: list[ColumnHeaderCellEvidence] = []
     evidence_by_position: dict[tuple[int, int], str] = {}
-    leaf_stack_start = min(leaf_header_row_indices) if leaf_header_row_indices else leaf_header_row_idx
-
     def evidence_for(row_idx: int, col_idx: int) -> str:
         existing_id = evidence_by_position.get((row_idx, col_idx))
         if existing_id is not None:
@@ -408,6 +577,13 @@ def build_column_header_schema(
                 leaf_label = "n"
                 diagnostics.append(f"inferred_count_leaf_header:col={col_idx}")
             leaf_evidence_ids.extend(evidence_for(row_idx, col_idx) for row_idx in leaf_header_row_indices)
+            leaf_evidence_ids.extend(
+                evidence_for(row_idx, source_col_idx)
+                for row_idx, source_col_idx in row_spanning_leaf_positions.get(
+                    col_idx,
+                    [],
+                )
+            )
             for row_idx in leaf_header_row_indices:
                 leaf_evidence_ids.extend(
                     evidence_for(row_idx, source_col_idx)
@@ -450,12 +626,41 @@ def build_column_header_schema(
     relationships: list[ColumnHeaderRelationship] = []
     if leaf_header_row_idx is not None:
         group_runs = _header_runs_for_groups(
-            grid,
+            group_grid,
             table.n_cols,
             [row_idx for row_idx in usable_header_rows if row_idx < leaf_header_row_idx and row_idx not in leaf_header_row_set],
             table.metadata,
             leaf_header_row_indices=leaf_header_row_indices,
         )
+        if group_runs and row_spanning_leaf_positions and not same_row_group_overrides:
+            anchored_runs = sorted(
+                group_runs,
+                key=lambda run: min(
+                    col_idx for _, col_idx in run.evidence_positions
+                ),
+            )
+            anchor_cols = [
+                min(col_idx for _, col_idx in run.evidence_positions)
+                for run in anchored_runs
+            ]
+            group_runs = [
+                run._replace(
+                    col_start=(
+                        anchor_cols[index]
+                        if anchor_cols[index] <= run.col_end
+                        else run.col_start
+                    ),
+                    col_end=(
+                        max(run.col_end, anchor_cols[index + 1] - 1)
+                        if index + 1 < len(anchor_cols)
+                        else max(
+                            run.col_end,
+                            max(leaf_labeled_cols, default=run.col_end),
+                        )
+                    ),
+                )
+                for index, run in enumerate(anchored_runs)
+            ]
         group_runs.extend(same_row_group_overrides)
         for run in group_runs:
             if inferred_header_rows_used and run.col_start == run.col_end:
@@ -526,12 +731,14 @@ def build_column_header_schema(
 def build_column_header_schemas(
     tables: list[NormalizedTable],
     extracted_tables: list[ExtractedTable] | None = None,
+    paper_positioned_document: PaperPositionedDocument | None = None,
 ) -> list[ColumnHeaderSchema]:
     """Build column header schemas for normalized tables while preserving order."""
     return [
         build_column_header_schema(
             table,
             extracted_tables[index] if extracted_tables is not None and index < len(extracted_tables) else None,
+            paper_positioned_document,
         )
         for index, table in enumerate(tables)
     ]
@@ -595,6 +802,8 @@ def column_header_comparison_labels(schema: ColumnHeaderSchema) -> list[str]:
         normalized = HEADER_MARKUP_PATTERN.sub("", descriptor.column_label)
         normalized = normalized.replace("\u00a0", " ").replace("\u2009", " ").replace("\u202f", " ")
         normalized = HEADER_SPACE_PATTERN.sub(" ", normalized).strip().lower()
+        normalized = HEADER_TRAILING_SPLIT_HYPHEN_PATTERN.sub("", normalized)
+        normalized = HEADER_LEADING_SPLIT_HYPHEN_PATTERN.sub(r"\1", normalized)
         normalized = normalized.strip(" .,:;")
         labels.append(HEADER_SPACE_PATTERN.sub(" ", normalized).strip())
     return labels
@@ -621,18 +830,6 @@ def _original_col_indices(table: NormalizedTable, extracted_table: ExtractedTabl
     dropped_trailing_cols = _nonnegative_int(table.metadata.get("dropped_trailing_cols"))
     right_bound = max(dropped_leading_cols, raw_n_cols - dropped_trailing_cols)
     selected_columns = list(range(dropped_leading_cols, right_bound))
-    repairs = table.metadata.get("column_repairs")
-    if isinstance(repairs, dict):
-        dropped_after_repair = repairs.get("dropped_empty_columns_after_repair")
-        if isinstance(dropped_after_repair, list):
-            dropped_positions = {idx for idx in dropped_after_repair if isinstance(idx, int)}
-            selected_columns = [
-                original_col_idx
-                for normalized_position, original_col_idx in enumerate(selected_columns)
-                if normalized_position not in dropped_positions
-            ]
-        if repairs.get("extra_wide_value_column") is not None and len(selected_columns) != table.n_cols:
-            return [None for _ in range(table.n_cols)]
     if len(selected_columns) == table.n_cols:
         return selected_columns
     if extracted_table is not None and extracted_table.n_cols == table.n_cols:
@@ -864,7 +1061,8 @@ def _header_runs_for_groups(
     header_detection = metadata.get("header_detection")
     trust_structural_header_rows = (
         isinstance(header_detection, dict)
-        and header_detection.get("source") in {"value_matrix_boundary", "value_region_anchor"}
+        and header_detection.get("source")
+        in {"table_region", "value_matrix_boundary", "value_region_anchor"}
     )
     header_row_roles = _header_row_geometry_roles(metadata, len(grid))
     repeated_leaf_blocks = _repeated_leaf_header_blocks(grid, n_cols, leaf_header_row_indices or [])

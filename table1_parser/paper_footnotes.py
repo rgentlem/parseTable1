@@ -9,6 +9,7 @@ from pathlib import Path
 from statistics import median
 
 from table1_parser.context.visual_references import parse_visual_label, visual_id_for
+from table1_parser.marker_glyphs import glyph_fields
 from table1_parser.schemas import (
     CellTextAnnotation,
     CellTextAnnotationTable,
@@ -20,7 +21,6 @@ from table1_parser.schemas import (
     FootnoteDefinitionMarkerEvidence,
     FootnoteFooter,
     FootnoteFooterRow,
-    FootnoteGlyphKind,
     FootnoteLink,
     PaperFootnotes,
     PaperTextStream,
@@ -87,14 +87,8 @@ STRUCTURAL_BOUNDARY_LINE_PATTERN = re.compile(
     r"^\s*(?:Table|Fig\.?|Figure)\s+[A-Za-z]?\d+[A-Za-z]?\b",
     re.IGNORECASE,
 )
-CANONICAL_SYMBOL_KEYS = {
-    "†": "dagger",
-    "‡": "double_dagger",
-    "§": "section",
-    "¶": "paragraph",
-    "#": "number_sign",
-    "|": "vertical_bar",
-}
+
+
 def build_paper_footnote_anchor_inventory(
     paper_id: str,
     source_pdf: str,
@@ -975,27 +969,6 @@ def link_paper_footnotes(
 def paper_footnotes_to_payload(footnotes: PaperFootnotes) -> dict[str, object]:
     """Serialize paper footnotes as a JSON-friendly record."""
     return footnotes.model_dump(mode="json")
-
-
-def glyph_fields(glyph_raw: str) -> tuple[FootnoteGlyphKind, str, list[str]]:
-    """Return normalized glyph fields for anchor and definition records."""
-    glyph = glyph_raw.strip()
-    codepoints = [f"U+{ord(char):04X}" for char in glyph]
-    if not glyph:
-        return "unknown", "unknown:", codepoints
-    normalized = unicodedata.normalize("NFKC", glyph).strip()
-    normalized_key = normalized.casefold()
-    if normalized_key.isalpha():
-        return "letter", f"letter:{normalized_key}", codepoints
-    if normalized_key.isdigit():
-        return "number", f"number:{normalized_key}", codepoints
-    if normalized_key and all(char == "*" for char in normalized_key):
-        return "asterisk", f"asterisk:{len(normalized_key)}", codepoints
-    if normalized_key in CANONICAL_SYMBOL_KEYS:
-        return "symbol", f"symbol:{CANONICAL_SYMBOL_KEYS[normalized_key]}", codepoints
-    if any(not char.isalnum() for char in glyph):
-        return "symbol", "symbol:" + ",".join(codepoints), codepoints
-    return "unknown", f"unknown:{normalized_key or glyph}", codepoints
 
 
 def _footer_marker_annotations_by_cell(

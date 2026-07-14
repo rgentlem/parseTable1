@@ -1,5 +1,8 @@
 # Split Label Column Repair Implementation Spec
 
+Retired: this implementation path has been removed from normalization. Do not
+reintroduce split-label column merging as a `NormalizedTable` mutation.
+
 ## Goal
 
 Implement a normalization-stage repair for tables where one logical row label is split across columns 0 and 1.

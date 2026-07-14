@@ -152,7 +152,25 @@ def score_candidate(candidate: DetectedTableCandidate) -> DetectedTableCandidate
             caption_source = "embedded_first_cell"
     else:
         effective_caption = None
-    if effective_caption:
+    caption_table_number_hint = candidate.metadata.get("caption_table_number")
+    hinted_table_number = (
+        int(caption_table_number_hint)
+        if isinstance(caption_table_number_hint, int)
+        and not isinstance(caption_table_number_hint, bool)
+        and caption_table_number_hint > 0
+        else None
+    )
+    if effective_caption and hinted_table_number is not None:
+        caption_metadata = {
+            "table_number": hinted_table_number,
+            "is_continuation": bool(candidate.metadata.get("caption_is_continuation")),
+            "continuation_of_table_number": (
+                hinted_table_number
+                if candidate.metadata.get("caption_is_continuation")
+                else None
+            ),
+        }
+    elif effective_caption:
         caption_line = _find_table_line(effective_caption)
         caption_metadata = _table_caption_metadata(caption_line) if caption_line else None
     else:

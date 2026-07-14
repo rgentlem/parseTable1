@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 
 PaperTextLineRole = Literal["body", "heading", "full_width"]
+PaperTextOrientation = Literal["upright", "vertical_text_up", "vertical_text_down"]
 
 
 class PaperTextLine(BaseModel):
@@ -20,6 +21,10 @@ class PaperTextLine(BaseModel):
     raw_text: str
     text: str
     bbox: tuple[float, float, float, float]
+    canonical_bbox: tuple[float, float, float, float] | None = None
+    direction: tuple[float, float] | None = None
+    orientation: PaperTextOrientation = "upright"
+    orientation_group_id: str | None = None
     column_index: int = Field(ge=0)
     column_count: int = Field(ge=1)
     role: PaperTextLineRole = "body"
@@ -28,6 +33,20 @@ class PaperTextLine(BaseModel):
     dominant_font_size: float | None = None
     spans: list[dict[str, Any]] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
+
+
+class PaperTextOrientationGroup(BaseModel):
+    """One page-local writing-direction group ordered in an upright frame."""
+
+    group_id: str
+    orientation: PaperTextOrientation
+    source_bbox: tuple[float, float, float, float]
+    canonical_width: float = Field(gt=0.0)
+    canonical_height: float = Field(gt=0.0)
+    line_count: int = Field(ge=1)
+    column_count: int = Field(ge=1)
+    column_boundaries: list[float] = Field(default_factory=list)
+    column_bands: list[tuple[float, float]] = Field(default_factory=list)
 
 
 class PaperTextPage(BaseModel):
@@ -41,6 +60,7 @@ class PaperTextPage(BaseModel):
     column_bands: list[tuple[float, float]] = Field(default_factory=list)
     line_count: int = Field(ge=0)
     removed_page_furniture_line_count: int = Field(ge=0)
+    orientation_groups: list[PaperTextOrientationGroup] = Field(default_factory=list)
     diagnostics: list[str] = Field(default_factory=list)
 
 

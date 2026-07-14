@@ -62,6 +62,21 @@ class PageFurnitureRegion(BaseModel):
     notes: list[str] = Field(default_factory=list)
 
 
+class PageFurnitureRuleRegion(BaseModel):
+    """One recurrent page-edge rule excluded from table geometry."""
+
+    region_id: str
+    rule_cluster_id: str
+    page_num: int = Field(ge=1)
+    bbox: tuple[float, float, float, float]
+    relative_bbox: tuple[float, float, float, float]
+    recurrence_page_nums: list[int]
+    page_fraction: float = Field(ge=0.0, le=1.0)
+    confidence: float = Field(ge=0.0, le=1.0)
+    source_artifact: str = "paper_positioned_document.json"
+    recurrence_basis: list[str] = Field(default_factory=list)
+
+
 class PaperPageFurniture(BaseModel):
     """Paper-level repeated page-furniture artifact."""
 
@@ -70,4 +85,5 @@ class PaperPageFurniture(BaseModel):
     observations: list[PageFurnitureTextObservation] = Field(default_factory=list)
     clusters: list[PageFurnitureCluster] = Field(default_factory=list)
     ignored_regions: list[PageFurnitureRegion] = Field(default_factory=list)
+    ignored_rule_regions: list[PageFurnitureRuleRegion] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)

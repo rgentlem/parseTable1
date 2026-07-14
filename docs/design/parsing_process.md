@@ -7,8 +7,71 @@ This project parses epidemiology tables in stages. The goal is to keep each stag
 The implemented parser pipeline is:
 
 ```text
-PDF -> ExtractedTable -> TableRegion -> NormalizedTable -> ColumnHeaderSchema -> ResolvedTableSet -> TableDefinition -> ParsedTable
+PDF -> ExtractedTable -> TableBoundaryProposal -> TableRegion -> NormalizedTable -> ColumnHeaderSchema -> ResolvedTableSet -> TableDefinition -> ParsedTable
 ```
+
+After `TableRegion`, `parse` also writes `body_occupancy.json`,
+`leaf_column_candidates.json`, `header_structure_candidates.json`, and
+`token_start_evidence.json` as diagnostic side artifacts. They use positioned
+table evidence in the canonical orientation-group frame but are not consumed
+by normalization or semantic parsing. Token starts are measured only for
+tables already carrying candidate refinement signals and do not define
+separators. The same raw occupancy calculation is used transiently before
+`TableRegion` is finalized only when multiple canonical body intervals remain
+plausible.
+
+The early document stages have a strict order:
+
+```text
+PDF
+-> PaperPositionedDocument
+-> page-furniture detection and masking
+-> filtered text stream
+-> section identification
+-> careful bibliography parsing
+-> table candidate extraction
+```
+
+Page furniture is therefore removed before section, bibliography, or table
+identification. Bibliography-owned lines and regions are established before
+table extraction and passed into it as exclusion evidence.
+
+The required next structural refinement to the table path is:
+
+```text
+ExtractedTable
+-> CellTextAnnotations
+-> TableBoundaryProposal
+-> TableRegion
+-> BodyOccupancy
+-> LeafColumnCandidate
+-> HeaderStructureCandidate
+-> NormalizedTable
+-> ColumnHeaderSchema
+```
+
+`TableBoundaryProposal` records
+canonical row bounds, unmerged rule-segment references, stub/value coverage,
+font changes, alternative boundary roles, and the selected `TableRegion` edges
+for comparison. It is built before `TableRegion`. If credible rule geometry
+and a coherent positioned grid are both absent, no row split is manufactured.
+Otherwise `TableRegion` uses a single supported body/footer model directly; if
+multiple canonical body intervals remain plausible, raw body occupancy chooses
+among those models, with the largest interval winning a qualified exact-gap
+tie. A gap qualifies only when no ordinary body character occupies it and it
+is at least two observed spaces wide in the dominant table font and size.
+Selected edges are then attached to the proposal for inspection.
+`HeaderStructureCandidate` is now an evidence-preserving first pass over
+positioned header spans, individual rule segments, and candidate physical
+columns. Each occupancy band defines one preliminary leaf. Intact positioned
+header runs attach to the leaf with greatest horizontal overlap, and multiple
+runs may stack on the same leaf. Individual partial rules define multicolumn
+groups over those leaves. Header words crossing candidate band boundaries are
+retained as diagnostics rather than being split into new columns. Marker
+occurrences attach only to source-supported leaf or group nodes.
+The artifact remains provisional and has no downstream consumer. A later phase
+may let `TableRegion` and `ColumnHeaderSchema` validate and consume it instead
+of rebuilding an unrelated header model.
 
 For continued tables, the resolved stage can integrate compatible source
 fragments before semantic parsing:
@@ -25,6 +88,13 @@ which remains the complete normalized source record.
 In plain terms:
 
 - `ExtractedTable` is what the PDF extraction layer found
+- `CellTextAnnotations` preserves attached marker geometry without changing
+  the raw extracted grid; a planned linked-text view will additionally expose
+  marker-free base text while retaining the marker association
+- `HeaderStructureCandidate` is the provisional LaTeX-like header structure
+  aligned with body occupancy and positioned marker evidence
+- `TableBoundaryProposal` is geometry-only evidence for reviewing the current
+  caption/start, header/body, and body/footer boundaries
 - `TableRegion` is the geometry-derived ownership model for captions,
   column-header bands, body rows, and footer/note bands, including footer
   marker-row evidence from cell-text annotation geometry
@@ -104,7 +174,7 @@ This separation keeps the parser safer and easier to debug.
 
 If you are looking at parser outputs:
 
-- `table1-parser parse path/to/paper.pdf` is the main entry point and currently writes `extracted_tables.json`, `table_regions.json`, `normalized_tables.json`, `column_header_schemas.json`, `resolved_tables.json`, `table_profiles.json`, `paper_table_inventory.json`, `table_definitions.json`, `parsed_cell_values.json`, `parsed_tables.json`, `paper_page_furniture.json`, `paper_markdown.md`, `paper_text_stream.json`, `paper_sections.json`, `paper_footnotes.json`, `paper_bibliography.json`, `paper_style_profile.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and per-table context JSON files
+- `table1-parser parse path/to/paper.pdf` is the main entry point and currently writes `extracted_tables.json`, `table_boundary_proposals.json`, `table_regions.json`, `body_occupancy.json`, `leaf_column_candidates.json`, `header_structure_candidates.json`, `token_start_evidence.json`, `normalized_tables.json`, `column_header_schemas.json`, `body_element_candidates.json`, `body_row_label_candidates.json`, `resolved_tables.json`, `table_profiles.json`, `paper_table_inventory.json`, `table_definitions.json`, `parsed_cell_values.json`, `parsed_tables.json`, `paper_page_furniture.json`, `paper_markdown.md`, `paper_text_stream.json`, `paper_sections.json`, `paper_footnotes.json`, `paper_bibliography.json`, `paper_style_profile.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and per-table context JSON files
 - `extract` and `normalize` remain useful for inspecting a single stage in isolation
 
 - raw extraction output answers: "What table did the PDF extractor recover?"

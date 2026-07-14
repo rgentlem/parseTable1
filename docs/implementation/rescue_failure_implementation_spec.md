@@ -84,8 +84,6 @@ Add a stable per-table status record with:
 - `low_quality_candidate_text_layout_rescue`
 - `page_text_layout_fallback`
 - `edge_column_trim`
-- `split_value_column_repair`
-- `drop_empty_columns_after_repair`
 - `glyph_repair`
 - `deterministic_definition`
 - `deterministic_value_parse`

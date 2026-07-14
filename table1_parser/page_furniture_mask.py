@@ -70,20 +70,58 @@ def filter_positioned_items_for_page_furniture(
 
     filtered_items: list[dict[str, object]] = []
     removed_count = 0
+    source_line_removed_count = 0
+    bbox_removed_count = 0
     removed_cluster_ids: set[str] = set()
+    observations_by_id = {
+        observation.observation_id: observation
+        for observation in paper_page_furniture.observations
+    }
+    source_line_clusters: dict[tuple[int, int, int], set[str]] = {}
+    for region in paper_page_furniture.ignored_regions:
+        for observation_id in region.source_observation_ids:
+            observation = observations_by_id.get(observation_id)
+            if (
+                observation is None
+                or observation.block_index is None
+                or observation.line_index is None
+            ):
+                continue
+            source_line_clusters.setdefault(
+                (observation.page_num, observation.block_index, observation.line_index),
+                set(),
+            ).add(region.cluster_id)
+
     for item in items:
         item_page_num = page_num
         if item_page_num is None and isinstance(item.get("page_num"), int):
             item_page_num = int(item["page_num"])
-        bbox = _bbox_from_positioned_item(item)
-        cluster_ids = page_furniture_cluster_ids_for_bbox(
-            paper_page_furniture,
-            page_num=item_page_num,
-            bbox=bbox,
-            min_overlap_fraction=min_overlap_fraction,
-        )
+        block_index = item.get("block_index")
+        line_index = item.get("line_index")
+        if (
+            item_page_num is not None
+            and isinstance(block_index, int)
+            and isinstance(line_index, int)
+        ):
+            match_basis = "source_line"
+            cluster_ids = sorted(
+                source_line_clusters.get((item_page_num, block_index, line_index), set())
+            )
+        else:
+            match_basis = "bbox"
+            bbox = _bbox_from_positioned_item(item)
+            cluster_ids = page_furniture_cluster_ids_for_bbox(
+                paper_page_furniture,
+                page_num=item_page_num,
+                bbox=bbox,
+                min_overlap_fraction=min_overlap_fraction,
+            )
         if cluster_ids:
             removed_count += 1
+            if match_basis == "source_line":
+                source_line_removed_count += 1
+            else:
+                bbox_removed_count += 1
             removed_cluster_ids.update(cluster_ids)
             continue
         filtered_items.append(item)
@@ -95,7 +133,9 @@ def filter_positioned_items_for_page_furniture(
         "removed_count": removed_count,
         "kept_count": len(filtered_items),
         "removed_cluster_ids": sorted(removed_cluster_ids),
-        "min_overlap_fraction": min_overlap_fraction,
+        "source_line_removed_count": source_line_removed_count,
+        "bbox_removed_count": bbox_removed_count,
+        "bbox_min_overlap_fraction": min_overlap_fraction if bbox_removed_count else None,
     }
 
 

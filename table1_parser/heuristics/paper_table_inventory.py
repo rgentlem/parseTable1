@@ -190,8 +190,6 @@ def build_paper_table_inventory(
         threshold_or_stat_header_signal = bool(THRESHOLD_OR_STAT_HEADER_PATTERN.search(header_text))
         model_signal = bool(MODEL_PATTERN.search(" ".join([title_caption_text, header_text])))
         p_value_column_signal = any(column.inferred_role == "p_value" for column in columns)
-        column_repairs = normalized_metadata.get("column_repairs", {}) if isinstance(normalized_metadata.get("column_repairs", {}), dict) else {}
-        extra_wide_value_column_repaired = bool(column_repairs.get("extra_wide_value_column"))
         quality_error_codes = {
             diagnostic.code
             for diagnostic in (quality.table_diagnostics if quality is not None else [])
@@ -324,9 +322,6 @@ def build_paper_table_inventory(
         if normalized is not None and normalized.n_cols >= 5 and threshold_or_stat_header_signal:
             data_score += 0.15
             data_evidence.append("threshold_or_statistic_column_headers")
-        if extra_wide_value_column_repaired:
-            data_score += 0.15
-            data_evidence.append("extra_wide_value_column_repaired")
         if normalized is not None and normalized.n_cols >= 3 and len(normalized.body_rows) >= 3 and variable_count <= 2:
             data_score += 0.25
             data_evidence.append("matrix_like_rows_and_columns")

@@ -3,10 +3,22 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
+from table1_parser.body_occupancy import (
+    build_body_occupancy_table,
+    collect_paper_space_widths_by_style,
+)
 from table1_parser.heuristics.value_pattern_detector import detect_value_pattern
-from table1_parser.schemas import CellTextAnnotationTable, ExtractedTable
+from table1_parser.normalize.header_detector import detect_header_rows_with_metadata
+from table1_parser.schemas import (
+    CellTextAnnotationTable,
+    ExtractedTable,
+    PaperPositionedDocument,
+    PaperPositionedPage,
+    TableBoundaryCandidate,
+    TableBoundaryProposal,
+)
 from table1_parser.schemas.table_region import TableRegion, TableRegionRow
 from table1_parser.text_cleaning import clean_text
 
@@ -22,19 +34,58 @@ def build_table_regions(
     paper_text_stream: object | None = None,
     paper_page_furniture: object | None = None,
     cell_text_annotations: Sequence[CellTextAnnotationTable] | None = None,
+    table_boundary_proposals: Sequence[TableBoundaryProposal] | None = None,
+    paper_positioned_document: PaperPositionedDocument | None = None,
 ) -> list[TableRegion]:
     """Build row-region decisions for extracted tables."""
-    footer_marker_rows_by_table_id = _footer_marker_rows_by_table_id(cell_text_annotations or [], extracted_tables)
+    footer_marker_rows_by_table_id = _footer_marker_rows_by_table_id(
+        cell_text_annotations or [], extracted_tables
+    )
+    proposals_by_table_id = {
+        proposal.table_id: proposal for proposal in table_boundary_proposals or []
+    }
+    annotations_by_table_id = {
+        annotation_table.table_id: annotation_table
+        for annotation_table in cell_text_annotations or []
+    }
+    pages_by_num = {
+        page.page_num: page
+        for page in (
+            paper_positioned_document.pages
+            if paper_positioned_document is not None
+            else []
+        )
+    }
+    paper_space_widths_by_style = (
+        collect_paper_space_widths_by_style(paper_positioned_document)
+        if paper_positioned_document is not None
+        else {}
+    )
     return [
         build_table_region(
             table,
-            footer_marker_rows=footer_marker_rows_by_table_id.get(table.table_id, set()),
+            footer_marker_rows=footer_marker_rows_by_table_id.get(
+                table.table_id, set()
+            ),
+            table_boundary_proposal=proposals_by_table_id.get(table.table_id),
+            positioned_page=pages_by_num.get(table.page_num),
+            annotation_table=annotations_by_table_id.get(table.table_id),
+            paper_space_widths_by_style=paper_space_widths_by_style,
         )
         for table in extracted_tables
     ]
 
 
-def build_table_region(table: ExtractedTable, *, footer_marker_rows: set[int] | None = None) -> TableRegion:
+def build_table_region(
+    table: ExtractedTable,
+    *,
+    footer_marker_rows: set[int] | None = None,
+    table_boundary_proposal: TableBoundaryProposal | None = None,
+    positioned_page: PaperPositionedPage | None = None,
+    annotation_table: CellTextAnnotationTable | None = None,
+    paper_space_widths_by_style: Mapping[tuple[str, float], Sequence[float]]
+    | None = None,
+) -> TableRegion:
     """Assign extracted rows to caption, column-header, body, and footer regions."""
     grid = _cell_grid(table)
     row_bounds = _row_bounds(table)
@@ -52,36 +103,197 @@ def build_table_region(table: ExtractedTable, *, footer_marker_rows: set[int] | 
     header_body_rule_y: float | None = None
     body_footer_rule_y: float | None = None
 
+    content_start = 0
     if row_bounds is not None and boundary_rules:
-        preamble_candidates, start_rule_y = _rows_before_first_table_rule(grid, row_bounds, boundary_rules, table)
+        preamble_candidates, start_rule_y = _rows_before_first_table_rule(
+            grid, row_bounds, boundary_rules, table
+        )
         caption_rows = (
             list(preamble_candidates)
-            if _rows_match_caption([grid[row_idx] for row_idx in preamble_candidates], table)
-            else [row_idx for row_idx in preamble_candidates if _row_matches_caption(grid[row_idx], table)]
+            if _rows_match_caption(
+                [grid[row_idx] for row_idx in preamble_candidates], table
+            )
+            else [
+                row_idx
+                for row_idx in preamble_candidates
+                if _row_matches_caption(grid[row_idx], table)
+            ]
         )
-        preamble_rows = [row_idx for row_idx in preamble_candidates if row_idx not in set(caption_rows)]
+        preamble_rows = [
+            row_idx
+            for row_idx in preamble_candidates
+            if row_idx not in set(caption_rows)
+        ]
         content_start = max(preamble_candidates) + 1 if preamble_candidates else 0
-        header_rows, body_rows, header_body_rule_y = _header_body_from_rules(
-            grid,
-            row_bounds,
-            boundary_rules,
-            content_start_row_idx=content_start,
-            start_rule_y=start_rule_y,
-        )
-        if header_rows and body_rows:
-            detection_basis = "table_region_horizontal_rules"
-            confidence = 0.92
-        else:
-            header_rows, body_rows = _header_body_from_values(grid, content_start_row_idx=content_start)
-            detection_basis = "table_region_value_anchor"
-            confidence = 0.72
-    else:
+    elif row_bounds is None:
         diagnostics.append("missing_rule_or_row_bound_geometry")
-        header_rows, body_rows = _header_body_from_values(grid, content_start_row_idx=0)
-        detection_basis = "table_region_value_anchor"
-        confidence = 0.72 if header_rows and body_rows else 0.35
 
-    if row_bounds is not None and body_rows:
+    if (
+        table_boundary_proposal is not None
+        and not table_boundary_proposal.credible_rule_geometry
+        and not table_boundary_proposal.coherent_positioned_grid
+    ):
+        detection_basis = "table_region_fail_closed_insufficient_geometry"
+        diagnostics.append("fail_closed_no_credible_rules_or_coherent_positioned_grid")
+        return TableRegion(
+            region_id=f"{table.table_id}:table_region",
+            table_id=table.table_id,
+            source_pdf=table.source_pdf,
+            page_num=table.page_num,
+            n_rows=table.n_rows,
+            n_cols=table.n_cols,
+            caption_rows=caption_rows,
+            preamble_rows=preamble_rows,
+            column_header_rows=[],
+            body_rows=[],
+            footer_note_rows=[],
+            row_regions=_row_regions(
+                table.n_rows,
+                grid,
+                caption_rows,
+                preamble_rows,
+                [],
+                [],
+                [],
+                detection_basis,
+            ),
+            horizontal_rules=horizontal_rules,
+            full_width_horizontal_rules=full_width_rules,
+            start_rule_y=start_rule_y,
+            detection_basis=detection_basis,
+            confidence=0.0,
+            diagnostics=diagnostics,
+        )
+
+    content_grid = grid[content_start:]
+    content_row_bounds = row_bounds[content_start:] if row_bounds is not None else None
+    local_header_rows, local_body_rows, header_detection = (
+        detect_header_rows_with_metadata(
+            content_grid,
+            row_bounds=content_row_bounds,
+            horizontal_rules=horizontal_rules,
+            separator_horizontal_rules=full_width_rules or None,
+        )
+    )
+    header_rows = [
+        row_idx + content_start
+        for row_idx in local_header_rows
+        if any(clean_text(cell) for cell in content_grid[row_idx])
+    ]
+    body_rows = [
+        row_idx + content_start
+        for row_idx in local_body_rows
+        if any(clean_text(cell) for cell in content_grid[row_idx])
+    ]
+    header_body_rule = header_detection.get("separator_rule_y")
+    header_body_rule_y = (
+        float(header_body_rule) if isinstance(header_body_rule, (int, float)) else None
+    )
+    header_source = str(header_detection.get("source") or "unclassified")
+    detection_basis = f"table_region_{header_source}"
+    confidence = (
+        0.92
+        if header_source == "horizontal_rule_separator"
+        else 0.78
+        if header_source == "value_region_anchor"
+        else 0.35
+    )
+
+    if (
+        table_boundary_proposal is not None
+        and positioned_page is not None
+        and body_rows
+    ):
+        first_body_row = min(body_rows)
+        last_body_row = max(body_rows)
+        later_boundaries = [
+            candidate
+            for candidate in table_boundary_proposal.boundary_candidates
+            if (
+                candidate.row_before_idx is not None
+                and candidate.row_after_idx is not None
+                and candidate.row_before_idx >= first_body_row
+                and candidate.row_before_idx < last_body_row
+                and candidate.row_after_idx > candidate.row_before_idx
+            )
+        ]
+        supported_footer_boundaries = [
+            candidate
+            for candidate in later_boundaries
+            if "body_footer" in candidate.possible_roles
+        ]
+        selected_candidate: TableBoundaryCandidate | None = None
+        if len(supported_footer_boundaries) == 1:
+            selected_candidate = supported_footer_boundaries[0]
+            diagnostics.append("body_interval_selected_by_boundary_evidence")
+        else:
+            competing_boundaries = (
+                supported_footer_boundaries
+                if supported_footer_boundaries
+                else later_boundaries
+            )
+            competing_body_ends = {
+                candidate.row_before_idx: candidate
+                for candidate in competing_boundaries
+                if candidate.row_before_idx is not None
+            }
+            if not supported_footer_boundaries and competing_body_ends:
+                competing_body_ends[last_body_row] = None
+            if len(competing_body_ends) > 1:
+                interval_candidates: list[
+                    tuple[int, int, int, TableBoundaryCandidate | None]
+                ] = []
+                for body_end, candidate in competing_body_ends.items():
+                    candidate_rows = [
+                        row_idx for row_idx in body_rows if row_idx <= body_end
+                    ]
+                    candidate_occupancy = build_body_occupancy_table(
+                        table,
+                        positioned_page=positioned_page,
+                        body_row_indices=candidate_rows,
+                        table_boundary_proposal=table_boundary_proposal,
+                        annotation_table=annotation_table,
+                        paper_space_widths_by_style=(paper_space_widths_by_style or {}),
+                    )
+                    if candidate_occupancy.diagnostics:
+                        continue
+                    interval_candidates.append(
+                        (
+                            len(candidate_occupancy.qualified_zero_gaps),
+                            len(candidate_rows),
+                            body_end,
+                            candidate,
+                        )
+                    )
+                if len(interval_candidates) > 1:
+                    maximum_separator_count = max(
+                        separator_count
+                        for separator_count, _, _, _ in interval_candidates
+                    )
+                    _, _, _, selected_candidate = max(
+                        (
+                            item
+                            for item in interval_candidates
+                            if item[0] == maximum_separator_count
+                        ),
+                        key=lambda item: item[1],
+                    )
+                    diagnostics.append(
+                        "body_interval_selected_from_competing_models:"
+                        f"models={len(interval_candidates)}:"
+                        f"separators={maximum_separator_count}"
+                    )
+        if selected_candidate is not None:
+            selected_row_before = selected_candidate.row_before_idx
+            if isinstance(selected_row_before, int):
+                footer_rows = [
+                    row_idx for row_idx in body_rows if row_idx > selected_row_before
+                ]
+                body_rows = [
+                    row_idx for row_idx in body_rows if row_idx <= selected_row_before
+                ]
+                body_footer_rule_y = selected_candidate.canonical_y
+    elif row_bounds is not None and body_rows:
         footer_rule_source = full_width_rules or boundary_rules
         footer_rows, body_footer_rule_y, footer_basis = _footer_rows(
             grid,
@@ -111,7 +323,16 @@ def build_table_region(table: ExtractedTable, *, footer_marker_rows: set[int] | 
         column_header_rows=header_rows,
         body_rows=body_rows,
         footer_note_rows=footer_rows,
-        row_regions=_row_regions(table.n_rows, grid, caption_rows, preamble_rows, header_rows, body_rows, footer_rows, detection_basis),
+        row_regions=_row_regions(
+            table.n_rows,
+            grid,
+            caption_rows,
+            preamble_rows,
+            header_rows,
+            body_rows,
+            footer_rows,
+            detection_basis,
+        ),
         horizontal_rules=horizontal_rules,
         full_width_horizontal_rules=full_width_rules,
         start_rule_y=start_rule_y,
@@ -133,14 +354,23 @@ def _footer_marker_rows_by_table_id(
     extracted_tables: Sequence[ExtractedTable],
 ) -> dict[str, set[int]]:
     tables_by_id = {table.table_id: table for table in extracted_tables}
-    first_populated_cell_by_row: dict[str, dict[int, tuple[int, tuple[float, float, float, float] | None]]] = {}
+    first_populated_cell_by_row: dict[
+        str, dict[int, tuple[int, tuple[float, float, float, float] | None]]
+    ] = {}
     for table in extracted_tables:
-        row_cells: dict[int, list[tuple[int, tuple[float, float, float, float] | None, str]]] = {}
+        row_cells: dict[
+            int, list[tuple[int, tuple[float, float, float, float] | None, str]]
+        ] = {}
         for cell in table.cells:
             if clean_text(cell.text):
-                row_cells.setdefault(cell.row_idx, []).append((cell.col_idx, cell.bbox, cell.text))
+                row_cells.setdefault(cell.row_idx, []).append(
+                    (cell.col_idx, cell.bbox, cell.text)
+                )
         first_populated_cell_by_row[table.table_id] = {
-            row_idx: (min(cells, key=lambda item: item[0])[0], min(cells, key=lambda item: item[0])[1])
+            row_idx: (
+                min(cells, key=lambda item: item[0])[0],
+                min(cells, key=lambda item: item[0])[1],
+            )
             for row_idx, cells in row_cells.items()
         }
 
@@ -158,9 +388,15 @@ def _footer_marker_rows_by_table_id(
             first_col_idx, first_bbox = first_cell
             if annotation.col_idx != first_col_idx:
                 continue
-            if first_bbox is not None and annotation.bbox is not None and annotation.bbox[0] > first_bbox[0] + 6.0:
+            if (
+                first_bbox is not None
+                and annotation.bbox is not None
+                and annotation.bbox[0] > first_bbox[0] + 6.0
+            ):
                 continue
-            marker_rows.setdefault(annotation_table.table_id, set()).add(annotation.row_idx)
+            marker_rows.setdefault(annotation_table.table_id, set()).add(
+                annotation.row_idx
+            )
     return marker_rows
 
 
@@ -188,14 +424,24 @@ def _row_bounds(table: ExtractedTable) -> list[tuple[float, float]] | None:
             continue
         top, bottom = float(cell.bbox[1]), float(cell.bbox[3])
         current = bounds[cell.row_idx]
-        bounds[cell.row_idx] = (top, bottom) if current is None else (min(current[0], top), max(current[1], bottom))
-    return [bound for bound in bounds] if all(bound is not None for bound in bounds) else None
+        bounds[cell.row_idx] = (
+            (top, bottom)
+            if current is None
+            else (min(current[0], top), max(current[1], bottom))
+        )
+    return (
+        [bound for bound in bounds]
+        if all(bound is not None for bound in bounds)
+        else None
+    )
 
 
 def _rules(value: object) -> list[float]:
     if not isinstance(value, list):
         return []
-    return sorted({round(float(item), 3) for item in value if isinstance(item, (int, float))})
+    return sorted(
+        {round(float(item), 3) for item in value if isinstance(item, (int, float))}
+    )
 
 
 def _rows_before_first_table_rule(
@@ -205,83 +451,46 @@ def _rows_before_first_table_rule(
     table: ExtractedTable,
 ) -> tuple[list[int], float | None]:
     first_text_row = next(
-        (row_idx for row_idx, row in enumerate(grid) if any(clean_text(cell) for cell in row)),
+        (
+            row_idx
+            for row_idx, row in enumerate(grid)
+            if any(clean_text(cell) for cell in row)
+        ),
         None,
     )
     if first_text_row is not None and rules:
         first_rule = rules[0]
-        if (
-            first_rule <= row_bounds[first_text_row][0] + RULE_TOLERANCE
-            and any(rule > first_rule + RULE_TOLERANCE for rule in rules)
+        if first_rule <= row_bounds[first_text_row][0] + RULE_TOLERANCE and any(
+            rule > first_rule + RULE_TOLERANCE for rule in rules
         ):
             return [], first_rule
 
     for rule_y in rules:
-        rows_above = [row_idx for row_idx, (_, bottom) in enumerate(row_bounds) if bottom <= rule_y + RULE_TOLERANCE]
-        rows_below = [row_idx for row_idx, (top, _) in enumerate(row_bounds) if top >= rule_y - RULE_TOLERANCE]
+        rows_above = [
+            row_idx
+            for row_idx, (_, bottom) in enumerate(row_bounds)
+            if bottom <= rule_y + RULE_TOLERANCE
+        ]
+        rows_below = [
+            row_idx
+            for row_idx, (top, _) in enumerate(row_bounds)
+            if top >= rule_y - RULE_TOLERANCE
+        ]
         if not rows_above or not rows_below or len(rows_above) > 4:
             continue
-        later_rule_exists = any(other_rule > rule_y + RULE_TOLERANCE for other_rule in rules)
-        if later_rule_exists and _rows_match_caption([grid[row_idx] for row_idx in rows_above], table):
+        later_rule_exists = any(
+            other_rule > rule_y + RULE_TOLERANCE for other_rule in rules
+        )
+        if later_rule_exists and _rows_match_caption(
+            [grid[row_idx] for row_idx in rows_above], table
+        ):
             return rows_above, rule_y
-        if max((_nonempty_count(grid[row_idx]) for row_idx in rows_above), default=0) <= 2:
+        if (
+            max((_nonempty_count(grid[row_idx]) for row_idx in rows_above), default=0)
+            <= 2
+        ):
             return rows_above, rule_y
     return [], None
-
-
-def _header_body_from_rules(
-    grid: list[list[str]],
-    row_bounds: list[tuple[float, float]],
-    rules: list[float],
-    *,
-    content_start_row_idx: int,
-    start_rule_y: float | None,
-) -> tuple[list[int], list[int], float | None]:
-    for rule_y in rules:
-        if start_rule_y is not None and rule_y <= start_rule_y + RULE_TOLERANCE:
-            continue
-        header_rows = [
-            row_idx
-            for row_idx, (top, bottom) in enumerate(row_bounds)
-            if row_idx >= content_start_row_idx
-            and bottom <= rule_y + RULE_TOLERANCE
-            and (start_rule_y is None or top >= start_rule_y - RULE_TOLERANCE)
-        ]
-        if not header_rows or len(header_rows) > 12:
-            continue
-        body_start = next(
-            (
-                row_idx
-                for row_idx, (top, _) in enumerate(row_bounds)
-                if top >= rule_y - RULE_TOLERANCE and any(clean_text(cell) for cell in grid[row_idx])
-            ),
-            None,
-        )
-        if body_start is None or not _body_start_supported(grid, body_start):
-            continue
-        return header_rows, _nonempty_rows_from(grid, body_start), rule_y
-    return [], [], None
-
-
-def _header_body_from_values(grid: list[list[str]], *, content_start_row_idx: int) -> tuple[list[int], list[int]]:
-    first_value_row = next(
-        (row_idx for row_idx in range(content_start_row_idx, len(grid)) if _is_value_matrix_row(grid[row_idx])),
-        None,
-    )
-    if first_value_row is None:
-        header_rows = [row_idx for row_idx in range(min(1, len(grid))) if any(clean_text(cell) for cell in grid[row_idx])]
-        return header_rows, [row_idx for row_idx in range(len(grid)) if row_idx not in set(header_rows) and any(clean_text(cell) for cell in grid[row_idx])]
-
-    body_start = first_value_row
-    for row_idx in range(first_value_row - 1, content_start_row_idx - 1, -1):
-        row = grid[row_idx]
-        trailing_nonempty = sum(bool(clean_text(cell)) for cell in row[1:])
-        if clean_text(row[0] if row else "") and trailing_nonempty <= 1 and _value_like_count(row[1:]) <= 1:
-            body_start = row_idx
-            continue
-        break
-    header_rows = [row_idx for row_idx in range(content_start_row_idx, body_start) if any(clean_text(cell) for cell in grid[row_idx])]
-    return header_rows, _nonempty_rows_from(grid, body_start)
 
 
 def _footer_rows(
@@ -293,26 +502,43 @@ def _footer_rows(
     footer_marker_rows: set[int],
 ) -> tuple[list[int], float | None, str]:
     for rule_y in rules:
-        rows_above = [row_idx for row_idx in body_rows if row_bounds[row_idx][1] <= rule_y + RULE_TOLERANCE]
-        rows_below = [row_idx for row_idx in body_rows if row_bounds[row_idx][0] >= rule_y - RULE_TOLERANCE]
+        rows_above = [
+            row_idx
+            for row_idx in body_rows
+            if row_bounds[row_idx][1] <= rule_y + RULE_TOLERANCE
+        ]
+        rows_below = [
+            row_idx
+            for row_idx in body_rows
+            if row_bounds[row_idx][0] >= rule_y - RULE_TOLERANCE
+        ]
         if (
             rows_above
             and rows_below
             and any(_is_value_matrix_row(grid[row_idx]) for row_idx in rows_above)
             and not any(_is_value_matrix_row(grid[row_idx]) for row_idx in rows_below)
+            and _value_like_count(grid[rows_below[0]][1:]) == 0
         ):
             return rows_below, rule_y, "after_body_footer_rule"
 
-    value_rows = [row_idx for row_idx in body_rows if _is_value_matrix_row(grid[row_idx])]
+    value_rows = [
+        row_idx for row_idx in body_rows if _is_value_matrix_row(grid[row_idx])
+    ]
     if not value_rows:
         return [], None, "no_value_matrix_rows"
     last_value = max(value_rows)
     footer_rows = [
         row_idx
         for row_idx in body_rows
-        if row_idx > last_value and row_idx in footer_marker_rows and _value_like_count(grid[row_idx][1:]) == 0
+        if row_idx > last_value
+        and row_idx in footer_marker_rows
+        and _value_like_count(grid[row_idx][1:]) == 0
     ]
-    return (footer_rows, None, "after_last_value_matrix_row_with_structured_marker") if footer_rows else ([], None, "no_footer_rows")
+    return (
+        (footer_rows, None, "after_last_value_matrix_row_with_structured_marker")
+        if footer_rows
+        else ([], None, "no_footer_rows")
+    )
 
 
 def _row_regions(
@@ -337,7 +563,9 @@ def _row_regions(
             row_idx=row_idx,
             role=role_by_row.get(row_idx, "unknown"),
             text=_row_text(grid[row_idx]) if row_idx < len(grid) else "",
-            detection_basis=detection_basis if row_idx in role_by_row else "not_assigned_by_table_region_detector",
+            detection_basis=detection_basis
+            if row_idx in role_by_row
+            else "not_assigned_by_table_region_detector",
         )
         for row_idx in range(n_rows)
     ]
@@ -347,22 +575,8 @@ def _row_text(row: list[str]) -> str:
     return clean_text(" ".join(cell for cell in row if clean_text(cell)))
 
 
-def _nonempty_rows_from(grid: list[list[str]], start_row_idx: int) -> list[int]:
-    return [row_idx for row_idx in range(start_row_idx, len(grid)) if any(clean_text(cell) for cell in grid[row_idx])]
-
-
 def _nonempty_count(row: list[str]) -> int:
     return sum(bool(clean_text(cell)) for cell in row)
-
-
-def _body_start_supported(grid: list[list[str]], body_start: int) -> bool:
-    if _is_value_matrix_row(grid[body_start]):
-        return True
-    first_cell = clean_text(grid[body_start][0] if grid[body_start] else "")
-    return bool(first_cell) and any(
-        _is_value_matrix_row(grid[row_idx])
-        for row_idx in range(body_start + 1, min(len(grid), body_start + 4))
-    )
 
 
 def _is_value_matrix_row(row: list[str]) -> bool:
@@ -384,7 +598,10 @@ def _is_value_like(value: str) -> bool:
         return False
     if pattern != "unknown":
         return True
-    return any(char.isdigit() for char in text) and sum(char.isalpha() for char in text) <= 3
+    return (
+        any(char.isdigit() for char in text)
+        and sum(char.isalpha() for char in text) <= 3
+    )
 
 
 def _row_matches_caption(row: list[str], table: ExtractedTable) -> bool:
@@ -397,9 +614,15 @@ def _rows_match_caption(rows: list[list[str]], table: ExtractedTable) -> bool:
         return False
     if TABLE_CAPTION_PATTERN.search(text):
         return True
-    caption = clean_text(" ".join(part for part in [table.title or "", table.caption or ""] if part))
+    caption = clean_text(
+        " ".join(part for part in [table.title or "", table.caption or ""] if part)
+    )
     if not caption:
         return False
     text_tokens = CAPTION_TOKEN_PATTERN.findall(text.casefold())
     caption_tokens = set(CAPTION_TOKEN_PATTERN.findall(caption.casefold()))
-    return bool(text_tokens) and sum(token in caption_tokens for token in text_tokens) / len(text_tokens) >= 0.75
+    return (
+        bool(text_tokens)
+        and sum(token in caption_tokens for token in text_tokens) / len(text_tokens)
+        >= 0.75
+    )

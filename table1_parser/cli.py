@@ -11,10 +11,15 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from table1_parser.body_occupancy import (
+    body_occupancy_tables_to_payload,
+    build_body_occupancy_tables,
+)
 from table1_parser.cell_text_annotations import (
     build_cell_text_annotation_tables_from_pdf,
     cell_text_annotation_tables_to_payload,
 )
+from table1_parser.extract.canonical_extraction import finalize_canonical_extracted_tables
 from table1_parser.column_header_schema import (
     build_column_header_schema,
     build_column_header_schemas,
@@ -41,6 +46,7 @@ from table1_parser.context import (
 )
 from table1_parser.diagnostics import ParseQualityReport, build_parse_quality_report
 from table1_parser.extract import build_extractor
+from table1_parser.extract.provisional_table import ProvisionalExtractedTable
 from table1_parser.heuristics.column_role_detector import detect_column_roles
 from table1_parser.heuristics.paper_table_inventory import build_paper_table_inventory, paper_table_inventory_to_payload
 from table1_parser.heuristics.row_classifier import classify_rows
@@ -49,10 +55,20 @@ from table1_parser.heuristics.table_profile import build_table_profiles, table_p
 from table1_parser.heuristics.variable_grouper import group_variable_blocks
 from table1_parser.llm import LLMConfigurationError, build_llm_client
 from table1_parser.llm.variable_plausibility_parser import LLMVariablePlausibilityTableReviewParser
+from table1_parser.leaf_column_candidates import (
+    build_leaf_column_candidate_tables,
+    leaf_column_candidate_tables_to_payload,
+)
+from table1_parser.header_structure_candidates import (
+    build_header_structure_candidates,
+    header_structure_candidates_to_payload,
+)
 from table1_parser.normalize import normalize_extracted_tables, normalized_tables_to_payload, write_normalized_tables
 from table1_parser.parse import (
     body_element_candidates_to_payload,
+    body_row_label_candidates_to_payload,
     build_body_element_candidates,
+    build_body_row_label_candidates,
     build_parsed_cell_values,
     build_parsed_tables,
     parsed_cell_values_to_payload,
@@ -79,13 +95,17 @@ from table1_parser.paper_style_profile import build_paper_style_profile, paper_s
 from table1_parser.processing_status import build_table_processing_statuses
 from table1_parser.resolved_tables import build_resolved_table_set
 from table1_parser.schemas import (
+    BodyOccupancyTable,
     CellTextAnnotationTable,
     ColumnHeaderSchema,
     BodyElementCandidate,
+    BodyRowLabelCandidate,
     ExtractedTable,
     BibliographyEntry,
     LLMVariablePlausibilityCallRecord,
     LLMVariablePlausibilityMonitoringReport,
+    LeafColumnCandidateTable,
+    HeaderStructureCandidate,
     NormalizedTable,
     PaperFootnotes,
     PaperBibliography,
@@ -102,10 +122,16 @@ from table1_parser.schemas import (
     ParsedTable,
     ResolvedTableSet,
     TableContext,
+    TableBoundaryProposal,
     TableDefinition,
     Table1ContinuationGroup,
     TableProfile,
     TableRegion,
+    TokenStartEvidenceTable,
+)
+from table1_parser.table_boundary_proposals import (
+    build_table_boundary_proposals,
+    table_boundary_proposals_to_payload,
 )
 from table1_parser.table_regions import build_table_regions, table_regions_to_payload
 from table1_parser.table_continuation_columns import (
@@ -115,6 +141,10 @@ from table1_parser.table_continuation_columns import (
 from table1_parser.table1_continuations import (
     build_table1_continuation_artifacts,
     table1_continuation_groups_to_payload,
+)
+from table1_parser.token_start_evidence import (
+    build_token_start_evidence_tables,
+    token_start_evidence_tables_to_payload,
 )
 
 DEFAULT_OUTPUT_DIR = Path("outputs")
@@ -133,12 +163,31 @@ class PaperContextArtifacts:
 
 
 @dataclass(slots=True)
+class CanonicalExtractionArtifacts:
+    """Canonical extracts and their final geometry evidence."""
+
+    extracted_tables: list[ExtractedTable]
+    cell_text_annotations: list[CellTextAnnotationTable]
+    table_boundary_proposals: list[TableBoundaryProposal]
+    table_regions: list[TableRegion]
+    body_occupancy: list[BodyOccupancyTable]
+    leaf_column_candidates: list[LeafColumnCandidateTable]
+    header_structure_candidates: list[HeaderStructureCandidate]
+    token_start_evidence: list[TokenStartEvidenceTable]
+
+
+@dataclass(slots=True)
 class PaperParseArtifacts:
     """All deterministic parse artifacts for one paper."""
 
     paper_stem: str
     extracted_tables: list[ExtractedTable]
+    table_boundary_proposals: list[TableBoundaryProposal]
     table_regions: list[TableRegion]
+    body_occupancy: list[BodyOccupancyTable]
+    leaf_column_candidates: list[LeafColumnCandidateTable]
+    header_structure_candidates: list[HeaderStructureCandidate]
+    token_start_evidence: list[TokenStartEvidenceTable]
     normalized_tables: list[NormalizedTable]
     column_header_schemas: list[ColumnHeaderSchema]
     resolved_table_set: ResolvedTableSet
@@ -152,6 +201,7 @@ class PaperParseArtifacts:
     table_definitions: list[TableDefinition]
     continued_variable_integrations: list[TableDefinition]
     body_element_candidates: list[BodyElementCandidate]
+    body_row_label_candidates: list[BodyRowLabelCandidate]
     parsed_cell_values: list[ParsedCellValue]
     parsed_tables: list[ParsedTable]
     parse_quality_reports: list[ParseQualityReport]
@@ -263,7 +313,7 @@ def _extract_tables_with_context(
     paper_table_mentions: list[PaperTableMention] | None = None,
     paper_text_stream: PaperTextStream | None = None,
     bibliography_entries: Sequence[BibliographyEntry] | None = None,
-) -> list[ExtractedTable]:
+) -> list[ProvisionalExtractedTable]:
     """Run extraction while passing optional paper-level context when supported."""
     extract = getattr(extractor, "extract")
     try:
@@ -303,6 +353,130 @@ def _extract_tables_with_context(
 def _extract_payload(tables: list[ExtractedTable]) -> list[dict[str, object]]:
     """Serialize extracted tables as JSON-ready dictionaries."""
     return [table.model_dump(mode="json") for table in tables]
+
+
+def _build_table_geometry_artifacts(
+    pdf_path: str,
+    extracted_tables: Sequence[ExtractedTable],
+    paper_context: PaperContextArtifacts,
+) -> CanonicalExtractionArtifacts:
+    """Build the geometry evidence associated with one extraction grid."""
+    cell_text_annotations = build_cell_text_annotation_tables_from_pdf(
+        pdf_path,
+        extracted_tables,
+        paper_page_furniture=paper_context.paper_page_furniture,
+        paper_positioned_document=paper_context.paper_positioned_document,
+    )
+    table_boundary_proposals = build_table_boundary_proposals(
+        extracted_tables,
+        paper_positioned_document=paper_context.paper_positioned_document,
+        paper_text_stream=paper_context.paper_text_stream,
+    )
+    table_regions = build_table_regions(
+        extracted_tables,
+        paper_text_stream=paper_context.paper_text_stream,
+        paper_page_furniture=paper_context.paper_page_furniture,
+        cell_text_annotations=cell_text_annotations,
+        table_boundary_proposals=table_boundary_proposals,
+        paper_positioned_document=paper_context.paper_positioned_document,
+    )
+    regions_by_table_id = {region.table_id: region for region in table_regions}
+    for proposal in table_boundary_proposals:
+        region = regions_by_table_id.get(proposal.table_id)
+        if region is None:
+            continue
+        if region.column_header_rows and region.body_rows:
+            proposal.selected_header_body_rows = (
+                max(region.column_header_rows),
+                min(region.body_rows),
+            )
+        if region.body_rows and region.footer_note_rows:
+            proposal.selected_body_footer_rows = (
+                max(region.body_rows),
+                min(region.footer_note_rows),
+            )
+        if region.body_rows:
+            first_body_row = min(region.body_rows)
+            for candidate in proposal.boundary_candidates:
+                if (
+                    "body_footer" in candidate.possible_roles
+                    and candidate.row_before_idx is not None
+                    and candidate.row_before_idx < first_body_row
+                ):
+                    candidate.possible_roles.remove("body_footer")
+                    candidate.following_text_line_ids = []
+                    candidate.following_text_bbox = None
+                    candidate.following_text_styles = []
+    body_occupancy = build_body_occupancy_tables(
+        extracted_tables,
+        paper_positioned_document=paper_context.paper_positioned_document,
+        table_regions=table_regions,
+        table_boundary_proposals=table_boundary_proposals,
+        cell_text_annotations=cell_text_annotations,
+    )
+    leaf_column_candidates = build_leaf_column_candidate_tables(
+        body_occupancy,
+        extracted_tables,
+    )
+    header_structure_candidates = build_header_structure_candidates(
+        extracted_tables,
+        paper_positioned_document=paper_context.paper_positioned_document,
+        table_regions=table_regions,
+        table_boundary_proposals=table_boundary_proposals,
+        leaf_column_candidates=leaf_column_candidates,
+        cell_text_annotations=cell_text_annotations,
+    )
+    token_start_evidence = build_token_start_evidence_tables(
+        extracted_tables,
+        paper_positioned_document=paper_context.paper_positioned_document,
+        body_occupancy_tables=body_occupancy,
+        leaf_column_candidates=leaf_column_candidates,
+        header_structure_candidates=header_structure_candidates,
+    )
+    return CanonicalExtractionArtifacts(
+        extracted_tables=list(extracted_tables),
+        cell_text_annotations=cell_text_annotations,
+        table_boundary_proposals=table_boundary_proposals,
+        table_regions=table_regions,
+        body_occupancy=body_occupancy,
+        leaf_column_candidates=leaf_column_candidates,
+        header_structure_candidates=header_structure_candidates,
+        token_start_evidence=token_start_evidence,
+    )
+
+
+def _build_canonical_extraction_artifacts(
+    pdf_path: str,
+    paper_context: PaperContextArtifacts,
+) -> CanonicalExtractionArtifacts:
+    """Detect provisional tables, select their grids, and rebuild final evidence."""
+    extractor = _build_default_extractor()
+    provisional_tables = _extract_tables_with_context(
+        extractor,
+        pdf_path,
+        paper_page_furniture=paper_context.paper_page_furniture,
+        paper_positioned_document=paper_context.paper_positioned_document,
+        paper_table_mentions=paper_context.paper_table_mentions,
+        paper_text_stream=paper_context.paper_text_stream,
+        bibliography_entries=paper_context.bibliography_entries,
+    )
+    provisional = _build_table_geometry_artifacts(
+        pdf_path,
+        provisional_tables,
+        paper_context,
+    )
+    canonical_tables = finalize_canonical_extracted_tables(
+        provisional_tables,
+        paper_positioned_document=paper_context.paper_positioned_document,
+        table_boundary_proposals=provisional.table_boundary_proposals,
+        leaf_column_candidates=provisional.leaf_column_candidates,
+        token_start_evidence=provisional.token_start_evidence,
+    )
+    return _build_table_geometry_artifacts(
+        pdf_path,
+        canonical_tables,
+        paper_context,
+    )
 
 
 def _build_paper_context_artifacts(pdf_path: str) -> PaperContextArtifacts:
@@ -345,17 +519,12 @@ def _handle_extract(args: argparse.Namespace) -> int:
         return 1
 
     try:
-        extractor = _build_default_extractor()
         paper_context = _build_paper_context_artifacts(args.pdf_path)
-        tables = _extract_tables_with_context(
-            extractor,
+        canonical = _build_canonical_extraction_artifacts(
             args.pdf_path,
-            paper_page_furniture=paper_context.paper_page_furniture,
-            paper_positioned_document=paper_context.paper_positioned_document,
-            paper_table_mentions=paper_context.paper_table_mentions,
-            paper_text_stream=paper_context.paper_text_stream,
-            bibliography_entries=paper_context.bibliography_entries,
+            paper_context,
         )
+        tables = canonical.extracted_tables
     except Exception as exc:
         _print_stderr(_error_payload(str(exc)))
         return 1
@@ -377,30 +546,15 @@ def _handle_normalize(args: argparse.Namespace) -> int:
         return 1
 
     try:
-        extractor = _build_default_extractor()
         paper_context = _build_paper_context_artifacts(args.pdf_path)
-        extracted_tables = _extract_tables_with_context(
-            extractor,
+        canonical = _build_canonical_extraction_artifacts(
             args.pdf_path,
-            paper_page_furniture=paper_context.paper_page_furniture,
-            paper_positioned_document=paper_context.paper_positioned_document,
-            paper_table_mentions=paper_context.paper_table_mentions,
-            paper_text_stream=paper_context.paper_text_stream,
-            bibliography_entries=paper_context.bibliography_entries,
+            paper_context,
         )
-        cell_text_annotations = build_cell_text_annotation_tables_from_pdf(
-            args.pdf_path,
-            extracted_tables,
-            paper_page_furniture=paper_context.paper_page_furniture,
-            paper_positioned_document=paper_context.paper_positioned_document,
+        normalized_tables = normalize_extracted_tables(
+            canonical.extracted_tables,
+            table_regions=canonical.table_regions,
         )
-        table_regions = build_table_regions(
-            extracted_tables,
-            paper_text_stream=paper_context.paper_text_stream,
-            paper_page_furniture=paper_context.paper_page_furniture,
-            cell_text_annotations=cell_text_annotations,
-        )
-        normalized_tables = normalize_extracted_tables(extracted_tables, table_regions=table_regions)
     except Exception as exc:
         _print_stderr(_error_payload(str(exc)))
         return 1
@@ -583,30 +737,24 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     paper_sections = paper_context.paper_sections
     paper_table_mentions = paper_context.paper_table_mentions
     bibliography_entries = paper_context.bibliography_entries
-    extractor = _build_default_extractor()
-    extracted_tables = _extract_tables_with_context(
-        extractor,
+    canonical = _build_canonical_extraction_artifacts(
         pdf_path,
-        paper_page_furniture=paper_page_furniture,
-        paper_positioned_document=paper_positioned_document,
-        paper_table_mentions=paper_table_mentions,
-        paper_text_stream=paper_text_stream,
-        bibliography_entries=bibliography_entries,
+        paper_context,
     )
-    cell_text_annotations = build_cell_text_annotation_tables_from_pdf(
-        pdf_path,
-        extracted_tables,
-        paper_page_furniture=paper_page_furniture,
-        paper_positioned_document=paper_positioned_document,
-    )
-    table_regions = build_table_regions(
-        extracted_tables,
-        paper_text_stream=paper_text_stream,
-        paper_page_furniture=paper_page_furniture,
-        cell_text_annotations=cell_text_annotations,
-    )
+    extracted_tables = canonical.extracted_tables
+    cell_text_annotations = canonical.cell_text_annotations
+    table_boundary_proposals = canonical.table_boundary_proposals
+    table_regions = canonical.table_regions
+    body_occupancy = canonical.body_occupancy
+    leaf_column_candidates = canonical.leaf_column_candidates
+    header_structure_candidates = canonical.header_structure_candidates
+    token_start_evidence = canonical.token_start_evidence
     normalized_tables = normalize_extracted_tables(extracted_tables, table_regions=table_regions)
-    column_header_schemas = build_column_header_schemas(normalized_tables, extracted_tables)
+    column_header_schemas = build_column_header_schemas(
+        normalized_tables,
+        extracted_tables,
+        paper_positioned_document,
+    )
     resolved_table_set = build_resolved_table_set(normalized_tables, column_header_schemas)
     resolved_tables = [resolved_table.table for resolved_table in resolved_table_set.resolved_tables]
     source_schema_by_table_id = {schema.table_id: schema for schema in column_header_schemas}
@@ -669,12 +817,21 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         column_header_schemas,
         extracted_tables,
     )
+    body_row_label_candidates = build_body_row_label_candidates(
+        normalized_tables,
+        column_header_schemas,
+        extracted_tables,
+    )
     parsed_cell_values = build_parsed_cell_values(
         normalized_tables,
         value_column_indices_by_table_id=value_column_indices_by_table_id,
         body_element_candidates=body_element_candidates,
     )
     resolved_body_element_candidates = build_body_element_candidates(
+        resolved_tables,
+        resolved_column_header_schemas,
+    )
+    resolved_body_row_label_candidates = build_body_row_label_candidates(
         resolved_tables,
         resolved_column_header_schemas,
     )
@@ -754,24 +911,31 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     table_profiles = build_table_profiles(
         resolved_tables,
         body_element_candidates=resolved_body_element_candidates,
+        body_row_label_candidates=resolved_body_row_label_candidates,
         column_schemas=resolved_column_header_schemas,
     )
     parse_quality_reports = []
     body_element_candidates_by_table_id: dict[str, list[BodyElementCandidate]] = {}
     for candidate in body_element_candidates:
         body_element_candidates_by_table_id.setdefault(candidate.source_table_id, []).append(candidate)
+    body_row_label_candidates_by_table_id: dict[str, list[BodyRowLabelCandidate]] = {}
+    for candidate in body_row_label_candidates:
+        body_row_label_candidates_by_table_id.setdefault(candidate.source_table_id, []).append(candidate)
     for table_index, table in enumerate(normalized_tables):
         table_candidates = body_element_candidates_by_table_id.get(table.table_id)
+        table_label_candidates = body_row_label_candidates_by_table_id.get(table.table_id)
         column_schema = column_header_schemas[table_index] if table_index < len(column_header_schemas) else None
         row_classifications = classify_rows(
             table,
             body_element_candidates=table_candidates,
+            body_row_label_candidates=table_label_candidates,
             column_schema=column_schema,
         )
         variable_blocks = group_variable_blocks(
             table,
             classifications=row_classifications,
             body_element_candidates=table_candidates,
+            body_row_label_candidates=table_label_candidates,
             column_schema=column_schema,
         )
         column_roles = detect_column_roles(table, column_schema=column_schema)
@@ -799,11 +963,13 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         normalized_tables,
         column_header_schemas,
         body_element_candidates=body_element_candidates,
+        body_row_label_candidates=body_row_label_candidates,
     )
     table_definitions = build_table_definitions(
         resolved_tables,
         resolved_column_header_schemas,
         body_element_candidates=resolved_body_element_candidates,
+        body_row_label_candidates=resolved_body_row_label_candidates,
     )
     continued_variable_integrations = build_continued_variable_integrations(
         normalized_tables,
@@ -846,7 +1012,12 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     return PaperParseArtifacts(
         paper_stem=paper_stem,
         extracted_tables=extracted_tables,
+        table_boundary_proposals=table_boundary_proposals,
         table_regions=table_regions,
+        body_occupancy=body_occupancy,
+        leaf_column_candidates=leaf_column_candidates,
+        header_structure_candidates=header_structure_candidates,
+        token_start_evidence=token_start_evidence,
         normalized_tables=normalized_tables,
         column_header_schemas=column_header_schemas,
         resolved_table_set=resolved_table_set,
@@ -860,6 +1031,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         table_definitions=table_definitions,
         continued_variable_integrations=continued_variable_integrations,
         body_element_candidates=body_element_candidates,
+        body_row_label_candidates=body_row_label_candidates,
         parsed_cell_values=parsed_cell_values,
         parsed_tables=parsed_tables,
         parse_quality_reports=parse_quality_reports,
@@ -929,7 +1101,12 @@ def _write_parse_outputs(
     """Write the deterministic paper-level parse artifacts and return the paper directory."""
     paper_dir = _paper_output_dir(pdf_path, outdir)
     extract_output_path = paper_dir / "extracted_tables.json"
+    table_boundary_proposals_output_path = paper_dir / "table_boundary_proposals.json"
     table_regions_output_path = paper_dir / "table_regions.json"
+    body_occupancy_output_path = paper_dir / "body_occupancy.json"
+    leaf_column_candidates_output_path = paper_dir / "leaf_column_candidates.json"
+    header_structure_candidates_output_path = paper_dir / "header_structure_candidates.json"
+    token_start_evidence_output_path = paper_dir / "token_start_evidence.json"
     normalize_output_path = paper_dir / "normalized_tables.json"
     column_header_schema_output_path = paper_dir / "column_header_schemas.json"
     resolved_table_output_path = paper_dir / "resolved_tables.json"
@@ -940,6 +1117,7 @@ def _write_parse_outputs(
     table_definition_output_path = paper_dir / "table_definitions.json"
     continued_variable_integration_output_path = paper_dir / "continued_variable_integrations.json"
     body_element_candidates_output_path = paper_dir / "body_element_candidates.json"
+    body_row_label_candidates_output_path = paper_dir / "body_row_label_candidates.json"
     parsed_cell_values_output_path = paper_dir / "parsed_cell_values.json"
     parsed_output_path = paper_dir / "parsed_tables.json"
     processing_status_output_path = paper_dir / "table_processing_status.json"
@@ -975,6 +1153,7 @@ def _write_parse_outputs(
     source_table_profiles = build_table_profiles(
         artifacts.normalized_tables,
         body_element_candidates=artifacts.body_element_candidates,
+        body_row_label_candidates=artifacts.body_row_label_candidates,
         column_schemas=artifacts.column_header_schemas,
     )
     table_continuation_column_checks = build_table_continuation_column_checks(
@@ -989,8 +1168,46 @@ def _write_parse_outputs(
         json.dumps(_extract_payload(artifacts.extracted_tables), indent=2),
         encoding="utf-8",
     )
+    table_boundary_proposals_output_path.write_text(
+        json.dumps(
+            table_boundary_proposals_to_payload(artifacts.table_boundary_proposals),
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     table_regions_output_path.write_text(
         json.dumps(table_regions_to_payload(artifacts.table_regions), indent=2) + "\n",
+        encoding="utf-8",
+    )
+    body_occupancy_output_path.write_text(
+        json.dumps(body_occupancy_tables_to_payload(artifacts.body_occupancy), indent=2) + "\n",
+        encoding="utf-8",
+    )
+    leaf_column_candidates_output_path.write_text(
+        json.dumps(
+            leaf_column_candidate_tables_to_payload(artifacts.leaf_column_candidates),
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    header_structure_candidates_output_path.write_text(
+        json.dumps(
+            header_structure_candidates_to_payload(
+                artifacts.header_structure_candidates
+            ),
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    token_start_evidence_output_path.write_text(
+        json.dumps(
+            token_start_evidence_tables_to_payload(artifacts.token_start_evidence),
+            indent=2,
+        )
+        + "\n",
         encoding="utf-8",
     )
     write_normalized_tables(normalize_output_path, artifacts.normalized_tables)
@@ -1033,6 +1250,10 @@ def _write_parse_outputs(
     )
     body_element_candidates_output_path.write_text(
         json.dumps(body_element_candidates_to_payload(artifacts.body_element_candidates), indent=2) + "\n",
+        encoding="utf-8",
+    )
+    body_row_label_candidates_output_path.write_text(
+        json.dumps(body_row_label_candidates_to_payload(artifacts.body_row_label_candidates), indent=2) + "\n",
         encoding="utf-8",
     )
     parsed_cell_values_output_path.write_text(

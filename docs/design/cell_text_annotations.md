@@ -13,6 +13,25 @@ The parser should preserve:
 - visual marker evidence in `cell_text_annotations.json`
 - normalized text and parsed values unchanged until a later explicit consumer is added
 
+## Known Gap And Required Consumer
+
+The sidecar identifies attached glyph geometry, but the same glyph can still be
+embedded in the extracted cell string, for example a p-value ending in a
+superscript marker. Detection alone therefore does not yet give downstream
+header and value parsing clean base text.
+
+The required logical candidate representation should carry:
+
+- unchanged source `raw_text`
+- marker-free `base_text`
+- the annotation IDs and visible glyphs associated with the removed characters
+
+Marker removal must be supported by exact character/span geometry. If the
+source characters cannot be associated reliably, the glyph remains in
+`base_text` and a diagnostic is recorded. `ExtractedTable.text` is never
+rewritten. Header assembly, row-label interpretation, and value parsing may use
+`base_text`; footnote resolution continues to use the linked marker records.
+
 ## File
 
 ```text
@@ -30,13 +49,22 @@ Sparse table-level artifact:
     "n_cols": 5,
     "annotations": [
       {
+        "annotation_id": "paper-p5-t0:marker:0",
         "row_idx": 4,
         "col_idx": 4,
         "text": "b",
+        "glyph_key": "letter:b",
         "annotation_type": "superscript",
         "text_latex": "^{b}",
         "bbox": [506.2, 214.1, 510.4, 218.3],
         "attached_to_text": "<0.001",
+        "source_cell_id": "paper-p5-t0:r4:c4",
+        "source_char_indices": [942],
+        "source_span_references": [
+          {"line_id": "page-5-line-31", "span_index": 2}
+        ],
+        "font_names": ["MyriadPro-Regular"],
+        "font_sizes": [5.6],
         "confidence": 0.91
       }
     ],
@@ -75,6 +103,14 @@ Annotation metadata may include source fonts and raw glyph text when extraction
 normalized a symbol-font character. That metadata is diagnostic evidence only;
 the annotation `text` remains the visible marker text used by downstream
 footnote linking.
+
+Each detected annotation is also the canonical early marker occurrence. Its
+`annotation_id` distinguishes repeated uses of the same glyph, while
+`glyph_key` provides shared Unicode-normalized identity for later footer
+matching. `source_char_indices` and `source_span_references` resolve into
+`paper_positioned_document.json`; `source_cell_id` is a physical cell
+association, not a later logical header/body attachment. Marker meaning is not
+decided here, and the source glyph is not removed from cell text.
 
 For rotated or sideways-transformed tables, annotation `bbox` values use the
 same coordinate frame as the table cell bboxes, recorded in table-level

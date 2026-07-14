@@ -78,6 +78,15 @@ def _schema_match_decision(
     continuation_headers = column_header_comparison_labels(continuation_schema) if continuation_schema_usable else []
     base_headers_for_match = base_headers
     continuation_headers_for_match = continuation_headers
+    missing_parent_group_context = False
+    if base_schema_usable and continuation_schema_usable and base_schema.groups and not continuation_schema.groups:
+        base_leaf_headers = column_header_comparison_labels(
+            base_schema.model_copy(update={"groups": [], "relationships": []})
+        )
+        continuation_leaf_headers = column_header_comparison_labels(
+            continuation_schema.model_copy(update={"groups": [], "relationships": []})
+        )
+        missing_parent_group_context = base_leaf_headers == continuation_leaf_headers
     if ignore_row_label_columns and base_schema_usable and continuation_schema_usable:
         row_label_columns = {
             leaf.col_idx
@@ -101,8 +110,15 @@ def _schema_match_decision(
         diagnostics.append(
             f"normalized_column_count_mismatch:base={base_table.n_cols}:continuation={continuation_table.n_cols}"
         )
-    if base_schema_usable and continuation_schema_usable and base_headers_for_match != continuation_headers_for_match:
+    if (
+        base_schema_usable
+        and continuation_schema_usable
+        and base_headers_for_match != continuation_headers_for_match
+        and not missing_parent_group_context
+    ):
         diagnostics.append(f"column_header_mismatch:base={base_headers}:continuation={continuation_headers}")
+    elif missing_parent_group_context:
+        diagnostics.append("continuation_inherits_parent_header_groups")
     elif base_schema_usable and continuation_schema_usable and base_headers != continuation_headers:
         diagnostics.append("row_label_column_header_mismatch_ignored_for_boundary_continuation")
 
@@ -119,7 +135,9 @@ def _schema_match_decision(
             diagnostics=diagnostics,
             confidence=0.0,
         )
-    if normalized_column_count_match and base_headers_for_match == continuation_headers_for_match:
+    if normalized_column_count_match and (
+        base_headers_for_match == continuation_headers_for_match or missing_parent_group_context
+    ):
         return ColumnSchemaCompatibilityDecision(
             decision_id=f"{decision_id_prefix}_{base_index}_{continuation_index}",
             base_table_id=base_table.table_id,
@@ -128,9 +146,13 @@ def _schema_match_decision(
             base_column_headers=base_headers,
             continuation_column_headers=continuation_headers,
             normalized_column_count_match=True,
-            decision_reason="schema_headers_and_column_count_match",
+            decision_reason=(
+                "leaf_headers_match_and_parent_group_context_inherited"
+                if missing_parent_group_context
+                else "schema_headers_and_column_count_match"
+            ),
             diagnostics=diagnostics,
-            confidence=0.95,
+            confidence=0.92 if missing_parent_group_context else 0.95,
         )
     return ColumnSchemaCompatibilityDecision(
         decision_id=f"{decision_id_prefix}_{base_index}_{continuation_index}",

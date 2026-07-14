@@ -7,10 +7,12 @@ from collections.abc import Sequence
 from typing import NamedTuple
 
 from table1_parser.page_furniture_mask import (
+    bbox_overlap_fraction,
     filter_positioned_items_for_page_furniture,
     page_furniture_cluster_ids_for_bbox,
 )
 from table1_parser.schemas import PaperPageFurniture, PaperTableMention
+from table1_parser.text_cleaning import clean_text
 from table1_parser.extract.table_detector import (
     DetectedTableCandidate,
     _is_rectangular,
@@ -22,9 +24,7 @@ from table1_parser.extract.table_detector import (
 
 ALPHA_TOKEN_PATTERN = re.compile(r"[A-Za-z]")
 NUMERIC_TOKEN_PATTERN = re.compile(r"\d")
-TABLE_CAPTION_PATTERN = re.compile(r"^\s*table\s*\d+\b(?:\s*[:.])?", re.IGNORECASE)
 TABLE_NUMBER_PATTERN = re.compile(r"\btable\s*(\d+)\b", re.IGNORECASE)
-SENTENCE_TERMINAL_PATTERN = re.compile(r"[.!?][\"')\]]*$")
 LINE_MERGE_TOLERANCE = 4.0
 COLUMN_CLUSTER_TOLERANCE = 18.0
 COLLAPSED_LABEL_PATTERN = re.compile(r"[a-z][A-Z]|[A-Za-z-]{8,}")
@@ -97,12 +97,18 @@ def detect_horizontal_rules(
                 continue
             merged_spans[-1][1] = max(merged_spans[-1][1], span_right)
         if require_full_width:
+            continuous_spans: list[list[float]] = []
+            for span_left, span_right in spans:
+                if not continuous_spans or span_left > continuous_spans[-1][1] + 0.51:
+                    continuous_spans.append([span_left, span_right])
+                    continue
+                continuous_spans[-1][1] = max(continuous_spans[-1][1], span_right)
             edge_tolerance = max(8.0, table_width * 0.08)
             full_width_span_found = any(
                 (span_right - span_left) / table_width >= 0.8
                 and span_left <= float(left) + edge_tolerance
                 and span_right >= float(right) - edge_tolerance
-                for span_left, span_right in merged_spans
+                for span_left, span_right in continuous_spans
             )
             if not full_width_span_found:
                 continue
@@ -149,7 +155,12 @@ def normalize_positioned_geometry_for_rotation(
             _transform_point(x0, word_bottom),
             _transform_point(x1, word_bottom),
         ]
-        transformed_words.append(
+        transformed_word = {
+            key: value
+            for key, value in word.items()
+            if key not in {"x0", "x1", "top", "bottom"}
+        }
+        transformed_word.update(
             {
                 "text": word["text"],
                 "x0": min(point[0] for point in transformed_corners),
@@ -158,6 +169,7 @@ def normalize_positioned_geometry_for_rotation(
                 "bottom": max(point[1] for point in transformed_corners),
             }
         )
+        transformed_words.append(transformed_word)
 
     transformed_chars: list[dict[str, object]] = []
     for char in chars or []:
@@ -199,6 +211,38 @@ def normalize_positioned_geometry_for_rotation(
 
     transformed_bbox = (0.0, 0.0, float(bottom) - float(top), float(right) - float(left))
     return (transformed_words, transformed_chars, transformed_rule_segments, transformed_bbox)
+
+
+def normalize_bbox_for_rotation(
+    bbox: tuple[float, float, float, float],
+    *,
+    source_bbox: tuple[float, float, float, float],
+    rotation_direction: str,
+) -> tuple[float, float, float, float]:
+    """Transform one page-space bbox into the canonical upright table frame."""
+    if rotation_direction not in {"vertical_text_up", "vertical_text_down"}:
+        return bbox
+
+    source_left, source_top, source_right, source_bottom = source_bbox
+
+    def _transform_point(x: float, y: float) -> tuple[float, float]:
+        if rotation_direction == "vertical_text_up":
+            return (source_bottom - y, x - source_left)
+        return (y - source_top, source_right - x)
+
+    left, top, right, bottom = bbox
+    transformed_corners = [
+        _transform_point(left, top),
+        _transform_point(right, top),
+        _transform_point(left, bottom),
+        _transform_point(right, bottom),
+    ]
+    return (
+        min(point[0] for point in transformed_corners),
+        min(point[1] for point in transformed_corners),
+        max(point[0] for point in transformed_corners),
+        max(point[1] for point in transformed_corners),
+    )
 
 
 def _is_numeric_like(text: str) -> bool:
@@ -279,31 +323,10 @@ def trim_trailing_non_table_rows(
     return TrimmedTableRows(rows, bboxes, bounds, None)
 
 
-def _has_header_like_top_row(rows: list[list[str]]) -> bool:
-    """Return whether the first fallback row looks like a table header."""
-    if not rows:
-        return False
-    top_row = [cell.strip() for cell in rows[0]]
-    if _nonempty_cell_count(top_row) < 3:
-        return False
-    first_cell = top_row[0]
-    if not first_cell or NUMERIC_TOKEN_PATTERN.search(first_cell):
-        return False
-    header_text = " ".join(cell.lower() for cell in top_row if cell)
-    return bool(
-        re.search(
-            r"\b(?:variable|variables|characteristic|characteristics|overall|total|case|cases|control|controls|model|or|ci|p|q\d+)\b",
-            header_text,
-        )
-    )
-
-
 def _has_strong_uncaptioned_table_geometry(rows: list[list[str]]) -> bool:
     """Return whether an uncaptioned fallback grid is table-like enough to preserve."""
     n_cols = max((len(row) for row in rows), default=0)
     if n_cols < 3 or len(rows) < 4:
-        return False
-    if not _has_header_like_top_row(rows):
         return False
     multi_column_rows = sum(_nonempty_cell_count(row) >= 3 for row in rows)
     if multi_column_rows < max(3, len(rows) // 2):
@@ -313,24 +336,6 @@ def _has_strong_uncaptioned_table_geometry(rows: list[list[str]]) -> bool:
         for row in rows[1:]
     )
     return data_like_rows >= 2
-
-
-def _normalized_line_key(text: object) -> str:
-    return re.sub(r"\s+", " ", str(text).strip()).lower()
-
-
-def _prose_reference_line_keys(
-    paper_table_mentions: Sequence[PaperTableMention] | None,
-    *,
-    page_num: int,
-) -> set[str]:
-    if not paper_table_mentions:
-        return set()
-    return {
-        _normalized_line_key(mention.source_line_text)
-        for mention in paper_table_mentions
-        if mention.page_num == page_num and mention.mention_kind == "prose_reference"
-    }
 
 
 def _value_region_prose_density(rows: list[list[str]]) -> dict[str, object]:
@@ -395,8 +400,279 @@ def build_word_lines(words: list[dict[str, object]]) -> list[dict[str, object]]:
         lines[-1]["bottom"] = max(float(lines[-1]["bottom"]), bottom)
     for line in lines:
         line["words"] = sorted(line["words"], key=lambda item: float(item["x0"]))
+        line["left"] = min(float(word["x0"]) for word in line["words"])
+        line["right"] = max(float(word["x1"]) for word in line["words"])
         line["text"] = " ".join(str(word["text"]).strip() for word in line["words"]).strip()
     return lines
+
+
+REFERENCE_BASELINE_VALUE_PATTERN = re.compile(
+    r"^(?:\d+(?:\.\d+)?|0?\.\d+)\(?ref(?:erence)?\.?\)?$|"
+    r"^(?:\d+(?:\.\d+)?|0?\.\d+)\(\s*ref(?:erence)?\.?\s*\)$",
+    re.IGNORECASE,
+)
+
+
+def _looks_like_value_matrix_word(text: str) -> bool:
+    """Return whether a positioned word can directly support a value anchor."""
+    compact = re.sub(r"[\s,\u00a0\u2009\u202f]+", "", clean_text(text))
+    if not compact or NUMERIC_TOKEN_PATTERN.search(compact) is None:
+        return False
+    if REFERENCE_BASELINE_VALUE_PATTERN.fullmatch(compact):
+        return True
+    if ALPHA_TOKEN_PATTERN.search(compact) is not None:
+        return False
+    return re.fullmatch(r"(?:[<>]=?)?[\d./%()\-+±*†‡§¶#]+", compact) is not None
+
+
+def _value_matrix_column_boundaries_from_lines(
+    lines: list[dict[str, object]],
+    horizontal_rules: list[float],
+    geometry_out: dict[str, object] | None = None,
+) -> tuple[list[float], list[float]] | None:
+    """Infer label/value boundaries from repeated numeric anchors in body lines."""
+    if not lines:
+        return None
+
+    first_table_rule = min(horizontal_rules or [float("-inf")])
+    candidate_items: list[tuple[float, int]] = []
+    first_value_boundaries: list[float] = []
+    left_text_candidate_line_count = 0
+    candidate_line_indices: set[int] = set()
+    for line_index, line in enumerate(lines):
+        line_words = [
+            word
+            for word in line["words"]
+            if str(word.get("text", "")).strip()
+        ]
+        if not line_words or float(line["top"]) < first_table_rule - 2.0:
+            continue
+
+        sorted_words = sorted(line_words, key=lambda word: float(word["x0"]))
+        numeric_indices = [
+            index
+            for index, word in enumerate(sorted_words)
+            if _looks_like_value_matrix_word(str(word.get("text", "")))
+        ]
+        if len(numeric_indices) < 3:
+            continue
+        best_start_index = numeric_indices[0]
+        best_gap = float("-inf")
+        reference_start_indices = [
+            numeric_index
+            for numeric_index in numeric_indices
+            if numeric_index > 0
+            and REFERENCE_BASELINE_VALUE_PATTERN.fullmatch(
+                re.sub(
+                    r"[\s,\u00a0\u2009\u202f]+",
+                    "",
+                    clean_text(str(sorted_words[numeric_index].get("text", ""))),
+                )
+            )
+            and sum(index >= numeric_index for index in numeric_indices) >= 3
+            and any(
+                ALPHA_TOKEN_PATTERN.search(str(word.get("text", "")))
+                for word in sorted_words[:numeric_index]
+            )
+        ]
+        if reference_start_indices:
+            best_start_index = reference_start_indices[0]
+        else:
+            for numeric_index in numeric_indices:
+                trailing_numeric_count = sum(
+                    index >= numeric_index for index in numeric_indices
+                )
+                if trailing_numeric_count < 3:
+                    continue
+                previous_x1 = (
+                    float(sorted_words[numeric_index - 1]["x1"])
+                    if numeric_index > 0
+                    else float(sorted_words[numeric_index]["x0"])
+                )
+                gap = float(sorted_words[numeric_index]["x0"]) - previous_x1
+                if gap > best_gap:
+                    best_gap = gap
+                    best_start_index = numeric_index
+
+        first_value_boundary = None
+        if best_start_index > 0:
+            first_value_boundary = (
+                float(sorted_words[best_start_index - 1]["x1"])
+                + float(sorted_words[best_start_index]["x0"])
+            ) / 2.0
+        numeric_words: list[dict[str, object]] = []
+        previous_numeric_word: dict[str, object] | None = None
+        for index, word in enumerate(sorted_words):
+            if index < best_start_index or not _looks_like_value_matrix_word(
+                str(word.get("text", ""))
+            ):
+                continue
+            if previous_numeric_word is not None:
+                previous_text = str(previous_numeric_word.get("text", "")).strip()
+                current_text = str(word.get("text", "")).strip()
+                if (
+                    current_text.startswith("(")
+                    or previous_text.endswith(",")
+                    or ("(" in previous_text and ")" not in previous_text)
+                ):
+                    previous_numeric_word = word
+                    continue
+            numeric_words.append(word)
+            previous_numeric_word = word
+
+        if len(numeric_words) < 3 or len(numeric_words) * 2 < len(line_words):
+            continue
+        candidate_line_indices.add(line_index)
+        if first_value_boundary is not None:
+            first_value_boundaries.append(first_value_boundary)
+            if any(
+                float(word.get("x1", word.get("x0", 0.0)))
+                <= first_value_boundary + 1.0
+                and ALPHA_TOKEN_PATTERN.search(str(word.get("text", "")))
+                for word in line_words
+            ):
+                left_text_candidate_line_count += 1
+        candidate_items.extend(
+            (float(word["x0"]), line_index) for word in numeric_words
+        )
+
+    if len(candidate_line_indices) < 3 or not candidate_items:
+        return None
+
+    clusters: list[list[tuple[float, int]]] = []
+    for item in sorted(candidate_items):
+        if not clusters or abs(item[0] - clusters[-1][-1][0]) > COLUMN_CLUSTER_TOLERANCE:
+            clusters.append([item])
+        else:
+            clusters[-1].append(item)
+    minimum_line_support = (
+        2
+        if len(candidate_line_indices) <= 5
+        else max(3, min(5, len(candidate_line_indices) // 4))
+    )
+    value_anchors = [
+        sum(position for position, _line_index in cluster) / len(cluster)
+        for cluster in clusters
+        if len({_line_index for _position, _line_index in cluster})
+        >= minimum_line_support
+    ]
+    if len(value_anchors) < 4 or len(value_anchors) > 24:
+        return None
+
+    rightmost_anchor = value_anchors[-1]
+    right_trailing_text_lines = sum(
+        any(
+            float(word["x0"]) > rightmost_anchor + COLUMN_CLUSTER_TOLERANCE
+            and ALPHA_TOKEN_PATTERN.search(str(word.get("text", "")))
+            for word in lines[line_index]["words"]
+        )
+        for line_index in candidate_line_indices
+    )
+    if right_trailing_text_lines >= max(2, len(candidate_line_indices) // 3):
+        return None
+
+    header_first_boundary: float | None = None
+    if (
+        len(value_anchors) >= 2
+        and left_text_candidate_line_count >= max(2, len(candidate_line_indices) // 3)
+    ):
+        first_body_top = min(
+            float(lines[line_index]["top"])
+            for line_index in candidate_line_indices
+        )
+        first_anchor = value_anchors[0]
+        second_anchor = value_anchors[1]
+        first_header_tolerance = max(
+            18.0,
+            min(34.0, (second_anchor - first_anchor) * 0.45),
+        )
+        header_boundary_candidates: list[tuple[float, float]] = []
+        for line_index, line in enumerate(lines):
+            if (
+                line_index in candidate_line_indices
+                or float(line["top"]) < first_table_rule - 2.0
+                or float(line["bottom"]) > first_body_top - 0.5
+            ):
+                continue
+            header_words = sorted(
+                [
+                    word
+                    for word in line["words"]
+                    if str(word.get("text", "")).strip()
+                ],
+                key=lambda word: float(word["x0"]),
+            )
+            for word_index, word in enumerate(header_words):
+                word_x0 = float(word["x0"])
+                if abs(word_x0 - first_anchor) > first_header_tolerance:
+                    continue
+                prior_words = [
+                    prior_word
+                    for prior_word in header_words[:word_index]
+                    if float(prior_word.get("x1", prior_word.get("x0", 0.0)))
+                    <= word_x0 - 2.0
+                ]
+                if not prior_words:
+                    continue
+                prior_text = " ".join(
+                    str(prior_word.get("text", "")) for prior_word in prior_words
+                )
+                if ALPHA_TOKEN_PATTERN.search(prior_text) is None:
+                    continue
+                prior_x1 = float(
+                    prior_words[-1].get("x1", prior_words[-1].get("x0", 0.0))
+                )
+                if word_x0 - prior_x1 < 8.0:
+                    continue
+                boundary = (prior_x1 + word_x0) / 2.0
+                if first_anchor - boundary > 4.0:
+                    header_boundary_candidates.append(
+                        (float(line["top"]), boundary)
+                    )
+                    break
+        if header_boundary_candidates:
+            leaf_header_top = max(
+                line_top for line_top, _boundary in header_boundary_candidates
+            )
+            leaf_header_boundaries = sorted(
+                boundary
+                for line_top, boundary in header_boundary_candidates
+                if line_top >= leaf_header_top - 3.0
+            )
+            header_first_boundary = leaf_header_boundaries[
+                len(leaf_header_boundaries) // 2
+            ]
+
+    if header_first_boundary is not None:
+        first_boundary = header_first_boundary
+    elif first_value_boundaries:
+        ordered_first_boundaries = sorted(first_value_boundaries)
+        first_boundary = ordered_first_boundaries[len(ordered_first_boundaries) // 2]
+    else:
+        leftmost_text_x0 = min(
+            float(word["x0"]) for line in lines for word in line["words"]
+        )
+        first_boundary = (leftmost_text_x0 + value_anchors[0]) / 2.0
+    if value_anchors[0] - first_boundary <= 4.0:
+        return None
+    boundaries = [
+        first_boundary,
+        *[
+            (value_anchors[index] + value_anchors[index + 1]) / 2.0
+            for index in range(len(value_anchors) - 1)
+        ],
+    ]
+    if geometry_out is not None:
+        sorted_candidate_line_indices = sorted(candidate_line_indices)
+        geometry_out["value_matrix_candidate_line_indices"] = (
+            sorted_candidate_line_indices
+        )
+        geometry_out["value_matrix_first_body_line_index"] = (
+            sorted_candidate_line_indices[0]
+            if sorted_candidate_line_indices
+            else None
+        )
+    return boundaries, value_anchors
 
 
 def build_row_grid_from_lines(
@@ -873,9 +1149,9 @@ def apply_header_column_band_geometry(
             right_x = boundaries[col_idx]
         column_extents.append((left_x, max(left_x, right_x)))
 
+    header_row_limit = min(header_line_count, len(rows), len(bbox_rows), len(lines))
     roles: list[str] = []
     previous_leaf_header = False
-    header_row_limit = min(header_line_count, len(rows), len(bbox_rows), len(lines))
     body_comma_pair_support: set[tuple[int, int]] = set()
     for left_col_idx in range(1, row_width - 1):
         paired_body_rows = 0
@@ -1173,6 +1449,8 @@ def build_text_layout_candidates(
     layout_source: str = "text_positions",
     paper_page_furniture: PaperPageFurniture | None = None,
     paper_table_mentions: Sequence[PaperTableMention] | None = None,
+    allow_uncaptioned_orientation_group: bool = False,
+    candidate_region_bbox: tuple[float, float, float, float] | None = None,
 ) -> list[DetectedTableCandidate]:
     """Build scored candidates from page word and char geometry."""
     working_words, word_mask_metadata = filter_positioned_items_for_page_furniture(
@@ -1187,13 +1465,24 @@ def build_text_layout_candidates(
     )
     lines = build_word_lines(working_words)
 
-    prose_reference_line_keys = _prose_reference_line_keys(paper_table_mentions, page_num=page_num)
-    caption_indices = [
-        index
-        for index, line in enumerate(lines)
-        if TABLE_CAPTION_PATTERN.search(str(line["text"]))
-        and _normalized_line_key(line["text"]) not in prose_reference_line_keys
+    caption_bboxes = [
+        mention.source_line_bbox
+        for mention in paper_table_mentions or []
+        if mention.page_num == page_num and mention.is_caption_candidate
     ]
+    caption_indices: list[int] = []
+    for index, line in enumerate(lines):
+        line_bbox = (
+            float(line["left"]),
+            float(line["top"]),
+            float(line["right"]),
+            float(line["bottom"]),
+        )
+        if any(
+            bbox_overlap_fraction(line_bbox, bbox) >= 0.8
+            for bbox in caption_bboxes
+        ):
+            caption_indices.append(index)
     candidates: list[DetectedTableCandidate] = []
     segments: list[dict[str, object]] = []
 
@@ -1209,20 +1498,60 @@ def build_text_layout_candidates(
             return False
         left = min(float(word["x0"]) for line in content_lines for word in line["words"])
         right = max(float(word["x1"]) for line in content_lines for word in line["words"])
-        bbox = (
+        bbox = candidate_region_bbox or (
             left,
             bbox_top,
             right,
             max(float(line["bottom"]) for line in content_lines),
         )
         horizontal_rules = detect_horizontal_rules(rule_segments, bbox)
+        full_width_rules = detect_horizontal_rules(
+            rule_segments,
+            bbox,
+            require_full_width=True,
+        )
+        if len(full_width_rules) >= 3:
+            final_rule = max(full_width_rules)
+            if any(float(line["top"]) > final_rule + 2.0 for line in content_lines):
+                content_lines = [
+                    line
+                    for line in content_lines
+                    if float(line["top"]) <= final_rule + 2.0
+                ]
+                if not content_lines:
+                    return False
+                bbox = (
+                    left,
+                    bbox_top,
+                    right,
+                    max(final_rule, max(float(line["bottom"]) for line in content_lines)),
+                )
+                horizontal_rules = [
+                    rule for rule in horizontal_rules if rule <= final_rule + 2.0
+                ]
+        value_matrix_geometry: dict[str, object] = {}
+        positioned_value_axis = _value_matrix_column_boundaries_from_lines(
+            content_lines,
+            full_width_rules or horizontal_rules,
+            geometry_out=value_matrix_geometry,
+        )
         grid_geometry: dict[str, object] = {}
         rows, cell_bboxes = build_row_grid_from_lines(
             content_lines,
             page_chars=page_chars,
+            column_start_boundaries=(
+                positioned_value_axis[0]
+                if positioned_value_axis is not None
+                else None
+            ),
             geometry_out=grid_geometry,
-            suppress_attached_label_numeric_anchors=segment_source == "horizontal_rule_block",
         )
+        if positioned_value_axis is not None:
+            grid_geometry.update(value_matrix_geometry)
+            grid_geometry["value_column_anchors"] = positioned_value_axis[1]
+            grid_geometry["column_geometry_source"] = (
+                "repeated_value_matrix_anchors"
+            )
         if not rows:
             return False
         header_row_geometry_roles: list[str] = []
@@ -1277,10 +1606,16 @@ def build_text_layout_candidates(
         if not rows or not content_lines:
             return False
         prose_density = _value_region_prose_density(rows)
-        if _looks_like_prose_fragment_grid(rows):
-            return False
         n_cols = max((len(row) for row in rows), default=0)
         multi_column_rows = sum(_nonempty_cell_count(row) >= 3 for row in rows)
+        rule_bounded_positioned_grid = (
+            len(full_width_rules) >= 3
+            and n_cols >= 3
+            and len(rows) >= 4
+            and multi_column_rows >= max(3, len(rows) // 3)
+        )
+        if _looks_like_prose_fragment_grid(rows) and not rule_bounded_positioned_grid:
+            return False
         ruled_value_rows = sum(
             _table_value_cell_count(row) >= max(2, min(4, max(1, (len(row) - 1) // 2)))
             for row in rows[1:]
@@ -1294,7 +1629,7 @@ def build_text_layout_candidates(
         )
         strong_ruled_geometry = (
             segment_source in {"horizontal_rule_block", "caption_segment"}
-            and rule_bounded_value_geometry
+            and (rule_bounded_value_geometry or rule_bounded_positioned_grid)
         )
         strong_geometry = _has_strong_uncaptioned_table_geometry(rows) or strong_ruled_geometry
         if segment_source == "caption_segment" and not caption_signal and not rule_bounded_value_geometry:
@@ -1317,7 +1652,11 @@ def build_text_layout_candidates(
                 "cell_bboxes": cell_bboxes,
                 "row_bounds": trimmed.row_bounds,
                 "horizontal_rules": horizontal_rules,
+                "full_width_horizontal_rules": full_width_rules,
                 "header_row_geometry_roles": header_row_geometry_roles,
+                "positioned_column_start_boundaries": grid_geometry.get(
+                    "column_start_boundaries"
+                ),
                 "value_matrix_column_anchors": grid_geometry.get("value_column_anchors"),
                 "label_span_numeric_clusters": grid_geometry.get("label_span_numeric_clusters"),
                 "label_column_numeric_anchor_suppression": grid_geometry.get(
@@ -1349,9 +1688,7 @@ def build_text_layout_candidates(
     for segment_index, start_index in enumerate(caption_indices):
         end_index = caption_indices[segment_index + 1] if segment_index + 1 < len(caption_indices) else len(lines)
         segment_lines = lines[start_index:end_index]
-        if len(segment_lines) < 3:
-            continue
-        first_caption_text = str(segment_lines[0]["text"]).strip()
+        first_caption_text = str(lines[start_index]["text"]).strip()
         first_caption_metadata = _table_caption_metadata(first_caption_text)
         caption_parts = [
             str(first_caption_metadata["caption"])
@@ -1359,85 +1696,39 @@ def build_text_layout_candidates(
             else first_caption_text
         ]
         content_start = 1
-        while content_start < len(segment_lines) and not SENTENCE_TERMINAL_PATTERN.search(" ".join(caption_parts)):
-            next_line_text = str(segment_lines[content_start]["text"]).strip()
-            next_line_word_count = len(segment_lines[content_start]["words"])
-            if (
-                len(next_line_text) >= 4
-                and (
-                    next_line_word_count <= 2
-                    or (
-                        next_line_word_count <= 12
-                        and next_line_text[:1].islower()
-                        and SENTENCE_TERMINAL_PATTERN.search(next_line_text)
-                    )
-                )
-                and not _is_numeric_like(next_line_text)
-            ):
-                caption_parts.append(next_line_text)
-                content_start += 1
-                continue
-            break
-        content_lines = segment_lines[content_start:]
         caption = "\n".join(caption_parts)
-        caption_signal = first_caption_metadata is not None
-        appended = append_geometry_segment(
+        content_lines = segment_lines[content_start:]
+        appended = bool(content_lines) and append_geometry_segment(
             content_lines=content_lines,
-            bbox_top=float(segment_lines[0]["top"]),
+            bbox_top=float(lines[start_index]["top"]),
             caption=caption,
-            caption_signal=caption_signal,
+            caption_signal=True,
             segment_source="caption_segment",
         )
         if appended:
             captured_line_ranges.append(
                 (start_index + content_start, start_index + content_start + len(content_lines))
             )
+            continue
+        prior_caption_index = caption_indices[segment_index - 1] if segment_index else -1
+        preceding_lines = lines[prior_caption_index + 1 : start_index]
+        if preceding_lines and append_geometry_segment(
+            content_lines=preceding_lines,
+            bbox_top=float(preceding_lines[0]["top"]),
+            caption=caption,
+            caption_signal=True,
+            segment_source="caption_segment",
+        ):
+            captured_line_ranges.append((prior_caption_index + 1, start_index))
 
-    if rule_segments and lines:
-        page_words = [word for line in lines for word in line["words"]]
-        if page_words:
-            page_bbox = (
-                min(float(word["x0"]) for word in page_words),
-                min(float(word["top"]) for word in page_words),
-                max(float(word["x1"]) for word in page_words),
-                max(float(word["bottom"]) for word in page_words),
-            )
-            page_rules = detect_horizontal_rules(rule_segments, page_bbox)
-            rule_clusters: list[list[float]] = []
-            for rule in page_rules:
-                if not rule_clusters or float(rule) - rule_clusters[-1][-1] > 45.0:
-                    rule_clusters.append([float(rule)])
-                    continue
-                rule_clusters[-1].append(float(rule))
-            for rule_cluster in rule_clusters:
-                if len(rule_cluster) < 3:
-                    continue
-                top_rule = rule_cluster[0]
-                bottom_rule = rule_cluster[-1]
-                line_indices = [
-                    line_index
-                    for line_index, line in enumerate(lines)
-                    if float(line["top"]) <= bottom_rule + 2.0
-                    and float(line["bottom"]) >= top_rule - 2.0
-                ]
-                if not line_indices:
-                    continue
-                start_index = min(line_indices)
-                end_index = max(line_indices) + 1
-                range_length = max(1, end_index - start_index)
-                if any(
-                    max(0, min(end_index, used_end) - max(start_index, used_start)) / range_length >= 0.6
-                    for used_start, used_end in captured_line_ranges
-                ):
-                    continue
-                content_lines = lines[start_index:end_index]
-                append_geometry_segment(
-                    content_lines=content_lines,
-                    bbox_top=float(content_lines[0]["top"]),
-                    caption=None,
-                    caption_signal=False,
-                    segment_source="horizontal_rule_block",
-                )
+    if allow_uncaptioned_orientation_group and lines and not segments:
+        append_geometry_segment(
+            content_lines=lines,
+            bbox_top=float(lines[0]["top"]),
+            caption=None,
+            caption_signal=False,
+            segment_source="orientation_group",
+        )
     for table_index, segment in enumerate(segments):
         raw_rows = segment.get("rows", [])
         if not isinstance(raw_rows, list):
@@ -1463,11 +1754,17 @@ def build_text_layout_candidates(
                         "table_cells": segment.get("cell_bboxes", []),
                         "row_bounds": segment["row_bounds"],
                         "horizontal_rules": segment["horizontal_rules"],
+                        "full_width_horizontal_rules": segment[
+                            "full_width_horizontal_rules"
+                        ],
                         "header_row_geometry_roles": segment["header_row_geometry_roles"],
                         "header_row_geometry_source": (
                             "pymupdf_positioned_words_and_horizontal_rules"
                             if segment["header_row_geometry_roles"]
                             else None
+                        ),
+                        "positioned_column_start_boundaries": segment.get(
+                            "positioned_column_start_boundaries"
                         ),
                         "value_matrix_column_anchors": segment["value_matrix_column_anchors"],
                         "label_span_numeric_clusters": segment["label_span_numeric_clusters"],

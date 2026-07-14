@@ -26,12 +26,17 @@ outputs/papers/<paper_stem>/
 Today that directory may contain:
 
 - `extracted_tables.json`
+- `table_boundary_proposals.json`
 - `table_regions.json`
 - `cell_text_annotations.json`
 - `normalized_tables.json`
 - `column_header_schemas.json`
 - `body_element_candidates.json`
 - `body_row_label_candidates.json`
+- `body_occupancy.json`
+- `leaf_column_candidates.json`
+- `header_structure_candidates.json`
+- `token_start_evidence.json`
 - `resolved_tables.json`
 - `table1_continuation_groups.json`
 - `table_continuation_column_checks.json`
@@ -63,7 +68,18 @@ Some of these are per-table artifacts. Others are paper-level context artifacts.
 
 `cell_text_annotations.json` records superscript, subscript, and small marker
 geometry by table cell when compatible PyMuPDF character geometry and extracted
-cell bboxes are available. It does not change the raw extracted grid.
+cell bboxes are available. It does not change the raw extracted grid. A known
+remaining gap is that the same marker glyph may still be pasted onto the base
+cell string. The planned logical candidate view will preserve the unchanged raw
+string while exposing marker-free base text linked to the annotation record;
+uncertain glyphs will not be stripped.
+
+Each detected annotation now also serves as a stable early marker occurrence:
+it records a unique occurrence ID, normalized glyph key, physical source cell,
+source PyMuPDF character and line/span references, bbox, and font evidence.
+This inventory deliberately retains numeric citations, mathematical notation,
+and other unresolved candidates; classification and footer resolution happen
+later.
 
 `table_regions.json` records geometry-derived ownership for each extracted
 table before normalization: caption/title rows, preamble rows, column-header
@@ -75,12 +91,40 @@ Discontinuous same-y rule segments are preserved as ordinary horizontal-rule
 evidence; only continuous near-edge-to-near-edge drawn rules are treated as
 full-width boundary rules.
 
+`table_boundary_proposals.json` is built between canonical extracted geometry
+and `TableRegion`. It keeps alternative
+rule-supported table-start, header/body, and body/footer edges in one upright
+frame for both ordinary and rotated tables. Individual rule segments remain
+referenced rather than merged. A footer alternative requires immediate
+changed-font text after the final retained rule and stops at a known caption,
+later table, or section heading. It stores source line IDs, canonical bounds,
+and font styles without interpreting the text. It also records whether credible
+rule geometry or a coherent repeated positioned grid exists. If neither exists,
+`TableRegion` fails closed with no manufactured header/body bands, and
+normalization preserves that decision. A single supported body/footer model is
+used directly. When multiple canonical body intervals remain plausible, raw
+body occupancy selects among those intervals and favors the largest interval
+when font-qualified exact-gap support ties. Selected region edges are attached
+afterward for inspection.
+
 `paper_positioned_document.json` records the shared PyMuPDF positioned text pass
 for the whole paper: pages, visual lines, span text, bboxes, font names, font
 sizes, flags, line directions, words, characters, and horizontal rule segments.
 It is built before paper furniture, text streaming, section parsing,
 bibliography extraction, table mention detection, table extraction context, and
 cell text annotation.
+
+Each selected extracted table records
+`metadata.table_positioned_evidence`, a compact set of page-local references
+back into this shared PyMuPDF artifact. The record identifies table-local lines,
+spans, words, characters, and individual rule segments after text furniture and
+bibliography masks have been applied. It also stores geometry-only canonical
+projections aligned with every source-reference list, plus one affine transform
+from page space into the table's orientation-group frame. Candidate, evidence,
+caption, and structural-scope bounds are projected through that same transform.
+Upright tables use the identity transform; rotated tables therefore no longer
+require a separate downstream geometry route. The record does not copy
+text/font payloads, classify any boundary, or alter the extracted table grid.
 
 `paper_page_furniture.json` records repeated page text observations, recurrence
 clusters, and generic ignored regions. It is built from
@@ -93,6 +137,9 @@ consumes the same positioned characters. The page-furniture artifact is still
 passed into table extraction, cell text annotation, and text-stream footer
 detection as an early geometry mask. It is written even when no repeated page
 furniture is found.
+Standalone printed page numbers do not need to equal the PDF page index: they
+share a matching key only for recurrence analysis and qualify only through
+top/bottom all-page or odd/even geometry. Their source text remains unchanged.
 
 `paper_footnotes.json` records detected table-local footer regions, footnote
 anchors, candidate definitions, and glyph-key links as a paper-level review
@@ -109,7 +156,12 @@ populated footer cell; raw extracted strings that visually run the marker into
 the next word are preserved as provenance but do not define the marker.
 
 `paper_text_stream.json` is the filtered and layout-ordered view of
-`paper_positioned_document.json`. It is also the positioned text source for
+`paper_positioned_document.json`. It preserves each source line ID and original
+page-space bbox. Lines are partitioned by writing direction; rotated groups are
+ordered through an upright group-local projection recorded as
+`canonical_bbox`, with direction, orientation, and orientation-group provenance.
+Context adjacency stops at page and orientation-group boundaries. It is also the
+positioned text source for
 footer candidates
 that are absent from the extracted grid. The stream preserves visual lines,
 page/column order, line bbox, dominant font name, dominant font size, and
@@ -162,9 +214,18 @@ available.
 `paper_table_mentions.json` is built from the page-furniture-filtered
 layout-aware text stream before table extraction. It records each observed
 `Table N` mention as a caption candidate, continuation label, or prose
-reference, preserving line IDs, local context, and cue evidence such as a
-previous line ending in `shown in`. Text-position table fallback consumes this
-artifact so a prose reference line cannot become the start of a table candidate.
+reference, preserving line IDs, the source-line bbox, local context, and cue
+evidence such as a previous line ending in `shown in`. Text-position table
+fallback consumes this artifact and rejects proposed caption lines that overlap
+a prose-reference bbox, so differences between raw and normalized glyph text
+cannot turn a prose reference into the start of a table candidate.
+
+Raw and derived artifacts remain side by side through the R handoff:
+`paper_positioned_document.json` preserves shared source geometry,
+`paper_text_stream.json` adds orientation-aware reading order without replacing
+it, and `extracted_tables.json` preserves the selected physical table grid.
+Later normalized and continuation-resolved artifacts reference these records;
+they do not replace them.
 
 `paper_style_profile.json` summarizes the document's observed conventions for
 footnote markers, bibliography/reference-list style, table caption placement,
@@ -206,10 +267,17 @@ The current implemented flow for `parse` is:
 ```text
 PDF
   -> paper positioned document
-  -> paper page furniture / text stream / markdown / sections / bibliography
+  -> page-furniture detection and masking
+  -> filtered text stream / markdown
+  -> sections
+  -> bibliography parsing and ownership
   -> extracted tables
   -> cell text annotations
+  -> table boundary proposals
   -> table regions
+  -> body occupancy diagnostic
+  -> provisional leaf-column diagnostic
+  -> preliminary header-structure diagnostic
   -> normalized tables
   -> column header schemas
   -> body element candidates
@@ -228,6 +296,26 @@ PDF
 TableDefinition.variables
   -> optional standalone variable-plausibility LLM review
 ```
+
+The implemented `HeaderStructureCandidate` is built after provisional body
+occupancy and leaf-column bands are available, then rebuilt for the finalized
+canonical extract. It expresses candidate leaves, multicolumn groups, wrapped
+header fragments, marker attachments, and cross-band header diagnostics in a
+LaTeX-like form while preserving source geometry. Provisional occupancy bands
+normally define the leaves. For a complete one-row header with one non-empty
+canonical cell per selected column, the finalized candidate instead preserves
+those cells one-for-one; a confirmed continuation may therefore expose its
+accepted parent leaf axis while retaining a disagreeing local occupancy count
+as a concern. For incomplete or multilevel headers, observed body-cell anchors
+and unambiguous lowest-band header evidence supply the candidate leaf axis.
+Positioned runs that cover one anchor remain leaf labels; runs or individual
+partial rules that cover multiple contiguous anchors can become groups.
+Same-row peers partition a repeated group row only when local rule evidence
+already supports that structure. Header text cannot independently add columns.
+The artifact remains diagnostic: a missing or disagreeing header candidate
+cannot reject or alter the canonical `ExtractedTable`, and neither
+`TableRegion` nor the accepted post-normalization `ColumnHeaderSchema`
+consumes it yet.
 
 Two points matter here.
 
@@ -258,77 +346,76 @@ evidence, and, when a bibliography was found, bibliography-owned source-line and
 entry-bbox evidence. It is responsible for finding likely tables in the
 remaining PDF geometry and recovering a raw grid for each one.
 
-Conceptually, this stage does four things:
+Conceptually, this stage does five things:
 
 1. inspect the PDF page layout
-2. remove repeated page-furniture words, chars, and explicit-grid rows by bbox
+2. remove repeated page-furniture words and chars by exact source-line
+   provenance, using bbox masking only for explicit-grid evidence without line
+   identity
 3. find table candidates
-4. build `ExtractedTable` objects for the deduplicated candidates
+4. build internal `ProvisionalExtractedTable` objects for the deduplicated
+   candidates
+5. select adequate positioned row and leaf-column geometry and materialize the
+   public `ExtractedTable` objects
 
-The current extractor uses `pymupdf4llm` as the main backend. It tries to recover explicit table boxes and table cell grids from the backend JSON output. When that is not enough, it can fall back to text-position-based layout reconstruction.
+`ProvisionalExtractedTable` is an internal typed grid candidate. It is not
+persisted, normalized, or exposed as the canonical extraction artifact. The
+first geometry pass may use it to choose the physical grid; only the resulting
+`ExtractedTable` crosses the persistence and normalization boundary.
 
-For explicit table boxes, caption candidates are structural evidence, not just
-review text. The extractor collects table-caption text boxes on the page and
-binds each caption to at most one nearby table by geometry, considering both
-captions above and captions below the table. A below-table caption therefore
-belongs to the table immediately above it when that is the nearest compatible
-table, rather than being shifted onto the next table by page order. Strong
-table boxes that remain uncaptained are preserved as possible continuation
-fragments; they are not given a fallback caption just because another caption
-appears elsewhere on the page.
+The extractor uses only the shared PyMuPDF positioned-document evidence and
+has no alternate table-extraction backend. If positioned words, characters,
+source rule segments, and structural text evidence cannot support a candidate,
+the extractor fails closed.
 
-Caption binding also protects the grid itself. If the backend grid's first row
-overlaps the bound caption and a full-width horizontal rule separates that
-caption text from the remaining table rows, extraction removes only that
-contaminated first backend row before normalization. This preserves the
-backend's existing column geometry for the actual table and records the removed
-row in extraction metadata, instead of rebuilding a wide table from scratch just
-because a caption tail entered the grid.
+Before candidate rule spans are formed, stroked horizontal rules at a stable
+top edge or repeated-bottom band position on at least 80% of document pages are
+excluded as page furniture. Their source geometry remains in the
+positioned-document artifact; only their participation in table-boundary
+selection is suppressed.
 
-Extraction also uses early, coarse document-structure landmarks when available.
-If positioned page text identifies an Abstract heading followed by an
-Introduction heading, the y-interval between them is treated as front matter.
-Uncaptioned backend table boxes inside that interval are suppressed unless they
-carry real table identity or strong value-matrix evidence. This prevents
-article-info/abstract page layouts from entering the table pipeline as pseudo
-tables while keeping the decision at the extraction stage where candidate
-ownership belongs.
+For upright pages, caption mentions are structural evidence. A caption can
+seed a candidate only from horizontal-rule spans that overlap it on the x-axis;
+other captions constrain the region only when they overlap the same span. This
+allows side-by-side tables to keep independent vertical bounds. Words and
+characters are clipped to the resulting caption/rule region before the normal
+positioned grid builder runs. That observed rule-bounded region remains the
+operative candidate bbox during grid construction and rule detection; the
+builder derives bounds from text only when no rule-supported region was found.
+Rules outside the selected region do not participate in its boundary model.
 
-For explicit PyMuPDF4LLM tables, the backend table box is only a rough region
-hint. The canonical extracted grid is rebuilt from positioned PyMuPDF words,
-characters, and rule geometry inside that region before normalization sees the
-table. The extractor first uses full-width horizontal rules when they define a
-visible ruled band, then value-matrix anchors when repeated numeric value
-columns define stable column starts, and finally a conservative bbox-word
-rebuild when the positioned words form a credible two-dimensional table. If a
-backend table box starts just below a true full-width top rule or ends just
-above a true bottom rule, extraction may expand the word clip to those rules so
-header or final body rows are not lost before column-header schema
-construction. When a caption is bound above the table and no rule provides the
-top boundary, nearby positioned header words just below the caption may expand
-the clip upward; when a top rule exists, the clip does not expand above that
-rule into title or caption text.
+An uncaptioned region can also seed a candidate when its individual horizontal
+and vertical source rules form one connected, enclosed grid. Directly touching
+source segments may belong to the same graph component, but their identities
+and endpoints remain separate. An open callout or equation frame is not a
+closed table grid, and partial header rules are never promoted to full-width
+rules by this component check.
 
-Ruled explicit tables and text-position fallback share the same upper-header
-span repair. Sparse word clusters in upper header rows are represented as
-spanning group cells over adjacent lower leaf columns, while dense repeated
-clusters stay as separate leaf-header cells. This keeps a continuation page
-that entered through a backend table box and a base page that entered through
-text-position fallback in the same document-order grid shape when the visible
-table geometry is the same.
+A top-of-page continuation can be recovered from the preceding page's value
+column anchors. The new page must show numeric occupancy in every inherited
+value-column band, and the candidate ends at the first horizontal rule covering
+those bands after the last supported value row. When the parent is numbered,
+the fragment inherits the existing continuation identity fields so ordinary
+column-schema validation can decide whether to integrate it.
 
-Geometry provenance is explicit in extraction metadata. A candidate may have
-`layout_source = "pymupdf4llm_json"` because PyMuPDF4LLM supplied the rough
-table box, but `canonical_extraction_layer =
-"pymupdf_positioned_geometry"` means the rows, columns, cell bboxes, row
-bounds, and header geometry came from PyMuPDF positioned extraction. The
-specific `grid_refinement_source` records which structural path built the
-grid, such as `hline_word_positions`, `value_matrix_word_positions`, or
-`pymupdf_positioned_bbox_words`. Text-position fallback candidates use
-PyMuPDF geometry from the start and record `grid_refinement_source =
-"text_position_column_geometry"`. A PyMuPDF4LLM table box that cannot be
-rebuilt from positioned PyMuPDF geometry is not emitted as a normal extracted
-table.
+Canonical grid selection may retain the preceding fragment's leaf bands for an
+explicit next-page continuation only when the preceding fragment has already
+finalized at the continuation's provisional width, the provisional leaf-header
+cells match, value anchors align within the continuation's observed character
+scale, and token-start evidence places a token in every inherited value band on
+every body line. This confirms an existing parent axis; token starts do not
+independently invent a separator. The decision and all measurements are stored
+in `metadata.canonical_grid_selection.continuation_parent_band_confirmation`.
+
+Rotated orientation groups are transformed once into the same canonical
+upright frame before candidate construction. The positioned grid builder then
+uses the same words, characters, and individual source-rule evidence as it does
+for upright tables. Original page coordinates and the canonical transform are
+retained in extraction provenance.
+
+If an Abstract-to-Introduction interval is identified from positioned document
+structure, any candidate overlapping that interval is rejected. The abstract
+does not participate in table-candidate recovery.
 
 When positioned word rows do not already have explicit column boundaries, the
 first label/value split is derived from the repeated first value-column anchor
@@ -339,69 +426,29 @@ choosing anchors and while assigning cells: an open parenthesis must remain
 with following fragments through its matching close parenthesis unless stronger
 column geometry proves that the fragments belong to separate cells.
 
-When a table shows strong grouped-header signals, such as repeated `Model 1`, `Model 2`, `Model 3` blocks plus wide horizontal boundaries, extraction can also refine the explicit backend grid using word positions inside the table bounding box.
+Header visual runs and individual partial horizontal rules can define grouped
+header spans over the body-derived leaf columns. Recognizable header words do
+not create columns or hierarchy. Compound values such as `mean ± SD` and
+`n (%)` remain in one physical value column when the positioned body and header
+geometry support one leaf.
 
-For collapsed explicit grids, extraction first looks for hard ruled-table
-evidence. In a non-rotated table with a top rule, a header/body separator, and a
-bottom rule, header visual runs can define candidate value columns when body
-value starts agree with those runs. The body grid is then rebuilt from
-positioned words using those boundaries, so compound values such as `mean ± SD`
-or `n (%)` remain in one physical value column when the header geometry supports
-that column. If that evidence is absent, the older word-position refinement
-treats stable value columns as repeated value-like numeric anchors. In that
-path, the left row-label region is inferred from the observed gap before the
-repeated value run, not from a literal header such as `Characteristics`. This
-prevents label text such as `Q1-Q3`, `kg/m2`, or biomarker names containing
-digits from creating fake columns, while keeping a mostly text left column
-intact when the numeric matrix starts to its right. Rows with a trailing
-statistic and only nonnumeric fragments to its left can also be repaired from
-right to left so long first-column labels remain a single row label.
+Candidate scores remain diagnostic. Selection deduplicates page/index
+collisions, preserves stable source order, and can suppress a weak unnumbered
+candidate whose position is incompatible with the confirmed table-number
+sequence. Strong unnumbered grids and adjacent continuation geometry remain
+available for later schema checks.
 
-That refinement is no longer limited to upright tables. For rotated explicit tables, extraction can normalize the clipped word and rule coordinates into a table-local upright frame, rebuild the row/column grid there, and then write the improved grid into `ExtractedTable` while preserving the original rotation metadata separately.
+The extraction invariants are:
 
-Some PDFs draw visually landscape tables sideways on portrait pages without
-setting page-level rotation. Retained rotated support is table-local: extraction
-uses explicit or mixed table regions plus PyMuPDF directional text-block
-geometry, normalizes that table region into a readable coordinate frame, and
-writes a normal `ExtractedTable` with orientation metadata. The older
-page-wide sideways transformed candidate stream has been retired.
-
-The extractor still scores candidates, but the score is now diagnostic rather than a hard keep-drop gate for explicit extracted tables. The current rule is:
-
-- deduplicate exact candidate collisions
-- preserve explicit extracted table candidates in stable page/index order
-- record confidence and caption signals in metadata instead of silently dropping low-scoring tables
-- bind explicit-table captions one-to-one by page geometry, above or below the
-  table, before using caption text as table-number identity
-- drop a caption-contaminated first backend row when bound-caption geometry and
-  a full-width rule show that the row belongs to the caption, while preserving
-  the remaining backend column geometry
-- suppress weak unnumbered candidates when their document position is impossible relative to confirmed numbered tables, such as before Table 1 or between consecutive Table 3 and Table 4 candidates, while preserving adjacent possible continuations for later schema checks
-- allow explicit-table grid refinement when rule and word geometry clearly support a better internal column structure
-- remove bibliography-owned positioned words/chars before table candidates are
-  constructed when the earlier purpose-built bibliography pass found entries;
-  the extractor itself does not scan raw table/page text for `References`
-- suppress uncaptained backend table-like boxes inside the Abstract-to-Introduction front-matter interval unless they have real table identity or strong value-matrix evidence
-- require page-text-layout fallback candidates to have a real table-number/caption signal unless their reconstructed grid has strong table geometry: at least three columns, at least four rows, a header-like top row, stable multi-column alignment, and multiple rows with data-like trailing cells
-- when a text-position fallback caption wraps onto the next line, keep a short caption continuation line with the table label, and also keep a lowercase sentence fragment ending in punctuation with the caption instead of treating it as the first table row
-- when text-position fallback builds column anchors, prefer an early stable table prefix if using the full page would collapse separated value columns because of later wrapped rows, page-margin text, or other noisy numeric positions
-- for explicit rotated-grid refinement, prefer PyMuPDF directional text-block
-  bboxes as the source-region boundary before coordinate transformation. On
-  two-column pages this keeps the rotated table plus its footer in one source
-  column while excluding upright article text in the other column.
-- if a backend explicit table box mixes upright article text with a rotated
-  table, derive a separate rotated-block candidate from the contiguous vertical
-  PyMuPDF text block inside that box and let normal candidate deduplication
-  choose between the original mixed box and the recovered rotated table.
-- remove repeated page furniture before candidate refinement. Extraction records
-  `metadata.page_furniture_overlap` when a candidate bbox touches an ignored
-  region and `metadata.page_furniture_mask` when words, chars, or rows were
-  actually removed.
-- trailing continuation-page notes such as `(Table 1 continues on next page)` may
-  still be removed and recorded in `metadata.trailing_non_table_rows`; broad
-  footer/furniture cleanup is handled by the earlier page-furniture mask.
-
-This matters for papers with table continuations, odd numbering, or weak captions. A bad score should generally be inspectable, not silently destructive; the exception is a weak unnumbered candidate whose source-order position is already inconsistent with the confirmed table sequence and that does not look like an adjacent continuation.
+- remove page furniture and bibliography-owned words and characters first
+- reject Abstract-owned candidates
+- derive caption candidates from horizontally compatible caption/rule geometry
+- require an enclosed connected rule component for an uncaptioned explicit grid
+- require inherited numeric column occupancy plus a covering ending rule for a
+  cross-page continuation
+- transform rotated evidence before running the ordinary positioned grid builder
+- retain source rule segments and raw text instead of repairing a weak extract
+- fail closed when these paths do not establish a credible table
 
 ### What `ExtractedTable` Contains
 
@@ -410,30 +457,31 @@ This matters for papers with table continuations, odd numbering, or weak caption
 - `table_id`
 - page number
 - detected title and caption when available
-- detected table-number and continuation metadata in `metadata` when a caption supports it
+- detected table-number and continuation metadata in `metadata` when caption or
+  cross-page parent geometry supports it
 - row and column counts
 - raw cell text
 - optional cell bounding boxes
 - extractor metadata
 
-This is the parser's record of what came out of the PDF layer.
+This is the parser's source-faithful record of what the positioned PDF layer
+supports. For rotated tables, `table_cells`, `row_bounds`, and horizontal rules
+may use the canonical table-local frame. Extraction records the source bbox,
+rotation direction, and applied transform so later stages can project source
+characters into that same frame.
 
-That does not always mean “what one backend reported verbatim.” If the backend emits one fused model column but the table bbox, word positions, and wide horizontal rules clearly support a better grid, extraction may refine that grid before writing `ExtractedTable`.
+The similarly shaped internal `ProvisionalExtractedTable` exists only before
+canonical row and leaf-column selection. It must not be written as
+`extracted_tables.json` or consumed by normalization.
 
-For rotated refinements, the recovered `table_cells`, `row_bounds`, and `horizontal_rules` may be expressed in a table-local normalized coordinate frame rather than the original page frame. That is intentional: later stages use those values as structural boundaries. Extraction records `geometry_transform_source_bbox`, `geometry_transform_transposed`, and `geometry_transform_applied` so later annotation code can transform page characters into the same coordinate frame when needed.
+Extraction may record the visible first-word x-position for each first-column
+row label. This supplements the physical cell boundary with the actual text
+indentation while preserving the original positioned cell geometry.
 
-For mixed backend boxes repaired into rotated-block candidates, extraction also
-records `orientation_strategy`, `rotated_block_candidate`, and the
-`source_mixed_table_bbox` so review can see that the final table came from a
-geometry-derived subregion rather than the full backend table box.
-
-For explicit tables, extraction may also record the visible first-word x-position for each first-column row label. This exists because backend cell boxes often describe the full column boundary, while the actual text inside that cell may be indented. Normalization uses that compact word-position metadata for indentation inference while preserving the original cell boxes as grid geometry.
-
-For text-position fallback candidates and rotated table-local refinements,
-extraction may preserve recovered cell text bounding boxes directly in
-`table_cells`. These boxes are in the same coordinate frame as the recovered
-grid and allow normalization to infer row-label indentation even when the
-backend did not emit explicit table cells.
+Positioned candidates preserve recovered cell text bounding boxes in
+`table_cells`. These boxes use the same coordinate frame as the recovered grid
+and allow normalization to infer row-label indentation without changing the
+extract.
 
 ### Why `ExtractedTable` Exists
 
@@ -450,14 +498,38 @@ That distinction is one of the main reasons the project keeps intermediate artif
 The table-region stage converts extracted table geometry into explicit row
 ownership before normalization changes the parser-facing grid.
 
-This stage consumes `ExtractedTable` objects plus their available geometry:
+Before `ExtractedTable` is materialized, an internal first pass consumes
+`ProvisionalExtractedTable` objects plus their available geometry to select the
+canonical physical grid. Caption-owned and empty rows and empty outer columns
+are removed first. If the retained positioned-column count agrees with the
+local occupancy leaf count, occupancy validates the existing positioned axis
+and the source cells are preserved. The positioned cell assignment is rejected
+when at least two header cells in one physical row are each wholly contained by
+a different occupancy leaf; this is direct bbox disagreement, not a semantic
+header judgment. A column-count disagreement ordinarily uses occupancy bands
+to materialize the grid.
+
+A strongly ruled positioned axis may survive a count disagreement only when
+repeated value anchors already establish that axis, distinct source header-line
+starts cover every non-stub positioned column, the positioned label column is
+supported on every token-evidence body line, and each value column is supported
+on at least three body rows. This confirms an existing axis; it does not derive
+one from token clusters. The separate explicit-continuation path may reuse an
+already finalized parent axis only when page order, leaf headers, column count,
+value-anchor alignment, and complete per-line value-band support all agree.
+
+After materialization, the persisted table-region
+artifacts are rebuilt from `ExtractedTable` objects and their available geometry:
 cell boxes, row bounds, table bboxes, full-width and ordinary horizontal rules,
-and already-filtered page context. For ruled tables, horizontal rules define
-the major candidate bands. Rows above the first table rule can become
-caption/title or preamble rows; rows between table rules become the
-column-header band; rows below the header/body rule become the body; rows below
-a bottom body rule become footer/note rows. When rule evidence is incomplete,
-the stage falls back to value-region anchors and records lower confidence.
+and already-filtered page context. After caption/preamble ownership is removed,
+the same structural header detector used by normalization selects the
+header/body split from retained separator rules and then value-region evidence.
+Footer ownership starts from the canonical models in
+`table_boundary_proposals.json`. One supported body/footer model is accepted
+directly. When multiple body intervals remain plausible, the stage computes
+raw body occupancy for each interval and chooses the model preserving the most
+zero-occupancy valleys; a tie retains the largest body. It does not search
+beyond the proposed intervals or infer boundaries from footer wording.
 
 This stage deliberately separates three concepts that should not share one
 generic "header" label:
@@ -469,6 +541,56 @@ generic "header" label:
 `NormalizedTable` consumes these region decisions when available. Footnote
 harvesting can also consume `footer_note_rows` from this artifact instead of
 independently rediscovering extracted footer rows.
+
+### Provisional Column Geometry Diagnostics
+
+After row ownership is selected, `body_occupancy.json` preserves the raw
+physical-line occupancy matrix. It also records exact internal character-box
+gaps, retaining only gaps at least two observed spaces wide in the dominant
+body font and size. `leaf_column_candidates.json` uses those font-qualified
+gaps as provisional separators, so separator detection is not dependent on the
+starting offset of the diagnostic x bins.
+`header_structure_candidates.json` then aligns positioned header evidence with
+those bands. Each band normally defines one preliminary leaf. On the finalized
+pass, a complete flat one-row header instead preserves one non-empty extracted
+cell per selected canonical column without applying the general word-gap run
+threshold. Intact runs remain the evidence for incomplete and multilevel
+headers. The lowest supported band is leaf evidence. Observed body-cell centers
+and unambiguous leaf-label centers act as per-band anchors: one-anchor runs
+stack on a leaf, while multi-anchor runs and individual partial rules can define
+multicolumn groups over contiguous leaves. Same-row peer partitioning is
+allowed only with local rule support, and repeated peer rows are aligned into
+equal blocks only when the leaf count divides evenly and every peer has a
+corresponding rule fragment. A mixed physical header/body row contributes only
+its value-side text, and only when a partial rule excludes an observed stub
+anchor and a lower header/body proposal supports the same value bands;
+persisted row ownership is not changed.
+Group-to-leaf relationships and source-supported marker attachments remain
+explicit. Header words crossing occupancy boundaries and bands without header
+text are retained as diagnostics after structural assignment rather than being
+used to rewrite the grid. A header/leaf-count disagreement is likewise recorded
+on this artifact after extraction and does not participate in canonical-grid
+acceptance.
+
+`token_start_evidence.json` is built next for tables already carrying a grid or
+header refinement signal. It records the exact left edge of each ordinary
+positioned token by canonical physical body line and preserves source word,
+character, row, line, bbox, and occupancy-band references. Linked marker
+characters are excluded geometrically. Raw bin counts are an inspection view;
+the exact starts remain available so bin origin cannot become an extraction
+rule. Repeated starts may support a hidden first value column, but they do not
+independently create a separator because compound values produce the same
+pattern. They may corroborate an already-established local positioned axis
+under the strict header-line, value-anchor, label-column, and repeated body-row
+checks described above. They may also confirm an already-finalized parent axis
+for an explicit continuation under the complete header, anchor, page-order, and
+per-line band-support checks.
+
+Persisted header structure remains diagnostic. Occupancy and leaf evidence are
+operative during canonical extraction, and token starts only corroborate an
+axis already established by stronger positioned geometry. The persisted
+post-extraction header artifact remains an inspectable view and does not perform
+downstream repair or gate canonical extraction.
 
 ## Step 4: Normalization
 
@@ -753,8 +875,8 @@ normalized source table and promotes either:
 
 - singleton resolved tables for ordinary source tables
 - integrated resolved tables when a continuation candidate has clear identity
-  evidence, an unambiguous parent fragment, and matching `ColumnHeaderSchema`
-  columns
+  evidence, an unambiguous parent fragment, and compatible
+  `ColumnHeaderSchema` columns
 - rejected continuation singletons when a candidate fails closed
 
 The resolver preserves `normalized_tables.json` unchanged as the complete
@@ -765,7 +887,11 @@ table index, source row index, source role, and page evidence when available.
 working list. For an integrated continuation, the parent headers are carried
 forward only after the schema compatibility decision is accepted, continuation
 body rows are appended in source order, and dropped continuation header or
-non-body rows are recorded in the integration boundary.
+non-body rows are recorded in the integration boundary. Compatibility normally
+requires the full header paths to match. A continuation that repeats the same
+leaf headers and column count but omits the parent's spanning group row may
+inherit that parent group tree; a contradictory continuation group is not
+ignored.
 
 Continuation integration is not limited to captions that appear above the first
 fragment. If a strong uncaptained table fragment is immediately followed by a
@@ -1082,22 +1208,22 @@ It is used for:
 - variable-term retrieval
 - future semantic grounding
 
-The markdown file is not a separate extraction backend. There is no
-`pymupdf4llm.to_markdown()` fallback; if PyMuPDF positioned text cannot produce
-the stream, the parser fails closed instead of building document context from a
-second markdown path. This artifact is not meant to become the canonical
-paper-order model.
+The markdown file is not a separate extraction backend. If PyMuPDF positioned
+text cannot produce the stream, the parser fails closed instead of building
+document context from a second markdown path. This artifact is not meant to
+become the canonical paper-order model.
 
 ### `paper_text_stream.json`
 
 This is the layout-aware full-paper text stream. It is built from positioned
-PyMuPDF lines, applies `paper_page_furniture.json`, detects page-level column
-bands, and orders text as page, column, then vertical position for any detected
-column count. It also records per-line bbox, page, column, role, and page-level
-column diagnostics plus `column_boundaries` and `column_bands`. Each line also
-preserves minimal span records with text, bbox, font name, font size, and flags
-so downstream geometry checks can use span-level evidence without reparsing the
-PDF.
+PyMuPDF lines, applies `paper_page_furniture.json`, partitions each page by
+writing direction, and orders each orientation group in a canonical upright
+frame before detecting group-local columns. Each line keeps its original source
+line ID and page-space `bbox` beside its derived `canonical_bbox`, direction,
+orientation, orientation-group ID, page, column, and role. Per-page records keep
+orientation-group source bounds, canonical dimensions, column diagnostics,
+`column_boundaries`, and `column_bands`. Minimal span records retain source text,
+bbox, font name, font size, and flags without reparsing the PDF.
 
 ### `paper_sections.json`
 
@@ -1110,9 +1236,9 @@ This gives the parser a document structure that is easier to retrieve from than 
 ### `paper_table_mentions.json`
 
 The parser scans `paper_text_stream.json` for `Table N` mentions before table
-extraction. Each record keeps the table number, source line ID, local context
-line IDs, source-line text, cue, and whether the mention is a `caption_candidate`,
-`continuation_label`, or `prose_reference`.
+extraction. Each record keeps the table number, source line ID and bbox, local
+context line IDs, source-line text, cue, and whether the mention is a
+`caption_candidate`, `continuation_label`, or `prose_reference`.
 
 This artifact is used as extraction evidence, not as a table source. A line
 beginning with `Table 5.` is rejected as a fallback table start when the previous
@@ -1122,6 +1248,22 @@ caption candidate, but it does not by itself create a table. Line-initial
 `Table S...` listings under an active `Supplementary Information` heading are
 classified as `prose_reference`, not `caption_candidate`, because they describe
 external supplementary material rather than an extractable in-paper table.
+
+Table extraction uses these caption candidates together with the text stream.
+The provisional grid keeps every physical y-band after the caption-label band;
+it does not remove possible continuation text before header geometry is
+available. Complete caption binding then matches the label to a table in the
+canonical orientation-group frame, groups adjacent source text into physical
+y-bands, and extends the caption only through single-run bands. The first band
+containing multiple horizontally separated runs establishes the start of the
+header; a table rule is an outer geometric limit, not the caption/header
+delimiter. The persisted
+`ExtractedTable.metadata.caption_region` and `caption_binding` records retain
+both page-space and canonical geometry plus source line IDs. This step changes
+caption ownership without moving or merging table text. Canonical grid selection
+can omit source words owned by the bound caption region; the original positioned
+lines and coordinates remain in `paper_positioned_document.json`. This step does
+not yet establish body/footer row bands.
 
 ### `paper_bibliography.json`
 

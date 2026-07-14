@@ -69,6 +69,12 @@ Continuation compatibility checks are an important consumer, but they are not
 the primary design driver. The primary design driver is a durable, inspectable
 column model that downstream parser stages can trust or reject explicitly.
 
+When continuation identity is already established, compatibility may use the
+leaf-only schema if the continuation repeats every leaf and column but omits a
+parent spanning-group row. The resolved table inherits the parent's complete
+tree only after that exact leaf match. A conflicting continuation group is not
+discarded or overridden.
+
 ## Relationship To Tableone-Style Projection
 
 A tableone-style object is not the same thing as a column header schema. The
@@ -133,6 +139,19 @@ The closest-to-body header row supplies the leaf label. If that cell is blank,
 the leaf label stays blank and the schema records a diagnostic. The parser
 should not silently promote an upper spanning group to the leaf label unless no
 leaf header row exists at all.
+
+One geometric exception is a direct row-spanning leaf. When a column is blank
+in the lowest leaf row, has a positioned label in an upper header row, and is
+not covered by that row's multicolumn group, the upper label belongs directly
+to that leaf. It must not be folded into an adjacent leaf or forced into the
+spanning group. For example, a ten-column severity group may sit beside direct
+`Mean PPD mm` and `SD` leaves whose labels are vertically shallower.
+
+When a rule inside the header band separates upper text from lower leaf labels,
+that rule is structural evidence. This includes partial horizontal rules that
+span only the value columns. Rows below such a value-region rule form the leaf
+header band; rows above it become group/statistic headers and must not be
+concatenated into the leaf labels.
 
 ### Header Groups
 
@@ -447,6 +466,12 @@ independent local header summaries. Useful schema-level checks include:
 - compatible leaf labels when repeated headers exist
 - compatible group paths over value leaves
 - compatible raw/header coordinate evidence
+
+The comparison view may canonicalize harmless display-fragment punctuation,
+such as a standalone hyphen split across adjacent leaf-header fragments in
+`(% - SE)`, while leaving the stored leaf labels, group labels, and evidence
+unchanged. This supports continuation compatibility without merging physical
+columns or rewriting `NormalizedTable`.
 
 This is a consumer of the design, not the reason for the design.
 

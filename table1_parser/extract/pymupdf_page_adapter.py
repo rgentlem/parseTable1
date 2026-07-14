@@ -104,6 +104,8 @@ def extract_page_words(
         if not isinstance(word, (list, tuple)) or len(word) < 5:
             continue
         x0, top, x1, bottom, text = word[:5]
+        word_block_index = int(word[5]) if len(word) >= 7 else None
+        word_line_index = int(word[6]) if len(word) >= 7 else None
         word_text = str(text).strip()
         chars_in_word = [
             char
@@ -114,21 +116,57 @@ def extract_page_words(
             and float(char["bottom"]) <= float(bottom) + 0.5
         ]
         if chars_in_word:
-            rebuilt_text = "".join(
-                str(char.get("text", ""))
-                for char in sorted(chars_in_word, key=lambda char: int(char.get("char_index", 0)))
-            ).strip()
+            chars_by_source_line: dict[tuple[int, int], list[Mapping[str, object]]] = {}
+            for char in chars_in_word:
+                block_index = char.get("block_index")
+                line_index = char.get("line_index")
+                if isinstance(block_index, int) and isinstance(line_index, int):
+                    chars_by_source_line.setdefault((block_index, line_index), []).append(char)
+            selected_source_line: tuple[int, int] | None = None
+            rebuilt_text = ""
+            if chars_by_source_line:
+                source_line_text = {
+                    source_line: "".join(
+                        str(char.get("text", ""))
+                        for char in sorted(
+                            line_chars,
+                            key=lambda char: int(char.get("char_index", 0)),
+                        )
+                    ).strip()
+                    for source_line, line_chars in chars_by_source_line.items()
+                }
+                selected_source_line = max(
+                    source_line_text,
+                    key=lambda source_line: (
+                        source_line_text[source_line] == word_text,
+                        -abs(len(source_line_text[source_line]) - len(word_text)),
+                        len(source_line_text[source_line]),
+                    ),
+                )
+                rebuilt_text = source_line_text[selected_source_line]
+            else:
+                rebuilt_text = "".join(
+                    str(char.get("text", ""))
+                    for char in sorted(
+                        chars_in_word,
+                        key=lambda char: int(char.get("char_index", 0)),
+                    )
+                ).strip()
             if rebuilt_text:
                 word_text = rebuilt_text
-        words.append(
-            {
-                "text": word_text,
-                "x0": float(x0),
-                "x1": float(x1),
-                "top": float(top),
-                "bottom": float(bottom),
-            }
-        )
+            if selected_source_line is not None:
+                word_block_index, word_line_index = selected_source_line
+        word_record: dict[str, object] = {
+            "text": word_text,
+            "x0": float(x0),
+            "x1": float(x1),
+            "top": float(top),
+            "bottom": float(bottom),
+        }
+        if word_block_index is not None and word_line_index is not None:
+            word_record["block_index"] = word_block_index
+            word_record["line_index"] = word_line_index
+        words.append(word_record)
     return words
 
 

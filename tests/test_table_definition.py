@@ -6,8 +6,7 @@ import pytest
 
 from table1_parser.heuristics.table_definition_builder import build_table_definition
 from table1_parser.heuristics.table_definition_rows import build_defined_variables
-from table1_parser.normalize.pipeline import normalize_extracted_table
-from table1_parser.schemas import ExtractedTable, NormalizedTable, RowView, TableCell, TableDefinition
+from table1_parser.schemas import NormalizedTable, RowView, TableDefinition
 from table1_parser.validation.table_definition import validate_table_definition
 
 
@@ -403,51 +402,6 @@ def test_indicator_style_cat_row_builds_binary_defined_variable() -> None:
     assert age_indicator.variable_type == "binary"
     assert age_indicator.summary_style_hint == "count_pct"
     assert age_indicator.levels == []
-
-
-def test_build_table_definition_uses_merged_split_label_rows() -> None:
-    """TableDefinition should see repaired full labels after split-label normalization."""
-    extracted = ExtractedTable(
-        table_id="tbl-pad-like",
-        source_pdf="paper.pdf",
-        page_num=1,
-        n_rows=6,
-        n_cols=5,
-        cells=[
-            TableCell(row_idx=0, col_idx=0, text="Characteristic"),
-            TableCell(row_idx=0, col_idx=2, text="Overall"),
-            TableCell(row_idx=0, col_idx=3, text="PAD"),
-            TableCell(row_idx=0, col_idx=4, text="P-value"),
-            TableCell(row_idx=1, col_idx=2, text="(n = 8636)"),
-            TableCell(row_idx=1, col_idx=3, text="(n = 618)"),
-            TableCell(row_idx=2, col_idx=0, text="Race, n"),
-            TableCell(row_idx=2, col_idx=1, text="(%)"),
-            TableCell(row_idx=2, col_idx=4, text="<0.001"),
-            TableCell(row_idx=3, col_idx=0, text="Mexican"),
-            TableCell(row_idx=3, col_idx=1, text="American"),
-            TableCell(row_idx=3, col_idx=2, text="1852 (21.22%)"),
-            TableCell(row_idx=3, col_idx=3, text="98 (15.86%)"),
-            TableCell(row_idx=4, col_idx=0, text="Other"),
-            TableCell(row_idx=4, col_idx=1, text="Hispanic"),
-            TableCell(row_idx=4, col_idx=2, text="339 (3.88%)"),
-            TableCell(row_idx=4, col_idx=3, text="15 (2.43%)"),
-            TableCell(row_idx=5, col_idx=0, text="Non-Hispanic"),
-            TableCell(row_idx=5, col_idx=1, text="White"),
-            TableCell(row_idx=5, col_idx=2, text="4689 (53.74%)"),
-            TableCell(row_idx=5, col_idx=3, text="353 (57.12%)"),
-        ],
-        extraction_backend="pymupdf4llm",
-    )
-
-    normalized = normalize_extracted_table(extracted)
-    definition = build_table_definition(normalized)
-
-    assert definition.variables[0].variable_label == "Race, n (%)"
-    assert [level.level_label for level in definition.variables[0].levels] == [
-        "Mexican American",
-        "Other Hispanic",
-        "Non-Hispanic White",
-    ]
 
 
 def test_validate_table_definition_rejects_invalid_level_row() -> None:

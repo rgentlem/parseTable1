@@ -5,8 +5,10 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping, Sequence
 from statistics import median
+
 from table1_parser.context.paper_positioned_document import build_paper_positioned_document
 from table1_parser.extract.layout_fallback import normalize_positioned_geometry_for_rotation
+from table1_parser.marker_glyphs import glyph_fields
 from table1_parser.page_furniture_mask import filter_positioned_items_for_page_furniture
 from table1_parser.schemas import (
     CellTextAnnotation,
@@ -14,6 +16,7 @@ from table1_parser.schemas import (
     ExtractedTable,
     PaperPageFurniture,
     PaperPositionedDocument,
+    PositionedSpanReference,
     TableCell,
 )
 
@@ -48,7 +51,18 @@ def build_cell_text_annotation_tables_from_pdf(
     if positioned_document.page_count <= 0:
         diagnostic = "char_geometry_unavailable"
     for page in positioned_document.pages:
-        page_chars = [char.model_dump(mode="json", exclude_none=True) for char in page.chars]
+        line_id_by_key = {
+            (line.block_index, line.line_index): line.line_id
+            for line in page.lines
+            if line.block_index is not None and line.line_index is not None
+        }
+        page_chars: list[dict[str, object]] = []
+        for char in page.chars:
+            char_record = char.model_dump(mode="json", exclude_none=True)
+            source_line_id = line_id_by_key.get((char.block_index, char.line_index))
+            if source_line_id is not None:
+                char_record["source_line_id"] = source_line_id
+            page_chars.append(char_record)
         page_chars_by_page[page.page_num], _metadata = filter_positioned_items_for_page_furniture(
             page_chars,
             paper_page_furniture,
@@ -204,14 +218,46 @@ def build_cell_text_annotation_tables(
                     ):
                         group.append(item)
                         continue
-                    annotations.append(_annotation_from_group(cell, chars, group))
+                    annotations.append(
+                        _annotation_from_group(
+                            table.table_id,
+                            len(annotations),
+                            cell,
+                            chars,
+                            group,
+                        )
+                    )
                     group = [item]
                 if group:
-                    annotations.append(_annotation_from_group(cell, chars, group))
+                    annotations.append(
+                        _annotation_from_group(
+                            table.table_id,
+                            len(annotations),
+                            cell,
+                            chars,
+                            group,
+                        )
+                    )
+
+        positioned_evidence = table.metadata.get("table_positioned_evidence")
+        if isinstance(positioned_evidence, dict):
+            source_indices = positioned_evidence.get("char_indices")
+            if isinstance(source_indices, list):
+                allowed_char_indices = {index for index in source_indices if isinstance(index, int)}
+                if any(
+                    not set(annotation.source_char_indices).issubset(allowed_char_indices)
+                    for annotation in annotations
+                ):
+                    diagnostics.append("marker_source_chars_outside_table_positioned_evidence")
+            else:
+                diagnostics.append("table_positioned_char_references_missing")
+        else:
+            diagnostics.append("table_positioned_evidence_missing")
 
         metadata: dict[str, object] = {
             "source": "paper_positioned_document_char_geometry",
             "coordinate_frame": coordinate_frame,
+            "marker_occurrence_count": len(annotations),
             "diagnostics": diagnostics,
         }
         if coordinate_frame in SUPPORTED_TRANSFORMED_FRAMES:
@@ -238,6 +284,8 @@ def build_cell_text_annotation_tables(
 
 
 def _annotation_from_group(
+    table_id: str,
+    annotation_index: int,
     cell: TableCell,
     chars: Sequence[Mapping[str, object]],
     group: Sequence[tuple[int, str, Mapping[str, object]]],
@@ -265,19 +313,51 @@ def _annotation_from_group(
         }
     )
     raw_text = "".join(str(item[2].get("raw_text", item[2].get("text", ""))) for item in group)
+    font_sizes = sorted(
+        {
+            float(item[2]["font_size"])
+            for item in group
+            if isinstance(item[2].get("font_size"), (int, float))
+        }
+    )
+    source_char_indices = sorted(
+        {
+            int(item[2]["char_index"])
+            for item in group
+            if isinstance(item[2].get("char_index"), int)
+        }
+    )
+    source_span_pairs = sorted(
+        {
+            (str(item[2]["source_line_id"]), int(item[2]["span_index"]))
+            for item in group
+            if isinstance(item[2].get("source_line_id"), str)
+            and isinstance(item[2].get("span_index"), int)
+        }
+    )
     metadata: dict[str, object] = {"source": "pymupdf_char_geometry"}
     if fonts:
         metadata["fonts"] = fonts
     if raw_text != text:
         metadata["raw_text"] = raw_text
     return CellTextAnnotation(
+        annotation_id=f"{table_id}:marker:{annotation_index}",
         row_idx=cell.row_idx,
         col_idx=cell.col_idx,
         text=text,
+        glyph_key=glyph_fields(text)[1],
         annotation_type=annotation_type,
         text_latex=text_latex,
         bbox=(left, top, right, bottom),
         attached_to_text=attached_to_text,
+        source_cell_id=f"{table_id}:r{cell.row_idx}:c{cell.col_idx}",
+        source_char_indices=source_char_indices,
+        source_span_references=[
+            PositionedSpanReference(line_id=line_id, span_index=span_index)
+            for line_id, span_index in source_span_pairs
+        ],
+        font_names=fonts,
+        font_sizes=font_sizes,
         confidence=confidence,
         metadata=metadata,
     )

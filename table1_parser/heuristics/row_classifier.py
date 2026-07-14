@@ -10,7 +10,7 @@ from table1_parser.heuristics.column_role_detector import detect_column_roles
 from table1_parser.heuristics.level_detector import is_common_level_label, is_likely_level_row
 from table1_parser.heuristics.models import RowClassification
 from table1_parser.heuristics.value_pattern_detector import detect_value_pattern
-from table1_parser.schemas import BodyElementCandidate, ColumnHeaderSchema, NormalizedTable, RowView
+from table1_parser.schemas import BodyElementCandidate, BodyRowLabelCandidate, ColumnHeaderSchema, NormalizedTable, RowView
 from table1_parser.text_cleaning import clean_text
 
 
@@ -504,10 +504,11 @@ def classify_row(
 def classify_rows(
     table: NormalizedTable,
     body_element_candidates: Sequence[BodyElementCandidate] | None = None,
+    body_row_label_candidates: Sequence[BodyRowLabelCandidate] | None = None,
     column_schema: ColumnHeaderSchema | None = None,
 ) -> list[RowClassification]:
     """Classify all normalized body rows in order."""
-    table = table_with_body_element_candidates(table, body_element_candidates)
+    table = table_with_body_element_candidates(table, body_element_candidates, body_row_label_candidates)
     classifications: list[RowClassification] = []
     indentation_informative = indentation_is_informative(table)
     statistic_col_indices = {

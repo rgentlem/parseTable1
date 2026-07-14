@@ -20,6 +20,7 @@ class PaperTableMention(BaseModel):
     page_num: int = Field(ge=1)
     line_ids: list[str] = Field(default_factory=list)
     source_line_id: str
+    source_line_bbox: tuple[float, float, float, float]
     source_line_text: str
     context_text: str
     matched_text: str

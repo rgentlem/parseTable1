@@ -10,7 +10,8 @@ Current corpus-driven hardening guide:
 `docs/implementation/real_paper_testing_guide.md`. Use it for the ordered
 real-paper review loop across extraction, normalization, continuation handling,
 table semantics, footnote/reference artifacts, and mixed-family routing. The
-current retained reference run is `outputs/testpapers_batch_20260709_bib_region_mask`.
+current retained reference run is
+`outputs/testpapers_batch_canonical_axis_validation_final_20260714`.
 
 Fallback/removal inventory:
 `docs/implementation/fallback_inventory.md`. Do not add new fallback tools or
@@ -18,6 +19,245 @@ downstream repair layers to compensate for weak extraction. Prefer fixing
 positioned extraction, caption/table-region ownership, page-furniture filtering,
 and explicit schema artifacts; fail closed with diagnostics when geometry is
 insufficient.
+
+Current table-geometry implementation checklist:
+`docs/implementation/table_geometry_reconstruction_checklist.md`. Use it to
+track marker occurrences, body occupancy, provisional leaf-column candidates,
+the explicit decision on whether token-start evidence is useful, preliminary header
+structure, canonical extraction, marker attachment, and footer resolution.
+The first minimal canonical-extraction boundary cleanup is complete:
+pre-selection grids now use the internal typed `ProvisionalExtractedTable`,
+while only the selected grid is returned for persistence as `ExtractedTable`.
+Canonical physical-grid materialization now also lives in the extraction
+package. Preliminary header structure no longer gates canonical extraction;
+header/leaf disagreement remains an inspectable header-candidate diagnostic.
+Canonical selection now validates rather than routinely rewrites the positioned
+grid. When the retained positioned and occupancy leaf counts agree, positioned
+cells are preserved unless at least two header cells in one physical row are
+wholly contained by different occupancy leaves. A count disagreement defaults
+to occupancy materialization. A strongly ruled positioned axis may survive
+that disagreement only when repeated value anchors establish it, distinct
+physical header-line starts cover every non-stub column, the label column is
+supported on every token-evidence body line, and every value column is
+supported on at least three body rows. Token starts corroborate that existing
+axis; they still do not create or move a separator. Strict explicit-continuation
+parent confirmation remains available under its separate page, header, anchor,
+and per-line support checks.
+
+The 28-PDF checkpoint
+`outputs/testpapers_batch_canonical_axis_validation_final_20260714` completed
+all 92 physical tables with no empty or rejected grid: 56 use count-and-cell-
+geometry-confirmed positioned cells, 29 use occupancy materialization, and
+seven use the narrow header-line-plus-token confirmation. Those seven are
+printed Table 3 on PDF page 11 of `Association between anthropometric indices
+and chronic kidney disease- Insights from NHANES 2009–2018.pdf`; printed Tables
+3-4 on PDF pages 6-7 of `Lead exposure as a contributor to the Black–White
+racial disparity in blood pressure- evidence from NHANES 1988–1994 and
+2017–2020.pdf`; printed Table 3 on PDF page 6 of `NutritionEx.pdf`; printed
+Tables 4-5 on PDF pages 4-5 of `cobaltpaper.pdf`; and printed Table 2 on PDF
+page 6 of `periodontitis.pdf`. Visual review confirms every one. The rejected
+stub split in printed Table 2 on PDF page 5 of `mdpi-The Relationship Between a
+Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017.pdf` remains
+six columns. Repeated header-cell/leaf conflicts reject only printed Table 2 on
+PDF page 4 and printed Table 4 on PDF page 6 of `GOLD BioAge and depression-
+Associations with mortality among depressed NHANES participants
+(2005–2018).pdf`; both return exactly to the clean committed cells.
+
+All five `cobaltpaper.pdf` tables now match commit `6db4bb1` exactly in row and
+column count, text, and bbox geometry: 23 x 8 and 36 x 8 on PDF page 3, 27 x 6
+and 28 x 4 on PDF page 4, and 28 x 4 on PDF page 5. Across the 83 table IDs
+shared with that clean commit, exact physical matches rise from 14 in the prior
+checkpoint to 46, with no table moving away from a prior exact match. Printed
+Table 1 on PDF pages 5-6 of `Systemic inflammation markers and the prevalence
+of hypertension- A NHANES cross-sectional study.pdf` remains 48 x 5 plus 14 x
+5, has identical five-leaf headers, and merges as one 61-row, 5-column logical
+table. Token-start evidence is therefore retained: it is useful only as
+corroboration inside these strict geometric checks. The finalized corpus has no
+cross-band header-run concern and no Cobalt header concern. Its only non-stub
+missing-header case is the eight intentionally blank local child labels in
+printed Table 2 (continued) on PDF page 13 of `periodontis2.pdf`. Return now to
+continuation inheritance for those labels; do not add another finalizer repair
+or generic header-gap rule.
+
+Phase A is complete: each selected `ExtractedTable` now carries compact
+`table_positioned_evidence` references into the shared PyMuPDF positioned
+document after text furniture and bibliography masks are applied. The full
+2026-07-12 corpus run produced 27 paper outputs and 82 tables with no invalid
+references or non-Phase-A extraction changes.
+Phase B is complete: the existing `CellTextAnnotation` list is now the canonical
+early marker-occurrence inventory. Occurrences retain stable IDs, canonical
+glyph keys, physical source-cell IDs, source character and line/span
+references, bboxes, and font evidence without changing raw text or deciding
+footnote meaning. The full 2026-07-12 corpus run recorded 506 valid occurrences
+with no annotation diagnostics or changes to existing footnote outputs.
+Essential Phase C/D orientation invariant: normalize the complete table-local
+positioned evidence for a rotated table into a canonical upright frame before
+proposing header/body bands or calculating body occupancy. Preserve original
+coordinates and each rule segment's identity and endpoints, then run the same
+boundary, occupancy, and extraction route used for ordinarily oriented tables.
+Do not retain a separate rotated occupancy or header/body inference path.
+The paper text-stream prerequisite is implemented independently of table bands:
+source lines retain original IDs and bboxes, rotated orientation groups receive
+canonical bboxes and group-local reading order, and context adjacency cannot
+cross page or orientation-group boundaries. Raw positioned and extracted
+artifacts remain available alongside this projection through downstream JSON
+and eventual R consumption.
+The 28-PDF checkpoint
+`outputs/testpapers_batch_orientation_stream_stage1_20260712` emitted 90 tables
+with no failed status. All 87 tables from the prior 27-paper run are
+byte-identical; `inst/extdata/NutritionEx.pdf` adds three tables. Bibliography
+content is unchanged, and only genuine caption classifications changed.
+Stage 2 caption assembly and binding is also complete. The extractor no longer
+uses PyMuPDF4LLM caption boxes or page-text caption fallback. It consumes
+line-initial candidates from `paper_table_mentions.json`, uses span order and
+font separation as structural label evidence while preserving raw line text,
+preserves all post-label y-bands in the provisional grid, binds in canonical
+orientation-group geometry, and only then groups following text into physical
+y-bands and stops complete captions before the first band with multiple
+separated horizontal runs. Table rules remain outer geometric limits.
+The 28-PDF checkpoint
+`outputs/testpapers_batch_caption_stage2_final_20260712` emitted the same 90
+tables with zero failed statuses; all table IDs, dimensions, cell text, and
+cell coordinates are identical to Stage 1. Eight continuation fragments have
+no local caption and 82 tables have bound caption regions. Header/body/footer
+band selection remains the next separate Phase C task.
+The later geometry-only caption refinement is checkpointed at
+`outputs/testpapers_batch_caption_ybands_final_20260713`: all 28 PDFs emitted 92
+physical tables. Compared with the preceding extraction checkpoint, only five
+grids changed, all by restoring header bands previously consumed by provisional
+caption extension. Complete caption line ownership changed only for the two
+affected Planetary Health Diet tables, and the restored page-2 header allows its
+page-3 continuation to integrate. The existing suite remains at 138 passing
+tests; the known page-6 Systemic inflammation table still fails later semantic
+definition with `no_variables_for_descriptive_table`.
+Stage 3 canonical table-local evidence is complete. The typed
+`table_positioned_evidence` projection now carries one affine transform and
+positionally aligned canonical geometry for every retained line, span, word,
+character, individual rule segment, and stroked rule segment. Candidate,
+evidence, caption, and structural-scope bounds use the same frame. The 28-PDF
+checkpoint `outputs/testpapers_batch_canonical_evidence_stage3_final_20260712`
+contains the same 90 tables with zero failed statuses or geometry diagnostics;
+15 tables use rotated transforms and 75 use identity transforms. Extracted
+grids and downstream semantic outputs are unchanged. Return now to Phase C
+provisional caption/header/body/footer boundary selection; do not add another
+orientation-specific route.
+Phase C is complete: proposal recording, selected-region review, font-first
+body/footer proposals, and explicit fail-closed ownership are implemented.
+`table_boundary_proposals.json`. It uses the Stage 3 canonical frame for
+ordinary and rotated tables, retains references to individual rule segments,
+records stub/value coverage and font changes, suppresses repeated body-rule
+patterns from the compact proposal while preserving them in extraction
+evidence. `TableRegion` reuses the structural header detector and consumes the
+proposal's body/footer models: one supported model is accepted directly, while
+raw occupancy chooses only among multiple plausible intervals. The selected
+rows are consumed by normalization. Incorrect selected-edge
+"unsupported" judgments have been removed. The final 28-PDF/90-table run is
+`outputs/testpapers_batch_phase_c_complete_20260712`; it has no failed or
+blocked tables, 20 unchanged ending-rule footer candidates, and no
+non-proposal artifact changes apart from parse-quality timestamps. All 90
+physical extracts have credible rule geometry and a coherent positioned grid,
+so none triggers the new guard. A future table lacking both receives empty
+region and normalized header/body bands with a structured fail-closed
+diagnostic. Phase D writes raw `body_occupancy.json` records for all 90 physical
+tables. Phase E writes `leaf_column_candidates.json`. Phase F review exposed a
+Phase E bin-origin defect: a real gap can straddle adjacent diagnostic bins and
+disappear. The refined occupancy artifact now records exact ordinary-character
+gaps and qualifies a separator only when it is at least two observed
+space-glyph widths in the dominant table font and size.
+`outputs/testpapers_batch_phase_f_font_space_gap_20260713` covers all 28 PDFs
+and 90 tables with no command failure or occupancy/leaf diagnostic. Six tables
+gain one supported band, 68 candidate counts now agree with the current
+extract, and 22 remain diagnostic disagreements. `TableRegion` continues to
+accept one supported body/footer model directly and uses qualified-gap counts
+only to choose among multiple canonical body intervals.
+
+Phase G is complete as a non-operative artifact.
+`header_structure_candidates.json` aligns positioned header words with the
+Phase E bands. Each occupancy band normally defines one preliminary leaf before
+intact positioned header runs attach by greatest horizontal overlap. A complete
+flat finalized header instead preserves one non-empty canonical cell per
+selected column; the generic word-gap run threshold remains only for incomplete
+or multilevel headers. Individual
+partial rules define groups over those leaves, and source-line plus canonical
+marker geometry attaches header markers. The current 28-PDF/90-table run is
+`outputs/testpapers_batch_phase_f_font_space_gap_20260713`. Eighty-nine tables
+have usable headers and 627 leaves matching 627 occupancy bands; the non-target
+text table retains `header_rows_missing`. The artifact contains 109 groups and
+74 uniquely linked header markers: 66 leaf links and eight group links. Twenty
+header runs cross candidate band boundaries, 13 non-stub bands lack header
+text, and 31 blank stubs remain explicit. No existing parser output changes
+apart from the candidate artifacts, diagnostic separator counts, and
+parse-quality timestamps, and the accepted `ColumnHeaderSchema` remains
+independent.
+
+The incomplete/multilevel Phase G refinement is also complete as a
+non-operative artifact. The 28-PDF/92-table checkpoint is
+`outputs/testpapers_batch_header_structure_geometry_20260714`. It reduces the
+23 cross-band concerns in the flat-header checkpoint to two upstream
+caption/table-ownership concerns in `cobaltpaper.pdf`, PDF page 3. Structural
+examples now include all three repeated Model groups in `NutritionEx.pdf`, PDF
+page 6; `Sarcopenia.pdf`, PDF pages 7-8; and `fld.pdf`, PDF page 9, plus the
+nested Severity and threshold groups in `periodontis2.pdf`, PDF page 18.
+Flat/wrapped one-leaf headers remain leaves, including printed Table 5 in
+`mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older
+Adults- NHANES 2007–2017.pdf`, PDF page 9. Canonical extracts and accepted
+semantic artifacts do not change. Missing continuation child labels remain
+explicitly blank for later inheritance rather than being invented locally.
+
+Phase F is complete as a source-referenced supporting artifact. The current run is
+`outputs/testpapers_batch_phase_f_token_start_20260713`: all 28 PDFs and 90
+tables parse without command failure, and 32 tables with actionable Phase E/G
+signals receive exact ordinary-token left edges grouped by canonical physical
+body line. The review set combines 22 grid-count disagreements, 11 tables with
+20 cross-band header runs, four tables with 13 non-stub headerless bands, and
+one header diagnostic; categories overlap. Blank stub labels alone do not
+trigger measurement. A descriptive 50% line-support review identifies seven
+tables where repeated starts expose the first value column inside a broad stub
+band, but also 14 tables where repeated starts occur inside legitimate compound
+value leaves. Retain `token_start_evidence.json` as source-referenced supporting
+evidence. It must not independently define a separator. Its only operative role
+is to corroborate an axis already established by stronger positioned geometry:
+either the strict local header-line/value-anchor confirmation or the explicit-
+continuation parent-band confirmation recorded above. All other uses remain
+diagnostic.
+
+Phase H canonical extraction is complete. Candidate regions now use only the
+shared PyMuPDF positioned evidence: horizontally compatible caption/rule
+geometry, enclosed connected rule components, prior-page numeric value-column
+alignment, and canonicalized rotated orientation groups. Abstract-owned
+candidates are rejected, open equation/callout frames do not qualify as grids,
+and no alternate extraction backend or broad first-to-last-rule candidate path
+remains. The final 28-PDF run is
+`outputs/testpapers_batch_extraction_geometry_complete_20260713`: all commands
+passed, 91 physical tables were emitted, no candidate occurs on PDF page 1, no
+grid has zero rows or columns, and the recovered PDF page 3 continuation in
+`Science-Advanaced-Planetary Health Diet and risk of mortality and chronic
+diseases- Results from US NHANES, UK Biobank, and a meta-analysis.pdf` integrates
+with PDF page 2 into one 68-row, 9-column resolved Table 1. Existing pytest is
+138/138 passing; whole-package Ruff still reports three unrelated pre-existing
+findings outside the extraction modules.
+
+Numeric page-furniture follow-up is complete. Standalone printed page numbers
+are matched independently of the PDF page index only when top/bottom geometry
+recurs over all pages or an odd/even scope; arbitrary page subsets are rejected
+because continued table values can otherwise look recurrent. The 28-PDF run
+`outputs/testpapers_batch_numeric_edge_furniture_refined_20260713` adds 44
+verified page-number regions across five PDFs and removes none. All 91 existing
+physical tables retain identical dimensions, cell text, and cell coordinates.
+`Systemic inflammation markers and the prevalence of hypertension- A NHANES
+cross-sectional study.pdf`, PDF page 5, now supplies a caption candidate and a
+new 1-row, 5-column failed table candidate, isolating the still-unfixed
+caption/rule-region truncation from page-furniture ownership.
+
+Caption/rule-region follow-up: when caption and matching horizontal-rule spans
+establish a candidate region, that region must remain operative in positioned
+grid construction. Do not replace its bottom rule with the last text baseline
+or admit nearby rules outside the selected region. Text-derived candidate
+bounds remain appropriate only for paths without direct rule-supported bounds.
+Recurrent stroked horizontal rules at a stable top edge or repeated-bottom band
+position on at least 80% of document pages are now recorded as rule furniture
+and excluded before caption/rule spans are formed; the raw segments remain in
+the positioned document artifact.
 
 1. [x] Centralize positioned PDF text/geometry into one shared document pass.
    Replace overlapping PyMuPDF document parses with a single positioned-text
@@ -39,6 +279,22 @@ insufficient.
    paper-context fallback has been removed. Remaining follow-up is to keep
    opportunistic PDF tag support aligned with this artifact rather than adding
    another page parse.
+   Processing-order invariant: build the positioned document first, detect and
+   apply page-furniture exclusions second, and only then build the filtered
+   text stream, identify document sections, and parse the bibliography. Table
+   extraction must receive those earlier ownership results; bibliography
+   parsing is not a cleanup pass over already extracted table candidates.
+
+   - [ ] Separate source-glyph preservation from parser-facing symbol
+     normalization. Positioned and extracted evidence should retain the decoded
+     Unicode text observed in the PDF, including symbols such as `≥` and `≤`.
+     A distinct semantic normalization step may accept Unicode, ASCII, HTML,
+     and documented repaired variants and map them to typed relations such as
+     `>=` or `<=`. Preserve the original text and repair provenance whenever a
+     broken extractor glyph is reconstructed. Audit `clean_text()` consumers so
+     source-line identity, caption ownership, and geometry joins never depend on
+     equality between raw Unicode text and semantically normalized text; those
+     joins must use stable source references or bounding-box alignment.
 
 2. [ ] Take advantage of PDF tags when present.
    Inspect PDF structure tags as extraction evidence when a paper exposes a
@@ -57,6 +313,18 @@ insufficient.
    This should become the primary column model consumed by `TableDefinition` and any later stored summary/tableone projection; continuation compatibility is an important later consumer, but not the main design driver.
    Initial implementation is in place: `table1-parser parse` writes `column_header_schemas.json`, `TableDefinition` consumes it, continuation checks use schema-derived column headers, and tests cover Eke-like Table 1/Table 2 structures plus non-problem tables.
    Follow-up: Eke Tables 1-2 show that multi-line header stacks can produce wrong parent paths when rule-banded header rows are extracted as many short text fragments. The current parser now repairs obvious split estimate/uncertainty value columns, drops sparse non-matrix page-text columns and empty separator columns, removes tall/narrow numeric margin text before grid construction, groups leaf-header words into visual runs by small between-word spacing before assigning those runs to body-derived column extents, only merges wrapped leaf rows after geometry-based header inference, preserves normalized-to-original column identity in `source_col_indices`, moves short leading leaf fragments across adjacent column boundaries when structural or coordinate evidence supports it, trims sparse group rows out of the leaf-header stack, and persists `TableDefinition.column_definition.header_spans` plus per-column `header_path` so JSON no longer relies on flattened multirow labels. Remaining work should expose ambiguous leaf-band fragment assignments as structured candidates that deterministic code or later LLM inference can adjudicate; do not hard-code paper-specific vocabulary.
+   Required earlier-stage follow-up: add an explicit
+   `HeaderStructureCandidate` after cell-text annotation and before
+   `TableRegion`. It should use positioned header lines/spans, individual
+   horizontal-rule segments, candidate body-column geometry, and cell marker
+   annotations to propose a LaTeX-like structure: one candidate leaf per
+   physical column, candidate multicolumn groups over contiguous leaves, and
+   wrapped text fragments attached to the same candidate node. It must retain
+   ambiguity and source coordinates and must not rewrite `ExtractedTable`.
+   `TableRegion` should consume this candidate when deciding the header/body
+   boundary. The existing post-normalization `ColumnHeaderSchema` remains the
+   accepted column model and should validate or reject the preliminary
+   candidate rather than independently reconstructing a competing header.
 
 4. [ ] Make continuations semantically real.
    One logical Table 1 spanning pages should feed `TableDefinition` and `ParsedTable`, rather than leaving page-level and continuation-page parses as separate semantic outputs.
@@ -106,16 +374,36 @@ insufficient.
    `paper_page_furniture.json` parse output, R inspection helpers, real-paper
    review, early-filtered cell text annotation and text-stream footer
    detection, and early extraction masking are in place.
+   Current edge policy: use the ordinary 6% edge band, with a bottom-only 10%
+   discovery band restricted to `all_pages` text covering at least half of all
+   pages. Positioned words/chars are excluded by exact block/line provenance;
+   bbox masking remains only for evidence without line identity. A possible
+   later recovery pass may search more widely for the same text only after a
+   strict furniture cluster has already been established. The decision and
+   deferred option are recorded in
+   `docs/implementation/paper_page_furniture_implementation_plan.md`.
    Recent table-mention update: `paper_table_mentions.json` is now built from
    the page-furniture-filtered layout-aware text stream before table extraction.
    It classifies `Table N` lines as caption candidates, continuation labels, or
    prose references and is passed into text-position fallback extraction so a
-   prose reference split across lines cannot seed a table candidate. The
+   prose reference split across lines cannot seed a table candidate. Mention
+   records preserve the source-line bbox, and caption rejection uses bbox
+   overlap rather than equality between normalized mention text and raw
+   positioned glyph text. The 27-paper verification run
+   `outputs/testpapers_batch_prose_bbox_fix_20260712` emitted 87 tables; all
+   extracted-table artifacts were unchanged from the preceding rotation run
+   except removal of the false 8 x 6 prose candidate on PDF page 5 of the
+   18-page `periodontis2.pdf`. The
    mention pass also treats line-initial `Table S...` listings under an active
    `Supplementary Information` heading as prose references rather than viable
    caption candidates. The fallback also rejects numeric-anchor grids when the
    supposed value region is
    mostly multi-word prose fragments.
+   Clarified order: page-furniture detection and masking happen immediately
+   after the shared positioned-document pass. The filtered document is then
+   used to identify sections, with careful bibliography parsing as a distinct
+   section-owned stage. Only after section and bibliography ownership is known
+   should table candidate extraction begin.
 
 6. [x] Retire broad trailing-row cleanup where page-furniture masking owns the issue.
    `metadata.trailing_non_table_rows` is now limited to explicit trailing
@@ -179,11 +467,17 @@ insufficient.
    rules. Discontinuous value-region rules should inform header structure; they
    must not be promoted into header/body or body/footer separators by summing
    separated spans. The 27-paper run
-   `outputs/testpapers_batch_rule_continuity2_20260710` parsed 27/27 PDFs; the
-   only extracted-table shape change was `stroke-p7-t1`, where the corrected
-   full-width rule list exposes a remaining ruled-body layout bug: the table
-   should preserve a row-label column plus six value columns, but the current
-   ruled-body branch merges the row label with the first OR column.
+   `outputs/testpapers_batch_rule_continuity2_20260710` parsed 27/27 PDFs and
+   exposed a remaining ruled-body layout bug in `stroke-p7-t1`: the table
+   should preserve a row-label column plus six value columns, but the
+   ruled-body branch merged the row label with the first OR column.
+   Follow-up fixed in `outputs/testpapers_batch_rule_endpoint_fix_20260710`:
+   when a clean ruled body exposes column-band endpoints on the full-width
+   separator/bottom rules, the collapsed ruled-body branch now uses those
+   endpoints as column starts instead of dropping the leftmost header cluster as
+   a presumed row-label header. The full 27-paper run still parsed 27/27 PDFs
+   and 82 tables; the only extracted-table shape change versus the previous run
+   was `stroke-p7-t1` moving from 7 x 6 to 7 x 7.
    Leaf-header reconstruction groups positioned words into small-gap visual
    runs before assigning each run to body-derived column extents. Anchors may
    define value-column extents upstream, but they do not glue visually separated
@@ -292,6 +586,18 @@ insufficient.
    - Single-row split label tails such as `Coronary heart disease, n` plus adjacent `(\%)`/`(%)` in the next cell when the fragment is physically adjacent to the row label and clearly before the first value column.
    Recent update: footnote-suffixed p-values such as `<0.001a` now count as p-value tokens for word-position column anchoring and value parsing, so a far-right p-value cluster is not collapsed into the last data column.
    Sidecar: `docs/design/cell_text_annotations.md` defines `cell_text_annotations.json` for superscript, subscript, and small-marker geometry; parse now populates page-coordinate cell-bbox annotations when PyMuPDF char geometry is available, and R inspection loads and displays the sidecar. Implementation checklist is in `docs/implementation/cell_text_annotations_implementation_plan.md`. Keep this separate from symbol canonicalization and value parsing.
+   Unfinished marker-preservation task: annotations currently preserve marker
+   geometry, but the corresponding glyph often remains pasted onto the base
+   text in extracted and downstream strings. Add a canonical linked-text view
+   for header, row-label, and value candidates with three explicit pieces:
+   unchanged `raw_text`, marker-free `base_text`, and the annotation IDs/glyphs
+   removed from that base text. Removal must be backed by exact character/span
+   geometry; uncertain glyphs remain in `base_text` with a diagnostic. This is
+   a logical candidate representation, not an `ExtractedTable` rewrite.
+   Footnote linking should consume the associated marker records later, while
+   header assembly, value parsing, and row-label interpretation consume
+   `base_text`. The same mechanism must handle superscripts, subscripts, and
+   inline symbols without assuming that every raised glyph is a footnote.
    Footnote follow-up: `docs/design/paper_footnotes.md` defines the `paper_footnotes.json` artifact contract, and `docs/implementation/paper_footnotes_implementation_plan.md` tracks the staged work. Core Python schemas, anchor inventories, table-local footer metadata, definition inventories, glyph canonicalization, deterministic links, parse output, R data-frame helpers, `ObservedFootnotes` attachment, and real-PDF smoke passes are in place. Review found resolved, unresolved, and ambiguous real examples; links remain review-only and should not be consumed downstream.
    Recent footnote update: table-local note lines can now define markers after leading explanatory prose, including embedded and bracketed markers such as `significance. a Represents ... b Represents ...` and `[a] ... [b] ...`. This resolves the `metabolic` Table 1 p-value superscripts against the local Chi-square and Kruskal-Wallis definitions while keeping links as review evidence only.
    Recent footer update: statistical-significance footer lines can now define repeated asterisk runs such as `* P value < 0.05, ** P value < 0.01, *** P value < 0.001`, and anchors attached to p-values preserve the visible asterisk count. This resolves the `stroke` Table 1-3 asterisk superscripts.
