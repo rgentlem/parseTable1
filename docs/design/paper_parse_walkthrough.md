@@ -97,8 +97,10 @@ rule-supported table-start, header/body, and body/footer edges in one upright
 frame for both ordinary and rotated tables. Individual rule segments remain
 referenced rather than merged. A footer alternative requires immediate
 changed-font text after the final retained rule and stops at a known caption,
-later table, or section heading. It stores source line IDs, canonical bounds,
-and font styles without interpreting the text. It also records whether credible
+later table, or section heading. Continuation lines in the same font remain in
+that band across font-size jitter of at most 0.2 PDF points. It stores source
+line IDs, canonical bounds, and font styles without interpreting the text. It
+also records whether credible
 rule geometry or a coherent repeated positioned grid exists. If neither exists,
 `TableRegion` fails closed with no manufactured header/body bands, and
 normalization preserves that decision. A single supported body/footer model is
@@ -148,16 +150,19 @@ top/bottom all-page or odd/even geometry. Their source text remains unchanged.
 `paper_footnotes.json` records detected table-local footer regions, footnote
 anchors, candidate definitions, and glyph-key links as a paper-level review
 artifact. It is written even when no anchors or definitions are found.
-Definition candidates are fed first by footer rows preserved in
-`extracted_tables.json`: `find_table_footer_rows()` prefers rows below a
-bottom table rule that is itself below the last value-matrix row, then falls
-back only to rows with structured marker geometry when rule evidence is
-unavailable.
-Rows that start a marker definition are grouped with adjacent continuation rows
-in extracted row order. Confirmed footer rows can carry marker-start evidence
-from cell-text annotation geometry when a raised marker begins the first
-populated footer cell; raw extracted strings that visually run the marker into
-the next word are preserved as provenance but do not define the marker.
+Each table-cell anchor reuses its source `CellTextAnnotation.annotation_id` and
+records the source annotation type, normally `superscript` or `inline_marker`.
+Subscripts remain unpromoted annotation evidence. The stable ID joins back to
+the complete character, span, font, bbox, and attachment evidence in
+`cell_text_annotations.json`; no second positional anchor identity is generated.
+Definition candidates are fed first by the extracted rows owned by the matching
+final `TableRegion.footer_note_rows`. `find_table_footer_rows()` does not rerun
+last-value-row or horizontal-rule inference. Rows that start a marker definition
+are grouped with adjacent continuation rows in extracted row order. Confirmed
+footer rows can carry marker-start evidence from cell-text annotation geometry
+when a raised marker begins the first populated footer cell; raw extracted
+strings that visually run the marker into the next word are preserved as
+provenance but do not define the marker.
 
 `paper_text_stream.json` is the filtered and layout-ordered view of
 `paper_positioned_document.json`. It preserves each source line ID and original
@@ -165,17 +170,20 @@ page-space bbox. Lines are partitioned by writing direction; rotated groups are
 ordered through an upright group-local projection recorded as
 `canonical_bbox`, with direction, orientation, and orientation-group provenance.
 Context adjacency stops at page and orientation-group boundaries. It is also the
-positioned text source for
-footer candidates
-that are absent from the extracted grid. The stream preserves visual lines,
-page/column order, line bbox, dominant font name, dominant font size, and
-document-level font-style counts after page-furniture filtering. A table-footer
-finder uses table bboxes, horizontal overlap, vertical adjacency,
-non-body-font evidence, and continuation-group visual identity to classify
-contiguous same-style line groups as table-local footers before glyph-key
-linking. Text-stream footer groups are also persisted as unsplit `footers`
+positioned text source for footer candidates absent from the extracted grid.
+The stream preserves visual lines, page/column order, line bbox, dominant font
+name, dominant font size, and document-level font-style counts after
+page-furniture filtering. The table-footer finder starts only from the final
+`body_footer` candidate's `TableBoundaryProposal.following_text_line_ids` and
+uses exact marker geometry, table-local smaller type, or a multi-line footer
+band to retain or reject that adjacent group. It does not scan arbitrary text
+below the table bbox. Retained groups are persisted as unsplit `footers`
 records, so review can inspect the same raw footer region that later produces
 split definition records.
+The same smaller-raised marker evidence may begin its own physical source line;
+in that position it need not borrow a punctuation boundary from the preceding
+line. Embedded markers still require a local definition boundary. Source line,
+bbox, font-size, and line-start evidence remain on the definition record.
 Other paper text lines are not consumed by `paper_footnotes.json`; this artifact
 is table-local. Candidate table-local groups may start with a marker or contain
 embedded marker definitions after nearby explanatory prose. If
@@ -189,10 +197,25 @@ definition records, for example `*`, `†`, `‡`, `§`, `**`, and `***`
 definitions. Repeated page furniture should not enter this stage: table rows,
 cell-character annotations, and PDF definition blocks are all derived from
 early-filtered geometry.
+An extracted caption contributes definitions only when a symbol-marker block
+starts after completed caption prose at a punctuation boundary. That narrow
+suffix is split with the existing local definition parser, so attached forms
+such as `*p < 0.05` are retained while prose letters, years, and
+caption-decorating symbols are not promoted as definitions. The complete
+caption remains raw provenance.
+A standalone DOI ending in an exact visual-object suffix such as `.t001` or
+`.g002` terminates an adjacent external footer block before the DOI line. The
+line remains unchanged in `paper_text_stream.json` and is consumed as visual
+caption metadata by `paper_visual_inventory.json`, not as definition text.
 R footnote review helpers filter by table fragment ID and by paper visual ID,
 so a table-number review includes footer records found on continued fragments
 such as `Table 1. (continued)` without treating the continuation label itself as
 a footnote definition.
+The footnote stage receives the final `ResolvedTableSet`. Different source
+fragment IDs share the existing `same_visual` link rank only when they are
+members of the same accepted integrated table; printed table-number equality
+and rejected continuation candidates do not create link scope. The older Table
+1 continuation artifact remains an inspection view and is not consumed here.
 Numeric table-cell bibliography markers are preserved as anchors and remain
 unresolved when they have no local table-note definition. The linker can add
 review notes when their glyph keys also appear in the paper bibliography, but
@@ -243,7 +266,8 @@ Numeric unit/exponent superscripts and subscripts such as `10^9`, `m^2`,
 metadata. Multi-letter subscript words such as `P_Begg` and `P_Egger` are also
 kept out of the footnote anchor inventory.
 P-value asterisk markers without explicit definitions remain unresolved.
-Conventional threshold meanings belong in a later interpretation layer.
+Explicit thresholds printed in a local caption or footer are linked as source
+definitions; conventional meanings are not invented for undefined markers.
 
 ## Why There Are Multiple Versions Of A Table
 
@@ -473,6 +497,15 @@ may use the canonical table-local frame. Extraction records the source bbox,
 rotation direction, and applied transform so later stages can project source
 characters into that same frame.
 
+An explicit continuation cue at the end of a candidate is not a table row.
+`trim_trailing_non_table_rows()` removes a standalone final `Continued` cue, or
+an explicit next-page continuation note, only when that suffix row has no
+table-value cells. `metadata.trailing_non_table_rows` preserves the raw cue,
+its former row position, and the removal reason while the shared positioned
+document retains the source line. A first row on the continuation fragment is
+kept as table data when at least one non-stub cell contains a value; this is why
+`Missing values | 9303 (14.5)` remains part of the continued Asthma Table 1.
+
 The similarly shaped internal `ProvisionalExtractedTable` exists only before
 canonical row and leaf-column selection. It must not be written as
 `extracted_tables.json` or consumed by normalization.
@@ -541,9 +574,9 @@ generic "header" label:
 - table captions/titles identify a table but are not column headers
 - column-header bands are the rows that define the table's column axis
 
-`NormalizedTable` consumes these region decisions when available. Footnote
-harvesting can also consume `footer_note_rows` from this artifact instead of
-independently rediscovering extracted footer rows.
+`NormalizedTable` consumes these region decisions when available. Extracted-row
+footnote harvesting also consumes `footer_note_rows` from this artifact and
+does not independently rediscover footer rows.
 
 ### Provisional Column Geometry Diagnostics
 
@@ -1265,7 +1298,19 @@ The parser builds a paper-level inventory of actual in-paper visual objects.
 
 For tables, this starts from extracted table titles and captions and links back to `table_id` when possible.
 
-For figures, the current implemented scope is caption inventory from markdown-derived text. Figure image extraction is intentionally separate and can later populate artifact paths without changing the reference schema.
+For figures, the implemented scope is caption inventory from markdown-derived
+text plus a narrow positioned-text case: when a standalone `.gNNN` DOI directly
+follows a same-page caption sequence beginning with the matching `Figure/Fig
+N` label at the same text origin, that caption is retained as a figure visual.
+This does not infer a figure from a prose mention. Figure image extraction is
+intentionally separate and can later populate artifact paths without changing
+the reference schema.
+
+`PaperVisual.doi` stores the canonical DOI and
+`PaperVisual.doi_source_line_id` joins it to the preserved positioned line.
+The R paper-output loader carries this inventory, and display code derives the
+corresponding `https://doi.org/<doi>` link rather than persisting a redundant
+URL.
 
 This inventory is the check that prevents every prose mention of `Figure X` from being treated as an in-paper figure reference.
 

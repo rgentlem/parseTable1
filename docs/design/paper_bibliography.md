@@ -134,5 +134,13 @@ Important fields:
 - `confidence`
 - `notes`
 
+For table-cell mentions, `mention_id` is
+`bibref:<CellTextAnnotation.annotation_id>`, using the stable occurrence ID
+reused by the corresponding footnote anchor. `source_id` remains the physical
+cell source ID. This lets bibliography, footnote, and cell-annotation artifacts
+refer to one physical occurrence without maintaining a second positional
+identity. The source annotation retains whether the glyph was a superscript,
+subscript, or inline marker.
+
 Later body-text citation harvesting should reuse this same artifact rather than
 creating a separate citation system.

@@ -410,7 +410,9 @@ def build_table_boundary_proposal(
                 if (
                     following_bottom is None
                     or bbox[1] > following_bottom + line_continuation_gap
-                    or line_style != following_style
+                    or following_style is None
+                    or line_style[0] != following_style[0]
+                    or abs(line_style[1] - following_style[1]) > 0.2
                 ):
                     break
                 following_lines.append((line, bbox))

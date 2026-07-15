@@ -6,14 +6,25 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
 
 ## Current Priorities
 
+- [ ] Review or explicitly accept the deferred corpus gaps and uncertainties in
+  `docs/implementation/corpus_artifact_uncertainties_20260715.md`. This records
+  unsupported rotated marker geometry, unresolved header/visual identities,
+  incomplete visual-reference coverage, unresolved bibliography-like markers,
+  and downstream semantic uncertainty without treating every diagnostic as a
+  parser defect.
+- [ ] Choose any future work from the separate prioritized improvement list in
+  `docs/implementation/post_geometry_improvement_backlog_20260715.md`. Each
+  item requires a fresh read-only audit and specific parser-logic approval
+  before implementation.
+
 Current corpus-driven hardening guide:
 `docs/implementation/real_paper_testing_guide.md`. Use it for the ordered
 real-paper review loop across extraction, normalization, continuation handling,
 table semantics, footnote/reference artifacts, and mixed-family routing. The
 current retained reference run is
-`outputs/testpapers_batch_offpage_text_recovery_20260715`;
+`outputs/testpapers_batch_phase_k_step5_guarded_final_20260715`;
 its comparison baseline is
-`outputs/testpapers_batch_phase_j_step6_final_20260715`.
+`outputs/testpapers_batch_phase_k_step4_final_20260715`.
 
 Fallback/removal inventory:
 `docs/implementation/fallback_inventory.md`. Do not add new fallback tools or
@@ -114,6 +125,99 @@ objects, 78 resolved tables after 13 accepted continuation integrations, 16
 `periodontis2.pdf` are unchanged. A focused positioned-document regression
 protects this source recovery; no candidate leaf inheritance, schema repair,
 or resolver workaround was added.
+
+Phase K Step 1 and its approved continuation-cue ownership follow-up are
+complete at
+`outputs/testpapers_batch_phase_k_continuation_cue_final_20260715`. The footnote stage now
+consumes extracted footer rows only from final
+`TableRegion.footer_note_rows` and external footer lines only from the final
+rule's `TableBoundaryProposal.following_text_line_ids`. The late last-value/rule
+fallback, `_last_value_matrix_row_idx()`, and arbitrary styled-text scan below
+the table bbox are removed. Across all 28 PDFs, the parser preserves 91
+physical tables, 78 resolved tables, 13 accepted continuation integrations,
+16 `ok` / 62 `rescued` statuses, and all 400 link outcomes. Footer records fall
+from 134 to 65 owned records. The MDPI footer paragraphs on PDF pages 6–9 remain
+continuous across same-font 8.0/7.9-point jitter, replacing 13 truncated link
+meanings with their complete explicit definitions. On PDF page 4, printed Table
+1 of `Asthma prevalence among United States population insights from NHANES
+data analysis.pdf`, the standalone final `Continued` cue is removed before
+physical table ownership because it has no data-column value; its text and
+former row position remain in `metadata.trailing_non_table_rows`. The page-5
+`Missing values` row keeps `9303 (14.5)` and remains the third level of `Ever
+told you had chronic bronchitis`. That Step 1 checkpoint did not change anchor
+identity or continuation-scoping logic.
+
+Phase K Step 2 is complete at
+`outputs/testpapers_batch_phase_k_step2_final_20260715`. Each promoted
+table-cell footnote anchor now reuses its existing
+`CellTextAnnotation.annotation_id`; the anchor notes retain the annotation type
+while full superscript/subscript/inline geometry remains in
+`cell_text_annotations.json`. A missing annotation ID fails closed with a
+diagnostic instead of creating a second positional identity. The existing
+smaller-raised definition-marker evidence now accepts a marker at the beginning
+of its own physical line without requiring punctuation on the preceding line.
+This resolves only the explicit `a` definition in `hypertension.pdf`, PDF page
+6, printed Table 2: the corpus moves from 346 resolved / 54 unresolved links to
+347 / 53. All 91 physical extraction objects, 78 resolved tables, 13 accepted
+continuation integrations, and 16 `ok` / 62 `rescued` statuses are unchanged;
+the extraction-through-parsed-table artifacts are byte-identical.
+
+Phase K Step 3 is complete at
+`outputs/testpapers_batch_phase_k_step3_final_20260715`. The existing footnote
+anchor, footer, definition, and link functions now consume final
+`ResolvedTableSet` membership; `paper_footnotes.py` no longer depends on the
+older Table 1 continuation review artifact. Cross-fragment candidates qualify
+at the existing `same_visual` rank only when both source table IDs belong to
+the same accepted integrated resolved table. Rejected continuations fail
+closed. All 94 current cross-fragment links remain unchanged, including 3 links
+across PDF pages 2–3, printed Table 1 of `Science-Advanaced-Planetary Health
+Diet and risk of mortality and chronic diseases- Results from US NHANES, UK
+Biobank, and a meta-analysis.pdf` and 77 across PDF pages 7–8, printed Table 1
+and PDF pages 11–12, printed Table 3 of `Association between anthropometric
+indices and chronic kidney disease- Insights from NHANES 2009–2018.pdf`. The
+28 PDFs retain 91 physical tables, 78 resolved tables, 13 accepted continuation
+integrations, 16 `ok` / 62 `rescued` statuses, and 347 resolved / 53 unresolved
+links. The only non-timestamp artifact difference assigns accepted printed
+Table 2–4 visual IDs to terminal footers and definitions on PDF pages 13, 15,
+and 17 of `periodontis2.pdf`; no link outcome changes.
+
+Phase K Step 4 is complete at
+`outputs/testpapers_batch_phase_k_step4_final_20260715`. The existing caption
+definition branch now accepts only a trailing explicit symbol block after
+completed caption prose and reuses the local symbol-block parser. It recognizes
+attached markers such as `*p < 0.05` while removing the former broad
+letter/number caption regex. In `Asthma prevalence among United States
+population insights from NHANES data analysis.pdf`, PDF page 6, printed Table
+3, the caption supplies three explicit p-value definitions and all 40 star
+occurrences resolve to them. Five unlinked false caption definitions are
+removed from `gallstones.pdf`, PDF page 7, printed Table 2; the asthma paper,
+PDF page 5, printed Table 1; and `Journal of Periodontology - 2015 - Eke -
+Update on Prevalence of Periodontitis in Adults in the United States  NHANES
+2009.pdf`, PDF pages 4–5, printed Table 1. The 433 Phase I annotations still
+partition into 400 anchors, 30 mathematical or unit suppressions, and 3
+subscript suppressions. The corpus now has 105 definitions, 387 resolved links,
+0 ambiguous links, and 13 unresolved numeric bibliography candidates. All 91
+physical tables, 78 resolved tables, 13 accepted integrations, and 16 `ok` / 62
+`rescued` statuses remain unchanged; only the three affected footnote artifacts
+and their derived style profiles change.
+
+Phase K Step 5 is complete at
+`outputs/testpapers_batch_phase_k_step5_guarded_final_20260715`. The existing
+`PaperVisual` record now stores optional `doi` and `doi_source_line_id` values,
+and the existing R paper-output loader carries `paper_visual_inventory.json`.
+One shared standalone-object pattern requires an exact `.tNNN` or
+`.gNNN` suffix. It attaches seven table DOIs to extracted table visuals and
+retains eight positioned figure-caption sequences that directly precede their
+matching figure DOIs at the same text origin. Other DOI lines remain
+unassigned. The same pattern stops external footer text before a visual DOI;
+on PDF page 6, printed Table 1 of `An environment-wide association study
+(EWAS) on type 2 diabetes mellitus.pdf`, the `{` definition is now exactly
+`denotes unweighted number.` All 28 PDFs retain 91 physical tables, 78 resolved
+tables, 13 accepted continuation integrations, 16 `ok` / 62 `rescued`
+statuses, 105 definitions, and 387 resolved / 13 unresolved links. All table
+and bibliography artifacts are byte-identical to Step 4. No new class,
+artifact, fallback, or DOI lookup was added. Phase K is closed; the retained
+reference run is the guarded Step 5 corpus above.
 
 Current table-geometry implementation checklist:
 `docs/implementation/table_geometry_reconstruction_checklist.md`. Use it to
@@ -512,7 +616,8 @@ the positioned document artifact.
 
 6. [x] Retire broad trailing-row cleanup where page-furniture masking owns the issue.
    `metadata.trailing_non_table_rows` is now limited to explicit trailing
-   continuation-page notes. Broad large-gap/text-spread trimming after the final
+   continuation-page cues, including a standalone final `Continued` row with no
+   data-column value. Broad large-gap/text-spread trimming after the final
    value row was removed so footer/page-furniture cleanup is owned by the early
    page-furniture mask rather than by a second heuristic path.
 
@@ -707,17 +812,27 @@ the positioned document artifact.
    Recent footnote update: table-local note lines can now define markers after leading explanatory prose, including embedded and bracketed markers such as `significance. a Represents ... b Represents ...` and `[a] ... [b] ...`. This resolves the `metabolic` Table 1 p-value superscripts against the local Chi-square and Kruskal-Wallis definitions while keeping links as review evidence only.
    Recent footer update: statistical-significance footer lines can now define repeated asterisk runs such as `* P value < 0.05, ** P value < 0.01, *** P value < 0.001`, and anchors attached to p-values preserve the visible asterisk count. This resolves the `stroke` Table 1-3 asterisk superscripts.
    Recent symbol-footer update: known symbol markers such as `†`, `‡`, and `*` can now define any non-empty local footer text without semantic checks on the definition body. This resolves `cardiovascular` Table 1 double-dagger links and the anthropometric CKD dagger/star footer links; p-value semantics belong in a later interpretation layer.
-   Recent extracted-footer update: `paper_footnotes.json` now builds table-note definition source lines from extracted footer rows after the final value-matrix row, appending adjacent continuation rows in extracted row order. Same-table extracted footer definitions are preferred over duplicate same-table PDF-text definitions, which protects multiline rotated-table footers such as Eke Table 2.
+   Recent extracted-footer update: `paper_footnotes.json` now builds table-note
+   definition source lines only from final `TableRegion.footer_note_rows`,
+   appending adjacent continuation rows in extracted row order. Same-table
+   extracted footer definitions remain preferred over duplicate same-table
+   positioned-text definitions, which protects multiline rotated-table footers
+   such as Eke Table 2.
    Recent text-stream footer update: `paper_footnotes.json` now consumes
    `paper_text_stream.json` line groups for footer metadata instead of running a
-   second PyMuPDF block parse. Candidate footer groups are contiguous visual
-   lines with the same non-body dominant font style, positioned below the table
-   bbox, horizontally overlapping the table, and bounded by the next extracted
-   table start or another structural line such as a section heading or figure
-   caption. Continuation-group visual IDs are carried into footnote scoping, so
-   a footer on a terminal uncaptioned fragment can resolve anchors from the
-   earlier fragment of the same visual table.
-   Recent footer-finder update: table-local extracted footers are now persisted in `paper_footnotes.json` under `footers` and surfaced in R through `footnote_footers_df()` and `show_paper_footnotes()`. `find_table_footer_rows()` uses existing row bounds plus full-width/horizontal rule geometry first, accepting rows below a rule only when the rule lies at or below the last value-matrix row; without rule evidence, extracted-row footer ownership is limited to structured marker geometry from cell-text annotations. Generic page-bottom and body-text blocks no longer produce table-footnote definitions.
+   second PyMuPDF block parse. Candidate footer groups now come only from the
+   final retained rule's `TableBoundaryProposal.following_text_line_ids` and
+   are qualified by positioned marker, table-local typography, and physical-line
+   evidence. Final accepted `ResolvedTableSet` membership supplies footnote
+   continuation scope, so a footer on a terminal uncaptioned fragment can
+   resolve anchors from the earlier fragment only after canonical integration.
+   Recent footer-finder update: table-local footers are persisted in
+   `paper_footnotes.json` under `footers` and surfaced in R through
+   `footnote_footers_df()` and `show_paper_footnotes()`.
+   `find_table_footer_rows()` consumes final `TableRegion.footer_note_rows` and
+   does not rerun row-bound, last-value, rule, or marker-based ownership.
+   Generic page-bottom and body-text blocks no longer produce table-footnote
+   definitions.
    Recent footer artifact update: text-stream footer line groups classified as
    table-local footers are persisted as unsplit `footers` records before
    definition splitting. R footnote review filters match the selected table's
@@ -756,7 +871,7 @@ the positioned document artifact.
   detection before those stages build downstream artifacts. Broad trailing
   large-gap/text-spread cleanup after the final value row has been retired;
   `metadata.trailing_non_table_rows` now records only explicit trailing
-  continuation-page notes.
+  continuation-page cues with no data-column value.
 - Recent extraction guardrail: the purpose-built bibliography pass now owns
   reference-region detection before table extraction. When it finds entries, it
   passes bibliography-owned line IDs and entry bboxes into extraction so
@@ -776,7 +891,12 @@ the positioned document artifact.
   layer that preserves original headings while mapping them into broad roles
   such as abstract, introduction/background, methods, results, discussion,
   conclusion, references, and other.
-- Recent extraction guardrail: sparse trailing table-continuation notes such as `(Table 1 continues on next page)` are removed and recorded in `metadata.trailing_non_table_rows`; post-header notes such as `(Continued from previous page)` remain provenance rows but are excluded from normalized `body_rows`.
+- Recent extraction guardrail: sparse trailing table-continuation notes such as
+  `(Table 1 continues on next page)`, and standalone final `Continued` cues with
+  no data-column value, are removed and recorded in
+  `metadata.trailing_non_table_rows`; post-header notes such as `(Continued from
+  previous page)` remain provenance rows but are excluded from normalized
+  `body_rows`.
 - Recent extraction update: rotated word-position refinement fails closed when a small backend grid would expand into an implausibly wide table. More than 30 columns is rejected for rotated collapsed-grid recovery, and 13-30 columns requires separator-rule support. Newer PyMuPDF4LLM can emit a mixed-orientation table box containing both upright article text and a rotated table; extraction now derives a separate rotated-block candidate from the contiguous vertical PyMuPDF text block inside that box and lets candidate deduplication choose the recovered table region. The retained full-corpus run now includes the Ethnic Differences recovery and its resolved subscript/marker-font false footnote issues.
 - Recent value-matrix geometry update: explicit-grid refinement can derive
   column boundaries from repeated numeric value anchors before using header text

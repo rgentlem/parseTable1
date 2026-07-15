@@ -4,8 +4,18 @@ from __future__ import annotations
 
 import re
 
-from table1_parser.context.visual_references import parse_visual_label, visual_id_for
-from table1_parser.schemas import ExtractedTable, PaperSection, PaperVisual, TableDefinition
+from table1_parser.context.visual_references import (
+    VISUAL_OBJECT_DOI_PATTERN,
+    parse_visual_label,
+    visual_id_for,
+)
+from table1_parser.schemas import (
+    ExtractedTable,
+    PaperSection,
+    PaperTextStream,
+    PaperVisual,
+    TableDefinition,
+)
 from table1_parser.text_cleaning import clean_text
 
 
@@ -132,6 +142,7 @@ def build_paper_visual_inventory(
     extracted_tables: list[ExtractedTable],
     table_definitions: list[TableDefinition],
     sections: list[PaperSection],
+    paper_text_stream: PaperTextStream | None = None,
 ) -> list[PaperVisual]:
     """Build the paper-level inventory of actual table and figure visuals."""
     visuals_by_id: dict[str, PaperVisual] = {}
@@ -142,6 +153,64 @@ def build_paper_visual_inventory(
             visuals_by_id[visual.visual_id] = existing.model_copy(update={"notes": notes})
         else:
             visuals_by_id[visual.visual_id] = visual
+    text_lines = paper_text_stream.lines if paper_text_stream is not None else []
+    for line_index, line in enumerate(text_lines):
+        match = VISUAL_OBJECT_DOI_PATTERN.fullmatch(clean_text(line.raw_text))
+        if match is None:
+            continue
+        visual_kind = "table" if match.group("object_kind").lower() == "t" else "figure"
+        visual_id = visual_id_for(visual_kind, str(int(match.group("object_number"))))
+        visual = visuals_by_id.get(visual_id)
+        preceding_line = text_lines[line_index - 1] if line_index > 0 else None
+        if (
+            visual is None
+            and visual_kind == "figure"
+            and preceding_line is not None
+            and preceding_line.page_num == line.page_num
+            and preceding_line.orientation == line.orientation
+            and abs(preceding_line.bbox[0] - line.bbox[0]) <= 1.0
+            and preceding_line.bbox[3] <= line.bbox[1]
+        ):
+            for caption_index in range(line_index - 1, -1, -1):
+                caption_line = text_lines[caption_index]
+                if caption_line.page_num != line.page_num:
+                    break
+                caption_match = FIGURE_CAPTION_PATTERN.match(clean_text(caption_line.raw_text))
+                parsed = parse_visual_label(caption_match.group("label")) if caption_match is not None else None
+                if parsed is None or parsed[0] != "figure" or visual_id_for(*parsed[:2]) != visual_id:
+                    continue
+                caption = clean_text(
+                    " ".join(item.raw_text for item in text_lines[caption_index:line_index])
+                )
+                visual = PaperVisual(
+                    visual_id=visual_id,
+                    visual_kind="figure",
+                    label=parsed[2],
+                    number=parsed[1],
+                    caption=caption,
+                    caption_source="pdf_caption",
+                    page_num=line.page_num,
+                    source="paper_text_stream",
+                    confidence=0.95,
+                    notes=[f"caption_source_line_id:{caption_line.line_id}"],
+                )
+                visuals_by_id[visual_id] = visual
+                break
+        if visual is None:
+            continue
+        doi = match.group("doi")
+        if visual.doi is not None and visual.doi != doi:
+            notes = [*visual.notes, f"conflicting_visual_object_doi:{doi}"]
+            visuals_by_id[visual_id] = visual.model_copy(
+                update={"doi": None, "doi_source_line_id": None, "notes": notes}
+            )
+            continue
+        if visual.doi is None and not any(
+            note.startswith("conflicting_visual_object_doi:") for note in visual.notes
+        ):
+            visuals_by_id[visual_id] = visual.model_copy(
+                update={"doi": doi, "doi_source_line_id": line.line_id}
+            )
     return sorted(
         visuals_by_id.values(),
         key=lambda visual: (

@@ -2862,6 +2862,9 @@ show_paper_visuals <- function(paper_dir, visual_kind = NULL) {
     if (length(visual$text_reference_ids %||% list()) > 0) {
       cat(sprintf("text references: %s\n", paste(unlist(visual$text_reference_ids, use.names = FALSE), collapse = ", ")))
     }
+    if (!is.null(visual$doi) && nzchar(visual$doi)) {
+      cat(sprintf("doi: https://doi.org/%s\n", visual$doi))
+    }
     if (!is.null(visual$caption) && nzchar(visual$caption)) {
       cat(visual$caption, "\n", sep = "")
     }

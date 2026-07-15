@@ -33,6 +33,7 @@ TABLE_VALUE_TEXT_PATTERN = re.compile(r"^(?:[<>]=?\s*)?[\d.,/%()\-+±\s]+$")
 ALPHA_WORD_PATTERN = re.compile(r"[A-Za-z]{2,}")
 SENTENCE_PUNCTUATION_PATTERN = re.compile(r"[.!?;:]")
 CONTINUATION_PAGE_NOTE_PATTERN = re.compile(
+    r"^\s*(?:table\s+\d+\s*)?\(?\s*(?:cont\.?|continued\.?)\s*\)?\s*$|"
     r"\b(?:cont\.?|continued|continues?)\b.*\b(?:previous|next)\s+page\b|"
     r"\b(?:previous|next)\s+page\b.*\b(?:cont\.?|continued|continues?)\b",
     re.IGNORECASE,

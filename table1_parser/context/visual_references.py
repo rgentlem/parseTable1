@@ -23,6 +23,11 @@ VISUAL_REFERENCE_PATTERN = re.compile(
     r"(?P<numbers>[A-Za-z]?\d+[A-Za-z]?(?:\s*(?:,|and|&)\s*[A-Za-z]?\d+[A-Za-z]?){0,8})\b",
     re.IGNORECASE,
 )
+VISUAL_OBJECT_DOI_PATTERN = re.compile(
+    r"^(?:doi\s*:|https?://(?:dx\.)?doi\.org/)"
+    r"(?P<doi>10\.\d{4,9}/\S+\.(?P<object_kind>[tg])(?P<object_number>\d+))$",
+    re.IGNORECASE,
+)
 REFERENCE_NUMBER_PATTERN = re.compile(r"[A-Za-z]?\d+[A-Za-z]?")
 TEXT_REFERENCE_CUE_PATTERN = re.compile(
     r"\b(?:shown|presented|reported|summari[sz]ed|listed|described|displayed|provided|given|seen)\s+in\s*$"

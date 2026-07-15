@@ -84,6 +84,37 @@ Planned fields:
 - `reference_check_notes`
 - `notes`
 
+Optional visual-identity fields:
+
+- `doi`
+- `doi_source_line_id`
+
+### Visual-object DOI
+
+A standalone DOI printed with a table or figure is part of that visual's
+caption metadata and persistent identity. It should be stored on the existing
+`PaperVisual` record, beside `caption`, for both tables and figures. The source
+line remains unchanged in `paper_text_stream.json`, and
+`doi_source_line_id` preserves the direct join to that positioned evidence.
+
+Store the canonical DOI value, for example
+`10.1371/journal.pone.0010746.t001`, rather than a publisher URL. Python and R
+display code can derive a clickable link as
+`https://doi.org/10.1371/journal.pone.0010746.t001`.
+
+Attachment fails closed. Accept only a complete standalone DOI whose terminal
+object suffix identifies a table or figure, such as `.t001` or `.g002`, and
+require that the decoded kind and number match exactly one `PaperVisual`. A
+table DOI attaches only to an existing extracted-table visual. If a figure
+caption was missed by the markdown-caption path, a figure DOI may materialize
+that same `PaperVisual` schema only when the immediately preceding positioned
+text is one same-page caption sequence beginning with the exact matching
+`Figure/Fig N` label and sharing the DOI line's text origin. This is caption
+inventory from direct PDF evidence, not inference from a prose figure mention.
+Article-level, bibliography, dataset, and supplement DOIs remain in the
+positioned text stream but are not assigned to a visual. The DOI line is visual
+metadata, not part of a table footnote definition.
+
 `visual_kind` should be:
 
 - `table`
@@ -102,6 +133,8 @@ Example table visual:
   "page_num": 4,
   "artifact_path": null,
   "source_table_id": "tbl-1",
+  "doi": "10.1371/journal.pone.0010746.t001",
+  "doi_source_line_id": "page-6-line-188",
   "source": "table_extraction",
   "confidence": 0.95,
   "text_reference_ids": ["paper_ref:section_4:p2:r0"],

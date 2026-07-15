@@ -122,8 +122,8 @@ Non-scope:
      dagger/star footer definitions.
 
 15. [x] Build table-local footer definitions from extracted table rows
-   - Harvest definition source lines from `extracted_tables.json` after the last
-     value-matrix row, using extracted row order.
+   - Harvest definition source lines only from the matching final
+     `TableRegion.footer_note_rows`, using extracted row order.
    - Append adjacent non-marker rows to the current marker definition block so
      multiline footers preserved by rotated extraction are not truncated to one
      PyMuPDF text line.
@@ -134,11 +134,13 @@ Non-scope:
 16. [x] Add a table-footer line-group finder for positioned text geometry
    - Consume page-furniture-filtered `paper_text_stream.json` lines rather than
      running a separate PDF block parse.
-   - Classify contiguous same-style non-body line groups as table-local footers
-     when they are vertically adjacent to a table bbox, overlap the table
-     horizontally, and do not cross into the next table or structural text
-     boundary.
-   - Carry Table 1 continuation-group visual IDs into footnote scoping so a
+   - Start only from the positioned lines attached to the final retained rule
+     by `TableBoundaryProposal.following_text_line_ids`; do not scan arbitrary
+     styled text below the table bbox.
+   - Retain that adjacent group from exact definition-marker geometry,
+     table-local smaller type, or multi-line footer geometry. Treat same-font
+     size differences of at most 0.2 PDF points as harmless continuation jitter.
+   - Carry final accepted resolved-table visual IDs into footnote scoping so a
      footer on an uncaptioned terminal fragment can resolve anchors from earlier
      fragments of the same visual table.
    - Split distinctive symbol markers inside one footer block, including glued
@@ -154,3 +156,27 @@ Non-scope:
      `outputs/testpapers_footer_blocks_20260701_final` resolves the Planetary
      Health Table 1 `*`, `†`, `‡`, and `§` links and keeps stroke and
      anthropometric CKD explicit footer links resolved.
+
+17. [x] Align table-cell anchor identity and physical-line-start definitions
+   - Reuse `CellTextAnnotation.annotation_id` directly for promoted table-cell
+     anchors and retain the annotation type in anchor evidence; do not create a
+     second table-position/index identity.
+   - Keep definition markers as separate positioned evidence. Accept an exact
+     smaller-raised marker at the beginning of its own physical source line
+     without requiring punctuation on the preceding physical line.
+   - Preserve the complete raw footer group and explicit-only resolution rule.
+   - Implemented: `outputs/testpapers_batch_phase_k_step2_final_20260715`
+     changes only `hypertension.pdf`, PDF page 6, printed Table 2 from
+     unresolved to resolved, producing 347 resolved and 53 unresolved links.
+
+18. [x] Use final resolved-table membership for continuation scope
+   - Pass `ResolvedTableSet` through the existing anchor, footer, definition,
+     and linking functions; remove their dependency on
+     `Table1ContinuationGroup`.
+   - Admit a cross-fragment `same_visual` candidate only when both source table
+     IDs belong to the same accepted `integrated_continuation`; rejected
+     continuations fail closed.
+   - Keep exact-table, same-page, and paper-level ranking unchanged.
+   - Implemented: `outputs/testpapers_batch_phase_k_step3_final_20260715`
+     preserves all 94 cross-fragment links and assigns accepted printed Table
+     2–4 visual IDs to the terminal footers in `periodontis2.pdf`.

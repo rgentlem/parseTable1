@@ -1,5 +1,10 @@
 # Table Geometry Reconstruction Checklist
 
+Status: complete through corpus verification.
+
+Retained final corpus:
+`outputs/testpapers_batch_phase_k_step5_guarded_final_20260715`.
+
 This checklist tracks the planned geometry-first path from a detected table
 region to a canonical `ExtractedTable`, marker-linked logical elements, and
 footer resolution.
@@ -564,14 +569,16 @@ Detailed cutover checklist:
       candidate as an input.
 - [x] Build `HeaderStructureCandidate` once from the final region, canonical
       leaf bands, positioned text, and rules.
-- [ ] Build `NormalizedTable` without changing physical geometry.
-- [ ] Build `ColumnHeaderSchema` by directly projecting the validated header
+- [x] Build `NormalizedTable` without changing physical geometry.
+- [x] Build `ColumnHeaderSchema` by directly projecting the validated header
       candidate; do not reconstruct or refine header structure in the schema
       stage.
-- [ ] Build `BodyElementCandidate` and `BodyRowLabelCandidate` after the leaf
+- [x] Build `BodyElementCandidate` and `BodyRowLabelCandidate` after the leaf
       grid is settled.
-- [ ] Estimate left, right, center, or decimal alignment only after occupancy
-      and leaf candidates exist; treat alignment as supporting evidence.
+- [x] Keep any future left, right, center, or decimal alignment estimate after
+      occupancy and leaf candidates, and treat it as supporting evidence only.
+      Phase J adds no alignment estimator because no current structural decision
+      consumes one.
 
 Completion evidence:
 
@@ -579,22 +586,103 @@ Completion evidence:
 - `HeaderStructureCandidate` does not revise `TableRegion`.
 - Wrapped logical elements retain all source cells and physical-line IDs.
 
+Phase J is closed in commit `98daf54`. The direct projection checkpoint is
+`outputs/testpapers_batch_phase_j_step6_final_20260715`; the later off-page
+source-text correction in commit `12c7da9` leaves this one-path design intact.
+Alignment remains a possible non-operative evidence enhancement, not unfinished
+Phase J work and not a prerequisite for Phase K.
+
 ## K. Extract And Resolve Footer Definitions
 
-- [ ] Identify footer regions only after table/footer ownership is established.
-- [ ] Create definition-marker records separately from table-element marker
+Detailed implementation checklist:
+`docs/implementation/phase_k_footer_definition_checklist.md`.
+
+- [x] Identify footer regions only after table/footer ownership is established.
+- [x] Create definition-marker records separately from table-element marker
       occurrences.
-- [ ] Resolve occurrences to definitions by glyph key, table/visual identity,
+- [x] Resolve occurrences to definitions by glyph key, table/visual identity,
       continuation scope, and footer geometry.
-- [ ] Preserve explicit states for resolved, ambiguous, unresolved, possible
+- [x] Preserve explicit states for resolved, ambiguous, unresolved, possible
       citation, and non-footnote notation.
-- [ ] Perform continuation-aware resolution only after continuation grouping.
+- [x] Perform continuation-aware resolution only after final
+      `ResolvedTableSet` membership is available.
 
 Completion evidence:
 
 - Resolution never invents conventional p-value meanings without an explicit
   definition.
 - Numeric citation candidates remain available for bibliography resolution.
+
+Phase K Step 1 and the approved continuation-cue ownership follow-up are
+complete at
+`outputs/testpapers_batch_phase_k_continuation_cue_final_20260715`. Extracted
+footer rows now come only from final `TableRegion.footer_note_rows`; external footer lines
+come only from the final rule's
+`TableBoundaryProposal.following_text_line_ids`. The former last-value/rule
+fallback and arbitrary below-table text scan are removed. The 28 PDFs preserve
+91 physical tables, 78 resolved tables, 13 continuation integrations, and all
+400 footnote link outcomes while reducing 134 broad footer records to 65 owned
+records. The standalone `Continued` cue on PDF page 4, printed Table 1 of
+`Asthma prevalence among United States population insights from NHANES data
+analysis.pdf` is removed before `ExtractedTable` ownership and preserved in
+`metadata.trailing_non_table_rows`; the valued `Missing values` row on PDF page
+5 remains attached to the open chronic-bronchitis variable. Remaining Phase K
+work at that checkpoint concerned marker identity, canonical continuation
+scope, and explicit outcome verification.
+
+Phase K Step 2 is complete at
+`outputs/testpapers_batch_phase_k_step2_final_20260715`. All 400 promoted
+anchors now reuse the stable IDs of their source `CellTextAnnotation` records
+and retain the annotation type, while definition markers remain separate
+positioned evidence. The smaller, raised `a` at the start of its own physical
+footer line in `hypertension.pdf`, PDF page 6, printed Table 2 now resolves to
+its explicit definition. This is the only corpus link-status change: 347 links
+are resolved and 53 remain unresolved. Physical tables, geometry, normalized
+tables, headers, continuation integration, and parsed tables are unchanged.
+
+Phase K Step 3 is complete at
+`outputs/testpapers_batch_phase_k_step3_final_20260715`. Footnote anchors,
+footers, definitions, and links now receive the final `ResolvedTableSet`; the
+footnote path no longer consumes the older Table 1 continuation review
+artifact. All 94 cross-fragment links are unchanged and belong to accepted
+integrated source memberships. The corpus remains at 91 physical tables, 78
+resolved tables, 13 accepted integrations, 16 `ok` / 62 `rescued`, and 347
+resolved / 53 unresolved footnote links. `periodontis2.pdf` terminal footers on
+PDF pages 13, 15, and 17 now carry the accepted printed Table 2–4 visual IDs;
+their text, definitions, and link outcomes do not change.
+
+Phase K Step 4 is complete at
+`outputs/testpapers_batch_phase_k_step4_final_20260715`. The caption-definition
+path now retains only trailing explicit symbol blocks after completed caption
+prose and splits them with the existing local definition parser. On PDF page 6,
+printed Table 3 of `Asthma prevalence among United States population insights
+from NHANES data analysis.pdf`, three explicit caption definitions resolve all
+40 star occurrences. The former broad caption letter/number regex and its five
+unlinked false definitions are removed. All 433 annotations remain exactly
+partitioned into 400 anchors, 30 mathematical or unit suppressions, and 3
+subscript suppressions; the corpus has 387 resolved, 0 ambiguous, and 13
+unresolved numeric bibliography candidates. The 91 physical tables, 78
+resolved tables, 13 accepted integrations, and status counts are unchanged.
+
+Phase K Step 5 is complete at
+`outputs/testpapers_batch_phase_k_step5_guarded_final_20260715`. Exact
+standalone `.tNNN` and `.gNNN` DOI lines now belong to the matching
+caption-bearing
+`PaperVisual`, with their positioned source line IDs preserved. The two PLOS
+papers contribute seven table and eight figure DOIs; other DOI classes remain
+unassigned. The same pattern stops a final-rule footer before the DOI, so PDF
+page 6, printed Table 1 of `An environment-wide association study (EWAS) on
+type 2 diabetes mellitus.pdf` retains `denotes unweighted number.` as the
+complete `{` definition without the table DOI. The R inspection loader carries
+the visual inventory and its DOI values. The 28 PDFs retain 91 physical tables,
+78 resolved tables, 13 accepted integrations, 16 `ok` / 62 `rescued`, 105
+definitions, 387 resolved links, and 13 unresolved numeric bibliography
+candidates. Extraction through parsed-table artifacts and the bibliography are
+byte-for-byte unchanged from Step 4.
+
+Phase K is closed. Footer ownership, marker identity, continuation scope,
+explicit link outcomes, and visual-object DOI ownership now use the canonical
+artifacts described above without a parallel repair path.
 
 ## L. Corpus Verification
 

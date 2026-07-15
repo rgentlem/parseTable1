@@ -90,7 +90,7 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Continued variable integration | `TableDefinition` | Written now as `continued_variable_integrations.json` by `parse` | Persist a source-fragment review view for compatible continued Table 1 fragments; this is not consumed by canonical semantic parsing now that `resolved_tables.json` feeds `TableDefinition` and `ParsedTable` |
 | Parsed source-cell values | `ParsedCellValue` | Written now as `parsed_cell_values.json` by `parse` | Persist source-grid or candidate-derived value components keyed by table and row/column indices before semantic row/column value joins |
 | Paper context | `PaperPositionedDocument`, `PaperTextStream`, `PaperSection`, `PaperTableMention`, `PaperVisual`, `PaperVisualReference`, `TableContext` | Written now as `paper_positioned_document.json`, `paper_markdown.md`, `paper_text_stream.json`, `paper_sections.json`, `paper_table_mentions.json`, `paper_visual_inventory.json`, `paper_references.json`, and `table_contexts/*.json` by `parse` | Persist one shared positioned-text pass, including source text whose bbox crosses the declared page box, the filtered layout-aware text stream and markdown view derived from it, sections, pre-extraction table mention classification, actual in-paper visual objects, anchored table/figure references, and per-table retrieval bundles |
-| Paper bibliography | `PaperBibliography`, `BibliographyEntry`, `BibliographyReferenceMention` | Written now as `paper_bibliography.json` by `parse` | Persist the paper's own bibliography entries, numbered or unnumbered, and link observed numeric reference markers to numbered entries without creating a cross-paper citation-management layer |
+| Paper bibliography | `PaperBibliography`, `BibliographyEntry`, `BibliographyReferenceMention` | Written now as `paper_bibliography.json` by `parse` | Persist the paper's own bibliography entries, numbered or unnumbered, and link observed numeric reference markers through their stable cell-annotation IDs to numbered entries without creating a cross-paper citation-management layer |
 | Paper style profile | `PaperStyleProfile`, `PaperStyleDimension`, `PaperStyleCheck`, `PaperStyleEvidence` | Written now as `paper_style_profile.json` by `parse` | Persist document-level counts, examples, and consistency checks for footnote-marker, bibliography, caption-placement, and visual-reference conventions without changing extraction or link decisions |
 | Paper variable inventory | `PaperVariableInventory`, `VariableMention`, `VariableCandidate` | Written now as `paper_variable_inventory.json` by `parse` | Persist the paper-level candidate variable reference list with explicit text/table provenance |
 | Variable-plausibility LLM review | `LLMVariablePlausibilityTableReview` | Written now as `table_variable_plausibility_llm.json` by `review-variable-plausibility` when LLM config is available | Persist table-local QA scores for variable label/type/level plausibility without rewriting the deterministic definition |
@@ -99,7 +99,7 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Final parsed output | `ParsedTable` | Written now as `parsed_tables.json` by `parse` | Validated downstream structured table data |
 | Table processing status | `TableProcessingStatus`, `TableProcessingAttempt` | Written now as `table_processing_status.json` by `parse` | Persist resolved-table rescue attempts, source fragment IDs and diagnostics, terminal failure stage, and failure reason without overloading semantic artifacts |
 | Parse quality diagnostics | `ParseQualityReport` | Written now as `parse_quality_reports.json` by `parse` | Persist deterministic row, column, and value-pattern diagnostics without changing parse behavior |
-| Paper footnotes | `PaperFootnotes` | Written now as `paper_footnotes.json` by `parse` | Persist detected table-local footer regions from extracted rows and page-furniture-filtered `paper_text_stream.json` line groups, footnote anchors, text-stream and cell-annotation definition marker evidence, table-footer line-group classification, page-furniture filter-stage metadata, math/unit/non-footnote-symbol suppression metadata, and explicit glyph-key links as reviewable evidence without rewriting table text or parsed values |
+| Paper footnotes | `PaperFootnotes` | Written now as `paper_footnotes.json` by `parse` | Persist table-local footer regions owned by final `TableRegion.footer_note_rows` or the final rule's `TableBoundaryProposal.following_text_line_ids`, footnote anchors keyed by their source `CellTextAnnotation.annotation_id` with annotation type preserved, separate positioned definition-marker evidence, and explicit glyph-key links whose cross-fragment scope comes only from accepted final `ResolvedTableSet` membership, without rewriting table text or parsed values |
 | Paper page furniture | `PaperPageFurniture` | Written now as `paper_page_furniture.json` by `parse` | Persist repeated page text observations, clusters, and ignored regions used near the front of document processing to mask whole-paper markdown/context parsing, extraction, cell annotations, and text-stream footer detection before downstream artifacts are built |
 
 Design note for future multitable support:
@@ -272,10 +272,13 @@ Design intent:
   candidate bbox touches ignored furniture; it records
   `metadata.page_furniture_mask` when positioned words, chars, or explicit-grid
   rows are actually removed.
-- extraction may remove explicit trailing continuation-page notes such as
-  `(Table 1 continues on next page)` and record the removed range in
-  `metadata.trailing_non_table_rows`. Broad footer/furniture cleanup belongs to
-  the earlier page-furniture mask, not to value-gap trailing-row heuristics.
+- extraction removes explicit trailing continuation-page cues such as
+  `(Table 1 continues on next page)` or a standalone final `Continued` row only
+  when the cue row contains no table-value cells. The removed range and raw cue
+  text are recorded in `metadata.trailing_non_table_rows`; the positioned line
+  remains in the shared document evidence. Broad footer/furniture cleanup
+  belongs to the earlier page-furniture mask, not to value-gap trailing-row
+  heuristics.
 
 ### `cell_text_annotations.json`
 
@@ -313,8 +316,11 @@ models.
 A `body_footer` candidate is limited to the final retained rule and may record
 `following_text_line_ids`, `following_text_bbox`, and
 `following_text_styles`. These fields reference the immediate, canonically
-positioned changed-font band below the rule. Known captions, later tables, and
-section headings stop the band. The text remains uninterpreted.
+positioned changed-font band below the rule. Same-font continuation lines allow
+font-size jitter of at most 0.2 PDF points. Known captions, later tables, and
+section headings stop the band. The text remains uninterpreted. External
+footnote harvesting can consume this exact line-ID band but cannot broaden it
+by scanning below the table bbox.
 
 Each proposal also records `credible_rule_geometry` and
 `coherent_positioned_grid`. The proposal is built before row-region ownership.
@@ -1003,7 +1009,10 @@ views.
   examples for review, plus consistency checks such as numbered-bibliography
   alignment
 - `paper_visual_inventory.json`
-  paper-level inventory of actual in-paper tables and figure captions, keyed by stable visual IDs such as `paper_visual:table:1`, with reference-check status fields showing whether the visual has at least one non-self text reference
+  paper-level inventory of actual in-paper tables and figure captions, keyed by
+  stable visual IDs such as `paper_visual:table:1`, with optional canonical
+  `doi` and positioned `doi_source_line_id` fields and reference-check status
+  fields showing whether the visual has at least one non-self text reference
 - `paper_references.json`
   prose mentions of tables and figures, anchored to section/paragraph/character positions and resolved against the visual inventory when possible
 - `paper_variable_inventory.json`

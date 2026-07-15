@@ -24,6 +24,8 @@ class PaperVisual(BaseModel):
     number: str
     caption: str | None = None
     caption_source: VisualCaptionSource = "unknown"
+    doi: str | None = None
+    doi_source_line_id: str | None = None
     page_num: int | None = Field(default=None, ge=1)
     artifact_path: str | None = None
     source_table_id: str | None = None

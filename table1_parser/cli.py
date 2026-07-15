@@ -1118,26 +1118,27 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         cell_text_annotations=cell_text_annotations,
         extracted_tables=extracted_tables,
         column_header_schemas=column_header_schemas,
-        table1_continuation_groups=table1_continuation_groups,
+        resolved_table_set=resolved_table_set,
     )
     paper_footnote_anchors_before_linking = list(paper_footnotes.anchors)
     extracted_table_footers = build_paper_footnote_footers_from_extracted_tables(
         extracted_tables,
-        table1_continuation_groups=table1_continuation_groups,
+        resolved_table_set=resolved_table_set,
         table_regions=table_regions,
     )
     table_local_footnote_definition_lines = (
         build_paper_footnote_definition_lines_from_extracted_tables(
             extracted_tables,
-            table1_continuation_groups=table1_continuation_groups,
+            resolved_table_set=resolved_table_set,
             table_regions=table_regions,
             cell_text_annotations=cell_text_annotations,
         )
     )
     table_footer_text_stream_definition_lines = find_table_footer_definition_lines(
         extracted_tables,
-        table1_continuation_groups=table1_continuation_groups,
+        resolved_table_set=resolved_table_set,
         paper_text_stream=paper_text_stream,
+        table_boundary_proposals=table_boundary_proposals,
     )
     paper_footnote_definition_lines = [
         *table_local_footnote_definition_lines,
@@ -1151,7 +1152,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     paper_footnote_definitions = build_paper_footnote_definition_candidates(
         paper_footnote_definition_lines,
         extracted_tables,
-        table1_continuation_groups=table1_continuation_groups,
+        resolved_table_set=resolved_table_set,
     )
     paper_footnotes = link_paper_footnotes(
         paper_footnotes.model_copy(
@@ -1184,6 +1185,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
             }
         ),
         bibliography_label_keys={entry.label_key for entry in bibliography_entries},
+        resolved_table_set=resolved_table_set,
     )
     table_profiles = build_table_profiles(
         resolved_tables,
@@ -1283,7 +1285,10 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         bibliography_entries=bibliography_entries,
     )
     paper_visual_inventory = build_paper_visual_inventory(
-        extracted_tables, table_definitions, paper_sections
+        extracted_tables,
+        table_definitions,
+        paper_sections,
+        paper_text_stream=paper_text_stream,
     )
     paper_references = collect_paper_visual_references(
         paper_sections, paper_visual_inventory

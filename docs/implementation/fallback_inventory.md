@@ -146,8 +146,29 @@ canonical extraction logic with explicit provenance.
 
 - Trailing continuation-note trim
   - Code: `table1_parser/extract/layout_fallback.py::trim_trailing_non_table_rows`
-  - Status: keep only for explicit continuation notes. It should not grow back
-    into broad footer or prose cleanup.
+  - Status: keep only for explicit continuation cues in the final candidate
+    suffix. This includes a standalone final `Continued` row only when it has no
+    table-value cells. Preserve the removed text in
+    `metadata.trailing_non_table_rows`; do not grow this into broad footer,
+    stub-only-row, or prose cleanup.
+
+## Footer Ownership
+
+- Extracted-footer last-value/rule inference
+  - Former code:
+    `table1_parser/paper_footnotes.py::find_table_footer_rows` and
+    `_last_value_matrix_row_idx`.
+  - Status: retired in Phase K Step 1. Extracted footer rows now come only from
+    the matching final `TableRegion.footer_note_rows`.
+
+- Arbitrary below-table styled-text scan
+  - Former code:
+    `table1_parser/paper_footnotes.py::find_table_footer_definition_lines`.
+  - Status: retired in Phase K Step 1. External footer text now starts only
+    from the final retained rule's
+    `TableBoundaryProposal.following_text_line_ids`; the same function qualifies
+    that one adjacent band from positioned marker, typography, and physical-line
+    evidence.
 
 ## Normalization Shape Repairs
 

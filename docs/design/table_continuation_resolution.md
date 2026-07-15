@@ -134,11 +134,18 @@ continuation candidates inspectable as singleton resolved tables with
 diagnostics.
 `table1-parser parse` writes this artifact and feeds resolved tables into
 `TableProfile`, `TableDefinition`, and `ParsedTable` assembly.
+The paper-footnote stage also consumes this final artifact. Anchors and
+definitions on different source fragments share continuation scope only when
+their source table IDs belong to the same accepted integrated resolved table.
+Rejected continuation candidates cannot link across fragments merely because
+they print the same table number. The older Table 1 continuation artifacts
+remain review views and are not canonical footnote inputs.
 Categorical levels that begin on an accepted continuation fragment are handled
 by ordinary resolved-table row/level parsing: once the continuation body rows
 are appended after a schema match, `TableDefinition` sees one row sequence and
-can attach count/percent level rows to an open parent variable from the base
-fragment.
+can attach a boundary-leading row to an open categorical parent from the base
+fragment only when at least one non-stub cell contains a compatible data value.
+Stub-only informational text is not attached as a continuation level.
 
 The embedded `table` should preserve the parser-facing `NormalizedTable` shape
 so existing semantic builders can migrate with limited disruption:
@@ -282,6 +289,12 @@ Education
 The continuation level should be visible after the parent row in the logical
 table. The resolver should not synthesize a new `Education` row in the
 continuation fragment.
+
+At the semantic boundary, the first retained continuation row must contain a
+compatible value in at least one data column before it can extend the open
+parent variable. A row containing only stub text remains separate evidence or a
+separate row; it is not treated as a level merely because it begins a continued
+fragment.
 
 ### 7. Promote a Working Table Set
 
