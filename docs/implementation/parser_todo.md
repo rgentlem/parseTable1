@@ -11,9 +11,9 @@ Current corpus-driven hardening guide:
 real-paper review loop across extraction, normalization, continuation handling,
 table semantics, footnote/reference artifacts, and mixed-family routing. The
 current retained reference run is
-`outputs/testpapers_batch_header_inheritance_recovered_20260714`; its physical
-comparison baseline is
-`outputs/testpapers_batch_canonical_axis_validation_final_20260714`.
+`outputs/testpapers_batch_gated_sparse_body_occupancy_first_edge_20260715`;
+its physical comparison baseline is
+`outputs/testpapers_batch_header_inheritance_recovered_20260714`.
 
 Fallback/removal inventory:
 `docs/implementation/fallback_inventory.md`. Do not add new fallback tools or
@@ -47,17 +47,20 @@ parent confirmation remains available under its separate page, header, anchor,
 and per-line support checks.
 
 The 28-PDF checkpoint
-`outputs/testpapers_batch_canonical_axis_validation_final_20260714` completed
-all 92 physical tables with no empty or rejected grid: 56 use count-and-cell-
-geometry-confirmed positioned cells, 29 use occupancy materialization, and
-seven use the narrow header-line-plus-token confirmation. Those seven are
-printed Table 3 on PDF page 11 of `Association between anthropometric indices
-and chronic kidney disease- Insights from NHANES 2009–2018.pdf`; printed Tables
-3-4 on PDF pages 6-7 of `Lead exposure as a contributor to the Black–White
-racial disparity in blood pressure- evidence from NHANES 1988–1994 and
-2017–2020.pdf`; printed Table 3 on PDF page 6 of `NutritionEx.pdf`; printed
-Tables 4-5 on PDF pages 4-5 of `cobaltpaper.pdf`; and printed Table 2 on PDF
-page 6 of `periodontitis.pdf`. Visual review confirms every one. The rejected
+`outputs/testpapers_batch_gated_sparse_body_occupancy_first_edge_20260715`
+completed all 92 physical tables with no empty or rejected grid: 64 use
+count-and-cell-geometry-confirmed positioned cells and 28 use occupancy
+materialization. No table now selects the narrow header-line-plus-token path.
+When ordinary exact-gap occupancy is exactly one separator short, a sparse
+stub row may abstain from defining the stub/value boundary only if its label
+reaches within two observed spaces of the earliest structurally separated
+first-data occupancy. Characters at or beyond that data edge remain evidence,
+so p-value occupancy is not removed. This supplies the missing stub separator
+for the seven previously token-confirmed tables without changing their cells.
+It also corrects printed Table 3 (continued) on PDF page 12 of `Association
+between anthropometric indices and chronic kidney disease- Insights from
+NHANES 2009–2018.pdf` from 8 x 6 to 8 x 7, matching the stub plus three
+OR/p-value pairs on PDF page 11. The rejected
 stub split in printed Table 2 on PDF page 5 of `mdpi-The Relationship Between a
 Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017.pdf` remains
 six columns. Repeated header-cell/leaf conflicts reject only printed Table 2 on

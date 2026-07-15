@@ -17,6 +17,7 @@ from table1_parser.schemas import (
     PaperPositionedDocument,
     PaperPositionedPage,
     TableBoundaryProposal,
+    TableCell,
     TablePositionedEvidence,
     TableRegion,
 )
@@ -470,6 +471,129 @@ def build_body_occupancy_table(
                         width=gap_width,
                     )
                 )
+        nonempty_source_columns = sorted(
+            {
+                cell.col_idx
+                for cell in table.cells
+                if cell.row_idx in body_row_set and cell.text.strip()
+            }
+        )
+        if (
+            qualified_zero_gaps
+            and nonempty_source_columns
+            and nonempty_source_columns == list(
+                range(nonempty_source_columns[0], nonempty_source_columns[-1] + 1)
+            )
+            and len(qualified_zero_gaps) + 2 == len(nonempty_source_columns)
+        ):
+            stub_col_idx = nonempty_source_columns[0]
+            last_col_idx = nonempty_source_columns[-1]
+            cells_by_row: dict[int, dict[int, TableCell]] = {}
+            for cell in table.cells:
+                if cell.row_idx in body_row_set:
+                    cells_by_row.setdefault(cell.row_idx, {})[cell.col_idx] = cell
+            first_data_lefts: list[float] = []
+            for cells_by_col in cells_by_row.values():
+                first_data_cell = cells_by_col.get(stub_col_idx + 1)
+                if (
+                    first_data_cell is None
+                    or not first_data_cell.text.strip()
+                    or first_data_cell.bbox is None
+                ):
+                    continue
+                stub_cell = cells_by_col.get(stub_col_idx)
+                stub_bbox = stub_cell.bbox if stub_cell is not None else None
+                has_later_data = any(
+                    (cell := cells_by_col.get(col_idx)) is not None
+                    and cell.text.strip()
+                    for col_idx in range(stub_col_idx + 2, last_col_idx + 1)
+                )
+                if has_later_data or (
+                    stub_bbox is not None
+                    and first_data_cell.bbox[0] - stub_bbox[2]
+                    >= minimum_separator_gap_width
+                ):
+                    first_data_lefts.append(first_data_cell.bbox[0])
+            first_data_occupancy_x = min(first_data_lefts, default=None)
+            long_sparse_rows: set[int] = set()
+            if first_data_occupancy_x is not None:
+                for row_idx in body_row_indices:
+                    cells_by_col = cells_by_row.get(row_idx, {})
+                    populated_ordinary_columns = [
+                        col_idx
+                        for col_idx in range(stub_col_idx + 1, last_col_idx)
+                        if (
+                            (cell := cells_by_col.get(col_idx)) is not None
+                            and cell.text.strip()
+                        )
+                    ]
+                    stub_cell = cells_by_col.get(stub_col_idx)
+                    stub_bbox = stub_cell.bbox if stub_cell is not None else None
+                    label_right = stub_bbox[2] if stub_bbox is not None else None
+                    if populated_ordinary_columns == [stub_col_idx + 1]:
+                        first_cell = cells_by_col.get(stub_col_idx + 1)
+                        first_bbox = first_cell.bbox if first_cell is not None else None
+                        if (
+                            stub_bbox is not None
+                            and first_bbox is not None
+                            and first_bbox[0] - stub_bbox[2]
+                            < minimum_separator_gap_width
+                        ):
+                            label_right = first_bbox[2]
+                        else:
+                            continue
+                    elif populated_ordinary_columns:
+                        continue
+                    if (
+                        label_right is not None
+                        and label_right
+                        >= first_data_occupancy_x - minimum_separator_gap_width
+                    ):
+                        long_sparse_rows.add(row_idx)
+            if long_sparse_rows:
+                filtered_intervals = sorted(
+                    (
+                        max(x_min, bbox[0]),
+                        min(x_max, bbox[2]),
+                    )
+                    for _, bbox, row_idx, _ in ordinary_char_records
+                    if (
+                        row_idx not in long_sparse_rows
+                        or bbox[0] >= first_data_occupancy_x
+                    )
+                    and min(x_max, bbox[2]) > max(x_min, bbox[0])
+                )
+                filtered_merged: list[list[float]] = []
+                for interval_left, interval_right in filtered_intervals:
+                    if (
+                        not filtered_merged
+                        or interval_left > filtered_merged[-1][1]
+                    ):
+                        filtered_merged.append([interval_left, interval_right])
+                    elif interval_right > filtered_merged[-1][1]:
+                        filtered_merged[-1][1] = interval_right
+                preceding_gaps = [
+                    (left[1], right[0])
+                    for left, right in zip(
+                        filtered_merged,
+                        filtered_merged[1:],
+                        strict=False,
+                    )
+                    if right[0] - left[1] >= minimum_separator_gap_width
+                    and right[0] <= qualified_zero_gaps[0].canonical_x_bounds[0]
+                ]
+                if preceding_gaps:
+                    gap_left, gap_right = max(
+                        preceding_gaps,
+                        key=lambda gap: gap[1],
+                    )
+                    qualified_zero_gaps.insert(
+                        0,
+                        BodyOccupancyGap(
+                            canonical_x_bounds=(gap_left, gap_right),
+                            width=gap_right - gap_left,
+                        ),
+                    )
     return BodyOccupancyTable(
         table_id=table.table_id,
         page_num=table.page_num,

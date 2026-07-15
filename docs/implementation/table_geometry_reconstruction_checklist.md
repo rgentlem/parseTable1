@@ -559,6 +559,22 @@ Phase H checkpoint:
   candidate. Its 22 x 11 grid is unchanged and the pair resolves as one 38 x 11
   table. No other table inherits a label, and all earlier physical artifacts
   match the canonical-axis baseline.
+- The final sparse-stub occupancy refinement is checkpointed in
+  `outputs/testpapers_batch_gated_sparse_body_occupancy_first_edge_20260715`.
+  It runs only when ordinary exact-gap occupancy is exactly one separator short.
+  A sparse row abstains only when its continuous label reaches within two local
+  space widths of the earliest structurally separated first-data occupancy;
+  characters at or to the right of that edge, including p-values, remain
+  evidence. All 28 PDFs and 92 tables complete. The seven formerly
+  token-confirmed tables retain identical cells and now use occupancy-confirmed
+  positioned geometry. Printed Table 3 (continued) on PDF page 12 of
+  `Association between anthropometric indices and chronic kidney disease-
+  Insights from NHANES 2009–2018.pdf` changes from 8 x 6 to the correct 8 x 7,
+  matching its stub plus three OR/p-value pairs. All other physical grids are
+  unchanged, including the 11 x 5 uncaptioned table on PDF page 5 of `Asthma
+  prevalence among United States population insights from NHANES data
+  analysis.pdf`, printed Table 3 on PDF page 8 of `periodontitis.pdf`, and the
+  inherited 28 x 11 plus 22 x 11 `periodontis2.pdf` Table 2 pair.
 
 ## I. Attach Markers To Stable Elements
 
