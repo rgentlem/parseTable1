@@ -559,11 +559,15 @@ Completion evidence:
 Detailed cutover checklist:
 `docs/implementation/header_geometry_to_column_schema_checklist.md`.
 
-- [ ] Build `TableRegion` using the selected grid and
-      `HeaderStructureCandidate` evidence.
+- [ ] Build `TableRegion` once from the selected grid, positioned rules,
+      typography, coverage, and adjacency evidence; do not use the header
+      candidate as an input.
+- [ ] Build `HeaderStructureCandidate` once from the final region, canonical
+      leaf bands, positioned text, and rules.
 - [ ] Build `NormalizedTable` without changing physical geometry.
-- [ ] Build `ColumnHeaderSchema` by validating, refining, or rejecting the
-      preliminary header candidate.
+- [ ] Build `ColumnHeaderSchema` by directly projecting the validated header
+      candidate; do not reconstruct or refine header structure in the schema
+      stage.
 - [ ] Build `BodyElementCandidate` and `BodyRowLabelCandidate` after the leaf
       grid is settled.
 - [ ] Estimate left, right, center, or decimal alignment only after occupancy
@@ -572,6 +576,7 @@ Detailed cutover checklist:
 Completion evidence:
 
 - `ColumnHeaderSchema` does not independently reconstruct a competing header.
+- `HeaderStructureCandidate` does not revise `TableRegion`.
 - Wrapped logical elements retain all source cells and physical-line IDs.
 
 ## K. Extract And Resolve Footer Definitions

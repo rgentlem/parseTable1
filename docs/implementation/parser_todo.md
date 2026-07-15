@@ -22,6 +22,24 @@ positioned extraction, caption/table-region ownership, page-furniture filtering,
 and explicit schema artifacts; fail closed with diagnostics when geometry is
 insufficient.
 
+Immediate prerequisite before Phase J:
+`docs/implementation/pre_phase_j_extraction_integrity_checklist.md`. The
+duplicate-extraction correction and full Step 2 re-baseline are complete at
+`outputs/testpapers_batch_pre_phase_j_step2_final_20260715`. The 28 PDFs now
+produce 91 extraction objects representing 91 unique physical grids and 82
+resolved tables after nine accepted two-fragment continuation merges. All 91
+retained grids match the Phase I baseline exactly; only the misbound duplicate
+on PDF page 5 of `Asthma prevalence among United States population insights
+from NHANES data analysis.pdf` is removed. Its real Table 1 pages 4–5 now
+resolve together, and printed Tables 2–3 remain separate. The Step 3 planning
+reset is complete: the refreshed 91-grid audit and focused implementation
+contract are in
+`docs/implementation/header_geometry_to_column_schema_checklist.md`. Phase J
+is next, pending explicit approval for the documented parser-logic change: one
+region decision, one geometry-driven candidate construction, and a
+projection-only `ColumnHeaderSchema`, with the older reconstruction path
+removed rather than retained as a repair layer.
+
 Current table-geometry implementation checklist:
 `docs/implementation/table_geometry_reconstruction_checklist.md`. Use it to
 track marker occurrences, body occupancy, provisional leaf-column candidates,

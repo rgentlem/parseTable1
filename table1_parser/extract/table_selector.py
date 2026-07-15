@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from table1_parser.extract.table_detector import DetectedTableCandidate
+from table1_parser.page_furniture_mask import bbox_overlap_fraction
 
 
 def _candidate_key(candidate: DetectedTableCandidate) -> tuple[int, int]:
@@ -49,6 +50,65 @@ def select_top_candidates(
 
     ordered_candidates = sorted(
         selected.values(),
+        key=lambda candidate: (candidate.page_num, candidate.table_index),
+    )
+    geometry_deduplicated: list[DetectedTableCandidate] = []
+    for candidate in ordered_candidates:
+        duplicate_index: int | None = None
+        for index, existing in enumerate(geometry_deduplicated):
+            if (
+                existing.page_num != candidate.page_num
+                or existing.raw_rows != candidate.raw_rows
+                or existing.bbox is None
+                or candidate.bbox is None
+            ):
+                continue
+            if max(
+                bbox_overlap_fraction(existing.bbox, candidate.bbox),
+                bbox_overlap_fraction(candidate.bbox, existing.bbox),
+            ) >= 0.8:
+                duplicate_index = index
+                break
+        if duplicate_index is None:
+            geometry_deduplicated.append(candidate)
+            continue
+
+        existing = geometry_deduplicated[duplicate_index]
+        ranked: list[tuple[float, float, float, int, DetectedTableCandidate]] = []
+        for item in (existing, candidate):
+            row_bounds = item.metadata.get("row_bounds")
+            horizontal_rules = item.metadata.get("horizontal_rules")
+            rule_excess = float("inf")
+            if (
+                isinstance(row_bounds, list)
+                and row_bounds
+                and isinstance(horizontal_rules, list)
+                and horizontal_rules
+            ):
+                rule_excess = abs(float(min(horizontal_rules)) - float(row_bounds[0][0])) + abs(
+                    float(max(horizontal_rules)) - float(row_bounds[-1][1])
+                )
+            bbox_area = (
+                max(1.0, item.bbox[2] - item.bbox[0])
+                * max(1.0, item.bbox[3] - item.bbox[1])
+                if item.bbox is not None
+                else float("inf")
+            )
+            ranked.append(
+                (
+                    rule_excess,
+                    bbox_area,
+                    -item.score,
+                    -_positioned_source_preference(item),
+                    item,
+                )
+            )
+        geometry_deduplicated[duplicate_index] = min(
+            ranked,
+            key=lambda value: value[:4],
+        )[4]
+    ordered_candidates = sorted(
+        geometry_deduplicated,
         key=lambda candidate: (candidate.page_num, candidate.table_index),
     )
     candidate_table_numbers: list[int | None] = []
