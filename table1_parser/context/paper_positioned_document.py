@@ -55,8 +55,10 @@ def build_paper_positioned_document(
         for page_index in range(page_count):
             page_num = page_index + 1
             try:
+                import pymupdf
+
                 page = document.load_page(page_index)
-                page_dict = page.get_text("dict") or {}
+                page_dict = page.get_text("dict", clip=pymupdf.INFINITE_RECT()) or {}
             except Exception:  # noqa: BLE001
                 pages.append(
                     PaperPositionedPage(

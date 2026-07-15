@@ -492,3 +492,27 @@ test-alignment-complete and ready to stage.
 Phase J is complete only when one region decision feeds one geometry-built
 candidate, every schema is a direct projection of that candidate, the older
 reconstruction path is gone, and the 91-grid physical baseline remains exact.
+
+## Post-Phase J: Clipped Continuation Source Text
+
+- [x] Inspect `periodontis2.pdf`, PDF pages 10–11, printed Table 1, before
+      changing continuation logic.
+- [x] Confirm the page-11 PDF content stream contains the complete repeated
+      header and values, but places them beyond the declared page box.
+- [x] Retain off-page text in the existing shared positioned-document pass.
+- [x] Rebuild the ordinary physical grid, candidate, and projected schema from
+      that direct source evidence.
+- [x] Keep the existing exact continuation schema gate unchanged.
+- [x] Add one focused regression for off-page positioned text; add no leaf
+      inheritance, schema repair, or resolver workaround.
+
+Checkpoint:
+`outputs/testpapers_batch_offpage_text_recovery_20260715`. The recovered
+page-11 fragment is 20 x 13 rather than the clipped 19 x 13 grid. Its complete
+seven-row header now projects to the same 13 column paths as page 10, including
+`Total Periodontitis Age Standardized %±SE`, and clipped values such as `47`
+are recovered as `47.8±2.5`. The unchanged continuation gate accepts the two
+fragments as one 43 x 13 Table 1. Across all 28 PDFs there are 91 extraction
+objects, 78 resolved tables after 13 accepted continuation integrations, 16
+`ok`, 62 `rescued`, and no failure. Structural artifacts outside
+`periodontis2.pdf` are unchanged; no downstream leaf fix is needed.

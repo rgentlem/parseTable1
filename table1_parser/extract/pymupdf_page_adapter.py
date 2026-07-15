@@ -95,7 +95,9 @@ def extract_page_words(
 ) -> list[dict[str, object]]:
     """Extract normalized positioned words from a PyMuPDF page."""
     try:
-        raw_words = page.get_text("words") or []
+        import pymupdf
+
+        raw_words = page.get_text("words", clip=pymupdf.INFINITE_RECT()) or []
     except Exception:
         return []
     chars = list(page_chars) if page_chars is not None else extract_page_chars(page)
@@ -173,7 +175,9 @@ def extract_page_words(
 def extract_page_chars(page: Any, page_num: int | None = None) -> list[dict[str, object]]:
     """Extract normalized positioned chars from a PyMuPDF page."""
     try:
-        raw = page.get_text("rawdict") or {}
+        import pymupdf
+
+        raw = page.get_text("rawdict", clip=pymupdf.INFINITE_RECT()) or {}
     except Exception:
         return []
     chars: list[dict[str, object]] = []

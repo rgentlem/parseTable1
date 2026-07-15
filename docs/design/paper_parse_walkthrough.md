@@ -110,6 +110,10 @@ afterward for inspection.
 `paper_positioned_document.json` records the shared PyMuPDF positioned text pass
 for the whole paper: pages, visual lines, span text, bboxes, font names, font
 sizes, flags, line directions, words, characters, and horizontal rule segments.
+Text extraction is not clipped to the declared page box: source text outside or
+crossing that display boundary is retained with its original bbox. This lets the
+ordinary geometry path recover malformed pages whose content stream places part
+of a table beyond the visible page without adding a table-specific repair.
 It is built before paper furniture, text streaming, section parsing,
 bibliography extraction, table mention detection, table extraction context, and
 cell text annotation.

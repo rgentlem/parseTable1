@@ -11,9 +11,9 @@ Current corpus-driven hardening guide:
 real-paper review loop across extraction, normalization, continuation handling,
 table semantics, footnote/reference artifacts, and mixed-family routing. The
 current retained reference run is
-`outputs/testpapers_batch_geometry_phase_h_closed_20260715`;
-its physical comparison baseline is
-`outputs/testpapers_batch_gated_sparse_body_occupancy_first_edge_20260715`.
+`outputs/testpapers_batch_offpage_text_recovery_20260715`;
+its comparison baseline is
+`outputs/testpapers_batch_phase_j_step6_final_20260715`.
 
 Fallback/removal inventory:
 `docs/implementation/fallback_inventory.md`. Do not add new fallback tools or
@@ -100,9 +100,20 @@ the deleted independent reconstruction path and the 22 direct-normalization
 tests that omitted the now-required `TableRegion` were removed. Active schema
 validation, header detection, and row-signature coverage remains. No new test
 was added and pytest was not run. Phase J is ready to stage.
-After Phase J closes, return explicitly to the rejected
-`periodontis2.pdf` continuation on PDF pages 10–11, printed Table 1, and resolve
-why its projected column paths disagree.
+The post-Phase J `periodontis2.pdf` continuation review is complete. On PDF
+page 11, printed Table 1, the PDF content stream places the right edge of the
+repeated header and value column outside the declared page box. The shared
+positioned-document pass now retains that direct source text instead of
+clipping it. Ordinary extraction therefore recovers the missing header row,
+the complete final leaf, and complete values; page 10 and page 11 project to
+the same 13 column paths and the unchanged continuation gate integrates them
+as one 43 x 13 table. The full 28-PDF checkpoint is
+`outputs/testpapers_batch_offpage_text_recovery_20260715`: 91 extraction
+objects, 78 resolved tables after 13 accepted continuation integrations, 16
+`ok`, 62 `rescued`, and no failures. Structural outputs outside
+`periodontis2.pdf` are unchanged. A focused positioned-document regression
+protects this source recovery; no candidate leaf inheritance, schema repair,
+or resolver workaround was added.
 
 Current table-geometry implementation checklist:
 `docs/implementation/table_geometry_reconstruction_checklist.md`. Use it to
