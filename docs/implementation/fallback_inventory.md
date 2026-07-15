@@ -234,33 +234,49 @@ shape after extraction.
   - Status: retired with the value-fragment grid mutation paths that created
     empty normalized columns.
 
+- Marker-only body-candidate raw-text rewrite
+  - Previous code: inline in
+    `table1_parser/cli.py::_build_paper_parse_artifacts()` after candidate
+    marker attachment.
+  - Status: retired in Phase J Step 6. Both existing body-candidate builders
+    now preserve exact matching `ExtractedTable` text for every source cell, so
+    marker-bearing candidates no longer need a separate raw-text repair.
+
 ## Header And Schema Compensations
 
-These paths should only run when extraction lacks structural header-band
-evidence.
+These paths are retired. Missing structural header evidence now fails closed
+in the candidate or projection stage.
+
+- Normalization-time header/body inference
+  - Previous code:
+    `table1_parser/normalize/pipeline.py::_detect_or_apply_region_header_rows`.
+  - Status: retired. Normalization requires the matching final `TableRegion`
+    and never makes a second row-ownership decision.
 
 - Header rows inferred from geometry
-  - Code: `table1_parser/column_header_schema.py::_infer_header_rows_from_geometry`
-  - Status: keep only as fallback for older/non-ruled extraction.
+  - Previous code:
+    `table1_parser/column_header_schema.py::_infer_header_rows_from_geometry`.
+  - Status: retired in Phase J Step 5.
 
 - Header rows inferred from grid text
-  - Code: `table1_parser/column_header_schema.py::_infer_header_rows_from_grid`
-  - Status: retire or fail closed when no structural evidence exists.
+  - Previous code:
+    `table1_parser/column_header_schema.py::_infer_header_rows_from_grid`.
+  - Status: retired in Phase J Step 5.
 
 - Group header reconstruction and blank-span expansion
-  - Code: `table1_parser/column_header_schema.py::_header_runs_for_groups`
+  - Previous code: `table1_parser/column_header_schema.py::_header_runs_for_groups`.
   - Includes `single_cell_blank_span` and repeated-label span inference.
-  - Status: narrow to cases without extraction-provided header roles.
+  - Status: retired in Phase J Step 5.
 
 - Repeated leaf-header block grouping
-  - Code: `table1_parser/column_header_schema.py::_repeated_leaf_header_blocks`
-  - Status: keep only as a schema fallback for tables without usable extraction
-    geometry.
+  - Previous code:
+    `table1_parser/column_header_schema.py::_repeated_leaf_header_blocks`.
+  - Status: retired in Phase J Step 5.
 
 - Enrich base schema labels from continuations
-  - Code: `table1_parser/column_header_schema.py::_enrich_base_schema_leaf_labels_from_continuations`
-  - Status: keep short-term for continuation review, but treat as a diagnostic
-    bridge. Base extraction should eventually preserve complete labels itself.
+  - Previous candidate override after independent schema construction.
+  - Status: retired in Phase J Step 5. Provenance-bearing continuation label
+    inheritance occurs once in `HeaderStructureCandidate` before projection.
 
 ## Continuation, Footnote, And Bibliography Logic
 
@@ -298,7 +314,8 @@ passes:
    `dropped_empty_columns_after_repair`.
 3. Verify that retired `caption_contaminated_backend_row_drop` and backend JSON
    cell-grid survival remain absent in real-paper runs.
-4. Gate schema header/group fallback logic on missing extraction geometry.
+4. Verify that schema projection fails closed when its candidate is missing;
+   no header/group fallback remains.
 
 Each pass should run the real-paper corpus and report exactly which real tables
 improve, regress, or become intentionally unsupported.

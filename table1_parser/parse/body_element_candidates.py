@@ -18,7 +18,7 @@ from table1_parser.text_cleaning import clean_text
 
 NUMERIC_TOKEN = r"(?:\d{1,3}(?:,\d{3})*|\d+)(?:\.\d+)?"
 PARENTHESIZED_NUMERIC_ELEMENT = rf"{NUMERIC_TOKEN}\s*\(\s*{NUMERIC_TOKEN}\s*,\s*{NUMERIC_TOKEN}\s*\)"
-COUNT_PERCENT_ELEMENT = rf"(?:\d{{1,3}}(?:,\d{{3}})*|\d+)\s*\(\s*\d+(?:\.\d+)?\s*%?\s*\)"
+COUNT_PERCENT_ELEMENT = r"(?:\d{1,3}(?:,\d{3})*|\d+)\s*\(\s*\d+(?:\.\d+)?\s*%?\s*\)"
 P_VALUE_ELEMENT = r"(?:[<>]=?\s*)?(?:0?\.\d+|\.\d+|1\.0+)"
 ROW_ELEMENT_PATTERN = re.compile(
     rf"{PARENTHESIZED_NUMERIC_ELEMENT}|{COUNT_PERCENT_ELEMENT}|{P_VALUE_ELEMENT}",
@@ -40,6 +40,13 @@ def build_body_element_candidates(
         raw_grid = _raw_grid(table)
         if not raw_grid:
             continue
+        extracted_table = extracted_by_table_id.get(table.table_id)
+        if extracted_table is not None:
+            for cell in extracted_table.cells:
+                if 0 <= cell.row_idx < len(raw_grid) and 0 <= cell.col_idx < len(
+                    raw_grid[cell.row_idx]
+                ):
+                    raw_grid[cell.row_idx][cell.col_idx] = cell.text
         cleaned_grid = [[clean_text(cell) for cell in row] for row in raw_grid]
         schema = schemas_by_table_id.get(table.table_id)
         value_col_indices = _value_col_indices(table, schema)
@@ -48,7 +55,7 @@ def build_body_element_candidates(
         label_col_idx = schema.label_col_idx if schema is not None and schema.label_col_idx is not None else 0
         body_rows = _candidate_body_rows(table, len(raw_grid))
         source_col_indices = _source_col_indices(table)
-        extracted_cell_by_position = _extracted_cell_by_position(extracted_by_table_id.get(table.table_id))
+        extracted_cell_by_position = _extracted_cell_by_position(extracted_table)
         row_sequence_by_anchor: dict[tuple[int, int], dict[str, object]] = {}
         compound_by_anchor: dict[tuple[int, int], dict[str, object]] = {}
         consumed_cells: set[tuple[int, int]] = set()

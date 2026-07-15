@@ -592,21 +592,13 @@ The extracted cells are reassembled into a row-major grid.
 
 This gives the downstream logic a stable rectangular structure to reason over.
 
-#### 4.2 Trim Obviously Non-Informative Edge Columns
+#### 4.2 Preserve The Selected Physical Grid
 
-Some extracted tables contain junk leading or trailing columns, often because the PDF layout has an empty margin column, a rule fragment, or other extractor noise.
-
-Normalization can conservatively drop:
-
-- a mostly non-informative leading column
-- a mostly empty trailing column
-
-It can also handle a rarer structural variant where the leftmost column is not empty but is only a sparse stub for section labels such as broad row groups, while the next column contains the actual row labels and the remaining columns contain values. In that case normalization may drop the sparse stub column, suppress stub-only rows, shift the real label column left, and merge the stub plus label text for rows where both cells together form one label.
-
-Why this happens here:
-
-- it is a structural cleanup, not a semantic inference
-- later row and column interpretation is cleaner when the table edges are already sane
+Normalization keeps the selected table's physical row and column counts and
+the identity of every source column. It does not remove sparse edge columns,
+move text, merge cells, or synthesize replacements. Incorrect physical cells
+must be corrected in extraction; logical relationships between preserved
+cells belong in later candidate and semantic stages.
 
 #### 4.3 Produce Parser-Facing Cleaned Rows
 
@@ -649,14 +641,14 @@ This exists because parser-facing cleanup is useful, but it should not be invisi
 
 #### 4.5 Apply Table-Region Header And Body Rows
 
-When `table_regions.json` is available, normalization consumes its
-`column_header_rows` and `body_rows` directly. Caption/title rows, preamble
+Normalization requires the matching final record from `table_regions.json`
+and consumes its `column_header_rows` and `body_rows` directly. Caption/title
+rows, preamble
 rows, and footer/note rows remain preserved in `metadata.cleaned_rows`, but
 they are excluded from `header_rows` and `body_rows`.
 
-The older cleaned-grid detector remains a fallback for callers that normalize
-tables without a `TableRegion` artifact. It is no longer the primary owner of
-caption/header/body/footer region decisions in the parse pipeline.
+There is no normalization-time header/body fallback. A missing or invalid
+region fails rather than creating a second ownership decision.
 
 This is an important turning point in the parse, because many later steps assume the system already knows which rows are header material and which rows are body material.
 
@@ -680,20 +672,11 @@ For each body row, normalization builds a `RowView`.
 
 This gives later heuristics a small and inspectable summary of the row rather than forcing every heuristic to re-derive low-level row facts from scratch.
 
-#### 4.7 Repair Split Count-Percent Columns
+#### 4.7 Preserve Split Value Evidence
 
-Some tables are extracted with one logical `n (%)` value split across two adjacent columns, such as:
-
-```text
-199    (11.5%)
-```
-
-Normalization can conservatively merge those back into one logical cell when the surrounding row pattern strongly supports that interpretation.
-
-This is one of the main reasons normalization exists as a real stage rather
-than a trivial cleanup wrapper. It separates header/body rows, cleans
-parser-facing text, and records row features without pretending that later
-semantic interpretation has happened.
+If extraction records an estimate, count, percentage, or uncertainty fragment
+in a separate physical cell, normalization leaves it there. Later body-value
+candidates may relate those fragments without changing the grid.
 
 #### 4.8 Preserve Physical Row-Label Columns
 
@@ -726,24 +709,11 @@ row-label and value columns.
 
 Normalization copies the table-region source, confidence, caption rows,
 preamble rows, footer/note rows, and diagnostics into
-`metadata.header_detection` when a `TableRegion` was supplied. This makes the
+`metadata.header_detection`. This makes the
 region decision visible beside the normalized grid while keeping the canonical
 region artifact in `table_regions.json`.
 
-If no `TableRegion` was supplied, normalization can still use the legacy
-rule/value-anchor/content fallback and records that fallback source in
-`metadata.header_detection`.
-
-#### 4.13 Drop Columns Emptied By Repair
-
-If a split-value repair empties a helper column across the table, normalization
-can drop that now-empty column and then reapply the supplied table-region row
-ownership. If no region artifact is available, it reruns the legacy header/body
-fallback on the repaired grid.
-
-This keeps the normalized grid closer to the logical table structure that the later parser actually wants.
-
-#### 4.14 Decide Whether Indentation Is Informative
+#### 4.11 Decide Whether Indentation Is Informative
 
 For some papers, first-column indentation clearly helps distinguish parent rows from level rows.
 
@@ -760,7 +730,7 @@ At the end of normalization, each table has:
 - `row_views`
 - `metadata.cleaned_rows`
 - `metadata.source_col_indices`
-- edge-column repair information
+- identity-preserving source-column information
 - header-detection diagnostics
 - indentation diagnostics
 - text-cleaning provenance
@@ -771,10 +741,9 @@ This artifact is where the table becomes parser-friendly without yet becoming fu
 
 That separation matters because many downstream mistakes are really normalization mistakes, not semantic mistakes.
 
-`source_col_indices` preserves the original extracted column behind each
-surviving normalized column when that identity is still computable. Later
-column-schema evidence should use this map before trying to reconstruct column
-identity from repair summaries.
+`source_col_indices` is the identity map from each normalized column to the
+same extracted physical column. Later stages consume that identity; they do
+not reconstruct it from repair summaries.
 
 ## Step 5: Build `ColumnHeaderSchema`
 
@@ -784,50 +753,21 @@ each normalized table and writes `column_header_schemas.json`.
 This artifact keeps column structure explicit before `TableDefinition` assigns
 semantic roles. It records:
 
-- one leaf record per normalized column, including the row-label column
-- the header row closest to the body as the source of leaf labels
-- higher header rows as spanning groups over leaves
+- one projected leaf per candidate leaf, including the row-label column
+- candidate `base_text` as the structural leaf and group label
+- the candidate's contiguous spanning groups over those leaves
 - group-to-leaf relationships as explicit records
-- raw extracted header-cell text and coordinates when available
-- diagnostics for blank leaf labels, skipped title-like header rows, and
-  missing coordinate evidence
+- stable candidate node and evidence IDs, preserving marker linkage
+- positioned raw text and canonical coordinates from candidate evidence
+- structured diagnostics when a candidate axis or reference is incomplete
 
-If the normalized header rows are absent or only contain title/caption text,
-this stage can infer a header stack from rows above the first strongly numeric
-body row. That fallback is recorded in schema diagnostics and does not rewrite
-`NormalizedTable`.
-
-Within the leaf-header band, the schema builder may use cell coordinates to
-repair a short leading fragment that was extracted into the next column even
-though it lies left of the adjacent leaf boundary. The repair is structural and
-keeps the moved-from cell as evidence; it should not depend on recognizing
-paper-specific words.
-
-The schema builder also uses rule and coordinate evidence inside the header
-band. A full-width rule or a partial value-region rule between header rows can
-mark the rows below it as the wrapped leaf-header stack while keeping higher
-rows as spanning groups. The row-label column is allowed to sit outside
-value-region group headers, since those group headers often describe only
-subsets of the data columns. If a value-region group header is extracted as
-adjacent text fragments, a large horizontal gap can split those fragments into
-separate groups.
-When an upper header row mixes a standalone leaf column with a spanning group,
-for example a `Total` column followed by a multi-column grouped exposure band,
-the schema builder uses the lower leaf-header stack to split those runs rather
-than treating the whole row as one title-like span.
-
-For dense multirow headers, sparse rows after an internal rule are not
-automatically treated as leaf labels. The schema builder trims sparse group
-rows from the inferred leaf stack, keeps them available as higher header
-groups, and can expand repeated single-cell group labels leftward when the
-physical extraction placed a centered spanning header into the right-hand leaf
-of a two-column span. This keeps headers such as survey-cycle groups,
-prevalence-estimate groups, and statistic/unit leaves separate.
-When a repeated leaf-header sequence such as `% (N)` / `95% CI` recurs across
-the value region, that sequence can partition sparse or centered upper headers
-into group spans. The rule does not override upper rows that already contain
-adjacent repeated labels, because those rows supply their own repeated-label
-span evidence.
+This stage does not infer header rows, repair fragments, create groups, or
+respan nodes. Those decisions have already been made once from positioned
+geometry in `HeaderStructureCandidate`. A missing or invalid matching
+candidate fails closed instead of invoking a second header builder. Resolved
+tables ordinarily receive a table-ID-adjusted projection of their source
+schema; a missing source schema produces an explicit empty failure record and
+never triggers reconstruction.
 
 `TableDefinition.column_definition` now carries that structure forward. Each
 defined column stores a leaf `column_label`, a top-to-bottom `header_path`, the
@@ -1047,6 +987,12 @@ known, bboxes when available, printed fragments, candidate text, `raw_text`,
 candidate exists and only through a stable source-cell ID. It never changes a
 physical row, column, cell, occupancy band, or bbox.
 
+The builders take exact source-cell text from the matching `ExtractedTable`;
+normalized cleaned rows are not treated as raw text. `anchor_col_idx` is the
+stable join to the projected schema leaf. The later column definition supplies
+that leaf's ID, groups, and full header path to final values without duplicating
+header semantics in the candidate artifact.
+
 This lets later value parsing use good element-candidate text while R and
 Python inspection can still show what was physically printed in the PDF.
 
@@ -1064,8 +1010,10 @@ After body element candidates exist, the parser builds
 `parsed_cell_values.json` from those candidates in schema-derived value
 columns.
 
-Value-component parsing consumes candidate `base_text`, while each parsed
-record's `raw_value` preserves candidate `raw_text`. Candidate diagnostics make
+Value-component parsing consumes marker-free parser-facing text derived from
+candidate `base_text`, while each parsed record's `raw_value` preserves
+candidate `raw_text`. Marker-linked candidates retain the exact
+geometry-derived `base_text` as the parsing input. Candidate diagnostics make
 any retained uncertain marker glyph explicit.
 
 This is deliberately earlier than the final semantic value join. Each record is

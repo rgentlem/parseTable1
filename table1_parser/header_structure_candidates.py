@@ -20,92 +20,10 @@ from table1_parser.schemas import (
     PaperPositionedPage,
     TableBoundaryProposal,
     TableBoundaryRuleReference,
-    TableCell,
     TablePositionedEvidence,
     TableRegion,
 )
 from table1_parser.text_cleaning import clean_text
-
-
-HeaderCluster = list[HeaderTextEvidence]
-PositionedRule = tuple[float, TableBoundaryRuleReference]
-
-
-def _cluster_x_bounds(cluster: HeaderCluster) -> tuple[float, float]:
-    """Return the horizontal extent of one header evidence cluster."""
-    return (
-        min(item.canonical_bbox[0] for item in cluster),
-        max(item.canonical_bbox[2] for item in cluster),
-    )
-
-
-def _covered_anchor_band_ids(
-    x_bounds: tuple[float, float],
-    leaf_axis_ids: Sequence[str],
-    observed_anchor_x_by_band: dict[str, float],
-) -> list[str]:
-    """Return ordered bands whose observed body anchor lies in an x interval."""
-    left, right = sorted(x_bounds)
-    return [
-        band_id
-        for band_id in leaf_axis_ids
-        if band_id in observed_anchor_x_by_band
-        and left - 1.0 <= observed_anchor_x_by_band[band_id] <= right + 1.0
-    ]
-
-
-def _matching_header_clusters(
-    item: HeaderTextEvidence,
-    clusters: Sequence[HeaderCluster],
-    horizontal_rules: Sequence[PositionedRule],
-    *,
-    respect_intervening_rules: bool,
-) -> list[HeaderCluster]:
-    """Return clusters with strong x overlap and no separating rule."""
-    matches: list[HeaderCluster] = []
-    item_width = item.canonical_bbox[2] - item.canonical_bbox[0]
-    for cluster in clusters:
-        cluster_left, cluster_right = _cluster_x_bounds(cluster)
-        overlap = max(
-            0.0,
-            min(item.canonical_bbox[2], cluster_right)
-            - max(item.canonical_bbox[0], cluster_left),
-        )
-        separated_by_rule = respect_intervening_rules and any(
-            max(part.canonical_bbox[3] for part in cluster)
-            < rule_y
-            < item.canonical_bbox[1]
-            for rule_y, _ in horizontal_rules
-        )
-        if (
-            overlap >= 0.35 * min(item_width, cluster_right - cluster_left)
-            and not separated_by_rule
-        ):
-            matches.append(cluster)
-    return matches
-
-
-def _cluster_header_evidence(
-    items: Sequence[HeaderTextEvidence],
-    horizontal_rules: Sequence[PositionedRule],
-) -> list[HeaderCluster]:
-    """Join vertically wrapped evidence while preserving rule-separated rows."""
-    clusters: list[HeaderCluster] = []
-    for item in sorted(
-        items,
-        key=lambda value: (value.canonical_bbox[1], value.canonical_bbox[0]),
-    ):
-        matches = _matching_header_clusters(
-            item,
-            clusters,
-            horizontal_rules,
-            respect_intervening_rules=True,
-        )
-        if len(matches) == 1:
-            matches[0].append(item)
-        else:
-            clusters.append([item])
-    return clusters
 
 
 def inherit_adjacent_continuation_leaf_labels(
@@ -114,7 +32,9 @@ def inherit_adjacent_continuation_leaf_labels(
 ) -> list[HeaderStructureCandidate]:
     """Fill blank leaves only for an established adjacent continuation structure."""
     updated = list(candidates)
-    candidate_index = {candidate.table_id: index for index, candidate in enumerate(updated)}
+    candidate_index = {
+        candidate.table_id: index for index, candidate in enumerate(updated)
+    }
     ordered_tables = sorted(extracted_tables, key=lambda table: table.page_num)
     for parent_table, continuation_table in zip(
         ordered_tables,
@@ -131,8 +51,7 @@ def inherit_adjacent_continuation_leaf_labels(
             or isinstance(parent_number, bool)
             or parent_number < 1
             or (
-                continuation_number is not None
-                and continuation_number != parent_number
+                continuation_number is not None and continuation_number != parent_number
             )
             or (
                 (continuation_table.title or continuation_table.caption)
@@ -156,7 +75,10 @@ def inherit_adjacent_continuation_leaf_labels(
             parent_table.n_cols != continuation_table.n_cols
             or [leaf.leaf_index for leaf in parent_leaves] != expected_indices
             or [leaf.leaf_index for leaf in continuation_leaves] != expected_indices
-            or any(not leaf.occupancy_band_ids for leaf in [*parent_leaves, *continuation_leaves])
+            or any(
+                not leaf.occupancy_band_ids
+                for leaf in [*parent_leaves, *continuation_leaves]
+            )
         ):
             continue
         parent_leaf_index = {leaf.leaf_id: leaf.leaf_index for leaf in parent_leaves}
@@ -169,15 +91,15 @@ def inherit_adjacent_continuation_leaf_labels(
                 tuple(sorted(parent_leaf_index[leaf_id] for leaf_id in group.leaf_ids)),
             )
             for group in parent.group_candidates
-            if group.leaf_ids and all(leaf_id in parent_leaf_index for leaf_id in group.leaf_ids)
+            if group.leaf_ids
+            and all(leaf_id in parent_leaf_index for leaf_id in group.leaf_ids)
         )
         continuation_groups = sorted(
             (
                 clean_text(group.label).casefold(),
                 tuple(
                     sorted(
-                        continuation_leaf_index[leaf_id]
-                        for leaf_id in group.leaf_ids
+                        continuation_leaf_index[leaf_id] for leaf_id in group.leaf_ids
                     )
                 ),
             )
@@ -187,12 +109,17 @@ def inherit_adjacent_continuation_leaf_labels(
         )
         explicit_identity = continuation_number == parent_number
         if (
-            (not explicit_identity and (not parent_groups or parent_groups != continuation_groups))
-            or any(
-                clean_text(local.label)
-                and clean_text(source.label)
-                and clean_text(local.label).casefold() != clean_text(source.label).casefold()
-                for source, local in zip(parent_leaves, continuation_leaves, strict=True)
+            not explicit_identity
+            and (not parent_groups or parent_groups != continuation_groups)
+        ) or any(
+            clean_text(local.label)
+            and clean_text(source.label)
+            and clean_text(local.label).casefold()
+            != clean_text(source.label).casefold()
+            for source, local in zip(
+                parent_leaves,
+                continuation_leaves,
+                strict=True,
             )
         ):
             continue
@@ -203,7 +130,7 @@ def inherit_adjacent_continuation_leaf_labels(
         ]
         if not inherited_indices:
             continue
-        evidence = [
+        inheritance_evidence = [
             f"adjacent_pages:{parent_table.page_num}->{continuation_table.page_num}",
             (
                 f"explicit_same_table_identity:{parent_number}"
@@ -227,7 +154,7 @@ def inherit_adjacent_continuation_leaf_labels(
                             "inherited_from_table_id": parent_table.table_id,
                             "inherited_from_leaf_id": source.leaf_id,
                             "inherited_from_page_num": parent_table.page_num,
-                            "inheritance_evidence": evidence,
+                            "inheritance_evidence": inheritance_evidence,
                         }
                     )
                     if local.leaf_index in inherited_indices
@@ -261,7 +188,9 @@ def build_header_structure_candidates(
     pages = {page.page_num: page for page in paper_positioned_document.pages}
     regions = {region.table_id: region for region in table_regions}
     proposals = {proposal.table_id: proposal for proposal in table_boundary_proposals}
-    leaf_tables = {candidate.table_id: candidate for candidate in leaf_column_candidates}
+    leaf_tables = {
+        candidate.table_id: candidate for candidate in leaf_column_candidates
+    }
     annotations = {item.table_id: item for item in cell_text_annotations}
     return [
         build_header_structure_candidate(
@@ -285,7 +214,7 @@ def build_header_structure_candidate(
     leaf_column_candidate: LeafColumnCandidateTable | None,
     annotation_table: CellTextAnnotationTable | None,
 ) -> HeaderStructureCandidate:
-    """Build a geometry-only LaTeX-like header candidate for one table."""
+    """Build one header candidate directly from settled rows and geometry."""
     candidate_id = f"{table.table_id}:header_structure_candidate"
     source_artifacts = [
         "paper_positioned_document.json",
@@ -351,106 +280,18 @@ def build_header_structure_candidate(
     leaf_axis_ids = [band.band_id for band in local_bands]
     leaf_axis_roles = [band.provisional_role for band in local_bands]
     leaf_axis_bounds = [band.canonical_x_bounds for band in local_bands]
-    flat_header_cells: list[TableCell] = []
-    raw_selection = table.metadata.get("canonical_grid_selection")
-    if len(header_rows) == 1 and isinstance(raw_selection, dict):
-        raw_boundaries = raw_selection.get("selected_column_boundaries")
-        raw_band_ids = raw_selection.get("selected_band_ids")
-        selected_boundaries: list[float] = []
-        if isinstance(raw_boundaries, list):
-            for value in raw_boundaries:
-                if isinstance(value, bool):
-                    selected_boundaries = []
-                    break
-                try:
-                    selected_boundaries.append(float(value))
-                except (TypeError, ValueError):
-                    selected_boundaries = []
-                    break
-        cells_by_col = {
-            cell.col_idx: cell
-            for cell in table.cells
-            if cell.row_idx == header_rows[0]
-        }
-        if (
-            raw_selection.get("status") == "accepted"
-            and len(local_bands) == table.n_cols
-            and len(selected_boundaries) == table.n_cols + 1
-            and all(
-                right > left
-                for left, right in zip(
-                    selected_boundaries,
-                    selected_boundaries[1:],
-                    strict=False,
-                )
-            )
-            and isinstance(raw_band_ids, list)
-            and len(raw_band_ids) == table.n_cols
-            and all(isinstance(value, str) and value for value in raw_band_ids)
-            and set(cells_by_col) == set(range(table.n_cols))
-            and all(
-                cells_by_col[col_idx].text.strip()
-                for col_idx in range(table.n_cols)
-            )
-        ):
-            flat_header_cells = [
-                cells_by_col[col_idx] for col_idx in range(table.n_cols)
-            ]
-            leaf_axis_ids = list(raw_band_ids)
-            leaf_axis_roles = [
-                "stub" if col_idx == 0 else "value"
-                for col_idx in range(table.n_cols)
-            ]
-            leaf_axis_bounds = list(
-                zip(
-                    selected_boundaries,
-                    selected_boundaries[1:],
-                    strict=False,
-                )
-            )
-            if len(local_bands) != table.n_cols:
-                concerns.append(
-                    "local_leaf_axis_disagrees_with_canonical_grid:"
-                    f"local={len(local_bands)}:canonical={table.n_cols}"
-                )
+    leaf_ids = [
+        f"{candidate_id}:leaf:{leaf_index}" for leaf_index in range(len(local_bands))
+    ]
 
-    body_cell_centers_by_band: dict[str, list[float]] = defaultdict(list)
-    for cell in table.cells:
-        if (
-            cell.row_idx not in body_rows
-            or cell.bbox is None
-            or not cell.text.strip()
-        ):
-            continue
-        selected_band_id: str | None = None
-        if len(leaf_axis_ids) == table.n_cols and cell.col_idx < len(leaf_axis_ids):
-            selected_band_id = leaf_axis_ids[cell.col_idx]
-        else:
-            overlaps = [
-                max(
-                    0.0,
-                    min(cell.bbox[2], bounds[1])
-                    - max(cell.bbox[0], bounds[0]),
-                )
-                for bounds in leaf_axis_bounds
-            ]
-            if overlaps and max(overlaps) > 0.0:
-                selected_band_id = leaf_axis_ids[
-                    max(range(len(overlaps)), key=overlaps.__getitem__)
-                ]
-        if selected_band_id is not None:
-            body_cell_centers_by_band[selected_band_id].append(
-                (cell.bbox[0] + cell.bbox[2]) / 2.0
-            )
-    observed_anchor_x_by_band = {
-        band_id: median(centers)
-        for band_id, centers in body_cell_centers_by_band.items()
-        if centers
-    }
-
-    horizontal_rules: list[PositionedRule] = []
+    horizontal_rules: list[tuple[float, TableBoundaryRuleReference]] = []
+    seen_rule_references: set[tuple[str, int]] = set()
     for source, indices, segments in (
-        ("rule_segment", evidence.rule_segment_indices, evidence.canonical_rule_segments),
+        (
+            "rule_segment",
+            evidence.rule_segment_indices,
+            evidence.canonical_rule_segments,
+        ),
         (
             "stroked_rule_segment",
             evidence.stroked_rule_segment_indices,
@@ -458,8 +299,12 @@ def build_header_structure_candidate(
         ),
     ):
         for source_index, segment in zip(indices, segments, strict=False):
-            if abs(segment[3] - segment[1]) > 1.5:
+            if (
+                abs(segment[3] - segment[1]) > 1.5
+                or (source, source_index) in seen_rule_references
+            ):
                 continue
+            seen_rule_references.add((source, source_index))
             horizontal_rules.append(
                 (
                     (segment[1] + segment[3]) / 2.0,
@@ -471,119 +316,47 @@ def build_header_structure_candidate(
                 )
             )
 
-    mixed_header_body_row: int | None = None
-    mixed_header_value_band_ids: set[str] = set()
-    if header_rows and body_rows:
-        last_header_row = max(header_rows)
-        first_body_row = min(body_rows)
-        if first_body_row == last_header_row + 1:
-            intervening_spans: set[tuple[float, float, float]] = set()
-            intervening_band_ids: set[str] = set()
-            for rule_y, reference in horizontal_rules:
-                if not (
-                    row_bounds[last_header_row][1] - 1.0
-                    <= rule_y
-                    <= row_bounds[first_body_row][0] + 1.0
-                ):
-                    continue
-                segment = reference.canonical_segment
-                covered_anchor_band_ids = _covered_anchor_band_ids(
-                    (segment[0], segment[2]),
-                    leaf_axis_ids,
-                    observed_anchor_x_by_band,
+    raw_rule_levels: list[list[tuple[float, TableBoundaryRuleReference]]] = []
+    for rule in sorted(horizontal_rules, key=lambda item: item[0]):
+        if not raw_rule_levels or rule[0] - raw_rule_levels[-1][-1][0] > 1.5:
+            raw_rule_levels.append([rule])
+        else:
+            raw_rule_levels[-1].append(rule)
+    rule_levels = [
+        (
+            median(rule_y for rule_y, _ in level),
+            [reference for _, reference in level],
+        )
+        for level in raw_rule_levels
+    ]
+    rule_domains_by_y: dict[
+        float,
+        list[tuple[float, float, list[TableBoundaryRuleReference]]],
+    ] = {}
+    for rule_y, level_references in rule_levels:
+        domains: list[tuple[float, float, list[TableBoundaryRuleReference]]] = []
+        for reference in sorted(
+            level_references,
+            key=lambda item: min(
+                item.canonical_segment[0],
+                item.canonical_segment[2],
+            ),
+        ):
+            left, right = sorted(
+                (
+                    reference.canonical_segment[0],
+                    reference.canonical_segment[2],
                 )
-                if any(
-                    leaf_axis_roles[leaf_axis_ids.index(band_id)] == "stub"
-                    for band_id in covered_anchor_band_ids
-                ):
-                    continue
-                covered_band_ids = [
-                    band_id
-                    for band_id in covered_anchor_band_ids
-                    if leaf_axis_roles[leaf_axis_ids.index(band_id)] != "stub"
-                ]
-                if len(covered_band_ids) < 2:
-                    continue
-                intervening_spans.add(
-                    (
-                        round(min(segment[0], segment[2]), 1),
-                        round(max(segment[0], segment[2]), 1),
-                        round(rule_y, 1),
-                    )
-                )
-                intervening_band_ids.update(covered_band_ids)
-
-            lower_boundary_supported = False
-            for candidate in table_boundary_proposal.boundary_candidates:
-                if (
-                    "header_body" not in candidate.possible_roles
-                    or candidate.row_before_idx != first_body_row
-                    or candidate.row_after_idx is None
-                    or candidate.row_after_idx <= first_body_row
-                ):
-                    continue
-                covered_by_lower_rule = {
-                    band_id
-                    for reference in candidate.rule_references
-                    for band_id in _covered_anchor_band_ids(
-                        (
-                            reference.canonical_segment[0],
-                            reference.canonical_segment[2],
-                        ),
-                        leaf_axis_ids,
-                        observed_anchor_x_by_band,
-                    )
-                    if leaf_axis_roles[leaf_axis_ids.index(band_id)] != "stub"
-                }
-                if len(covered_by_lower_rule.intersection(intervening_band_ids)) >= 2:
-                    lower_boundary_supported = True
-                    break
-
-            populated_first_body_bands: set[str] = set()
-            for cell in table.cells:
-                if (
-                    cell.row_idx != first_body_row
-                    or cell.bbox is None
-                    or not cell.text.strip()
-                ):
-                    continue
-                selected_band_id = None
-                if (
-                    len(leaf_axis_ids) == table.n_cols
-                    and cell.col_idx < len(leaf_axis_ids)
-                ):
-                    selected_band_id = leaf_axis_ids[cell.col_idx]
-                else:
-                    center_x = (cell.bbox[0] + cell.bbox[2]) / 2.0
-                    selected_band_id = next(
-                        (
-                            band_id
-                            for band_id, bounds in zip(
-                                leaf_axis_ids,
-                                leaf_axis_bounds,
-                                strict=True,
-                            )
-                            if bounds[0] <= center_x <= bounds[1]
-                        ),
-                        None,
-                    )
-                if selected_band_id is not None:
-                    populated_first_body_bands.add(selected_band_id)
-
-            supported_value_bands = intervening_band_ids.intersection(
-                populated_first_body_bands
             )
-            if (
-                intervening_spans
-                and lower_boundary_supported
-                and len(supported_value_bands) >= 2
-            ):
-                mixed_header_body_row = first_body_row
-                mixed_header_value_band_ids = supported_value_bands
-
-    evidence_header_rows = list(header_rows)
-    if mixed_header_body_row is not None:
-        evidence_header_rows.append(mixed_header_body_row)
+            if domains and left <= domains[-1][1] + 1.5:
+                domains[-1] = (
+                    domains[-1][0],
+                    max(domains[-1][1], right),
+                    [*domains[-1][2], reference],
+                )
+            else:
+                domains.append((left, right, [reference]))
+        rule_domains_by_y[rule_y] = domains
 
     line_id_by_position = {
         (line.block_index, line.line_index): line.line_id
@@ -605,7 +378,7 @@ def build_header_structure_candidate(
         center_y = (bbox[1] + bbox[3]) / 2.0
         candidate_rows = [
             row_idx
-            for row_idx in evidence_header_rows
+            for row_idx in header_rows
             if row_bounds[row_idx][0] - 1.0 <= center_y <= row_bounds[row_idx][1] + 1.0
         ]
         if not candidate_rows or not word.text.strip():
@@ -614,22 +387,6 @@ def build_header_structure_candidate(
             candidate_rows,
             key=lambda item: abs(center_y - sum(row_bounds[item]) / 2.0),
         )
-        if row_idx == mixed_header_body_row:
-            center_x = (bbox[0] + bbox[2]) / 2.0
-            word_band_id = next(
-                (
-                    band_id
-                    for band_id, bounds in zip(
-                        leaf_axis_ids,
-                        leaf_axis_bounds,
-                        strict=True,
-                    )
-                    if bounds[0] <= center_x <= bounds[1]
-                ),
-                None,
-            )
-            if word_band_id not in mixed_header_value_band_ids:
-                continue
         source_line_id = line_id_by_position.get(
             (word.block_index, word.line_index),
             f"{table.table_id}:header:row:{row_idx}",
@@ -639,1092 +396,710 @@ def build_header_structure_candidate(
         )
 
     header_evidence: list[HeaderTextEvidence] = []
-    run_rows: dict[str, int] = {}
-    run_words: dict[str, list[tuple[int, str, tuple[float, float, float, float]]]] = {}
-    if flat_header_cells:
-        words_by_col: dict[
-            int,
-            list[tuple[int, str, tuple[float, float, float, float]]],
-        ] = defaultdict(list)
-        line_ids_by_col: dict[int, list[str]] = defaultdict(list)
-        for (row_idx, source_line_id), words in sorted(words_by_row_line.items()):
-            if row_idx != header_rows[0]:
-                continue
-            for word in words:
-                overlaps = [
-                    max(
-                        0.0,
-                        min(word[2][2], bounds[1])
-                        - max(word[2][0], bounds[0]),
-                    )
-                    for bounds in leaf_axis_bounds
-                ]
-                col_idx = max(
-                    range(len(leaf_axis_bounds)),
-                    key=lambda index: overlaps[index],
+    for (row_idx, source_line_id), words in sorted(words_by_row_line.items()):
+        words.sort(key=lambda item: item[2][0])
+        heights = [bbox[3] - bbox[1] for _, _, bbox in words if bbox[3] > bbox[1]]
+        gap_limit = max(3.0, median(heights) * 0.6) if heights else 4.0
+        runs: list[list[tuple[int, str, tuple[float, float, float, float]]]] = []
+        for word in words:
+            if not runs or word[2][0] - runs[-1][-1][2][2] > gap_limit:
+                runs.append([word])
+            else:
+                runs[-1].append(word)
+        for run in runs:
+            evidence_id = f"{candidate_id}:evidence:{len(header_evidence)}"
+            header_evidence.append(
+                HeaderTextEvidence(
+                    evidence_id=evidence_id,
+                    text=clean_text(" ".join(item[1] for item in run)),
+                    header_row_indices=[row_idx],
+                    source_line_ids=[source_line_id],
+                    source_word_indices=[item[0] for item in run],
+                    canonical_bbox=(
+                        min(item[2][0] for item in run),
+                        min(item[2][1] for item in run),
+                        max(item[2][2] for item in run),
+                        max(item[2][3] for item in run),
+                    ),
                 )
-                if overlaps[col_idx] <= 0.0:
-                    center_x = (word[2][0] + word[2][2]) / 2.0
-                    col_idx = min(
-                        range(len(leaf_axis_bounds)),
-                        key=lambda index: abs(
-                            center_x - sum(leaf_axis_bounds[index]) / 2.0
-                        ),
-                    )
-                words_by_col[col_idx].append(word)
-                if source_line_id not in line_ids_by_col[col_idx]:
-                    line_ids_by_col[col_idx].append(source_line_id)
-        if not all(words_by_col[col_idx] for col_idx in range(table.n_cols)):
-            flat_header_cells = []
-            leaf_axis_ids = [band.band_id for band in local_bands]
-            leaf_axis_roles = [band.provisional_role for band in local_bands]
-            leaf_axis_bounds = [band.canonical_x_bounds for band in local_bands]
-            concerns = [
-                concern
-                for concern in concerns
-                if not concern.startswith(
-                    "local_leaf_axis_disagrees_with_canonical_grid:"
-                )
-            ]
-        else:
-            ordered_flat_cells = sorted(
-                enumerate(flat_header_cells),
-                key=lambda item: (min(line_ids_by_col[item[0]]), item[0]),
             )
-            for col_idx, cell in ordered_flat_cells:
-                run = sorted(
-                    words_by_col[col_idx],
-                    key=lambda item: (item[2][0], item[0]),
-                )
-                evidence_id = f"{candidate_id}:evidence:{len(header_evidence)}"
-                bbox = cell.bbox or (
-                    min(item[2][0] for item in run),
-                    min(item[2][1] for item in run),
-                    max(item[2][2] for item in run),
-                    max(item[2][3] for item in run),
-                )
-                header_evidence.append(
-                    HeaderTextEvidence(
-                        evidence_id=evidence_id,
-                        text=clean_text(cell.text),
-                        header_row_indices=[header_rows[0]],
-                        source_line_ids=line_ids_by_col[col_idx],
-                        source_word_indices=[item[0] for item in run],
-                        canonical_bbox=bbox,
-                    )
-                )
-                run_rows[evidence_id] = header_rows[0]
-                run_words[evidence_id] = run
 
-    if not flat_header_cells:
-        for (row_idx, source_line_id), words in sorted(words_by_row_line.items()):
-            words.sort(key=lambda item: item[2][0])
-            heights = [
-                bbox[3] - bbox[1]
-                for _, _, bbox in words
-                if bbox[3] > bbox[1]
-            ]
-            gap_limit = max(3.0, median(heights) * 0.75) if heights else 4.0
-            runs: list[
-                list[tuple[int, str, tuple[float, float, float, float]]]
-            ] = []
-            for word in words:
-                if not runs or word[2][0] - runs[-1][-1][2][2] > gap_limit:
-                    runs.append([word])
-                else:
-                    runs[-1].append(word)
-            for run in runs:
-                evidence_id = f"{candidate_id}:evidence:{len(header_evidence)}"
-                bbox = (
-                    min(item[2][0] for item in run),
-                    min(item[2][1] for item in run),
-                    max(item[2][2] for item in run),
-                    max(item[2][3] for item in run),
-                )
-                header_evidence.append(
-                    HeaderTextEvidence(
-                        evidence_id=evidence_id,
-                        text=clean_text(" ".join(item[1] for item in run)),
-                        header_row_indices=[row_idx],
-                        source_line_ids=[source_line_id],
-                        source_word_indices=[item[0] for item in run],
-                        canonical_bbox=bbox,
-                    )
-                )
-                run_rows[evidence_id] = row_idx
-                run_words[evidence_id] = run
-
-    internal_rule_ys = [
-        rule_y
-        for rule_y, _ in horizontal_rules
-        if any(row_bounds[row_idx][1] < rule_y for row_idx in evidence_header_rows)
-        and any(row_bounds[row_idx][0] > rule_y for row_idx in evidence_header_rows)
-    ]
-    leaf_floor = max(internal_rule_ys) if internal_rule_ys else None
-    leaf_evidence = [
-        item
-        for item in header_evidence
-        if (
-            leaf_floor is None
-            and run_rows[item.evidence_id] == max(evidence_header_rows)
-        )
-        or (
-            leaf_floor is not None
-            and item.canonical_bbox[1] > leaf_floor - 1.0
-        )
-    ]
-    upper_evidence = [
-        item for item in header_evidence if item.evidence_id not in {x.evidence_id for x in leaf_evidence}
-    ]
-
-    value_evidence_count_by_row: dict[int, int] = defaultdict(int)
+    header_bottom = max(row_bounds[row_idx][1] for row_idx in header_rows)
+    unruled_separator_y = header_bottom + 4.0
+    evidence_by_separator: dict[float, list[HeaderTextEvidence]] = defaultdict(list)
     for item in header_evidence:
+        row_bottom = max(row_bounds[row_idx][1] for row_idx in item.header_row_indices)
         item_center = (item.canonical_bbox[0] + item.canonical_bbox[2]) / 2.0
-        center_band_index = next(
-            (
-                index
-                for index, bounds in enumerate(leaf_axis_bounds)
-                if bounds[0] <= item_center <= bounds[1]
-            ),
-            None,
-        )
-        if (
-            center_band_index is not None
-            and leaf_axis_roles[center_band_index] != "stub"
-        ):
-            value_evidence_count_by_row[run_rows[item.evidence_id]] += 1
-
-    explicit_group_band_ids: dict[str, list[str]] = {}
-    explicit_group_rule_references: dict[
-        str,
-        list[TableBoundaryRuleReference],
-    ] = {}
-    classified_group_band_ids: dict[str, list[str]] = {}
-    direct_group_evidence: list[HeaderTextEvidence] = []
-    retained_leaf_evidence: list[HeaderTextEvidence] = []
-    for item in leaf_evidence:
-        covered_band_ids = _covered_anchor_band_ids(
-            (item.canonical_bbox[0], item.canonical_bbox[2]),
-            leaf_axis_ids,
-            observed_anchor_x_by_band,
-        )
-        covered_value_band_ids = [
-            band_id
-            for band_id in covered_band_ids
-            if leaf_axis_roles[leaf_axis_ids.index(band_id)] != "stub"
+        possible_levels = [
+            rule_y
+            for rule_y, _ in rule_levels
+            if row_bottom - 2.0 <= rule_y <= header_bottom + 4.0
+            and any(
+                left - 1.0 <= item_center <= right + 1.0
+                for left, right, _ in rule_domains_by_y[rule_y]
+            )
         ]
-        if (
-            len(covered_value_band_ids) >= 2
-            and len(covered_value_band_ids) == len(covered_band_ids)
-        ):
-            direct_group_evidence.append(item)
-            explicit_group_band_ids[item.evidence_id] = covered_value_band_ids
-            classified_group_band_ids[item.evidence_id] = covered_value_band_ids
-            explicit_group_rule_references[item.evidence_id] = []
-        else:
-            retained_leaf_evidence.append(item)
-    leaf_evidence = retained_leaf_evidence
+        evidence_by_separator[
+            min(possible_levels) if possible_levels else unruled_separator_y
+        ].append(item)
 
-    leaf_evidence_centers_by_band: dict[str, list[float]] = defaultdict(list)
-    leaf_evidence_texts_by_band: dict[str, set[str]] = defaultdict(set)
-    for item in leaf_evidence:
-        overlap_by_band = [
-            (
+    leaf_parts: dict[int, list[HeaderTextEvidence]] = defaultdict(list)
+    assigned_evidence_ids: set[str] = set()
+    diagnosed_evidence_ids: set[str] = set()
+    groups: list[HeaderGroupCandidate] = []
+    relationships: list[HeaderStructureRelationship] = []
+    group_coverages: list[tuple[int, int]] = []
+    if header_evidence:
+        leaf_separator_y = max(evidence_by_separator)
+        leaf_band_item_anchors: dict[int, list[float]] = defaultdict(list)
+        for item in evidence_by_separator[leaf_separator_y]:
+            overlaps = [
                 max(
                     0.0,
-                    min(item.canonical_bbox[2], bounds[1])
-                    - max(item.canonical_bbox[0], bounds[0]),
-                ),
-                band_id,
-            )
-            for band_id, bounds in zip(
-                leaf_axis_ids,
-                leaf_axis_bounds,
-                strict=True,
-            )
-        ]
-        maximum_overlap = max(
-            (overlap for overlap, _ in overlap_by_band),
-            default=0.0,
-        )
-        matching_band_ids = [
-            band_id
-            for overlap, band_id in overlap_by_band
-            if maximum_overlap > 0.0 and abs(overlap - maximum_overlap) <= 0.5
-        ]
-        if len(matching_band_ids) == 1:
-            leaf_evidence_centers_by_band[matching_band_ids[0]].append(
-                (item.canonical_bbox[0] + item.canonical_bbox[2]) / 2.0
-            )
-            leaf_evidence_texts_by_band[matching_band_ids[0]].add(
-                clean_text(item.text)
-            )
-    header_anchor_x_by_band = dict(observed_anchor_x_by_band)
-    header_anchor_x_by_band.update(
-        {
-            band_id: median(centers)
-            for band_id, centers in leaf_evidence_centers_by_band.items()
-            if centers
-        }
-    )
-    non_stub_leaf_evidence_texts = {
-        text
-        for band_id, role in zip(leaf_axis_ids, leaf_axis_roles, strict=True)
-        if role != "stub"
-        for text in leaf_evidence_texts_by_band.get(band_id, set())
-        if text
-    }
-    group_eligible_anchor_band_ids = {
-        band_id
-        for band_id, role in zip(leaf_axis_ids, leaf_axis_roles, strict=True)
-        if role != "stub"
-        or bool(
-            leaf_evidence_texts_by_band.get(band_id, set()).intersection(
-                non_stub_leaf_evidence_texts
-            )
-        )
-    }
-    active_value_anchor_band_ids = [
-        band_id
-        for band_id in leaf_axis_ids
-        if band_id in group_eligible_anchor_band_ids
-        and band_id in header_anchor_x_by_band
-    ]
-
-    leaf_clusters = _cluster_header_evidence(leaf_evidence, horizontal_rules)
-    group_evidence: list[HeaderTextEvidence] = list(direct_group_evidence)
-    legacy_leaf_header_top = min(
-        (item.canonical_bbox[1] for item in leaf_evidence),
-        default=float("inf"),
-    )
-    for item in sorted(
-        upper_evidence if leaf_floor is None else [],
-        key=lambda value: value.canonical_bbox[1],
-        reverse=True,
-    ):
-        item_center = (item.canonical_bbox[0] + item.canonical_bbox[2]) / 2.0
-        rules_below = [
-            (rule_y, reference)
-            for rule_y, reference in horizontal_rules
-            if item.canonical_bbox[3] - 1.0
-            <= rule_y
-            <= legacy_leaf_header_top + 1.0
-            and min(
-                reference.canonical_segment[0],
-                reference.canonical_segment[2],
-            )
-            <= item_center
-            <= max(
-                reference.canonical_segment[0],
-                reference.canonical_segment[2],
-            )
-        ]
-        nearest_rule_y = min((rule_y for rule_y, _ in rules_below), default=None)
-        covering_rules = [
-            reference
-            for rule_y, reference in rules_below
-            if nearest_rule_y is not None and abs(rule_y - nearest_rule_y) <= 1.5
-        ]
-        rule_covered_band_ids = list(
-            dict.fromkeys(
-                band_id
-                for reference in covering_rules
-                for band_id in _covered_anchor_band_ids(
-                    (
-                        reference.canonical_segment[0],
-                        reference.canonical_segment[2],
-                    ),
-                    leaf_axis_ids,
-                    header_anchor_x_by_band,
+                    min(item.canonical_bbox[2], right)
+                    - max(item.canonical_bbox[0], left),
                 )
-                if band_id in group_eligible_anchor_band_ids
-            )
-        )
-        same_row_peer_items = [
-            peer
-            for peer in upper_evidence
-            if run_rows[peer.evidence_id] == run_rows[item.evidence_id]
-            and any(
-                band_id in group_eligible_anchor_band_ids
-                and bounds[0]
-                <= (peer.canonical_bbox[0] + peer.canonical_bbox[2]) / 2.0
-                <= bounds[1]
-                for band_id, bounds in zip(
-                    leaf_axis_ids,
-                    leaf_axis_bounds,
-                    strict=True,
-                )
-            )
-        ]
-        selected_rule_band_ids = rule_covered_band_ids
-        peer_partition_band_ids: list[str] = []
-        if len(same_row_peer_items) > 1:
-            peer_centers = {
-                peer.evidence_id: (
-                    peer.canonical_bbox[0] + peer.canonical_bbox[2]
-                )
-                / 2.0
-                for peer in same_row_peer_items
-            }
-            peer_partition_band_ids = [
-                band_id
-                for band_id in active_value_anchor_band_ids
-                if min(
-                    same_row_peer_items,
-                    key=lambda peer: (
-                        abs(
-                            header_anchor_x_by_band[band_id]
-                            - peer_centers[peer.evidence_id]
-                        ),
-                        peer_centers[peer.evidence_id],
-                        peer.evidence_id,
-                    ),
-                ).evidence_id
-                == item.evidence_id
+                for left, right in leaf_axis_bounds
             ]
-        if (
-            peer_partition_band_ids
-            and (
-                set(rule_covered_band_ids) == set(active_value_anchor_band_ids)
-                or (
-                    len(peer_partition_band_ids) >= 2
-                    and bool(rule_covered_band_ids)
-                    and set(rule_covered_band_ids).issubset(
-                        peer_partition_band_ids
+            if overlaps:
+                maximum_overlap = max(overlaps)
+                matching_indices = [
+                    index
+                    for index, overlap in enumerate(overlaps)
+                    if abs(overlap - maximum_overlap) <= 0.5
+                ]
+                item_center = (item.canonical_bbox[0] + item.canonical_bbox[2]) / 2.0
+                leaf_band_item_anchors[
+                    min(
+                        matching_indices,
+                        key=lambda index: abs(
+                            item_center - sum(leaf_axis_bounds[index]) / 2.0
+                        ),
                     )
-                )
-            )
+                ].append(item_center)
+        for item in sorted(
+            evidence_by_separator[leaf_separator_y],
+            key=lambda value: value.canonical_bbox[0],
         ):
-            selected_rule_band_ids = peer_partition_band_ids
-        selected_rule_band_id_set = set(selected_rule_band_ids)
-        rule_crosses_existing_group = any(
-            selected_rule_band_id_set.intersection(existing_band_ids)
-            and not selected_rule_band_id_set.issubset(existing_band_ids)
-            and not set(existing_band_ids).issubset(selected_rule_band_id_set)
-            for existing_band_ids in classified_group_band_ids.values()
-        )
-        if len(selected_rule_band_ids) >= 2 and not rule_crosses_existing_group:
-            group_evidence.append(item)
-            explicit_group_band_ids[item.evidence_id] = selected_rule_band_ids
-            classified_group_band_ids[item.evidence_id] = selected_rule_band_ids
-            explicit_group_rule_references[item.evidence_id] = (
-                covering_rules
-                if set(rule_covered_band_ids) == selected_rule_band_id_set
-                else []
-            )
-            continue
-        covered_band_ids = _covered_anchor_band_ids(
-            (item.canonical_bbox[0], item.canonical_bbox[2]),
-            leaf_axis_ids,
-            header_anchor_x_by_band,
-        )
-        covered_value_band_ids = [
-            band_id
-            for band_id in covered_band_ids
-            if band_id in group_eligible_anchor_band_ids
-        ]
-        if (
-            len(covered_value_band_ids) >= 2
-            and len(covered_value_band_ids) == len(covered_band_ids)
-        ):
-            group_evidence.append(item)
-            explicit_group_band_ids[item.evidence_id] = covered_value_band_ids
-            classified_group_band_ids[item.evidence_id] = covered_value_band_ids
-            explicit_group_rule_references[item.evidence_id] = []
-            continue
-        matching_clusters = _matching_header_clusters(
-            item,
-            leaf_clusters,
-            horizontal_rules,
-            respect_intervening_rules=False,
-        )
-        if len(matching_clusters) == 1:
-            matching_clusters[0].append(item)
-            continue
-        item_band = next(
-            (
-                band_id
-                for band_id, bounds in zip(
-                    leaf_axis_ids,
-                    leaf_axis_bounds,
-                    strict=True,
-                )
-                if bounds[0] <= item_center <= bounds[1]
-            ),
-            None,
-        )
-        represented = any(
-            item_band is not None
-            and leaf_axis_bounds[leaf_axis_ids.index(item_band)][0]
-            <= (
-                _cluster_x_bounds(cluster)[0]
-                + _cluster_x_bounds(cluster)[1]
-            )
-            / 2.0
-            <= leaf_axis_bounds[leaf_axis_ids.index(item_band)][1]
-            for cluster in leaf_clusters
-        )
-        if not represented:
-            leaf_clusters.append([item])
-        else:
-            group_evidence.append(item)
-
-    attached_ids = {
-        item.evidence_id for cluster in leaf_clusters for item in cluster
-    }
-    remaining_upper = [
-        item
-        for item in upper_evidence
-        if item.evidence_id not in attached_ids
-        and item.evidence_id not in {value.evidence_id for value in group_evidence}
-    ]
-    leaf_header_top = min(
-        (item.canonical_bbox[1] for item in leaf_evidence),
-        default=float("inf"),
-    )
-    direct_leaf_clusters: list[HeaderCluster] = []
-    for item in remaining_upper:
-        matching_direct_clusters = _matching_header_clusters(
-            item,
-            direct_leaf_clusters,
-            horizontal_rules,
-            respect_intervening_rules=False,
-        )
-        if len(matching_direct_clusters) == 1:
-            matching_direct_clusters[0].append(item)
-            continue
-        item_center = (item.canonical_bbox[0] + item.canonical_bbox[2]) / 2.0
-        rules_below = [
-            (rule_y, reference)
-            for rule_y, reference in horizontal_rules
-            if item.canonical_bbox[3] - 1.0 <= rule_y <= leaf_header_top + 1.0
-            and min(reference.canonical_segment[0], reference.canonical_segment[2])
-            <= item_center
-            <= max(reference.canonical_segment[0], reference.canonical_segment[2])
-        ]
-        nearest_rule_y = min((rule_y for rule_y, _ in rules_below), default=None)
-        covering_internal_rules = [
-            reference
-            for rule_y, reference in rules_below
-            if nearest_rule_y is not None and abs(rule_y - nearest_rule_y) <= 1.5
-        ]
-        rule_covered_band_ids = list(
-            dict.fromkeys(
-                band_id
-                for reference in covering_internal_rules
-                for band_id in _covered_anchor_band_ids(
+            item_center = (item.canonical_bbox[0] + item.canonical_bbox[2]) / 2.0
+            supporting_references = [
+                reference
+                for reference in next(
                     (
-                        reference.canonical_segment[0],
-                        reference.canonical_segment[2],
+                        references
+                        for rule_y, references in rule_levels
+                        if rule_y == leaf_separator_y
                     ),
-                    leaf_axis_ids,
-                    header_anchor_x_by_band,
+                    [],
                 )
-                if band_id in group_eligible_anchor_band_ids
-            )
-        )
-        item_covered_band_ids = _covered_anchor_band_ids(
-            (item.canonical_bbox[0], item.canonical_bbox[2]),
-            leaf_axis_ids,
-            header_anchor_x_by_band,
-        )
-        item_covered_value_band_ids = [
-            band_id
-            for band_id in item_covered_band_ids
-            if band_id in group_eligible_anchor_band_ids
-        ]
-        item_defines_group = (
-            len(item_covered_value_band_ids) >= 2
-            and len(item_covered_value_band_ids) == len(item_covered_band_ids)
-        )
-        same_row_peer_items = [
-            peer
-            for peer in remaining_upper
-            if run_rows[peer.evidence_id] == run_rows[item.evidence_id]
-            and any(
-                band_id in group_eligible_anchor_band_ids
-                and bounds[0]
-                <= (peer.canonical_bbox[0] + peer.canonical_bbox[2]) / 2.0
-                <= bounds[1]
-                for band_id, bounds in zip(
-                    leaf_axis_ids,
-                    leaf_axis_bounds,
-                    strict=True,
-                )
-            )
-        ]
-        peer_partition_band_ids: list[str] = []
-        if len(same_row_peer_items) > 1:
-            peer_centers = {
-                peer.evidence_id: (
-                    peer.canonical_bbox[0] + peer.canonical_bbox[2]
-                )
-                / 2.0
-                for peer in same_row_peer_items
-            }
-            peer_partition_band_ids = [
-                band_id
-                for band_id in active_value_anchor_band_ids
                 if min(
-                    same_row_peer_items,
-                    key=lambda peer: (
-                        abs(
-                            header_anchor_x_by_band[band_id]
-                            - peer_centers[peer.evidence_id]
-                        ),
-                        peer_centers[peer.evidence_id],
-                        peer.evidence_id,
-                    ),
-                ).evidence_id
-                == item.evidence_id
-            ]
-        peer_partition_supported = bool(peer_partition_band_ids) and (
-            set(rule_covered_band_ids) == set(active_value_anchor_band_ids)
-            or (
-                len(peer_partition_band_ids) >= 2
-                and bool(rule_covered_band_ids)
-                and set(rule_covered_band_ids).issubset(
-                    peer_partition_band_ids
-                )
-            )
-        )
-        partition_band_id_set = set(peer_partition_band_ids)
-        partition_crosses_existing_group = any(
-            partition_band_id_set.intersection(existing_band_ids)
-            and not partition_band_id_set.issubset(existing_band_ids)
-            and not set(existing_band_ids).issubset(partition_band_id_set)
-            for existing_band_ids in classified_group_band_ids.values()
-        )
-        peer_partition_defines_group = (
-            len(peer_partition_band_ids) >= 2
-            and peer_partition_supported
-            and not partition_crosses_existing_group
-        )
-        rule_band_id_set = set(rule_covered_band_ids)
-        rule_crosses_existing_group = any(
-            rule_band_id_set.intersection(existing_band_ids)
-            and not rule_band_id_set.issubset(existing_band_ids)
-            and not set(existing_band_ids).issubset(rule_band_id_set)
-            for existing_band_ids in classified_group_band_ids.values()
-        )
-        rule_defines_group = (
-            len(rule_covered_band_ids) >= 2
-            and not rule_crosses_existing_group
-            and (
-                set(rule_covered_band_ids) != set(active_value_anchor_band_ids)
-                or value_evidence_count_by_row[run_rows[item.evidence_id]] == 1
-            )
-        )
-        if item_defines_group or peer_partition_defines_group or rule_defines_group:
-            group_evidence.append(item)
-            selected_group_band_ids = (
-                peer_partition_band_ids
-                if peer_partition_defines_group
-                else rule_covered_band_ids
-                if rule_defines_group
-                else item_covered_value_band_ids
-                if item_defines_group
-                else rule_covered_band_ids
-            )
-            classified_group_band_ids[item.evidence_id] = selected_group_band_ids
-            explicit_group_band_ids[item.evidence_id] = selected_group_band_ids
-            explicit_group_rule_references[item.evidence_id] = (
-                covering_internal_rules
-                if rule_defines_group
-                and set(rule_covered_band_ids) == set(selected_group_band_ids)
-                else []
-            )
-            continue
-        matching_clusters = _matching_header_clusters(
-            item,
-            leaf_clusters,
-            horizontal_rules,
-            respect_intervening_rules=False,
-        )
-        if len(matching_clusters) == 1:
-            matching_clusters[0].append(item)
-        else:
-            cluster = [item]
-            leaf_clusters.append(cluster)
-            direct_leaf_clusters.append(cluster)
-
-    upper_evidence_by_row: dict[int, list[HeaderTextEvidence]] = defaultdict(list)
-    for item in upper_evidence:
-        item_center = (item.canonical_bbox[0] + item.canonical_bbox[2]) / 2.0
-        if any(
-            band_id in group_eligible_anchor_band_ids
-            and bounds[0] <= item_center <= bounds[1]
-            for band_id, bounds in zip(
-                leaf_axis_ids,
-                leaf_axis_bounds,
-                strict=True,
-            )
-        ):
-            upper_evidence_by_row[run_rows[item.evidence_id]].append(item)
-    group_evidence_ids = {item.evidence_id for item in group_evidence}
-    for row_items in upper_evidence_by_row.values():
-        row_items = sorted(
-            row_items,
-            key=lambda item: (
-                item.canonical_bbox[0] + item.canonical_bbox[2]
-            )
-            / 2.0,
-        )
-        if (
-            len(row_items) < 3
-            or len(active_value_anchor_band_ids) % len(row_items) != 0
-            or sum(
-                item.evidence_id in group_evidence_ids for item in row_items
-            )
-            < 2
-        ):
-            continue
-        block_size = len(active_value_anchor_band_ids) // len(row_items)
-        if block_size < 2:
-            continue
-        partition_band_ids_by_evidence_id = {
-            item.evidence_id: active_value_anchor_band_ids[
-                item_index * block_size : (item_index + 1) * block_size
-            ]
-            for item_index, item in enumerate(row_items)
-        }
-        nearest_rules_by_evidence_id: dict[
-            str,
-            list[TableBoundaryRuleReference],
-        ] = {}
-        rule_band_ids_by_evidence_id: dict[str, set[str]] = {}
-        row_is_rule_supported = True
-        for item in row_items:
-            item_center = (
-                item.canonical_bbox[0] + item.canonical_bbox[2]
-            ) / 2.0
-            local_rules = [
-                (rule_y, reference)
-                for rule_y, reference in horizontal_rules
-                if item.canonical_bbox[3] - 1.0
-                <= rule_y
-                <= leaf_header_top + 1.0
-                and min(
                     reference.canonical_segment[0],
                     reference.canonical_segment[2],
                 )
+                - 1.0
                 <= item_center
                 <= max(
                     reference.canonical_segment[0],
                     reference.canonical_segment[2],
                 )
+                + 1.0
             ]
-            nearest_rule_y = min(
-                (rule_y for rule_y, _ in local_rules),
-                default=None,
-            )
-            nearest_rules = [
-                reference
-                for rule_y, reference in local_rules
-                if nearest_rule_y is not None
-                and abs(rule_y - nearest_rule_y) <= 1.5
-            ]
-            rule_band_ids = {
-                band_id
-                for reference in nearest_rules
-                for band_id in _covered_anchor_band_ids(
-                    (
+            if supporting_references:
+                supporting_width = min(
+                    abs(reference.canonical_segment[2] - reference.canonical_segment[0])
+                    for reference in supporting_references
+                )
+                supporting_references = [
+                    reference
+                    for reference in supporting_references
+                    if abs(
+                        abs(
+                            reference.canonical_segment[2]
+                            - reference.canonical_segment[0]
+                        )
+                        - supporting_width
+                    )
+                    <= 1.0
+                ]
+                support_left = min(
+                    min(
                         reference.canonical_segment[0],
                         reference.canonical_segment[2],
-                    ),
-                    leaf_axis_ids,
-                    header_anchor_x_by_band,
+                    )
+                    for reference in supporting_references
                 )
-                if band_id in group_eligible_anchor_band_ids
-            }
-            partition_band_ids = partition_band_ids_by_evidence_id[
-                item.evidence_id
-            ]
-            if not rule_band_ids.intersection(partition_band_ids):
-                row_is_rule_supported = False
-                break
-            nearest_rules_by_evidence_id[item.evidence_id] = nearest_rules
-            rule_band_ids_by_evidence_id[item.evidence_id] = rule_band_ids
-        if not row_is_rule_supported:
-            continue
-        for item in row_items:
-            partition_band_ids = partition_band_ids_by_evidence_id[
-                item.evidence_id
-            ]
-            classified_group_band_ids[item.evidence_id] = partition_band_ids
-            explicit_group_band_ids[item.evidence_id] = partition_band_ids
-            explicit_group_rule_references[item.evidence_id] = (
-                nearest_rules_by_evidence_id[item.evidence_id]
-                if rule_band_ids_by_evidence_id[item.evidence_id]
-                == set(partition_band_ids)
-                else []
-            )
-            if item.evidence_id in group_evidence_ids:
-                continue
-            group_evidence.append(item)
-            group_evidence_ids.add(item.evidence_id)
-            for cluster in leaf_clusters:
-                cluster[:] = [
-                    value
-                    for value in cluster
-                    if value.evidence_id != item.evidence_id
-                ]
-
-    header_parts_by_band: dict[
-        str,
-        list[tuple[float, float, str, str]],
-    ] = defaultdict(list)
-    evidence_ids_by_band: dict[str, list[str]] = defaultdict(list)
-    for cluster in leaf_clusters:
-        for item in cluster:
-            overlap_by_band = [
-                (
+                support_right = max(
                     max(
-                        0.0,
-                        min(item.canonical_bbox[2], bounds[1])
-                        - max(item.canonical_bbox[0], bounds[0]),
-                    ),
-                    (band_id, bounds),
+                        reference.canonical_segment[0],
+                        reference.canonical_segment[2],
+                    )
+                    for reference in supporting_references
                 )
-                for band_id, bounds in zip(
-                    leaf_axis_ids,
-                    leaf_axis_bounds,
-                    strict=True,
-                )
-            ]
-            maximum_overlap = max(
-                (overlap for overlap, _ in overlap_by_band),
-                default=0.0,
-            )
-            matching_bands = [
-                band
-                for overlap, band in overlap_by_band
-                if maximum_overlap > 0.0 and abs(overlap - maximum_overlap) <= 0.5
-            ]
-            if len(matching_bands) > 1:
-                item_center = (
-                    item.canonical_bbox[0] + item.canonical_bbox[2]
-                ) / 2.0
-                center_bands = [
-                    band
-                    for band in matching_bands
-                    if band[1][0]
-                    <= item_center
-                    <= band[1][1]
-                ]
-                if len(center_bands) == 1:
-                    matching_bands = center_bands
-            if len(matching_bands) != 1:
-                concerns.append(
-                    f"ambiguous_header_evidence_band:{item.evidence_id}"
-                )
-                continue
-            selected_band_id = matching_bands[0][0]
-            header_parts_by_band[selected_band_id].append(
-                (
-                    item.canonical_bbox[1],
-                    item.canonical_bbox[0],
-                    item.evidence_id,
-                    item.text,
-                )
-            )
-            evidence_ids_by_band[selected_band_id].append(item.evidence_id)
-
-            word_band_ids: list[str] = []
-            for _, _, word_bbox in run_words.get(item.evidence_id, []):
-                word_center = (word_bbox[0] + word_bbox[2]) / 2.0
-                word_band = next(
-                    (
-                        band_id
-                        for band_id, bounds in zip(
-                            leaf_axis_ids,
-                            leaf_axis_bounds,
-                            strict=True,
+                directly_covered_indices = [
+                    index
+                    for index, (left, right) in enumerate(leaf_axis_bounds)
+                    if leaf_axis_roles[index] != "stub"
+                    and (
+                        any(
+                            support_left - 1.0 <= anchor <= support_right + 1.0
+                            for anchor in leaf_band_item_anchors[index]
                         )
-                        if bounds[0]
-                        <= word_center
-                        <= bounds[1]
+                        if leaf_band_item_anchors[index]
+                        else (
+                            support_left - 1.0
+                            <= (left + right) / 2.0
+                            <= support_right + 1.0
+                            or max(
+                                0.0,
+                                min(support_right, right) - max(support_left, left),
+                            )
+                            >= 0.2 * (right - left)
+                        )
+                    )
+                ]
+                if (
+                    len(directly_covered_indices) >= 2
+                    and directly_covered_indices
+                    == list(
+                        range(
+                            directly_covered_indices[0],
+                            directly_covered_indices[-1] + 1,
+                        )
+                    )
+                    and item.canonical_bbox[2] - item.canonical_bbox[0]
+                    >= 0.5 * (support_right - support_left)
+                ):
+                    group_id = f"{candidate_id}:group:{len(groups)}"
+                    child_ids = [leaf_ids[index] for index in directly_covered_indices]
+                    groups.append(
+                        HeaderGroupCandidate(
+                            group_id=group_id,
+                            label=item.text,
+                            raw_text=item.text,
+                            base_text=item.text,
+                            canonical_x_bounds=(
+                                leaf_axis_bounds[directly_covered_indices[0]][0],
+                                leaf_axis_bounds[directly_covered_indices[-1]][1],
+                            ),
+                            leaf_ids=child_ids,
+                            evidence_ids=[item.evidence_id],
+                            rule_references=list(
+                                {
+                                    (
+                                        reference.source,
+                                        reference.source_index,
+                                    ): reference
+                                    for reference in supporting_references
+                                }.values()
+                            ),
+                        )
+                    )
+                    for child_id in child_ids:
+                        relationships.append(
+                            HeaderStructureRelationship(
+                                relationship_id=(
+                                    f"{candidate_id}:relationship:{len(relationships)}"
+                                ),
+                                parent_group_id=group_id,
+                                child_leaf_id=child_id,
+                            )
+                        )
+                    group_coverages.append(
+                        (
+                            directly_covered_indices[0],
+                            directly_covered_indices[-1],
+                        )
+                    )
+                    assigned_evidence_ids.add(item.evidence_id)
+                    continue
+            overlaps = [
+                max(
+                    0.0,
+                    min(item.canonical_bbox[2], right)
+                    - max(item.canonical_bbox[0], left),
+                )
+                for left, right in leaf_axis_bounds
+            ]
+            if not overlaps:
+                continue
+            maximum_overlap = max(overlaps)
+            if maximum_overlap > 0.0:
+                matching_indices = [
+                    index
+                    for index, overlap in enumerate(overlaps)
+                    if abs(overlap - maximum_overlap) <= 0.5
+                ]
+                leaf_index = min(
+                    matching_indices,
+                    key=lambda index: abs(
+                        item_center - sum(leaf_axis_bounds[index]) / 2.0
                     ),
-                    None,
                 )
-                if word_band is not None and word_band not in word_band_ids:
-                    word_band_ids.append(word_band)
-            observed_band_ids = _covered_anchor_band_ids(
-                (item.canonical_bbox[0], item.canonical_bbox[2]),
-                leaf_axis_ids,
-                observed_anchor_x_by_band,
-            )
-            if (
-                len(word_band_ids) > 1
-                and set(observed_band_ids) != {selected_band_id}
+                if len(matching_indices) > 1:
+                    concerns.append(
+                        f"ambiguous_leaf_band_assignment:{item.evidence_id}"
+                    )
+            else:
+                leaf_index = min(
+                    range(len(leaf_axis_bounds)),
+                    key=lambda index: abs(
+                        item_center - sum(leaf_axis_bounds[index]) / 2.0
+                    ),
+                )
+                concerns.append(f"nearest_leaf_band_assignment:{item.evidence_id}")
+            leaf_parts[leaf_index].append(item)
+            assigned_evidence_ids.add(item.evidence_id)
+
+        for separator_y in sorted(
+            (value for value in evidence_by_separator if value != leaf_separator_y),
+            reverse=True,
+        ):
+            clusters: list[list[HeaderTextEvidence]] = []
+            for item in sorted(
+                evidence_by_separator[separator_y],
+                key=lambda value: (
+                    value.canonical_bbox[1],
+                    value.canonical_bbox[0],
+                ),
             ):
-                concerns.append(
-                    "header_evidence_words_cross_occupancy_bands:"
-                    f"{item.evidence_id}:bands={','.join(word_band_ids)}"
+                item_width = item.canonical_bbox[2] - item.canonical_bbox[0]
+                matching_clusters: list[list[HeaderTextEvidence]] = []
+                for cluster in clusters:
+                    cluster_left = min(part.canonical_bbox[0] for part in cluster)
+                    cluster_right = max(part.canonical_bbox[2] for part in cluster)
+                    overlap = max(
+                        0.0,
+                        min(item.canonical_bbox[2], cluster_right)
+                        - max(item.canonical_bbox[0], cluster_left),
+                    )
+                    if overlap >= 0.35 * min(
+                        item_width,
+                        cluster_right - cluster_left,
+                    ):
+                        matching_clusters.append(cluster)
+                if len(matching_clusters) == 1:
+                    matching_clusters[0].append(item)
+                else:
+                    clusters.append([item])
+
+            domains = rule_domains_by_y.get(separator_y, [])
+
+            clusters_by_domain: dict[int, list[list[HeaderTextEvidence]]] = defaultdict(
+                list
+            )
+            unmatched_clusters: list[list[HeaderTextEvidence]] = []
+            for cluster in clusters:
+                cluster_center = (
+                    min(item.canonical_bbox[0] for item in cluster)
+                    + max(item.canonical_bbox[2] for item in cluster)
+                ) / 2.0
+                matching_domains = [
+                    index
+                    for index, (left, right, _) in enumerate(domains)
+                    if left - 1.0 <= cluster_center <= right + 1.0
+                ]
+                if matching_domains:
+                    domain_index = min(
+                        matching_domains,
+                        key=lambda index: domains[index][1] - domains[index][0],
+                    )
+                    clusters_by_domain[domain_index].append(cluster)
+                else:
+                    unmatched_clusters.append(cluster)
+
+            cluster_assignments: list[
+                tuple[
+                    list[HeaderTextEvidence],
+                    list[int],
+                    list[TableBoundaryRuleReference],
+                    tuple[float, float] | None,
+                ]
+            ] = []
+            leaf_anchors = [
+                median(
+                    (item.canonical_bbox[0] + item.canonical_bbox[2]) / 2.0
+                    for item in leaf_parts[index]
                 )
+                if leaf_parts[index]
+                else sum(bounds) / 2.0
+                for index, bounds in enumerate(leaf_axis_bounds)
+            ]
+            for domain_index, peer_clusters in clusters_by_domain.items():
+                domain_left, domain_right, domain_references = domains[domain_index]
+                covered_indices = [
+                    index
+                    for index, anchor in enumerate(leaf_anchors)
+                    if leaf_axis_roles[index] != "stub"
+                    and domain_left - 1.0 <= anchor <= domain_right + 1.0
+                ]
+                ordered_peers = sorted(
+                    peer_clusters,
+                    key=lambda cluster: (
+                        (
+                            min(item.canonical_bbox[0] for item in cluster)
+                            + max(item.canonical_bbox[2] for item in cluster)
+                        )
+                        / 2.0
+                    ),
+                )
+                remaining_peers: list[list[HeaderTextEvidence]] = []
+                for cluster in ordered_peers:
+                    peer_center = (
+                        min(item.canonical_bbox[0] for item in cluster)
+                        + max(item.canonical_bbox[2] for item in cluster)
+                    ) / 2.0
+                    matching_stub_indices = [
+                        index
+                        for index, (left, right) in enumerate(leaf_axis_bounds)
+                        if leaf_axis_roles[index] == "stub"
+                        and left - 1.0 <= peer_center <= right + 1.0
+                    ]
+                    if len(matching_stub_indices) == 1:
+                        cluster_assignments.append(
+                            (
+                                cluster,
+                                matching_stub_indices,
+                                domain_references,
+                                (domain_left, domain_right),
+                            )
+                        )
+                    else:
+                        remaining_peers.append(cluster)
+                ordered_peers = remaining_peers
+                if not ordered_peers:
+                    continue
+                local_assignments: list[
+                    tuple[
+                        list[int],
+                        list[TableBoundaryRuleReference],
+                        tuple[float, float],
+                    ]
+                    | None
+                ] = []
+                ordered_peer_centers = [
+                    (
+                        min(item.canonical_bbox[0] for item in cluster)
+                        + max(item.canonical_bbox[2] for item in cluster)
+                    )
+                    / 2.0
+                    for cluster in ordered_peers
+                ]
+                for peer_index, cluster in enumerate(ordered_peers):
+                    cluster_center = (
+                        min(item.canonical_bbox[0] for item in cluster)
+                        + max(item.canonical_bbox[2] for item in cluster)
+                    ) / 2.0
+                    references_by_segment: dict[
+                        tuple[float, float],
+                        list[TableBoundaryRuleReference],
+                    ] = defaultdict(list)
+                    for reference in domain_references:
+                        left, right = sorted(
+                            (
+                                reference.canonical_segment[0],
+                                reference.canonical_segment[2],
+                            )
+                        )
+                        if left - 1.0 <= cluster_center <= right + 1.0:
+                            if any(
+                                index != peer_index
+                                and left - 1.0 <= peer_center <= right + 1.0
+                                for index, peer_center in enumerate(
+                                    ordered_peer_centers
+                                )
+                            ):
+                                continue
+                            references_by_segment[
+                                (round(left, 1), round(right, 1))
+                            ].append(reference)
+                    options = [
+                        (
+                            [
+                                index
+                                for index, anchor in enumerate(leaf_anchors)
+                                if leaf_axis_roles[index] != "stub"
+                                and left - 1.0 <= anchor <= right + 1.0
+                            ],
+                            references,
+                            (left, right),
+                        )
+                        for (left, right), references in references_by_segment.items()
+                    ]
+                    multileaf_options = [
+                        option
+                        for option in options
+                        if len(option[0]) >= 2
+                        and option[0] == list(range(option[0][0], option[0][-1] + 1))
+                    ]
+                    single_leaf_options = [
+                        option for option in options if len(option[0]) == 1
+                    ]
+                    local_assignments.append(
+                        min(
+                            multileaf_options,
+                            key=lambda option: option[2][1] - option[2][0],
+                        )
+                        if multileaf_options
+                        else min(
+                            single_leaf_options,
+                            key=lambda option: option[2][1] - option[2][0],
+                        )
+                        if single_leaf_options
+                        else None
+                    )
+                if any(
+                    assignment is not None and len(assignment[0]) >= 2
+                    for assignment in local_assignments
+                ):
+                    claimed_indices = [
+                        index
+                        for assignment in local_assignments
+                        if assignment is not None
+                        for index in assignment[0]
+                    ]
+                    remaining_runs: list[list[int]] = []
+                    for index in (
+                        value
+                        for value in covered_indices
+                        if value not in claimed_indices
+                    ):
+                        if not remaining_runs or index != remaining_runs[-1][-1] + 1:
+                            remaining_runs.append([index])
+                        else:
+                            remaining_runs[-1].append(index)
+                    if len(claimed_indices) == len(set(claimed_indices)) and sum(
+                        assignment is None for assignment in local_assignments
+                    ) == len(remaining_runs):
+                        remaining_run_index = 0
+                        for cluster, assignment in zip(
+                            ordered_peers,
+                            local_assignments,
+                            strict=True,
+                        ):
+                            if assignment is None:
+                                cluster_assignments.append(
+                                    (
+                                        cluster,
+                                        remaining_runs[remaining_run_index],
+                                        domain_references,
+                                        (domain_left, domain_right),
+                                    )
+                                )
+                                remaining_run_index += 1
+                            else:
+                                cluster_assignments.append(
+                                    (
+                                        cluster,
+                                        assignment[0],
+                                        assignment[1],
+                                        assignment[2],
+                                    )
+                                )
+                        continue
+                if not covered_indices:
+                    for cluster in ordered_peers:
+                        cluster_assignments.append(
+                            (
+                                cluster,
+                                [],
+                                domain_references,
+                                (domain_left, domain_right),
+                            )
+                        )
+                    continue
+                peer_starts = [
+                    min(
+                        covered_indices,
+                        key=lambda index: abs(
+                            leaf_anchors[index]
+                            - min(item.canonical_bbox[0] for item in cluster)
+                        ),
+                    )
+                    for cluster in ordered_peers
+                ]
+                assigned_indices_by_peer: dict[int, list[int]] = defaultdict(list)
+                for leaf_index in covered_indices:
+                    eligible_peers = [
+                        index
+                        for index, start in enumerate(peer_starts)
+                        if start <= leaf_index
+                    ]
+                    if eligible_peers:
+                        assigned_indices_by_peer[
+                            max(eligible_peers, key=peer_starts.__getitem__)
+                        ].append(leaf_index)
+                for peer_index, cluster in enumerate(ordered_peers):
+                    cluster_assignments.append(
+                        (
+                            cluster,
+                            assigned_indices_by_peer[peer_index],
+                            domain_references,
+                            (domain_left, domain_right),
+                        )
+                    )
+
+            for cluster in unmatched_clusters:
+                cluster_left = min(item.canonical_bbox[0] for item in cluster)
+                cluster_right = max(item.canonical_bbox[2] for item in cluster)
+                covered_indices = [
+                    index
+                    for index, anchor in enumerate(leaf_anchors)
+                    if cluster_left - 1.0 <= anchor <= cluster_right + 1.0
+                ]
+                if not covered_indices:
+                    overlaps = [
+                        max(
+                            0.0,
+                            min(cluster_right, right) - max(cluster_left, left),
+                        )
+                        for left, right in leaf_axis_bounds
+                    ]
+                    maximum_overlap = max(overlaps, default=0.0)
+                    matching_indices = [
+                        index
+                        for index, overlap in enumerate(overlaps)
+                        if maximum_overlap > 0.0
+                        and abs(overlap - maximum_overlap) <= 0.5
+                    ]
+                    if len(matching_indices) == 1:
+                        covered_indices = matching_indices
+                cluster_assignments.append((cluster, covered_indices, [], None))
+
+            for (
+                cluster,
+                covered_indices,
+                rule_references,
+                domain,
+            ) in cluster_assignments:
+                covered_indices = sorted(set(covered_indices))
+                cluster_evidence_ids = [
+                    item.evidence_id
+                    for item in sorted(
+                        cluster,
+                        key=lambda value: (
+                            value.canonical_bbox[1],
+                            value.canonical_bbox[0],
+                        ),
+                    )
+                ]
+                if len(covered_indices) == 1:
+                    leaf_parts[covered_indices[0]].extend(cluster)
+                    assigned_evidence_ids.update(cluster_evidence_ids)
+                    continue
+                cluster_left = min(item.canonical_bbox[0] for item in cluster)
+                cluster_right = max(item.canonical_bbox[2] for item in cluster)
+                contiguous = (
+                    covered_indices
+                    == list(range(covered_indices[0], covered_indices[-1] + 1))
+                    if covered_indices
+                    else False
+                )
+                supported = domain is None or (
+                    cluster_left >= domain[0] - 3.0 and cluster_right <= domain[1] + 3.0
+                )
+                span = (
+                    (covered_indices[0], covered_indices[-1])
+                    if covered_indices
+                    else None
+                )
+                crosses_existing = span is not None and any(
+                    existing == span
+                    or existing[0] < span[0] <= existing[1] < span[1]
+                    or span[0] < existing[0] <= span[1] < existing[1]
+                    for existing in group_coverages
+                )
+                if (
+                    len(covered_indices) < 2
+                    or not contiguous
+                    or any(
+                        leaf_axis_roles[index] == "stub" for index in covered_indices
+                    )
+                    or not supported
+                    or crosses_existing
+                ):
+                    concerns.append(
+                        "unresolved_upper_header_run:" + ",".join(cluster_evidence_ids)
+                    )
+                    diagnosed_evidence_ids.update(cluster_evidence_ids)
+                    continue
+                group_label = clean_text(
+                    " ".join(
+                        item.text
+                        for item in sorted(
+                            cluster,
+                            key=lambda value: (
+                                value.canonical_bbox[1],
+                                value.canonical_bbox[0],
+                            ),
+                        )
+                    )
+                )
+                group_id = f"{candidate_id}:group:{len(groups)}"
+                child_ids = [leaf_ids[index] for index in covered_indices]
+                unique_rule_references = list(
+                    {
+                        (reference.source, reference.source_index): reference
+                        for reference in rule_references
+                    }.values()
+                )
+                groups.append(
+                    HeaderGroupCandidate(
+                        group_id=group_id,
+                        label=group_label,
+                        raw_text=group_label,
+                        base_text=group_label,
+                        canonical_x_bounds=(
+                            leaf_axis_bounds[covered_indices[0]][0],
+                            leaf_axis_bounds[covered_indices[-1]][1],
+                        ),
+                        leaf_ids=child_ids,
+                        evidence_ids=cluster_evidence_ids,
+                        rule_references=unique_rule_references,
+                    )
+                )
+                for child_id in child_ids:
+                    relationships.append(
+                        HeaderStructureRelationship(
+                            relationship_id=(
+                                f"{candidate_id}:relationship:{len(relationships)}"
+                            ),
+                            parent_group_id=group_id,
+                            child_leaf_id=child_id,
+                        )
+                    )
+                group_coverages.append((covered_indices[0], covered_indices[-1]))
+                assigned_evidence_ids.update(cluster_evidence_ids)
 
     leaves: list[HeaderLeafCandidate] = []
-    for band_id, band_role, bounds in zip(
-        leaf_axis_ids,
-        leaf_axis_roles,
-        leaf_axis_bounds,
-        strict=True,
+    for leaf_index, (band_id, bounds) in enumerate(
+        zip(leaf_axis_ids, leaf_axis_bounds, strict=True)
     ):
-        header_parts = sorted(header_parts_by_band.get(band_id, []))
-        label = clean_text(" ".join(part[3] for part in header_parts))
+        parts = sorted(
+            leaf_parts[leaf_index],
+            key=lambda item: (item.canonical_bbox[1], item.canonical_bbox[0]),
+        )
+        label = clean_text(" ".join(item.text for item in parts))
         if not label:
-            concerns.append(
-                "blank_stub_header_candidate"
-                if band_role == "stub"
-                else f"header_band_without_text:{band_id}"
-            )
+            concerns.append(f"blank_header_leaf:{leaf_index}")
         leaves.append(
             HeaderLeafCandidate(
-                leaf_id=f"{candidate_id}:leaf:{len(leaves)}",
-                leaf_index=len(leaves),
+                leaf_id=leaf_ids[leaf_index],
+                leaf_index=leaf_index,
                 label=label,
                 raw_text=label,
                 base_text=label,
                 canonical_x_bounds=bounds,
-                evidence_ids=evidence_ids_by_band.get(band_id, []),
+                evidence_ids=[item.evidence_id for item in parts],
                 occupancy_band_ids=[band_id],
                 occupancy_alignment="one_to_one",
             )
         )
-
-    groups: list[HeaderGroupCandidate] = []
-    relationships: list[HeaderStructureRelationship] = []
-    leaf_centers = {
-        leaf.leaf_id: sum(leaf.canonical_x_bounds) / 2.0 for leaf in leaves
-    }
-    leaf_id_by_band_id = {
-        leaf.occupancy_band_ids[0]: leaf.leaf_id
-        for leaf in leaves
-        if leaf.occupancy_band_ids
-    }
-    group_clusters = _cluster_header_evidence(group_evidence, horizontal_rules)
-    ordered_group_clusters = sorted(
-        group_clusters,
-        key=lambda cluster: (
-            _cluster_x_bounds(cluster)[0]
-            + _cluster_x_bounds(cluster)[1]
-        )
-        / 2.0,
-    )
-    group_centers = [
-        (
-            _cluster_x_bounds(cluster)[0]
-            + _cluster_x_bounds(cluster)[1]
-        )
-        / 2.0
-        for cluster in ordered_group_clusters
-    ]
-    for group_index, cluster in enumerate(ordered_group_clusters):
-        item_center = group_centers[group_index]
-        explicit_band_ids = [
-            band_id
-            for band_id in leaf_axis_ids
-            if any(
-                band_id in explicit_group_band_ids.get(item.evidence_id, [])
-                for item in cluster
-            )
-        ]
-        if explicit_band_ids:
-            rule_references = list(
-                {
-                    (reference.source, reference.source_index): reference
-                    for item in cluster
-                    for reference in explicit_group_rule_references.get(
-                        item.evidence_id,
-                        [],
-                    )
-                }.values()
-            )
-            if rule_references:
-                group_left = min(
-                    min(
-                        reference.canonical_segment[0],
-                        reference.canonical_segment[2],
-                    )
-                    for reference in rule_references
-                )
-                group_right = max(
-                    max(
-                        reference.canonical_segment[0],
-                        reference.canonical_segment[2],
-                    )
-                    for reference in rule_references
-                )
-            else:
-                group_left, group_right = _cluster_x_bounds(cluster)
-            child_ids = [
-                leaf_id_by_band_id[band_id]
-                for band_id in explicit_band_ids
-                if band_id in leaf_id_by_band_id
-            ]
-        else:
-            item_bottom = max(item.canonical_bbox[3] for item in cluster)
-            domain_left = (
-                (group_centers[group_index - 1] + item_center) / 2.0
-                if group_index > 0
-                else float("-inf")
-            )
-            domain_right = (
-                (item_center + group_centers[group_index + 1]) / 2.0
-                if group_index + 1 < len(group_centers)
-                else float("inf")
-            )
-            rule_candidates = [
-                (rule_y, reference)
-                for rule_y, reference in horizontal_rules
-                if rule_y >= item_bottom - 1.0
-            ]
-            nearest_rule_y = min(
-                (rule_y for rule_y, _ in rule_candidates),
-                default=None,
-            )
-            rule_references = [
-                reference
-                for rule_y, reference in rule_candidates
-                if nearest_rule_y is not None
-                and abs(rule_y - nearest_rule_y) <= 1.5
-                and min(
-                    reference.canonical_segment[0],
-                    reference.canonical_segment[2],
-                )
-                <= item_center
-                <= max(
-                    reference.canonical_segment[0],
-                    reference.canonical_segment[2],
-                )
-            ]
-            if rule_references and nearest_rule_y is not None:
-                group_left = min(
-                    min(
-                        reference.canonical_segment[0],
-                        reference.canonical_segment[2],
-                    )
-                    for reference in rule_references
-                )
-                group_right = max(
-                    max(
-                        reference.canonical_segment[0],
-                        reference.canonical_segment[2],
-                    )
-                    for reference in rule_references
-                )
-                if group_index == 0:
-                    outside_left_centers = [
-                        center
-                        for center in leaf_centers.values()
-                        if center < group_left - 1.0
-                    ]
-                    if outside_left_centers:
-                        domain_left = max(
-                            domain_left,
-                            (max(outside_left_centers) + item_center) / 2.0,
-                        )
-                same_y_references = [
-                    reference
-                    for rule_y, reference in rule_candidates
-                    if abs(rule_y - nearest_rule_y) <= 1.5
-                    and reference not in rule_references
-                    and domain_left
-                    <= (
-                        reference.canonical_segment[0]
-                        + reference.canonical_segment[2]
-                    )
-                    / 2.0
-                    <= domain_right
-                ]
-                changed = True
-                while changed:
-                    changed = False
-                    for reference in list(same_y_references):
-                        left = min(
-                            reference.canonical_segment[0],
-                            reference.canonical_segment[2],
-                        )
-                        right = max(
-                            reference.canonical_segment[0],
-                            reference.canonical_segment[2],
-                        )
-                        if left <= group_right + 1.0 and right >= group_left - 1.0:
-                            rule_references.append(reference)
-                            same_y_references.remove(reference)
-                            group_left = min(group_left, left)
-                            group_right = max(group_right, right)
-                            changed = True
-            if rule_references:
-                group_left = min(
-                    min(
-                        reference.canonical_segment[0],
-                        reference.canonical_segment[2],
-                    )
-                    for reference in rule_references
-                )
-                group_right = max(
-                    max(
-                        reference.canonical_segment[0],
-                        reference.canonical_segment[2],
-                    )
-                    for reference in rule_references
-                )
-            else:
-                group_left = (
-                    domain_left
-                    if domain_left != float("-inf")
-                    else min(leaf_centers.values(), default=item_center)
-                )
-                group_right = (
-                    domain_right
-                    if domain_right != float("inf")
-                    else max(leaf_centers.values(), default=item_center)
-                )
-            child_ids = [
-                leaf_id
-                for leaf_id, center in leaf_centers.items()
-                if group_left - 1.0 <= center <= group_right + 1.0
-            ]
-        if not child_ids:
-            concerns.append(
-                "unresolved_upper_header_run:"
-                + ",".join(item.evidence_id for item in cluster)
-            )
-            continue
-        group_label = clean_text(
-            " ".join(
-                item.text
-                for item in sorted(
-                    cluster,
-                    key=lambda value: (
-                        value.canonical_bbox[1],
-                        value.canonical_bbox[0],
-                    ),
-                )
-            )
-        )
-        group_id = f"{candidate_id}:group:{len(groups)}"
-        groups.append(
-            HeaderGroupCandidate(
-                group_id=group_id,
-                label=group_label,
-                raw_text=group_label,
-                base_text=group_label,
-                canonical_x_bounds=(group_left, group_right),
-                leaf_ids=child_ids,
-                evidence_ids=[item.evidence_id for item in cluster],
-                rule_references=rule_references,
-            )
-        )
-        for child_id in child_ids:
-            relationships.append(
-                HeaderStructureRelationship(
-                    relationship_id=f"{candidate_id}:relationship:{len(relationships)}",
-                    parent_group_id=group_id,
-                    child_leaf_id=child_id,
-                )
-            )
+    for item in header_evidence:
+        if (
+            item.evidence_id not in assigned_evidence_ids
+            and item.evidence_id not in diagnosed_evidence_ids
+        ):
+            concerns.append(f"unassigned_header_evidence:{item.evidence_id}")
 
     marker_char_bboxes = dict(
         zip(evidence.char_indices, evidence.canonical_char_bboxes, strict=False)
@@ -1743,14 +1118,16 @@ def build_header_structure_candidate(
     for annotation_index, annotation in enumerate(
         annotation_table.annotations if annotation_table is not None else []
     ):
-        if annotation.row_idx not in evidence_header_rows:
+        if annotation.row_idx not in header_rows:
             continue
         marker_bboxes = [
             marker_char_bboxes[index]
             for index in annotation.source_char_indices
             if index in marker_char_bboxes
         ]
-        marker_id = annotation.annotation_id or f"{table.table_id}:marker:{annotation_index}"
+        marker_id = annotation.annotation_id or (
+            f"{table.table_id}:marker:{annotation_index}"
+        )
         source_line_ids = {
             reference.line_id for reference in annotation.source_span_references
         }
@@ -1829,7 +1206,7 @@ def build_header_structure_candidate(
             )
         )
 
-    if len(leaves) not in {0, len(leaf_axis_ids)}:
+    if len(leaves) != len(leaf_axis_ids):
         diagnostics.append("header_leaf_geometry_disagrees")
 
     return HeaderStructureCandidate(

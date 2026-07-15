@@ -200,6 +200,125 @@ def build_table_region(
     )
 
     if (
+        header_source == "unclassified_no_separator_or_value_anchor"
+        and not header_rows
+        and body_rows
+        and row_bounds is not None
+        and full_width_rules
+        and positioned_page is not None
+        and table.n_cols > 0
+        and body_rows[0] == content_start
+        and _nonempty_count(grid[body_rows[0]]) == table.n_cols
+    ):
+        first_body_row = body_rows[0]
+        following_row = next(
+            (row_idx for row_idx in body_rows if row_idx > first_body_row),
+            None,
+        )
+        if following_row is not None:
+            row_top, row_bottom = row_bounds[first_body_row]
+            row_height = row_bottom - row_top
+            upper_rule = max(
+                (
+                    rule_y
+                    for rule_y in full_width_rules
+                    if rule_y <= row_top + RULE_TOLERANCE
+                ),
+                default=None,
+            )
+            lower_rule = min(
+                (
+                    rule_y
+                    for rule_y in full_width_rules
+                    if rule_y >= row_bottom - RULE_TOLERANCE
+                ),
+                default=None,
+            )
+            positioned_evidence = table.metadata.get("table_positioned_evidence")
+            line_ids = (
+                positioned_evidence.get("line_ids")
+                if isinstance(positioned_evidence, dict)
+                else None
+            )
+            canonical_line_bboxes = (
+                positioned_evidence.get("canonical_line_bboxes")
+                if isinstance(positioned_evidence, dict)
+                else None
+            )
+            if (
+                upper_rule is not None
+                and lower_rule is not None
+                and lower_rule > upper_rule
+                and row_top - upper_rule <= max(RULE_TOLERANCE, row_height)
+                and lower_rule - row_bottom <= max(RULE_TOLERANCE, row_height)
+                and lower_rule
+                <= row_bounds[following_row][0] + RULE_TOLERANCE
+                and isinstance(line_ids, list)
+                and isinstance(canonical_line_bboxes, list)
+                and len(line_ids) == len(canonical_line_bboxes)
+            ):
+                lines_by_id = {line.line_id: line for line in positioned_page.lines}
+                style_counts = {
+                    first_body_row: [0, 0],
+                    following_row: [0, 0],
+                }
+                for line_id, line_bbox in zip(
+                    line_ids,
+                    canonical_line_bboxes,
+                    strict=True,
+                ):
+                    if (
+                        not isinstance(line_id, str)
+                        or not isinstance(line_bbox, (list, tuple))
+                        or len(line_bbox) != 4
+                        or line_id not in lines_by_id
+                    ):
+                        continue
+                    line_center_y = (float(line_bbox[1]) + float(line_bbox[3])) / 2.0
+                    matched_row = next(
+                        (
+                            row_idx
+                            for row_idx in style_counts
+                            if row_bounds[row_idx][0] - 0.5
+                            <= line_center_y
+                            <= row_bounds[row_idx][1] + 0.5
+                        ),
+                        None,
+                    )
+                    if matched_row is None:
+                        continue
+                    for span in lines_by_id[line_id].spans:
+                        visible_characters = len("".join(span.text.split()))
+                        style_counts[matched_row][0] += visible_characters
+                        font_key = (span.font or "").casefold()
+                        if (
+                            "bold" in font_key
+                            or "semibold" in font_key
+                            or (span.flags is not None and span.flags & 16)
+                        ):
+                            style_counts[matched_row][1] += visible_characters
+                header_characters, header_bold_characters = style_counts[
+                    first_body_row
+                ]
+                following_characters, following_bold_characters = style_counts[
+                    following_row
+                ]
+                if (
+                    header_characters > 0
+                    and header_bold_characters / header_characters >= 0.7
+                    and following_characters > 0
+                    and following_bold_characters / following_characters < 0.7
+                ):
+                    header_rows = [first_body_row]
+                    body_rows = body_rows[1:]
+                    header_body_rule_y = lower_rule
+                    detection_basis = "table_region_text_header_rule_typography"
+                    confidence = 0.9
+                    diagnostics.append(
+                        "text_header_from_complete_bold_rule_bounded_first_row"
+                    )
+
+    if (
         table_boundary_proposal is not None
         and positioned_page is not None
         and body_rows

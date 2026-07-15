@@ -534,12 +534,19 @@ Design intent:
 - `cleaned_rows` may support later prompting and debugging, but raw cell text still lives in extraction output
 - `row_views` are the compact per-row features that later heuristic and LLM stages consume
 - saved normalized tables can be reloaded as formal downstream input
-- `source_col_indices` records, for each normalized column, the corresponding
-  original extracted column when that identity is still well-defined; entries
-  may be `null` after repairs that change column identity
-- when wide horizontal boundaries sit just slightly above or below the first extracted text line, header detection may still use them as the top table boundary; minor geometry jitter should not suppress obvious header/body bracketing
-- header/body separation is selected in normalization using structural evidence first: validated full-width separator rules, then the first value-region data anchor, then content scoring as a fallback
-- when a value-region data anchor begins after several header-like rows, normalization may use that first value row as the header/body boundary and suppress a sparse leading caption or note tail from both `header_rows` and `body_rows`
+- `dropped_leading_cols` and `dropped_trailing_cols` remain zero-valued
+  compatibility metadata; normalization no longer removes physical columns
+- `source_col_indices` is the identity map from every normalized column to the
+  same original extracted column
+- when wide horizontal boundaries sit just slightly above or below the first
+  extracted text line, `TableRegion` may still use them as the top table
+  boundary; minor geometry jitter should not suppress obvious header/body
+  bracketing
+- header/body separation is selected once in `TableRegion`; normalization
+  requires that artifact and copies its row ownership without inference
+- when a value-region data anchor begins after several header-like rows,
+  `TableRegion` may use that first value row as the header/body boundary and
+  exclude a sparse leading caption or note tail from both selected row sets
 - normalization does not drop sparse nonmatrix columns, trailing nondata
   columns, sparse structural stub columns, or split row-label field columns;
   those physical columns remain in the normalized grid
@@ -547,7 +554,9 @@ Design intent:
 - normalization does not merge split value fragments or synthesize visual value
   columns from newline-stacked cells; those relationships belong in body
   element candidates, parsed value components, or earlier extraction fixes
-- normalization records a comparison of the two primary structural header/body split candidates, a selective horizontal-rule boundary and the first value-region data anchor, so corpus review can inspect whether the selected rows came from agreeing evidence or from one available rule
+- normalization records a non-operative comparison of structural header/body
+  evidence for inspection; it does not use that comparison to revise the
+  `TableRegion` decision
 - when full-width horizontal rules identify a header band, `metadata.header_detection` may record `preamble_rows` above that band and `separator_body_support` explaining whether the body starts with a value-dense row or with a sparse parent/reference row followed by value rows
 - those repairs should be driven by row-style expectations and body-value patterns, not by paper-specific header templates
 - normalization may also repair a small set of extractor-facing glyph-to-Unicode failures in parser-facing text, such as a broken replacement character before a numeric threshold becoming `<=`
@@ -1227,6 +1236,8 @@ Design rules:
 - build candidates only after the column grid is available from
   `ColumnHeaderSchema`
 - keep every candidate traceable to one or more physical source cells
+- take `source_cells[*].text`, `raw_fragments`, and `raw_text` from the exact
+  matching `ExtractedTable` cell text rather than normalized cleaned rows
 - allow one source cell to contribute to adjacent candidates when a PDF row
   prints the tail of one value and the start of the next value in the same
   physical cell
@@ -1237,6 +1248,9 @@ Design rules:
 - use marker-free `base_text`/`candidate_text` for value-component parsing,
   while preserving `raw_text`, `raw_fragments`, and `source_cells` for
   inspection
+- join `anchor_col_idx` to the projected schema leaf; final semantic values
+  obtain the leaf ID, groups, and header path from that schema column rather
+  than duplicating those fields in this candidate artifact
 
 ### `body_row_label_candidates.json`
 

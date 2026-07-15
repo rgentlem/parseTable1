@@ -19,9 +19,10 @@ from table1_parser.cell_text_annotations import (
     build_cell_text_annotation_tables_from_pdf,
     cell_text_annotation_tables_to_payload,
 )
-from table1_parser.extract.canonical_extraction import finalize_canonical_extracted_tables
+from table1_parser.extract.canonical_extraction import (
+    finalize_canonical_extracted_tables,
+)
 from table1_parser.column_header_schema import (
-    build_column_header_schema,
     build_column_header_schemas,
     column_header_schemas_to_payload,
 )
@@ -48,13 +49,24 @@ from table1_parser.diagnostics import ParseQualityReport, build_parse_quality_re
 from table1_parser.extract import build_extractor
 from table1_parser.extract.provisional_table import ProvisionalExtractedTable
 from table1_parser.heuristics.column_role_detector import detect_column_roles
-from table1_parser.heuristics.paper_table_inventory import build_paper_table_inventory, paper_table_inventory_to_payload
+from table1_parser.heuristics.paper_table_inventory import (
+    build_paper_table_inventory,
+    paper_table_inventory_to_payload,
+)
 from table1_parser.heuristics.row_classifier import classify_rows
-from table1_parser.heuristics.table_definition_builder import build_table_definitions, table_definitions_to_payload
-from table1_parser.heuristics.table_profile import build_table_profiles, table_profiles_to_payload
+from table1_parser.heuristics.table_definition_builder import (
+    build_table_definitions,
+    table_definitions_to_payload,
+)
+from table1_parser.heuristics.table_profile import (
+    build_table_profiles,
+    table_profiles_to_payload,
+)
 from table1_parser.heuristics.variable_grouper import group_variable_blocks
 from table1_parser.llm import LLMConfigurationError, build_llm_client
-from table1_parser.llm.variable_plausibility_parser import LLMVariablePlausibilityTableReviewParser
+from table1_parser.llm.variable_plausibility_parser import (
+    LLMVariablePlausibilityTableReviewParser,
+)
 from table1_parser.leaf_column_candidates import (
     build_leaf_column_candidate_tables,
     leaf_column_candidate_tables_to_payload,
@@ -64,7 +76,11 @@ from table1_parser.header_structure_candidates import (
     header_structure_candidates_to_payload,
     inherit_adjacent_continuation_leaf_labels,
 )
-from table1_parser.normalize import normalize_extracted_tables, normalized_tables_to_payload, write_normalized_tables
+from table1_parser.normalize import (
+    normalize_extracted_tables,
+    normalized_tables_to_payload,
+    write_normalized_tables,
+)
 from table1_parser.parse import (
     body_element_candidates_to_payload,
     body_row_label_candidates_to_payload,
@@ -91,8 +107,14 @@ from table1_parser.paper_bibliography import (
     build_paper_bibliography,
     paper_bibliography_to_payload,
 )
-from table1_parser.paper_page_furniture import build_paper_page_furniture, paper_page_furniture_to_payload
-from table1_parser.paper_style_profile import build_paper_style_profile, paper_style_profile_to_payload
+from table1_parser.paper_page_furniture import (
+    build_paper_page_furniture,
+    paper_page_furniture_to_payload,
+)
+from table1_parser.paper_style_profile import (
+    build_paper_style_profile,
+    paper_style_profile_to_payload,
+)
 from table1_parser.processing_status import build_table_processing_statuses
 from table1_parser.resolved_tables import build_resolved_table_set
 from table1_parser.schemas import (
@@ -144,6 +166,7 @@ from table1_parser.table1_continuations import (
     table1_continuation_groups_to_payload,
 )
 from table1_parser.text_cleaning import clean_text
+
 DEFAULT_OUTPUT_DIR = Path("outputs")
 
 
@@ -236,7 +259,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     extract_parser.set_defaults(handler=_handle_extract)
 
-    normalize_parser = subparsers.add_parser("normalize", help="Normalize extracted tables from a PDF.")
+    normalize_parser = subparsers.add_parser(
+        "normalize", help="Normalize extracted tables from a PDF."
+    )
     normalize_parser.add_argument("pdf_path", help="Path to the source PDF file.")
     normalize_parser.add_argument(
         "--outdir",
@@ -250,7 +275,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     normalize_parser.set_defaults(handler=_handle_normalize)
 
-    parse_parser = subparsers.add_parser("parse", help="Parse a Table 1 PDF deterministically.")
+    parse_parser = subparsers.add_parser(
+        "parse", help="Parse a Table 1 PDF deterministically."
+    )
     parse_parser.add_argument("pdf_path", help="Path to the source PDF file.")
     parse_parser.add_argument(
         "--outdir",
@@ -323,13 +350,19 @@ def _extract_tables_with_context(
         parameter.kind == inspect.Parameter.VAR_KEYWORD
         for parameter in signature.parameters.values()
     )
-    supports_positioned_document = "paper_positioned_document" in signature.parameters or any(
-        parameter.kind == inspect.Parameter.VAR_KEYWORD
-        for parameter in signature.parameters.values()
+    supports_positioned_document = (
+        "paper_positioned_document" in signature.parameters
+        or any(
+            parameter.kind == inspect.Parameter.VAR_KEYWORD
+            for parameter in signature.parameters.values()
+        )
     )
-    supports_bibliography_entries = "bibliography_entries" in signature.parameters or any(
-        parameter.kind == inspect.Parameter.VAR_KEYWORD
-        for parameter in signature.parameters.values()
+    supports_bibliography_entries = (
+        "bibliography_entries" in signature.parameters
+        or any(
+            parameter.kind == inspect.Parameter.VAR_KEYWORD
+            for parameter in signature.parameters.values()
+        )
     )
     keyword_arguments: dict[str, object] = {
         "paper_page_furniture": paper_page_furniture,
@@ -473,9 +506,15 @@ def _build_canonical_extraction_artifacts(
 def _build_paper_context_artifacts(pdf_path: str) -> PaperContextArtifacts:
     """Build shared paper-context artifacts from one positioned PyMuPDF text pass."""
     paper_stem = Path(pdf_path).stem
-    paper_positioned_document = build_paper_positioned_document(pdf_path, paper_id=paper_stem)
-    if paper_positioned_document.page_count <= 0 or not any(page.lines for page in paper_positioned_document.pages):
-        raise RuntimeError("PyMuPDF positioned text extraction failed; cannot parse paper context.")
+    paper_positioned_document = build_paper_positioned_document(
+        pdf_path, paper_id=paper_stem
+    )
+    if paper_positioned_document.page_count <= 0 or not any(
+        page.lines for page in paper_positioned_document.pages
+    ):
+        raise RuntimeError(
+            "PyMuPDF positioned text extraction failed; cannot parse paper context."
+        )
     paper_page_furniture = build_paper_page_furniture(
         pdf_path,
         paper_id=paper_stem,
@@ -488,10 +527,14 @@ def _build_paper_context_artifacts(pdf_path: str) -> PaperContextArtifacts:
         paper_id=paper_stem,
     )
     if not paper_text_stream.markdown.strip():
-        raise RuntimeError("PyMuPDF positioned text stream did not produce paper_markdown.md.")
+        raise RuntimeError(
+            "PyMuPDF positioned text stream did not produce paper_markdown.md."
+        )
     paper_sections = parse_markdown_sections(paper_text_stream.markdown)
     paper_table_mentions = build_paper_table_mentions(paper_text_stream)
-    bibliography_entries = build_bibliography_entries_from_text_stream(paper_text_stream)
+    bibliography_entries = build_bibliography_entries_from_text_stream(
+        paper_text_stream
+    )
     if not bibliography_entries:
         bibliography_entries = build_bibliography_entries_from_sections(paper_sections)
     return PaperContextArtifacts(
@@ -635,7 +678,9 @@ def _handle_review_variable_plausibility(args: argparse.Namespace) -> int:
 
     settings = Settings()
     debug_root = (
-        paper_dir / "llm_variable_plausibility_debug" / datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        paper_dir
+        / "llm_variable_plausibility_debug"
+        / datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         if settings.llm_debug
         else None
     )
@@ -643,7 +688,9 @@ def _handle_review_variable_plausibility(args: argparse.Namespace) -> int:
     monitoring_items: list[LLMVariablePlausibilityCallRecord] = []
     eligible_items: list[tuple[int, TableProfile, TableDefinition]] = []
 
-    for table_index, (profile, definition) in enumerate(zip(artifacts.table_profiles, table_definitions, strict=True)):
+    for table_index, (profile, definition) in enumerate(
+        zip(artifacts.table_profiles, table_definitions, strict=True)
+    ):
         if profile.table_family == "descriptive_characteristics":
             eligible_items.append((table_index, profile, definition))
         else:
@@ -676,7 +723,11 @@ def _handle_review_variable_plausibility(args: argparse.Namespace) -> int:
         else:
             parser = LLMVariablePlausibilityTableReviewParser(client)
             for table_index, profile, definition in eligible_items:
-                trace_dir = debug_root / f"table_{table_index}" if debug_root is not None else None
+                trace_dir = (
+                    debug_root / f"table_{table_index}"
+                    if debug_root is not None
+                    else None
+                )
                 attempt = parser.review_with_monitoring(
                     definition,
                     table_index=table_index,
@@ -694,12 +745,15 @@ def _handle_review_variable_plausibility(args: argparse.Namespace) -> int:
 
     review_output_path = paper_dir / "table_variable_plausibility_llm.json"
     review_output_path.write_text(
-        json.dumps([review.model_dump(mode="json") for review in reviews], indent=2) + "\n",
+        json.dumps([review.model_dump(mode="json") for review in reviews], indent=2)
+        + "\n",
         encoding="utf-8",
     )
 
     if settings.llm_debug and debug_root is not None:
-        monitoring_output_path = debug_root / "llm_variable_plausibility_monitoring.json"
+        monitoring_output_path = (
+            debug_root / "llm_variable_plausibility_monitoring.json"
+        )
         monitoring_output_path.parent.mkdir(parents=True, exist_ok=True)
         monitoring_output_path.write_text(
             json.dumps(
@@ -739,16 +793,97 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     body_occupancy = canonical.body_occupancy
     leaf_column_candidates = canonical.leaf_column_candidates
     header_structure_candidates = canonical.header_structure_candidates
-    normalized_tables = normalize_extracted_tables(extracted_tables, table_regions=table_regions)
+    annotations_by_marker_id: dict[str, CellTextAnnotation] = {}
+    for annotation_table in cell_text_annotations:
+        for annotation_index, annotation in enumerate(annotation_table.annotations):
+            marker_id = annotation.annotation_id or (
+                f"{annotation_table.table_id}:marker:{annotation_index}"
+            )
+            annotations_by_marker_id[marker_id] = annotation
+    for header_candidate in header_structure_candidates:
+        for candidate in [
+            *header_candidate.leaf_candidates,
+            *header_candidate.group_candidates,
+        ]:
+            marker_annotations = [
+                (marker_id, annotations_by_marker_id[marker_id])
+                for marker_id in candidate.marker_ids
+                if marker_id in annotations_by_marker_id
+            ]
+            if not marker_annotations:
+                continue
+            compact_indices = [
+                index
+                for index, character in enumerate(candidate.raw_text)
+                if not character.isspace() and character != "\ufeff"
+            ]
+            compact_text = "".join(
+                candidate.raw_text[index] for index in compact_indices
+            )
+            removal_indices: set[int] = set()
+            for marker_id, annotation in marker_annotations:
+                marker_text = "".join(annotation.text.split()).replace("\ufeff", "")
+                attached_text = "".join(
+                    (annotation.attached_to_text or "").split()
+                ).replace("\ufeff", "")
+                exact_geometry = (
+                    annotation.bbox is not None
+                    and bool(annotation.source_span_references)
+                    and len(annotation.source_char_indices) == len(marker_text)
+                )
+                marker_start = len(attached_text)
+                if (
+                    exact_geometry
+                    and marker_text
+                    and compact_text.startswith(attached_text + marker_text)
+                ):
+                    removal_indices.update(
+                        compact_indices[marker_start : marker_start + len(marker_text)]
+                    )
+                else:
+                    header_candidate.concerns.append(
+                        "marker_base_text_retained_without_exact_"
+                        f"{'geometry' if not exact_geometry else 'alignment'}:"
+                        f"{marker_id}"
+                    )
+            candidate.base_text = "".join(
+                character
+                for index, character in enumerate(candidate.raw_text)
+                if index not in removal_indices
+            )
+            candidate.label = clean_text(candidate.base_text)
+            compact_base_text = "".join(candidate.base_text.split()).replace(
+                "\ufeff", ""
+            )
+            for marker_id, annotation in marker_annotations:
+                marker_text = "".join(annotation.text.split()).replace("\ufeff", "")
+                if (
+                    marker_text
+                    and all(not character.isalnum() for character in marker_text)
+                    and marker_text in compact_base_text
+                ):
+                    header_candidate.concerns.append(
+                        f"marker_glyph_retained_without_occurrence:{marker_id}"
+                    )
+            header_candidate.concerns[:] = list(
+                dict.fromkeys(header_candidate.concerns)
+            )
+    normalized_tables = normalize_extracted_tables(
+        extracted_tables, table_regions=table_regions
+    )
     column_header_schemas = build_column_header_schemas(
         normalized_tables,
-        extracted_tables,
-        paper_positioned_document,
         header_structure_candidates,
     )
-    resolved_table_set = build_resolved_table_set(normalized_tables, column_header_schemas)
-    resolved_tables = [resolved_table.table for resolved_table in resolved_table_set.resolved_tables]
-    source_schema_by_table_id = {schema.table_id: schema for schema in column_header_schemas}
+    resolved_table_set = build_resolved_table_set(
+        normalized_tables, column_header_schemas
+    )
+    resolved_tables = [
+        resolved_table.table for resolved_table in resolved_table_set.resolved_tables
+    ]
+    source_schema_by_table_id = {
+        schema.table_id: schema for schema in column_header_schemas
+    }
     resolved_column_header_schemas: list[ColumnHeaderSchema] = []
     for resolved_table in resolved_table_set.resolved_tables:
         resolved_table_id = resolved_table.table.table_id
@@ -758,7 +893,18 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
             else None
         )
         if source_schema is None:
-            resolved_column_header_schemas.append(build_column_header_schema(resolved_table.table))
+            resolved_column_header_schemas.append(
+                ColumnHeaderSchema(
+                    schema_id=f"{resolved_table_id}:column_header_schema",
+                    table_id=resolved_table_id,
+                    n_cols=resolved_table.table.n_cols,
+                    label_col_idx=(0 if resolved_table.table.n_cols > 0 else None),
+                    header_rows_considered=list(resolved_table.table.header_rows),
+                    body_rows_considered=list(resolved_table.table.body_rows),
+                    diagnostics=["resolved_source_column_header_schema_missing"],
+                    confidence=0.0,
+                )
+            )
             continue
         resolved_column_header_schemas.append(
             source_schema.model_copy(
@@ -789,8 +935,16 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     extracted_table_by_id = {table.table_id: table for table in extracted_tables}
     resolved_source_extracted_tables: list[ExtractedTable] = []
     for resolved_index, resolved_table in enumerate(resolved_table_set.resolved_tables):
-        source_table_id = resolved_table.source_table_ids[0] if resolved_table.source_table_ids else None
-        source_extracted_table = extracted_table_by_id.get(source_table_id) if source_table_id is not None else None
+        source_table_id = (
+            resolved_table.source_table_ids[0]
+            if resolved_table.source_table_ids
+            else None
+        )
+        source_extracted_table = (
+            extracted_table_by_id.get(source_table_id)
+            if source_table_id is not None
+            else None
+        )
         if source_extracted_table is None and resolved_index < len(extracted_tables):
             source_extracted_table = extracted_tables[resolved_index]
         if source_extracted_table is not None:
@@ -837,17 +991,19 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
                 candidate_ids_by_source_cell_id.setdefault(source_cell_id, set()).add(
                     candidate.candidate_id
                 )
-                candidate_source_cell_ids.setdefault(candidate.candidate_id, []).append(source_cell_id)
+                candidate_source_cell_ids.setdefault(candidate.candidate_id, []).append(
+                    source_cell_id
+                )
     marker_ids_by_source_cell_id: dict[str, list[str]] = {}
-    annotations_by_marker_id: dict[str, CellTextAnnotation] = {}
     for annotation_table in cell_text_annotations:
         for annotation_index, annotation in enumerate(annotation_table.annotations):
             marker_id = annotation.annotation_id or (
                 f"{annotation_table.table_id}:marker:{annotation_index}"
             )
-            annotations_by_marker_id[marker_id] = annotation
             if annotation.source_cell_id is not None:
-                marker_ids_by_source_cell_id.setdefault(annotation.source_cell_id, []).append(marker_id)
+                marker_ids_by_source_cell_id.setdefault(
+                    annotation.source_cell_id, []
+                ).append(marker_id)
     for candidate in logical_body_candidates:
         candidate.marker_ids.extend(
             marker_id
@@ -857,27 +1013,9 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
             if len(candidate_ids_by_source_cell_id[source_cell_id]) == 1
             for marker_id in marker_ids_by_source_cell_id.get(source_cell_id, [])
         )
-        if candidate.marker_ids and candidate.kind != "row_sequence_reconstruction":
-            source_cell_ids = list(
-                dict.fromkeys(candidate_source_cell_ids.get(candidate.candidate_id, []))
-            )
-            if all(source_cell_id in physical_text_by_source_cell_id for source_cell_id in source_cell_ids):
-                candidate.raw_text = " ".join(
-                    physical_text_by_source_cell_id[source_cell_id]
-                    for source_cell_id in source_cell_ids
-                )
-                candidate.base_text = candidate.raw_text
 
     logical_text_candidates = [
-        *((candidate, candidate.notes) for candidate in logical_body_candidates),
-        *(
-            (node, header_candidate.concerns)
-            for header_candidate in header_structure_candidates
-            for node in [
-                *header_candidate.leaf_candidates,
-                *header_candidate.group_candidates,
-            ]
-        ),
+        (candidate, candidate.notes) for candidate in logical_body_candidates
     ]
     for candidate, candidate_diagnostics in logical_text_candidates:
         marker_annotations = [
@@ -896,9 +1034,9 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         removal_indices: set[int] = set()
         for marker_id, annotation in marker_annotations:
             marker_text = "".join(annotation.text.split()).replace("\ufeff", "")
-            attached_text = "".join((annotation.attached_to_text or "").split()).replace(
-                "\ufeff", ""
-            )
+            attached_text = "".join(
+                (annotation.attached_to_text or "").split()
+            ).replace("\ufeff", "")
             exact_geometry = (
                 annotation.bbox is not None
                 and bool(annotation.source_span_references)
@@ -943,8 +1081,6 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
             candidate.candidate_text = clean_text(candidate.base_text)
         elif isinstance(candidate, BodyRowLabelCandidate):
             candidate.candidate_label = clean_text(candidate.base_text)
-        else:
-            candidate.label = clean_text(candidate.base_text)
         compact_base_text = "".join(candidate.base_text.split()).replace("\ufeff", "")
         for marker_id, annotation in marker_annotations:
             marker_text = "".join(annotation.text.split()).replace("\ufeff", "")
@@ -970,9 +1106,11 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         resolved_tables,
         resolved_column_header_schemas,
     )
-    table1_continuation_groups, merged_table1_tables = build_table1_continuation_artifacts(
-        normalized_tables,
-        column_header_schemas,
+    table1_continuation_groups, merged_table1_tables = (
+        build_table1_continuation_artifacts(
+            normalized_tables,
+            column_header_schemas,
+        )
     )
     paper_footnotes = build_paper_footnote_anchor_inventory(
         paper_id=paper_stem,
@@ -1033,8 +1171,12 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
                     "footer_count": len(table_footers),
                     "footer_count_from_extracted_tables": len(extracted_table_footers),
                     "footer_count_from_text_stream": len(text_stream_table_footers),
-                    "definition_line_count_from_extracted_tables": len(table_local_footnote_definition_lines),
-                    "definition_line_count_from_text_stream": len(table_footer_text_stream_definition_lines),
+                    "definition_line_count_from_extracted_tables": len(
+                        table_local_footnote_definition_lines
+                    ),
+                    "definition_line_count_from_text_stream": len(
+                        table_footer_text_stream_definition_lines
+                    ),
                     "definition_line_count": len(paper_footnote_definition_lines),
                     "definition_count": len(paper_footnote_definitions),
                     "definitions_status": "built",
@@ -1052,14 +1194,24 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     parse_quality_reports = []
     body_element_candidates_by_table_id: dict[str, list[BodyElementCandidate]] = {}
     for candidate in body_element_candidates:
-        body_element_candidates_by_table_id.setdefault(candidate.source_table_id, []).append(candidate)
+        body_element_candidates_by_table_id.setdefault(
+            candidate.source_table_id, []
+        ).append(candidate)
     body_row_label_candidates_by_table_id: dict[str, list[BodyRowLabelCandidate]] = {}
     for candidate in body_row_label_candidates:
-        body_row_label_candidates_by_table_id.setdefault(candidate.source_table_id, []).append(candidate)
+        body_row_label_candidates_by_table_id.setdefault(
+            candidate.source_table_id, []
+        ).append(candidate)
     for table_index, table in enumerate(normalized_tables):
         table_candidates = body_element_candidates_by_table_id.get(table.table_id)
-        table_label_candidates = body_row_label_candidates_by_table_id.get(table.table_id)
-        column_schema = column_header_schemas[table_index] if table_index < len(column_header_schemas) else None
+        table_label_candidates = body_row_label_candidates_by_table_id.get(
+            table.table_id
+        )
+        column_schema = (
+            column_header_schemas[table_index]
+            if table_index < len(column_header_schemas)
+            else None
+        )
         row_classifications = classify_rows(
             table,
             body_element_candidates=table_candidates,
@@ -1080,13 +1232,14 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
                 row_classifications,
                 variable_blocks,
                 column_roles,
-                extracted_table=extracted_tables[table_index] if table_index < len(extracted_tables) else None,
+                extracted_table=extracted_tables[table_index]
+                if table_index < len(extracted_tables)
+                else None,
                 source_identifier=pdf_path,
             )
         )
     parse_quality_report_by_table_id = {
-        report.table_id: report
-        for report in parse_quality_reports
+        report.table_id: report for report in parse_quality_reports
     }
     resolved_parse_quality_reports = [
         parse_quality_report_by_table_id[resolved_table.source_table_ids[0]]
@@ -1129,9 +1282,15 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         footnote_definitions=paper_footnote_definitions,
         bibliography_entries=bibliography_entries,
     )
-    paper_visual_inventory = build_paper_visual_inventory(extracted_tables, table_definitions, paper_sections)
-    paper_references = collect_paper_visual_references(paper_sections, paper_visual_inventory)
-    paper_visual_inventory = annotate_visual_reference_checks(paper_visual_inventory, paper_references)
+    paper_visual_inventory = build_paper_visual_inventory(
+        extracted_tables, table_definitions, paper_sections
+    )
+    paper_references = collect_paper_visual_references(
+        paper_sections, paper_visual_inventory
+    )
+    paper_visual_inventory = annotate_visual_reference_checks(
+        paper_visual_inventory, paper_references
+    )
     paper_style_profile = build_paper_style_profile(
         paper_id=paper_stem,
         source_pdf=pdf_path,
@@ -1142,8 +1301,12 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         paper_visual_inventory=paper_visual_inventory,
         paper_references=paper_references,
     )
-    paper_variable_inventory = build_paper_variable_inventory(paper_stem, paper_sections, table_definitions)
-    table_contexts = build_table_contexts(paper_sections, table_definitions, paper_visual_inventory, paper_references)
+    paper_variable_inventory = build_paper_variable_inventory(
+        paper_stem, paper_sections, table_definitions
+    )
+    table_contexts = build_table_contexts(
+        paper_sections, table_definitions, paper_visual_inventory, paper_references
+    )
     return PaperParseArtifacts(
         paper_stem=paper_stem,
         extracted_tables=extracted_tables,
@@ -1193,14 +1356,20 @@ def _annotate_parse_failures(
     table_processing_statuses: list[object],
 ) -> tuple[list[TableDefinition], list[ParsedTable]]:
     """Attach parse-failure notes to deterministic table definitions and parsed tables."""
-    status_by_table_id = {status.table_id: status for status in table_processing_statuses}
+    status_by_table_id = {
+        status.table_id: status for status in table_processing_statuses
+    }
     annotated_table_definitions = [
         definition.model_copy(
             update={
                 "notes": (
-                    [*definition.notes, f"parse_failed:{status_by_table_id[definition.table_id].failure_reason}"]
+                    [
+                        *definition.notes,
+                        f"parse_failed:{status_by_table_id[definition.table_id].failure_reason}",
+                    ]
                     if status_by_table_id[definition.table_id].status == "failed"
-                    and f"parse_failed:{status_by_table_id[definition.table_id].failure_reason}" not in definition.notes
+                    and f"parse_failed:{status_by_table_id[definition.table_id].failure_reason}"
+                    not in definition.notes
                     else definition.notes
                 )
             }
@@ -1211,9 +1380,13 @@ def _annotate_parse_failures(
         parsed_table.model_copy(
             update={
                 "notes": (
-                    [*parsed_table.notes, f"parse_failed:{status_by_table_id[parsed_table.table_id].failure_reason}"]
+                    [
+                        *parsed_table.notes,
+                        f"parse_failed:{status_by_table_id[parsed_table.table_id].failure_reason}",
+                    ]
                     if status_by_table_id[parsed_table.table_id].status == "failed"
-                    and f"parse_failed:{status_by_table_id[parsed_table.table_id].failure_reason}" not in parsed_table.notes
+                    and f"parse_failed:{status_by_table_id[parsed_table.table_id].failure_reason}"
+                    not in parsed_table.notes
                     else parsed_table.notes
                 )
             }
@@ -1239,16 +1412,24 @@ def _write_parse_outputs(
     table_regions_output_path = paper_dir / "table_regions.json"
     body_occupancy_output_path = paper_dir / "body_occupancy.json"
     leaf_column_candidates_output_path = paper_dir / "leaf_column_candidates.json"
-    header_structure_candidates_output_path = paper_dir / "header_structure_candidates.json"
+    header_structure_candidates_output_path = (
+        paper_dir / "header_structure_candidates.json"
+    )
     normalize_output_path = paper_dir / "normalized_tables.json"
     column_header_schema_output_path = paper_dir / "column_header_schemas.json"
     resolved_table_output_path = paper_dir / "resolved_tables.json"
-    table1_continuation_groups_output_path = paper_dir / "table1_continuation_groups.json"
-    table_continuation_column_checks_output_path = paper_dir / "table_continuation_column_checks.json"
+    table1_continuation_groups_output_path = (
+        paper_dir / "table1_continuation_groups.json"
+    )
+    table_continuation_column_checks_output_path = (
+        paper_dir / "table_continuation_column_checks.json"
+    )
     merged_table1_output_path = paper_dir / "merged_table1_tables.json"
     table_profile_output_path = paper_dir / "table_profiles.json"
     table_definition_output_path = paper_dir / "table_definitions.json"
-    continued_variable_integration_output_path = paper_dir / "continued_variable_integrations.json"
+    continued_variable_integration_output_path = (
+        paper_dir / "continued_variable_integrations.json"
+    )
     body_element_candidates_output_path = paper_dir / "body_element_candidates.json"
     body_row_label_candidates_output_path = paper_dir / "body_row_label_candidates.json"
     parsed_cell_values_output_path = paper_dir / "parsed_cell_values.json"
@@ -1314,7 +1495,8 @@ def _write_parse_outputs(
         encoding="utf-8",
     )
     body_occupancy_output_path.write_text(
-        json.dumps(body_occupancy_tables_to_payload(artifacts.body_occupancy), indent=2) + "\n",
+        json.dumps(body_occupancy_tables_to_payload(artifacts.body_occupancy), indent=2)
+        + "\n",
         encoding="utf-8",
     )
     leaf_column_candidates_output_path.write_text(
@@ -1337,20 +1519,30 @@ def _write_parse_outputs(
     )
     write_normalized_tables(normalize_output_path, artifacts.normalized_tables)
     column_header_schema_output_path.write_text(
-        json.dumps(column_header_schemas_to_payload(artifacts.column_header_schemas), indent=2) + "\n",
+        json.dumps(
+            column_header_schemas_to_payload(artifacts.column_header_schemas), indent=2
+        )
+        + "\n",
         encoding="utf-8",
     )
     resolved_table_output_path.write_text(
-        json.dumps(artifacts.resolved_table_set.model_dump(mode="json"), indent=2) + "\n",
+        json.dumps(artifacts.resolved_table_set.model_dump(mode="json"), indent=2)
+        + "\n",
         encoding="utf-8",
     )
     table1_continuation_groups_output_path.write_text(
-        json.dumps(table1_continuation_groups_to_payload(artifacts.table1_continuation_groups), indent=2) + "\n",
+        json.dumps(
+            table1_continuation_groups_to_payload(artifacts.table1_continuation_groups),
+            indent=2,
+        )
+        + "\n",
         encoding="utf-8",
     )
     table_continuation_column_checks_output_path.write_text(
         json.dumps(
-            table_continuation_column_checks_to_payload(table_continuation_column_checks),
+            table_continuation_column_checks_to_payload(
+                table_continuation_column_checks
+            ),
             indent=2,
         )
         + "\n",
@@ -1358,7 +1550,8 @@ def _write_parse_outputs(
     )
     write_normalized_tables(merged_table1_output_path, artifacts.merged_table1_tables)
     table_profile_output_path.write_text(
-        json.dumps(table_profiles_to_payload(artifacts.table_profiles), indent=2) + "\n",
+        json.dumps(table_profiles_to_payload(artifacts.table_profiles), indent=2)
+        + "\n",
         encoding="utf-8",
     )
     table_definition_output_path.write_text(
@@ -1367,22 +1560,35 @@ def _write_parse_outputs(
     )
     continued_variable_integration_output_path.write_text(
         json.dumps(
-            continued_variable_integrations_to_payload(artifacts.continued_variable_integrations),
+            continued_variable_integrations_to_payload(
+                artifacts.continued_variable_integrations
+            ),
             indent=2,
         )
         + "\n",
         encoding="utf-8",
     )
     body_element_candidates_output_path.write_text(
-        json.dumps(body_element_candidates_to_payload(artifacts.body_element_candidates), indent=2) + "\n",
+        json.dumps(
+            body_element_candidates_to_payload(artifacts.body_element_candidates),
+            indent=2,
+        )
+        + "\n",
         encoding="utf-8",
     )
     body_row_label_candidates_output_path.write_text(
-        json.dumps(body_row_label_candidates_to_payload(artifacts.body_row_label_candidates), indent=2) + "\n",
+        json.dumps(
+            body_row_label_candidates_to_payload(artifacts.body_row_label_candidates),
+            indent=2,
+        )
+        + "\n",
         encoding="utf-8",
     )
     parsed_cell_values_output_path.write_text(
-        json.dumps(parsed_cell_values_to_payload(artifacts.parsed_cell_values), indent=2) + "\n",
+        json.dumps(
+            parsed_cell_values_to_payload(artifacts.parsed_cell_values), indent=2
+        )
+        + "\n",
         encoding="utf-8",
     )
     parsed_output_path.write_text(
@@ -1390,68 +1596,122 @@ def _write_parse_outputs(
         encoding="utf-8",
     )
     processing_status_output_path.write_text(
-        json.dumps([status.model_dump(mode="json") for status in table_processing_statuses], indent=2) + "\n",
+        json.dumps(
+            [status.model_dump(mode="json") for status in table_processing_statuses],
+            indent=2,
+        )
+        + "\n",
         encoding="utf-8",
     )
     paper_table_inventory_output_path.write_text(
-        json.dumps(paper_table_inventory_to_payload(paper_table_inventory), indent=2) + "\n",
+        json.dumps(paper_table_inventory_to_payload(paper_table_inventory), indent=2)
+        + "\n",
         encoding="utf-8",
     )
     parse_quality_reports_output_path.write_text(
-        json.dumps([report.model_dump(mode="json") for report in artifacts.parse_quality_reports], indent=2) + "\n",
+        json.dumps(
+            [
+                report.model_dump(mode="json")
+                for report in artifacts.parse_quality_reports
+            ],
+            indent=2,
+        )
+        + "\n",
         encoding="utf-8",
     )
     cell_text_annotations_output_path.write_text(
-        json.dumps(cell_text_annotation_tables_to_payload(artifacts.cell_text_annotations), indent=2) + "\n",
+        json.dumps(
+            cell_text_annotation_tables_to_payload(artifacts.cell_text_annotations),
+            indent=2,
+        )
+        + "\n",
         encoding="utf-8",
     )
     paper_footnotes_output_path.write_text(
-        json.dumps(paper_footnotes_to_payload(artifacts.paper_footnotes), indent=2) + "\n",
+        json.dumps(paper_footnotes_to_payload(artifacts.paper_footnotes), indent=2)
+        + "\n",
         encoding="utf-8",
     )
     paper_bibliography_output_path.write_text(
-        json.dumps(paper_bibliography_to_payload(artifacts.paper_bibliography), indent=2) + "\n",
+        json.dumps(
+            paper_bibliography_to_payload(artifacts.paper_bibliography), indent=2
+        )
+        + "\n",
         encoding="utf-8",
     )
     paper_page_furniture_output_path.write_text(
-        json.dumps(paper_page_furniture_to_payload(artifacts.paper_page_furniture), indent=2) + "\n",
+        json.dumps(
+            paper_page_furniture_to_payload(artifacts.paper_page_furniture), indent=2
+        )
+        + "\n",
         encoding="utf-8",
     )
     paper_positioned_document_output_path.write_text(
-        json.dumps(artifacts.paper_positioned_document.model_dump(mode="json"), indent=2) + "\n",
+        json.dumps(
+            artifacts.paper_positioned_document.model_dump(mode="json"), indent=2
+        )
+        + "\n",
         encoding="utf-8",
     )
     paper_style_profile_output_path.write_text(
-        json.dumps(paper_style_profile_to_payload(artifacts.paper_style_profile), indent=2) + "\n",
+        json.dumps(
+            paper_style_profile_to_payload(artifacts.paper_style_profile), indent=2
+        )
+        + "\n",
         encoding="utf-8",
     )
     paper_text_stream_output_path.write_text(
-        json.dumps(artifacts.paper_text_stream.model_dump(mode="json"), indent=2) + "\n",
+        json.dumps(artifacts.paper_text_stream.model_dump(mode="json"), indent=2)
+        + "\n",
         encoding="utf-8",
     )
     paper_markdown_output_path.write_text(artifacts.paper_markdown, encoding="utf-8")
     paper_sections_output_path.write_text(
-        json.dumps(paper_sections_to_payload(artifacts.paper_sections), indent=2) + "\n",
+        json.dumps(paper_sections_to_payload(artifacts.paper_sections), indent=2)
+        + "\n",
         encoding="utf-8",
     )
     paper_table_mentions_output_path.write_text(
-        json.dumps(paper_table_mentions_to_payload(artifacts.paper_table_mentions), indent=2) + "\n",
+        json.dumps(
+            paper_table_mentions_to_payload(artifacts.paper_table_mentions), indent=2
+        )
+        + "\n",
         encoding="utf-8",
     )
     paper_visual_inventory_output_path.write_text(
-        json.dumps([visual.model_dump(mode="json") for visual in artifacts.paper_visual_inventory], indent=2) + "\n",
+        json.dumps(
+            [
+                visual.model_dump(mode="json")
+                for visual in artifacts.paper_visual_inventory
+            ],
+            indent=2,
+        )
+        + "\n",
         encoding="utf-8",
     )
     paper_references_output_path.write_text(
-        json.dumps([reference.model_dump(mode="json") for reference in artifacts.paper_references], indent=2) + "\n",
+        json.dumps(
+            [
+                reference.model_dump(mode="json")
+                for reference in artifacts.paper_references
+            ],
+            indent=2,
+        )
+        + "\n",
         encoding="utf-8",
     )
     paper_variable_inventory_output_path.write_text(
-        json.dumps(paper_variable_inventory_to_payload(artifacts.paper_variable_inventory), indent=2) + "\n",
+        json.dumps(
+            paper_variable_inventory_to_payload(artifacts.paper_variable_inventory),
+            indent=2,
+        )
+        + "\n",
         encoding="utf-8",
     )
     for table_context in artifacts.table_contexts:
-        (table_context_output_dir / f"table_{table_context.table_index}_context.json").write_text(
+        (
+            table_context_output_dir / f"table_{table_context.table_index}_context.json"
+        ).write_text(
             json.dumps(table_context.model_dump(mode="json"), indent=2) + "\n",
             encoding="utf-8",
         )
@@ -1483,10 +1743,18 @@ def _skipped_variable_plausibility_monitoring_record(
     error_message: str | None = None,
 ) -> LLMVariablePlausibilityCallRecord:
     """Build one monitoring record for a table that never reached the provider call."""
-    continuous_variable_count = sum(variable.variable_type == "continuous" for variable in definition.variables)
-    categorical_variable_count = sum(variable.variable_type == "categorical" for variable in definition.variables)
-    binary_variable_count = sum(variable.variable_type == "binary" for variable in definition.variables)
-    attached_level_count = sum(len(variable.levels) for variable in definition.variables)
+    continuous_variable_count = sum(
+        variable.variable_type == "continuous" for variable in definition.variables
+    )
+    categorical_variable_count = sum(
+        variable.variable_type == "categorical" for variable in definition.variables
+    )
+    binary_variable_count = sum(
+        variable.variable_type == "binary" for variable in definition.variables
+    )
+    attached_level_count = sum(
+        len(variable.levels) for variable in definition.variables
+    )
     return LLMVariablePlausibilityCallRecord(
         table_id=definition.table_id,
         table_index=table_index,
@@ -1504,7 +1772,12 @@ def _skipped_variable_plausibility_monitoring_record(
 
 def _utc_timestamp() -> str:
     """Return a compact UTC ISO 8601 timestamp with trailing Z."""
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    return (
+        datetime.now(timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
 
 
 def main(argv: Sequence[str] | None = None) -> int:

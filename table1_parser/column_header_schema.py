@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import re
-from statistics import median
-from typing import Any, NamedTuple
 
 from table1_parser.schemas import (
     ColumnHeaderCellEvidence,
@@ -13,822 +11,309 @@ from table1_parser.schemas import (
     ColumnHeaderLeaf,
     ColumnHeaderRelationship,
     ColumnHeaderSchema,
-    ExtractedTable,
     HeaderStructureCandidate,
     NormalizedTable,
-    PaperPositionedDocument,
-    TableCell,
-    TablePositionedEvidence,
 )
 from table1_parser.text_cleaning import clean_text
 from table1_parser.validation.column_header_schema import validate_column_header_schema
 
 
-CONTINUATION_PATTERN = re.compile(r"\bcont(?:inued)?\.?\b|\(\s*continued\s*\)", re.IGNORECASE)
-TABLE_TITLE_PATTERN = re.compile(r"\btable\s*\d+\b", re.IGNORECASE)
 NON_ALNUM_PATTERN = re.compile(r"[^A-Za-z0-9]+")
-ALPHA_BOUNDARY_SEPARATOR_PATTERN = re.compile(r"(?<=[A-Za-z])[^A-Za-z0-9\s]+(?=[A-Za-z])")
+ALPHA_BOUNDARY_SEPARATOR_PATTERN = re.compile(
+    r"(?<=[A-Za-z])[^A-Za-z0-9\s]+(?=[A-Za-z])"
+)
 HEADER_MARKUP_PATTERN = re.compile(r"[*_`]+")
 HEADER_SPACE_PATTERN = re.compile(r"\s+")
 HEADER_TRAILING_SPLIT_HYPHEN_PATTERN = re.compile(r"\s+[-–—]\s*$")
-HEADER_LEADING_SPLIT_HYPHEN_PATTERN = re.compile(r"(^|[\s(,;:])[-–—]\s+(?=[A-Za-z]+[)\]])")
-LABEL_COLUMN_TOKENS = {"characteristic", "characteristics", "variable", "variables", "factor", "covariate"}
-
-
-class _HeaderRun(NamedTuple):
-    row_idx: int
-    row_end_idx: int
-    col_start: int
-    col_end: int
-    label: str
-    evidence_positions: tuple[tuple[int, int], ...]
-    inference_rule: str
-    confidence: float
+HEADER_LEADING_SPLIT_HYPHEN_PATTERN = re.compile(
+    r"(^|[\s(,;:])[-–—]\s+(?=[A-Za-z]+[)\]])"
+)
 
 
 def build_column_header_schema(
     table: NormalizedTable,
-    extracted_table: ExtractedTable | None = None,
-    paper_positioned_document: PaperPositionedDocument | None = None,
     header_structure_candidate: HeaderStructureCandidate | None = None,
 ) -> ColumnHeaderSchema:
     """Build one parser-native column header schema from a normalized table."""
-    diagnostics: list[str] = []
-    raw_grid = table.metadata.get("cleaned_rows")
-    if not isinstance(raw_grid, list):
-        diagnostics.append("missing_cleaned_rows")
-        raw_grid = []
-    grid = [[clean_text(str(cell)) for cell in row] if isinstance(row, list) else [] for row in raw_grid]
-    header_rows = [row_idx for row_idx in table.header_rows if 0 <= row_idx < len(grid)]
-    body_rows = [row_idx for row_idx in table.body_rows if 0 <= row_idx < len(grid)]
-    if len(header_rows) != len(table.header_rows):
-        diagnostics.append("some_header_rows_out_of_grid_bounds")
-    if len(body_rows) != len(table.body_rows):
-        diagnostics.append("some_body_rows_out_of_grid_bounds")
-    header_detection = table.metadata.get("header_detection")
-    trusted_separator_header_rows = (
-        isinstance(header_detection, dict)
-        and header_detection.get("source") == "horizontal_rule_separator"
-    )
-    trusted_region_header_rows = (
-        isinstance(header_detection, dict)
-        and header_detection.get("source") == "table_region"
-    )
-    header_row_roles = _header_row_geometry_roles(table.metadata, len(grid))
-
-    first_declared_body_row = min(body_rows) if body_rows else None
-    declared_leaf_header_candidates = [
-        row_idx for row_idx in header_rows if first_declared_body_row is None or row_idx < first_declared_body_row
-    ]
-    declared_leaf_header_row_idx = (
-        max(declared_leaf_header_candidates) if declared_leaf_header_candidates else max(header_rows, default=None)
-    )
-    trailing_declared_header_rows_after_geometry: list[int] = []
-    if header_row_roles:
-        geometry_role_rows = [
-            row_idx
-            for row_idx in header_rows
-            if header_row_roles.get(row_idx) in {"group_header", "leaf_header"}
-        ]
-        if geometry_role_rows:
-            max_geometry_role_row = max(geometry_role_rows)
-            trailing_candidates: list[int] = []
-            body_value_trailing_rows: list[int] = []
-            for row_idx in header_rows:
-                if (
-                    row_idx <= max_geometry_role_row
-                    or (first_declared_body_row is not None and row_idx >= first_declared_body_row)
-                    or _row_nonempty_count(grid, row_idx, table.n_cols) == 0
-                ):
-                    continue
-                value_cells = [
-                    clean_text(_grid_cell(grid, row_idx, col_idx))
-                    for col_idx in range(1, table.n_cols)
-                    if clean_text(_grid_cell(grid, row_idx, col_idx))
-                ]
-                digit_value_cells = [value for value in value_cells if any(char.isdigit() for char in value)]
-                numeric_value_cells = [value for value in value_cells if _looks_like_numeric_body_value(value)]
-                repeated_digit_value = len(set(digit_value_cells)) < len(digit_value_cells)
-                if (
-                    _grid_cell(grid, row_idx, 0)
-                    and len(value_cells) >= 2
-                    and (len(numeric_value_cells) >= 2 or (len(digit_value_cells) >= 2 and repeated_digit_value))
-                ):
-                    body_value_trailing_rows.append(row_idx)
-                else:
-                    trailing_candidates.append(row_idx)
-            if body_value_trailing_rows:
-                diagnostics.append(
-                    "skipped_trailing_declared_header_rows_after_body_value_evidence:"
-                    f"rows={','.join(map(str, body_value_trailing_rows))}"
-                )
-            else:
-                trailing_declared_header_rows_after_geometry = trailing_candidates
-        usable_header_rows = [
-            row_idx
-            for row_idx in header_rows
-            if header_row_roles.get(row_idx) in {"group_header", "leaf_header"}
-        ]
-        if trailing_declared_header_rows_after_geometry:
-            usable_header_rows = sorted([*usable_header_rows, *trailing_declared_header_rows_after_geometry])
-            diagnostics.append(
-                "included_trailing_declared_header_rows_after_geometry_roles:"
-                f"rows={','.join(map(str, trailing_declared_header_rows_after_geometry))}"
-            )
-        skipped_leaf_header_rows: list[int] = []
-    elif trusted_region_header_rows:
-        usable_header_rows = list(header_rows)
-        skipped_leaf_header_rows = []
-    else:
-        usable_header_rows = [
-            row_idx
-            for row_idx in header_rows
-            if (len(header_rows) > 1 and row_idx == declared_leaf_header_row_idx)
-            or not _looks_like_title_or_continuation_header([_grid_cell(grid, row_idx, col_idx) for col_idx in range(table.n_cols)])
-        ]
-        skipped_leaf_header_rows = [row_idx for row_idx in header_rows if row_idx not in usable_header_rows]
-        for row_idx in skipped_leaf_header_rows:
-            diagnostics.append(f"skipped_title_like_leaf_header_row:row={row_idx}")
-
-    inferred_header_rows_used = False
-    geometry_header_rows, geometry_body_start = _infer_header_rows_from_geometry(grid, table.n_cols, table.metadata)
-    if (
-        not header_row_roles
-        and
-        usable_header_rows
-        and geometry_header_rows
-        and _header_rows_before_first_rule(usable_header_rows, table.metadata)
-        and not trusted_separator_header_rows
-    ):
-        usable_header_rows = geometry_header_rows
-        header_rows = geometry_header_rows
-        inferred_header_rows_used = True
-        diagnostics.append(f"replaced_title_rows_with_geometry_header_rows:rows={','.join(map(str, geometry_header_rows))}")
-        if geometry_body_start is not None:
-            body_rows = [row_idx for row_idx in body_rows if row_idx >= geometry_body_start] or [
-                row_idx
-                for row_idx in range(geometry_body_start, len(grid))
-                if any(_grid_cell(grid, row_idx, col_idx) for col_idx in range(table.n_cols))
-            ]
-    if not usable_header_rows:
-        inferred_header_rows, inferred_body_start = geometry_header_rows, geometry_body_start
-        if not inferred_header_rows:
-            inferred_header_rows, inferred_body_start = _infer_header_rows_from_grid(grid, table.n_cols)
-        if inferred_header_rows:
-            inferred_header_rows_used = True
-            usable_header_rows = inferred_header_rows
-            header_rows = inferred_header_rows
-            diagnostics.append(f"inferred_header_rows_from_body_values:rows={','.join(map(str, inferred_header_rows))}")
-            if inferred_body_start is not None:
-                trimmed_body_rows = [row_idx for row_idx in body_rows if row_idx >= inferred_body_start]
-                if not trimmed_body_rows:
-                    trimmed_body_rows = [
-                        row_idx
-                        for row_idx in range(inferred_body_start, len(grid))
-                        if any(_grid_cell(grid, row_idx, col_idx) for col_idx in range(table.n_cols))
-                    ]
-                if trimmed_body_rows != body_rows:
-                    diagnostics.append(f"trimmed_body_rows_after_inferred_headers:start={inferred_body_start}")
-                    body_rows = trimmed_body_rows
-
-    leaf_header_row_idx: int | None = None
-    leaf_header_row_indices: list[int] = []
-    if trailing_declared_header_rows_after_geometry:
-        leaf_header_row_indices = sorted(trailing_declared_header_rows_after_geometry)
-        leaf_header_row_idx = max(leaf_header_row_indices)
-        diagnostics.append(
-            "used_trailing_declared_header_rows_as_leaf_band:"
-            f"rows={','.join(map(str, leaf_header_row_indices))}"
-        )
-    elif header_row_roles:
-        leaf_header_row_indices = [
-            row_idx
-            for row_idx in usable_header_rows
-            if header_row_roles.get(row_idx) == "leaf_header"
-        ]
-        if leaf_header_row_indices:
-            leaf_header_row_idx = max(leaf_header_row_indices)
-    if leaf_header_row_idx is None and usable_header_rows:
-        first_body_row = min(body_rows) if body_rows else None
-        prior_header_rows = [row_idx for row_idx in usable_header_rows if first_body_row is None or row_idx < first_body_row]
-        leaf_header_row_idx = max(prior_header_rows) if prior_header_rows else max(usable_header_rows)
-        leaf_header_row_indices = [leaf_header_row_idx] if leaf_header_row_idx is not None else []
-    elif leaf_header_row_idx is None:
-        diagnostics.append("no_header_rows_available")
-    if leaf_header_row_idx is not None and not header_row_roles:
-        prior_rows = [row_idx for row_idx in usable_header_rows if row_idx < leaf_header_row_idx]
-        if trusted_separator_header_rows and len(usable_header_rows) > 3:
-            leaf_header_row_indices = sorted(usable_header_rows)
-            diagnostics.append(
-                "merged_separator_wrapped_leaf_header_rows:"
-                f"rows={','.join(map(str, leaf_header_row_indices))}"
-            )
-        elif prior_rows:
-            bounded_header_rows = sorted(row_idx for row_idx in usable_header_rows if row_idx <= leaf_header_row_idx)
-            row_bounds = table.metadata.get("row_bounds")
-            rules = table.metadata.get("full_width_horizontal_rules")
-            if not isinstance(rules, list) or not rules:
-                rules = table.metadata.get("horizontal_rules")
-            split_after_position: int | None = None
-            if isinstance(row_bounds, list) and isinstance(rules, list):
-                numeric_rules = sorted(float(rule) for rule in rules if isinstance(rule, (int, float)))
-                for position, (upper_row_idx, lower_row_idx) in enumerate(
-                    zip(bounded_header_rows, bounded_header_rows[1:], strict=False)
-                ):
-                    if upper_row_idx >= len(row_bounds) or lower_row_idx >= len(row_bounds):
-                        continue
-                    upper_bounds = row_bounds[upper_row_idx]
-                    lower_bounds = row_bounds[lower_row_idx]
-                    if (
-                        not isinstance(upper_bounds, (list, tuple))
-                        or not isinstance(lower_bounds, (list, tuple))
-                        or len(upper_bounds) != 2
-                        or len(lower_bounds) != 2
-                    ):
-                        continue
-                    upper_bottom = float(upper_bounds[1])
-                    lower_top = float(lower_bounds[0])
-                    if any(upper_bottom - 2.0 <= rule <= lower_top + 2.0 for rule in numeric_rules):
-                        split_after_position = position
-            if split_after_position is not None:
-                split_rows = bounded_header_rows[split_after_position + 1 :]
-                if len(split_rows) > 1 and leaf_header_row_idx in split_rows:
-                    dense_start = next(
-                        (
-                            position
-                            for position, row_idx in enumerate(split_rows)
-                            if _row_nonempty_count(grid, row_idx, table.n_cols) >= max(4, table.n_cols // 3)
-                        ),
-                        None,
-                    )
-                    if dense_start is not None and dense_start > 0:
-                        diagnostics.append(
-                            "trimmed_sparse_group_rows_from_leaf_header_split:"
-                            f"rows={','.join(map(str, split_rows[:dense_start]))}"
-                        )
-                        split_rows = split_rows[dense_start:]
-                    leaf_header_row_indices = split_rows
-                    diagnostics.append(f"split_wrapped_leaf_header_rows_by_rule:rows={','.join(map(str, split_rows))}")
-            if leaf_header_row_indices == [leaf_header_row_idx] and inferred_header_rows_used:
-                stacked_rows = [leaf_header_row_idx]
-                for prior_row_idx in sorted(prior_rows, reverse=True):
-                    if _physical_row_gap(table.metadata, prior_row_idx, stacked_rows[0]) > 5.0:
-                        break
-                    if _row_nonempty_count(grid, prior_row_idx, table.n_cols) < max(4, table.n_cols // 3):
-                        break
-                    stacked_rows.insert(0, prior_row_idx)
-                if len(stacked_rows) > 1:
-                    leaf_header_row_indices = stacked_rows
-                    diagnostics.append(f"merged_wrapped_leaf_header_rows:rows={','.join(map(str, stacked_rows))}")
-    leaf_header_row_set = set(leaf_header_row_indices)
-    leaf_stack_start = min(leaf_header_row_indices) if leaf_header_row_indices else leaf_header_row_idx
-
     schema_id = f"{table.table_id}:column_header_schema"
-    original_col_indices = _original_col_indices(table, extracted_table)
-    leaf_extra_evidence_positions: dict[tuple[int, int], list[int]] = {}
-    leaf_label_overrides: dict[int, str] = {}
-    row_spanning_leaf_positions: dict[int, list[tuple[int, int]]] = {}
-    same_row_group_overrides: list[_HeaderRun] = []
-    group_grid = [list(row) for row in grid]
-    leaf_labeled_cols = [
-        col_idx
-        for col_idx in range(1, table.n_cols)
-        if any(_grid_cell(grid, row_idx, col_idx) for row_idx in leaf_header_row_indices)
+    if (
+        header_structure_candidate is None
+        or header_structure_candidate.table_id != table.table_id
+    ):
+        return ColumnHeaderSchema(
+            schema_id=schema_id,
+            table_id=table.table_id,
+            n_cols=table.n_cols,
+            label_col_idx=0 if table.n_cols else None,
+            header_rows_considered=list(table.header_rows),
+            body_rows_considered=list(table.body_rows),
+            diagnostics=[
+                "header_structure_candidate_missing"
+                if header_structure_candidate is None
+                else "header_structure_candidate_table_id_mismatch"
+            ],
+            confidence=0.0,
+        )
+
+    candidate = header_structure_candidate
+    diagnostics = [
+        "projected_header_structure_candidate",
+        *candidate.concerns,
+        *candidate.diagnostics,
     ]
-    for col_idx in range(1, table.n_cols):
-        if col_idx in leaf_labeled_cols:
-            continue
-        source_row_idx = next(
-            (
-                row_idx
-                for row_idx in sorted(usable_header_rows, reverse=True)
-                if leaf_stack_start is not None
-                and row_idx < leaf_stack_start
-                and _grid_cell(grid, row_idx, col_idx)
-            ),
-            None,
-        )
-        if source_row_idx is None:
-            continue
-        leaf_label_overrides[col_idx] = _grid_cell(grid, source_row_idx, col_idx)
-        row_spanning_leaf_positions[col_idx] = [(source_row_idx, col_idx)]
-        group_grid[source_row_idx][col_idx] = ""
+    projection_errors: list[str] = []
+    if candidate.header_row_indices != table.header_rows:
+        projection_errors.append("candidate_normalized_header_rows_mismatch")
+    if candidate.body_row_indices != table.body_rows:
+        projection_errors.append("candidate_normalized_body_rows_mismatch")
 
-    suffix_row_spanning_cols: list[int] = []
-    for col_idx in range(table.n_cols - 1, 0, -1):
-        if col_idx not in row_spanning_leaf_positions:
-            break
-        suffix_row_spanning_cols.insert(0, col_idx)
-    if (
-        suffix_row_spanning_cols
-        and paper_positioned_document is not None
-        and extracted_table is not None
-    ):
-        raw_positioned_evidence = extracted_table.metadata.get("table_positioned_evidence")
-        positioned_page = next(
-            (
-                page
-                for page in paper_positioned_document.pages
-                if page.page_num == extracted_table.page_num
-            ),
-            None,
+    candidate_leaves = sorted(
+        candidate.leaf_candidates,
+        key=lambda item: item.leaf_index,
+    )
+    candidate_leaf_by_id = {leaf.leaf_id: leaf for leaf in candidate_leaves}
+    leaf_indices = [leaf.leaf_index for leaf in candidate_leaves]
+    if leaf_indices != list(range(table.n_cols)):
+        projection_errors.append(
+            "candidate_leaf_axis_incomplete:"
+            f"expected={list(range(table.n_cols))}:observed={leaf_indices}"
         )
-        if isinstance(raw_positioned_evidence, dict) and positioned_page is not None:
-            positioned_evidence = TablePositionedEvidence.model_validate(
-                raw_positioned_evidence
-            )
-            source_row_idx = max(
-                row_spanning_leaf_positions[col_idx][0][0]
-                for col_idx in suffix_row_spanning_cols
-            )
-            canonical_row_bounds = table.metadata.get("row_bounds")
-            dy = 0.0
-            old_source_bbox = extracted_table.metadata.get(
-                "geometry_transform_source_bbox"
-            )
-            new_source_bbox = (
-                positioned_evidence.canonical_transform.source_bbox
-                if positioned_evidence.canonical_transform is not None
-                else None
-            )
-            if (
-                extracted_table.metadata.get("geometry_coordinate_frame")
-                == "table_local_rotated_normalized"
-                and isinstance(old_source_bbox, (list, tuple))
-                and len(old_source_bbox) == 4
-                and new_source_bbox is not None
-            ):
-                old_left, _, old_right, _ = (
-                    float(value) for value in old_source_bbox
-                )
-                new_left, _, new_right, _ = new_source_bbox
-                if positioned_evidence.rotation_direction == "vertical_text_up":
-                    dy = old_left - new_left
-                elif positioned_evidence.rotation_direction == "vertical_text_down":
-                    dy = new_right - old_right
-            if (
-                isinstance(canonical_row_bounds, list)
-                and source_row_idx < len(canonical_row_bounds)
-                and isinstance(canonical_row_bounds[source_row_idx], (list, tuple))
-                and len(canonical_row_bounds[source_row_idx]) == 2
-            ):
-                row_top = float(canonical_row_bounds[source_row_idx][0]) + dy
-                row_bottom = float(canonical_row_bounds[source_row_idx][1]) + dy
-                words = [
-                    (positioned_page.words[word_idx].text, bbox)
-                    for word_idx, bbox in zip(
-                        positioned_evidence.word_indices,
-                        positioned_evidence.canonical_word_bboxes,
-                        strict=False,
-                    )
-                    if word_idx < len(positioned_page.words)
-                    and row_top - 1.0
-                    <= (bbox[1] + bbox[3]) / 2.0
-                    <= row_bottom + 1.0
-                ]
-                if words:
-                    words.sort(key=lambda item: item[1][0])
-                    gap_limit = max(
-                        4.0,
-                        median(bbox[3] - bbox[1] for _, bbox in words) * 0.75,
-                    )
-                    runs: list[list[tuple[str, tuple[float, float, float, float]]]] = []
-                    for word in words:
-                        if not runs or word[1][0] - runs[-1][-1][1][2] > gap_limit:
-                            runs.append([word])
-                        else:
-                            runs[-1].append(word)
-                    if len(runs) >= len(suffix_row_spanning_cols):
-                        runs = runs[-len(suffix_row_spanning_cols) :]
-                        source_positions = [
-                            (source_row_idx, col_idx)
-                            for col_idx in suffix_row_spanning_cols
-                        ]
-                        for col_idx, run in zip(
-                            suffix_row_spanning_cols,
-                            runs,
-                            strict=True,
-                        ):
-                            leaf_label_overrides[col_idx] = clean_text(
-                                " ".join(word for word, _ in run)
-                            )
-                            row_spanning_leaf_positions[col_idx] = source_positions
+    if len(candidate_leaf_by_id) != len(candidate_leaves):
+        projection_errors.append("candidate_leaf_ids_duplicate")
 
+    candidate_evidence_by_id = {item.evidence_id: item for item in candidate.evidence}
+    if len(candidate_evidence_by_id) != len(candidate.evidence):
+        projection_errors.append("candidate_evidence_ids_duplicate")
+    candidate_group_by_id = {
+        group.group_id: group for group in candidate.group_candidates
+    }
+    if len(candidate_group_by_id) != len(candidate.group_candidates):
+        projection_errors.append("candidate_group_ids_duplicate")
+
+    source_col_indices = table.metadata.get("source_col_indices")
     if (
-        suffix_row_spanning_cols
-        and leaf_labeled_cols
-        and leaf_labeled_cols == list(
-            range(min(leaf_labeled_cols), suffix_row_spanning_cols[0])
-        )
+        not isinstance(source_col_indices, list)
+        or len(source_col_indices) != table.n_cols
     ):
-        group_positions = tuple(
-            (row_idx, col_idx)
-            for row_idx in sorted(usable_header_rows)
-            if leaf_stack_start is not None and row_idx < leaf_stack_start
-            for col_idx in leaf_labeled_cols
-            if _grid_cell(group_grid, row_idx, col_idx)
-        )
-        group_label = clean_text(
-            " ".join(_grid_cell(group_grid, row_idx, col_idx) for row_idx, col_idx in group_positions)
-        )
-        if group_label:
-            same_row_group_overrides.append(
-                _HeaderRun(
-                    min(row_idx for row_idx, _ in group_positions),
-                    max(row_idx for row_idx, _ in group_positions),
-                    min(leaf_labeled_cols),
-                    max(leaf_labeled_cols),
-                    group_label,
-                    group_positions,
-                    "explicit_cell_span",
-                    0.92,
+        original_col_indices: list[int | None] = [None] * table.n_cols
+        projection_errors.append("normalized_source_column_identity_missing")
+    else:
+        original_col_indices = [
+            value if isinstance(value, int) and value >= 0 else None
+            for value in source_col_indices
+        ]
+        if original_col_indices != list(range(table.n_cols)):
+            projection_errors.append("normalized_source_column_identity_not_physical")
+
+    raw_grid = table.metadata.get("cleaned_rows")
+    if isinstance(raw_grid, list):
+        grid = [
+            [clean_text(str(cell)) for cell in row] if isinstance(row, list) else []
+            for row in raw_grid
+        ]
+    else:
+        grid = []
+        projection_errors.append("normalized_cleaned_rows_missing")
+
+    evidence_columns: dict[str, set[int]] = {
+        evidence_id: set() for evidence_id in candidate_evidence_by_id
+    }
+    for leaf in candidate_leaves:
+        for evidence_id in leaf.evidence_ids:
+            if evidence_id not in evidence_columns:
+                projection_errors.append(
+                    f"candidate_leaf_unknown_evidence:{leaf.leaf_id}:{evidence_id}"
                 )
-            )
-            for row_idx, col_idx in group_positions:
-                group_grid[row_idx][col_idx] = ""
-    body_comma_pair_support: set[tuple[int, int]] = set()
-    for left_col_idx in range(1, table.n_cols - 1):
-        paired_body_rows = 0
-        left_comma_body_rows = 0
-        for row_idx in body_rows:
-            left_text = clean_text(_grid_cell(grid, row_idx, left_col_idx))
-            right_text = clean_text(_grid_cell(grid, row_idx, left_col_idx + 1))
-            if not left_text or not right_text:
                 continue
-            paired_body_rows += 1
-            if left_text.endswith(","):
-                left_comma_body_rows += 1
-        if (
-            left_comma_body_rows >= 2
-            and paired_body_rows > 0
-            and left_comma_body_rows / paired_body_rows >= 0.6
+            evidence_columns[evidence_id].add(leaf.leaf_index)
+    for group in candidate.group_candidates:
+        group_columns = sorted(
+            candidate_leaf_by_id[leaf_id].leaf_index
+            for leaf_id in group.leaf_ids
+            if leaf_id in candidate_leaf_by_id
+        )
+        if len(group_columns) != len(group.leaf_ids):
+            projection_errors.append(f"candidate_group_unknown_leaf:{group.group_id}")
+        if group_columns and group_columns != list(
+            range(group_columns[0], group_columns[-1] + 1)
         ):
-            body_comma_pair_support.add((left_col_idx, left_col_idx + 1))
-    if leaf_header_row_indices and body_comma_pair_support:
-        leaf_row_idx = max(leaf_header_row_indices)
-        for left_col_idx, right_col_idx in sorted(body_comma_pair_support):
-            left_header = clean_text(" ".join(_grid_cell(grid, row_idx, left_col_idx) for row_idx in leaf_header_row_indices))
-            right_header = clean_text(" ".join(_grid_cell(grid, row_idx, right_col_idx) for row_idx in leaf_header_row_indices))
-            split_source_col_idx: int | None = None
-            group_label = ""
-            composite_header = ""
-            if "," in left_header and not right_header:
-                split_source_col_idx = left_col_idx
-                composite_header = left_header
-            elif "," in right_header and not left_header:
-                split_source_col_idx = right_col_idx
-                composite_header = right_header
-            elif "," in right_header and left_header:
-                split_source_col_idx = right_col_idx
-                composite_header = right_header
-                group_label = left_header
-            if split_source_col_idx is None:
-                continue
-            left_part, right_part = [clean_text(part) for part in composite_header.split(",", 1)]
-            if not left_part or not right_part:
-                continue
-            leaf_label_overrides[left_col_idx] = left_part
-            leaf_label_overrides[right_col_idx] = right_part
-            leaf_extra_evidence_positions.setdefault((leaf_row_idx, left_col_idx), []).append(split_source_col_idx)
-            leaf_extra_evidence_positions.setdefault((leaf_row_idx, right_col_idx), []).append(split_source_col_idx)
-            diagnostics.append(
-                "split_comma_leaf_header_by_body_pair_evidence:"
-                f"row={leaf_row_idx}:cols={left_col_idx}-{right_col_idx}"
-            )
-            if group_label:
-                same_row_group_overrides.append(
-                    _HeaderRun(
-                        leaf_row_idx,
-                        leaf_row_idx,
-                        left_col_idx,
-                        right_col_idx,
-                        group_label,
-                        ((leaf_row_idx, left_col_idx),),
-                        "explicit_cell_span",
-                        0.86,
-                    )
+            projection_errors.append(f"candidate_group_noncontiguous:{group.group_id}")
+        for evidence_id in group.evidence_ids:
+            if evidence_id not in evidence_columns:
+                projection_errors.append(
+                    f"candidate_group_unknown_evidence:{group.group_id}:{evidence_id}"
                 )
-    source_page_num = table.metadata.get("source_page_num")
-    page_num = source_page_num if isinstance(source_page_num, int) and source_page_num >= 1 else None
-    extracted_cells = _extracted_cells_by_position(extracted_table)
-    metadata_cells = table.metadata.get("table_cells")
+                continue
+            evidence_columns[evidence_id].update(group_columns)
+
     evidence: list[ColumnHeaderCellEvidence] = []
-    evidence_by_position: dict[tuple[int, int], str] = {}
-    def evidence_for(row_idx: int, col_idx: int) -> str:
-        existing_id = evidence_by_position.get((row_idx, col_idx))
-        if existing_id is not None:
-            return existing_id
-        original_col_idx = original_col_indices[col_idx] if col_idx < len(original_col_indices) else None
-        cleaned_text = _grid_cell(grid, row_idx, col_idx)
-        extracted_cell = (
-            extracted_cells.get((row_idx, original_col_idx))
-            if original_col_idx is not None
-            else extracted_cells.get((row_idx, col_idx))
+    for item in candidate.evidence:
+        linked_columns = sorted(evidence_columns.get(item.evidence_id, set()))
+        col_idx = linked_columns[0] if linked_columns else 0
+        if not linked_columns:
+            diagnostics.append(f"unreferenced_candidate_evidence:{item.evidence_id}")
+        row_idx = min(
+            item.header_row_indices,
+            default=min(candidate.header_row_indices, default=0),
         )
-        raw_text = extracted_cell.text if extracted_cell is not None else None
-        bbox = extracted_cell.bbox if extracted_cell is not None else None
-        evidence_page_num = extracted_cell.page_num if extracted_cell is not None else page_num
-        source = "extracted_cell" if extracted_cell is not None else "normalized_cleaned_row"
-        if extracted_cell is None:
-            metadata_bbox = _metadata_cell_bbox(metadata_cells, row_idx, original_col_idx if original_col_idx is not None else col_idx)
-            if metadata_bbox is not None:
-                bbox = metadata_bbox
-                source = "metadata_table_cells"
-        evidence_id = f"{schema_id}:evidence:{len(evidence)}"
         evidence.append(
             ColumnHeaderCellEvidence(
-                evidence_id=evidence_id,
+                evidence_id=item.evidence_id,
                 table_id=table.table_id,
                 row_idx=row_idx,
                 col_idx=col_idx,
-                original_row_idx=row_idx if extracted_cell is not None else None,
-                original_col_idx=original_col_idx,
-                raw_text=raw_text,
-                cleaned_text=cleaned_text,
-                bbox=bbox,
-                page_num=evidence_page_num,
-                source=source,
+                original_row_idx=row_idx,
+                original_col_idx=(
+                    original_col_indices[col_idx]
+                    if col_idx < len(original_col_indices)
+                    else None
+                ),
+                raw_text=item.text,
+                cleaned_text=clean_text(item.text),
+                bbox=item.canonical_bbox,
+                page_num=candidate.page_num,
+                source="header_structure_candidate",
             )
         )
-        evidence_by_position[(row_idx, col_idx)] = evidence_id
-        return evidence_id
 
+    leaf_header_row_idx = max(candidate.header_row_indices, default=None)
     leaves: list[ColumnHeaderLeaf] = []
-    for col_idx in range(table.n_cols):
-        leaf_evidence_ids: list[str] = []
-        leaf_label = ""
-        if leaf_header_row_idx is not None:
-            leaf_label = clean_text(" ".join(_grid_cell(grid, row_idx, col_idx) for row_idx in leaf_header_row_indices))
-            if col_idx in leaf_label_overrides:
-                leaf_label = leaf_label_overrides[col_idx]
-            if not leaf_label and col_idx == 0:
-                upper_label = next(
-                    (
-                        _grid_cell(grid, row_idx, col_idx)
-                        for row_idx in sorted(usable_header_rows)
-                        if leaf_stack_start is not None
-                        and row_idx < leaf_stack_start
-                        and clean_text(_grid_cell(grid, row_idx, col_idx)).lower() in LABEL_COLUMN_TOKENS
-                    ),
-                    "",
-                )
-                if upper_label:
-                    leaf_label = upper_label
-                    diagnostics.append(f"used_upper_row_label_leaf_header:col={col_idx}")
-            elif not leaf_label and _looks_like_count_column(grid, body_rows, col_idx):
-                leaf_label = "n"
-                diagnostics.append(f"inferred_count_leaf_header:col={col_idx}")
-            leaf_evidence_ids.extend(evidence_for(row_idx, col_idx) for row_idx in leaf_header_row_indices)
-            leaf_evidence_ids.extend(
-                evidence_for(row_idx, source_col_idx)
-                for row_idx, source_col_idx in row_spanning_leaf_positions.get(
-                    col_idx,
-                    [],
-                )
-            )
-            for row_idx in leaf_header_row_indices:
-                leaf_evidence_ids.extend(
-                    evidence_for(row_idx, source_col_idx)
-                    for source_col_idx in leaf_extra_evidence_positions.get((row_idx, col_idx), [])
-                )
-            if not leaf_label:
-                diagnostics.append(f"blank_leaf_header:col={col_idx}")
-        body_nonempty_row_indices: list[int] = []
-        for row_idx in body_rows:
-            if _grid_cell(grid, row_idx, col_idx):
-                body_nonempty_row_indices.append(row_idx)
-        if leaf_header_row_idx is None and not leaf_label:
-            diagnostics.append(f"generated_blank_leaf_without_header:col={col_idx}")
-        leaf_evidence_ids = list(dict.fromkeys(leaf_evidence_ids))
-        left, center, right = _column_coordinates(
-            [item for item in evidence if item.evidence_id in set(leaf_evidence_ids) and item.bbox is not None]
-        )
-        if center is None:
-            diagnostics.append(f"missing_coordinate_evidence:col={col_idx}")
+    for leaf in candidate_leaves:
+        col_idx = leaf.leaf_index
+        left, right = leaf.canonical_x_bounds
+        body_nonempty_rows = [
+            row_idx
+            for row_idx in candidate.body_row_indices
+            if row_idx < len(grid)
+            and col_idx < len(grid[row_idx])
+            and bool(grid[row_idx][col_idx])
+        ]
+        leaf_label = clean_text(leaf.base_text)
         leaves.append(
             ColumnHeaderLeaf(
-                leaf_id=f"{schema_id}:leaf:{col_idx}",
+                leaf_id=leaf.leaf_id,
                 table_id=table.table_id,
                 col_idx=col_idx,
-                original_col_idx=original_col_indices[col_idx] if col_idx < len(original_col_indices) else None,
+                original_col_idx=(
+                    original_col_indices[col_idx]
+                    if col_idx < len(original_col_indices)
+                    else None
+                ),
                 is_row_label_column=col_idx == 0,
                 is_value_column=col_idx != 0,
                 leaf_header_row_idx=leaf_header_row_idx,
                 leaf_label=leaf_label,
                 leaf_name=_normalize_header_name(leaf_label) or f"column_{col_idx}",
-                body_nonempty_row_indices=body_nonempty_row_indices,
-                evidence_ids=leaf_evidence_ids,
+                body_nonempty_row_indices=body_nonempty_rows,
+                evidence_ids=list(leaf.evidence_ids),
                 coordinate_left=left,
-                coordinate_center=center,
+                coordinate_center=(left + right) / 2.0,
                 coordinate_right=right,
             )
         )
 
     groups: list[ColumnHeaderGroup] = []
-    relationships: list[ColumnHeaderRelationship] = []
-    if leaf_header_row_idx is not None:
-        group_runs = _header_runs_for_groups(
-            group_grid,
-            table.n_cols,
-            [row_idx for row_idx in usable_header_rows if row_idx < leaf_header_row_idx and row_idx not in leaf_header_row_set],
-            table.metadata,
-            leaf_header_row_indices=leaf_header_row_indices,
+    for group in candidate.group_candidates:
+        group_columns = sorted(
+            candidate_leaf_by_id[leaf_id].leaf_index
+            for leaf_id in group.leaf_ids
+            if leaf_id in candidate_leaf_by_id
         )
-        if group_runs and row_spanning_leaf_positions and not same_row_group_overrides:
-            anchored_runs = sorted(
-                group_runs,
-                key=lambda run: min(
-                    col_idx for _, col_idx in run.evidence_positions
+        if not group_columns:
+            projection_errors.append(f"candidate_group_empty:{group.group_id}")
+            continue
+        group_rows = [
+            row_idx
+            for evidence_id in group.evidence_ids
+            if evidence_id in candidate_evidence_by_id
+            for row_idx in candidate_evidence_by_id[evidence_id].header_row_indices
+        ]
+        group_label = clean_text(group.base_text)
+        groups.append(
+            ColumnHeaderGroup(
+                group_id=group.group_id,
+                table_id=table.table_id,
+                row_idx=min(
+                    group_rows,
+                    default=min(candidate.header_row_indices, default=0),
                 ),
+                label=group_label,
+                name=_normalize_header_name(group_label) or f"group_{len(groups)}",
+                col_start=group_columns[0],
+                col_end=group_columns[-1],
+                leaf_col_indices=group_columns,
+                evidence_ids=list(group.evidence_ids),
+                inference_rule="explicit_cell_span",
+                confidence=1.0,
             )
-            anchor_cols = [
-                min(col_idx for _, col_idx in run.evidence_positions)
-                for run in anchored_runs
-            ]
-            group_runs = [
-                run._replace(
-                    col_start=(
-                        anchor_cols[index]
-                        if anchor_cols[index] <= run.col_end
-                        else run.col_start
-                    ),
-                    col_end=(
-                        max(run.col_end, anchor_cols[index + 1] - 1)
-                        if index + 1 < len(anchor_cols)
-                        else max(
-                            run.col_end,
-                            max(leaf_labeled_cols, default=run.col_end),
-                        )
-                    ),
-                )
-                for index, run in enumerate(anchored_runs)
-            ]
-        group_runs.extend(same_row_group_overrides)
-        for run in group_runs:
-            if inferred_header_rows_used and run.col_start == run.col_end:
-                diagnostics.append(f"skipped_single_leaf_header_group:row={run.row_idx}:col={run.col_start}")
-                continue
-            if run.col_start == 0 and run.col_end > 0:
-                diagnostics.append(f"skipped_label_column_header_span:row={run.row_idx}:col=0")
-                continue
-            if run.col_start == 0 and clean_text(run.label).lower() in LABEL_COLUMN_TOKENS:
-                diagnostics.append(f"skipped_label_column_header_group:row={run.row_idx}:col=0")
-                continue
-            leaf_col_indices = list(range(run.col_start, run.col_end + 1))
-            group_evidence_ids = [
-                evidence_for(row_idx, col_idx)
-                for row_idx, col_idx in run.evidence_positions
-                if run.col_start <= col_idx <= run.col_end
-            ]
-            if not group_evidence_ids:
-                group_evidence_ids = [evidence_for(run.row_idx, run.col_start)]
-            group_id = f"{schema_id}:group:{len(groups)}"
-            groups.append(
-                ColumnHeaderGroup(
-                    group_id=group_id,
-                    table_id=table.table_id,
-                    row_idx=run.row_idx,
-                    label=run.label,
-                    name=_normalize_header_name(run.label) or f"group_{len(groups)}",
-                    col_start=run.col_start,
-                    col_end=run.col_end,
-                    leaf_col_indices=leaf_col_indices,
-                    evidence_ids=list(dict.fromkeys(group_evidence_ids)),
-                    inference_rule=run.inference_rule,
-                    confidence=run.confidence,
-                )
-            )
-            for leaf_col_idx in leaf_col_indices:
-                relationship_evidence_ids = list(dict.fromkeys([*group_evidence_ids, evidence_for(run.row_idx, leaf_col_idx)]))
-                relationships.append(
-                    ColumnHeaderRelationship(
-                        relationship_id=f"{schema_id}:relationship:{len(relationships)}",
-                        table_id=table.table_id,
-                        parent_group_id=group_id,
-                        child_leaf_id=f"{schema_id}:leaf:{leaf_col_idx}",
-                        leaf_col_idx=leaf_col_idx,
-                        evidence_ids=relationship_evidence_ids,
-                        confidence=run.confidence,
-                    )
-                )
+        )
 
+    relationships: list[ColumnHeaderRelationship] = []
+    for relationship in candidate.relationships:
+        group = candidate_group_by_id.get(relationship.parent_group_id)
+        leaf = candidate_leaf_by_id.get(relationship.child_leaf_id)
+        if group is None or leaf is None:
+            projection_errors.append(
+                f"candidate_relationship_reference_missing:{relationship.relationship_id}"
+            )
+            continue
+        relationships.append(
+            ColumnHeaderRelationship(
+                relationship_id=relationship.relationship_id,
+                table_id=table.table_id,
+                parent_group_id=relationship.parent_group_id,
+                child_leaf_id=relationship.child_leaf_id,
+                leaf_col_idx=leaf.leaf_index,
+                evidence_ids=list(
+                    dict.fromkeys([*group.evidence_ids, *leaf.evidence_ids])
+                ),
+                confidence=1.0,
+            )
+        )
+
+    expected_relationships = {
+        (group.group_id, leaf_id)
+        for group in candidate.group_candidates
+        for leaf_id in group.leaf_ids
+    }
+    observed_relationships = {
+        (item.parent_group_id, item.child_leaf_id) for item in candidate.relationships
+    }
+    if observed_relationships != expected_relationships:
+        projection_errors.append("candidate_group_relationships_incomplete")
+
+    diagnostics.extend(projection_errors)
     schema = ColumnHeaderSchema(
         schema_id=schema_id,
         table_id=table.table_id,
         n_cols=table.n_cols,
-        label_col_idx=0 if table.n_cols > 0 else None,
-        header_rows_considered=header_rows,
-        body_rows_considered=body_rows,
+        label_col_idx=0 if table.n_cols else None,
+        header_rows_considered=list(candidate.header_row_indices),
+        body_rows_considered=list(candidate.body_row_indices),
         leaf_header_row_idx=leaf_header_row_idx,
         leaves=leaves,
         groups=groups,
         relationships=relationships,
         evidence=evidence,
         diagnostics=list(dict.fromkeys(diagnostics)),
-        confidence=_schema_confidence(diagnostics, leaves, groups),
+        confidence=0.0 if projection_errors else 1.0,
     )
-    if header_structure_candidate is not None:
-        candidate_leaves = sorted(
-            header_structure_candidate.leaf_candidates,
-            key=lambda leaf: leaf.leaf_index,
-        )
-        inherited = [
-            leaf for leaf in candidate_leaves if leaf.label_source == "inherited_continuation"
-        ]
-        schema_leaves = {leaf.col_idx: leaf for leaf in schema.leaves}
-        if (
-            inherited
-            and [leaf.leaf_index for leaf in candidate_leaves]
-            == list(range(table.n_cols))
-            and set(schema_leaves) == set(range(table.n_cols))
-        ):
-            candidate_columns = {leaf.leaf_id: leaf.leaf_index for leaf in candidate_leaves}
-            linked_groups: list[ColumnHeaderGroup] = []
-            linked_relationships: list[ColumnHeaderRelationship] = []
-            for candidate_group in header_structure_candidate.group_candidates:
-                columns = sorted(
-                    candidate_columns[leaf_id]
-                    for leaf_id in candidate_group.leaf_ids
-                    if leaf_id in candidate_columns
-                )
-                if not columns or columns != list(range(columns[0], columns[-1] + 1)):
-                    continue
-                group_id = f"{schema.schema_id}:group:{len(linked_groups)}"
-                linked_groups.append(
-                    ColumnHeaderGroup(
-                        group_id=group_id,
-                        table_id=table.table_id,
-                        row_idx=min(header_structure_candidate.header_row_indices, default=0),
-                        label=candidate_group.label,
-                        name=_normalize_header_name(candidate_group.label)
-                        or f"group_{len(linked_groups)}",
-                        col_start=columns[0],
-                        col_end=columns[-1],
-                        leaf_col_indices=columns,
-                        inference_rule="explicit_cell_span",
-                        confidence=0.95,
-                    )
-                )
-                for column in columns:
-                    linked_relationships.append(
-                        ColumnHeaderRelationship(
-                            relationship_id=(
-                                f"{schema.schema_id}:relationship:{len(linked_relationships)}"
-                            ),
-                            table_id=table.table_id,
-                            parent_group_id=group_id,
-                            child_leaf_id=f"{schema.schema_id}:leaf:{column}",
-                            leaf_col_idx=column,
-                            confidence=0.95,
-                        )
-                    )
-            inherited_indices = ",".join(str(leaf.leaf_index) for leaf in inherited)
-            schema = schema.model_copy(
-                update={
-                    "leaves": [
-                        schema_leaves[leaf.leaf_index].model_copy(
-                            update={
-                                "leaf_label": clean_text(leaf.label),
-                                "leaf_name": _normalize_header_name(leaf.label)
-                                or f"column_{leaf.leaf_index}",
-                                "evidence_ids": [],
-                            }
-                        )
-                        for leaf in candidate_leaves
-                    ],
-                    "groups": linked_groups,
-                    "relationships": linked_relationships,
-                    "diagnostics": [
-                        *schema.diagnostics,
-                        f"inherited_continuation_leaf_labels:{inherited_indices}",
-                        "effective_header_from_header_structure_candidate",
-                    ],
-                    "confidence": 0.95,
-                }
-            )
+    if projection_errors:
+        return schema
     return validate_column_header_schema(schema)
 
 
 def build_column_header_schemas(
     tables: list[NormalizedTable],
-    extracted_tables: list[ExtractedTable] | None = None,
-    paper_positioned_document: PaperPositionedDocument | None = None,
-    header_structure_candidates: list[HeaderStructureCandidate] | None = None,
+    header_structure_candidates: list[HeaderStructureCandidate],
 ) -> list[ColumnHeaderSchema]:
-    """Build column header schemas for normalized tables while preserving order."""
+    """Project header candidates for normalized tables while preserving order."""
+    candidates_by_table_id = {
+        candidate.table_id: candidate for candidate in header_structure_candidates
+    }
     return [
-        build_column_header_schema(
-            table,
-            extracted_tables[index] if extracted_tables is not None and index < len(extracted_tables) else None,
-            paper_positioned_document,
-            (
-                header_structure_candidates[index]
-                if header_structure_candidates is not None
-                and index < len(header_structure_candidates)
-                else None
-            ),
-        )
-        for index, table in enumerate(tables)
+        build_column_header_schema(table, candidates_by_table_id.get(table.table_id))
+        for table in tables
     ]
 
 
@@ -839,20 +324,28 @@ def column_header_schemas_to_payload(
     return [schema.model_dump(mode="json") for schema in schemas]
 
 
-def column_header_descriptors(schema: ColumnHeaderSchema) -> list[ColumnHeaderDescriptor]:
+def column_header_descriptors(
+    schema: ColumnHeaderSchema,
+) -> list[ColumnHeaderDescriptor]:
     """Return canonical parser-facing column descriptors from a header schema."""
     groups_by_id = {group.group_id: group for group in schema.groups}
-    context_by_leaf_id: dict[str, list[tuple[int, str, str]]] = {leaf.leaf_id: [] for leaf in schema.leaves}
+    context_by_leaf_id: dict[str, list[tuple[int, str, str]]] = {
+        leaf.leaf_id: [] for leaf in schema.leaves
+    }
     for relationship in schema.relationships:
         group = groups_by_id.get(relationship.parent_group_id)
         if group is not None:
-            context_by_leaf_id.setdefault(relationship.child_leaf_id, []).append((group.row_idx, group.group_id, group.label))
+            context_by_leaf_id.setdefault(relationship.child_leaf_id, []).append(
+                (group.row_idx, group.group_id, group.label)
+            )
     descriptors: list[ColumnHeaderDescriptor] = []
     for leaf in sorted(schema.leaves, key=lambda item: item.col_idx):
         context_items = sorted(context_by_leaf_id.get(leaf.leaf_id, []))
         context_labels = [label for _, _, label in context_items]
         context_ids = [group_id for _, group_id, _ in context_items]
-        shared_context_label = clean_text(" ".join(context_labels)) if context_labels else None
+        shared_context_label = (
+            clean_text(" ".join(context_labels)) if context_labels else None
+        )
         column_parts = [*context_labels]
         if leaf.leaf_label:
             column_parts.append(leaf.leaf_label)
@@ -864,7 +357,9 @@ def column_header_descriptors(schema: ColumnHeaderSchema) -> list[ColumnHeaderDe
                 col_idx=leaf.col_idx,
                 original_col_idx=leaf.original_col_idx,
                 column_label=column_label,
-                column_name=_normalize_header_name(column_label) or leaf.leaf_name or f"column_{leaf.col_idx}",
+                column_name=_normalize_header_name(column_label)
+                or leaf.leaf_name
+                or f"column_{leaf.col_idx}",
                 leaf_label=leaf.leaf_label,
                 leaf_name=leaf.leaf_name,
                 header_group_ids=context_ids,
@@ -888,685 +383,17 @@ def column_header_comparison_labels(schema: ColumnHeaderSchema) -> list[str]:
     labels: list[str] = []
     for descriptor in column_header_descriptors(schema):
         normalized = HEADER_MARKUP_PATTERN.sub("", descriptor.column_label)
-        normalized = normalized.replace("\u00a0", " ").replace("\u2009", " ").replace("\u202f", " ")
+        normalized = (
+            normalized.replace("\u00a0", " ")
+            .replace("\u2009", " ")
+            .replace("\u202f", " ")
+        )
         normalized = HEADER_SPACE_PATTERN.sub(" ", normalized).strip().lower()
         normalized = HEADER_TRAILING_SPLIT_HYPHEN_PATTERN.sub("", normalized)
         normalized = HEADER_LEADING_SPLIT_HYPHEN_PATTERN.sub(r"\1", normalized)
         normalized = normalized.strip(" .,:;")
         labels.append(HEADER_SPACE_PATTERN.sub(" ", normalized).strip())
     return labels
-
-
-def _grid_cell(grid: list[list[str]], row_idx: int, col_idx: int) -> str:
-    if row_idx < 0 or row_idx >= len(grid) or col_idx < 0 or col_idx >= len(grid[row_idx]):
-        return ""
-    return grid[row_idx][col_idx]
-
-
-def _extracted_cells_by_position(extracted_table: ExtractedTable | None) -> dict[tuple[int, int], TableCell]:
-    if extracted_table is None:
-        return {}
-    return {(cell.row_idx, cell.col_idx): cell for cell in extracted_table.cells}
-
-
-def _original_col_indices(table: NormalizedTable, extracted_table: ExtractedTable | None) -> list[int | None]:
-    source_col_indices = table.metadata.get("source_col_indices")
-    if isinstance(source_col_indices, list) and len(source_col_indices) == table.n_cols:
-        return [value if isinstance(value, int) and value >= 0 else None for value in source_col_indices]
-    raw_n_cols = extracted_table.n_cols if extracted_table is not None else table.n_cols
-    dropped_leading_cols = _nonnegative_int(table.metadata.get("dropped_leading_cols"))
-    dropped_trailing_cols = _nonnegative_int(table.metadata.get("dropped_trailing_cols"))
-    right_bound = max(dropped_leading_cols, raw_n_cols - dropped_trailing_cols)
-    selected_columns = list(range(dropped_leading_cols, right_bound))
-    if len(selected_columns) == table.n_cols:
-        return selected_columns
-    if extracted_table is not None and extracted_table.n_cols == table.n_cols:
-        return list(range(table.n_cols))
-    return [None for _ in range(table.n_cols)]
-
-
-def _metadata_cell_bbox(
-    table_cells: object,
-    row_idx: int,
-    col_idx: int,
-) -> tuple[float, float, float, float] | None:
-    if not isinstance(table_cells, list) or row_idx >= len(table_cells):
-        return None
-    row = table_cells[row_idx]
-    if not isinstance(row, list) or col_idx >= len(row):
-        return None
-    return _bbox_from_value(row[col_idx])
-
-
-def _header_row_geometry_roles(metadata: dict[str, object], row_count: int) -> dict[int, str]:
-    raw_roles = metadata.get("header_row_geometry_roles")
-    if not isinstance(raw_roles, list):
-        return {}
-    roles: dict[int, str] = {}
-    for row_idx, role in enumerate(raw_roles):
-        if row_idx >= row_count or role not in {"group_header", "leaf_header"}:
-            continue
-        roles[row_idx] = str(role)
-    return roles
-
-
-def _bbox_from_value(value: Any) -> tuple[float, float, float, float] | None:
-    if isinstance(value, dict) and all(key in value for key in ("x0", "top", "x1", "bottom")):
-        try:
-            return (float(value["x0"]), float(value["top"]), float(value["x1"]), float(value["bottom"]))
-        except (TypeError, ValueError):
-            return None
-    if isinstance(value, (list, tuple)) and len(value) == 4:
-        try:
-            return tuple(float(part) for part in value)
-        except (TypeError, ValueError):
-            return None
-    return None
-
-
-def _column_coordinates(
-    coordinate_evidence: list[ColumnHeaderCellEvidence],
-) -> tuple[float | None, float | None, float | None]:
-    bboxes = [item.bbox for item in coordinate_evidence if item.bbox is not None]
-    if not bboxes:
-        return None, None, None
-    left = median([bbox[0] for bbox in bboxes])
-    right = median([bbox[2] for bbox in bboxes])
-    return round(left, 4), round((left + right) / 2.0, 4), round(right, 4)
-
-
-def _looks_like_title_or_continuation_header(row: list[str]) -> bool:
-    populated = [cell for cell in row if cell]
-    if not populated:
-        return False
-    joined = clean_text(" ".join(populated))
-    if CONTINUATION_PATTERN.search(joined) or TABLE_TITLE_PATTERN.search(joined):
-        return True
-    unique_count = len(set(populated))
-    if (
-        len(joined) > 80
-        and len(populated) >= max(4, int(len(row) * 0.5))
-        and unique_count >= max(3, int(len(populated) * 0.6))
-    ):
-        return True
-    return len(populated) == 1 and len(joined) > 60
-
-
-def _physical_row_gap(metadata: dict[str, object], upper_row_idx: int, lower_row_idx: int) -> float:
-    row_bounds = metadata.get("row_bounds")
-    if not isinstance(row_bounds, list) or lower_row_idx >= len(row_bounds) or upper_row_idx >= len(row_bounds):
-        return float("inf")
-    upper = row_bounds[upper_row_idx]
-    lower = row_bounds[lower_row_idx]
-    if not isinstance(upper, (list, tuple)) or not isinstance(lower, (list, tuple)) or len(upper) != 2 or len(lower) != 2:
-        return float("inf")
-    try:
-        return max(0.0, float(lower[0]) - float(upper[1]))
-    except (TypeError, ValueError):
-        return float("inf")
-
-
-def _header_rows_before_first_rule(row_indices: list[int], metadata: dict[str, object]) -> bool:
-    row_bounds = metadata.get("row_bounds")
-    rules = metadata.get("horizontal_rules")
-    if not isinstance(row_bounds, list) or not isinstance(rules, list) or not row_indices:
-        return False
-    numeric_rules = sorted(float(value) for value in rules if isinstance(value, (int, float)))
-    if not numeric_rules:
-        return False
-    first_rule = numeric_rules[0]
-    for row_idx in row_indices:
-        if row_idx >= len(row_bounds):
-            return False
-        bounds = row_bounds[row_idx]
-        if not isinstance(bounds, (list, tuple)) or len(bounds) != 2:
-            return False
-        try:
-            if float(bounds[1]) > first_rule + 3.0:
-                return False
-        except (TypeError, ValueError):
-            return False
-    return True
-
-
-def _infer_header_rows_from_geometry(
-    grid: list[list[str]],
-    n_cols: int,
-    metadata: dict[str, object],
-) -> tuple[list[int], int | None]:
-    row_bounds_raw = metadata.get("row_bounds")
-    rules_raw = metadata.get("horizontal_rules")
-    if not isinstance(row_bounds_raw, list) or not isinstance(rules_raw, list):
-        return [], None
-    row_bounds: list[tuple[float, float]] = []
-    for value in row_bounds_raw:
-        if not isinstance(value, (list, tuple)) or len(value) != 2:
-            return [], None
-        try:
-            row_bounds.append((float(value[0]), float(value[1])))
-        except (TypeError, ValueError):
-            return [], None
-    rules = sorted(float(value) for value in rules_raw if isinstance(value, (int, float)))
-    if len(row_bounds) != len(grid) or not rules:
-        return [], None
-    first_body_row_idx = _first_numeric_body_row(grid, n_cols)
-    if first_body_row_idx is None or first_body_row_idx <= 0:
-        return [], first_body_row_idx
-    body_top = row_bounds[first_body_row_idx][0]
-    lower_rules = [rule for rule in rules if rule < body_top]
-    if not lower_rules:
-        return [], first_body_row_idx
-    header_bottom_rule = max(lower_rules)
-    upper_rules = [rule for rule in lower_rules if rule < header_bottom_rule]
-    header_top_rule = min(upper_rules) if upper_rules else None
-    header_rows = [
-        row_idx
-        for row_idx, bounds in enumerate(row_bounds[:first_body_row_idx])
-        if bounds[0] <= header_bottom_rule + 3.0
-        and bounds[1] <= body_top + 1.0
-        and (header_top_rule is None or bounds[0] >= header_top_rule - 3.0)
-        and _row_nonempty_count(grid, row_idx, n_cols) >= 2
-    ]
-    return header_rows, first_body_row_idx
-
-
-def _infer_header_rows_from_grid(grid: list[list[str]], n_cols: int) -> tuple[list[int], int | None]:
-    """Infer a header stack when normalized header rows are unusable."""
-    if n_cols <= 1:
-        return [], None
-    first_body_row_idx = _first_numeric_body_row(grid, n_cols)
-    if first_body_row_idx is None or first_body_row_idx == 0:
-        return [], first_body_row_idx
-
-    candidate_rows: list[int] = []
-    for row_idx in range(first_body_row_idx):
-        row = [_grid_cell(grid, row_idx, col_idx) for col_idx in range(n_cols)]
-        if _looks_like_title_or_continuation_header(row):
-            continue
-        if _row_nonempty_count(grid, row_idx, n_cols) < 2:
-            continue
-        candidate_rows.append(row_idx)
-    return candidate_rows, first_body_row_idx
-
-
-def _first_numeric_body_row(grid: list[list[str]], n_cols: int) -> int | None:
-    for row_idx in range(len(grid)):
-        label_cell = _grid_cell(grid, row_idx, 0)
-        value_cells = [_grid_cell(grid, row_idx, col_idx) for col_idx in range(1, n_cols) if _grid_cell(grid, row_idx, col_idx)]
-        numeric_value_cells = [cell for cell in value_cells if _looks_like_numeric_body_value(cell)]
-        numeric_share = len(numeric_value_cells) / max(1, len(value_cells))
-        if label_cell and len(numeric_value_cells) >= 2 and numeric_share >= 0.65:
-            return row_idx
-    return None
-
-
-def _row_nonempty_count(grid: list[list[str]], row_idx: int, n_cols: int) -> int:
-    return sum(bool(_grid_cell(grid, row_idx, col_idx)) for col_idx in range(n_cols))
-
-
-def _looks_like_numeric_body_value(value: str) -> bool:
-    cleaned = clean_text(value)
-    if not cleaned or not any(char.isdigit() for char in cleaned):
-        return False
-    alpha_count = sum(char.isalpha() for char in cleaned)
-    digit_count = sum(char.isdigit() for char in cleaned)
-    return digit_count >= alpha_count
-
-
-def _looks_like_row_label_column(grid: list[list[str]], body_rows: list[int], col_idx: int) -> bool:
-    values = [clean_text(_grid_cell(grid, row_idx, col_idx)) for row_idx in body_rows]
-    populated = [value for value in values if value]
-    if len(populated) < max(3, len(body_rows) // 4):
-        return False
-    alpha_values = sum(bool(ALPHA_BOUNDARY_SEPARATOR_PATTERN.search(value) or any(char.isalpha() for char in value)) for value in populated)
-    numeric_like = sum(_looks_like_numeric_body_value(value) for value in populated)
-    return alpha_values >= max(3, len(populated) // 2) and numeric_like <= max(1, len(populated) // 5)
-
-
-def _looks_like_count_column(grid: list[list[str]], body_rows: list[int], col_idx: int) -> bool:
-    populated = [clean_text(_grid_cell(grid, row_idx, col_idx)) for row_idx in body_rows if clean_text(_grid_cell(grid, row_idx, col_idx))]
-    if len(populated) < max(3, len(body_rows) // 4):
-        return False
-    integer_like = sum(bool(re.fullmatch(r"\d[\d,]*", value)) for value in populated)
-    decimal_like = sum(bool(re.search(r"\d+\.\d+", value)) for value in populated)
-    alpha_like = sum(any(char.isalpha() for char in value) for value in populated)
-    return (
-        integer_like >= max(3, int(len(populated) * 0.65))
-        and decimal_like == 0
-        and alpha_like <= max(2, len(populated) // 8)
-    )
-
-
-def _header_runs_for_groups(
-    grid: list[list[str]],
-    n_cols: int,
-    row_indices: list[int],
-    metadata: dict[str, object],
-    *,
-    leaf_header_row_indices: list[int] | None = None,
-) -> list[_HeaderRun]:
-    runs: list[_HeaderRun] = []
-    header_detection = metadata.get("header_detection")
-    trust_structural_header_rows = (
-        isinstance(header_detection, dict)
-        and header_detection.get("source")
-        in {"table_region", "value_matrix_boundary", "value_region_anchor"}
-    )
-    header_row_roles = _header_row_geometry_roles(metadata, len(grid))
-    repeated_leaf_blocks = _repeated_leaf_header_blocks(grid, n_cols, leaf_header_row_indices or [])
-    leaf_stack_has_label = [
-        any(_grid_cell(grid, leaf_row_idx, col_idx) for leaf_row_idx in (leaf_header_row_indices or []))
-        for col_idx in range(n_cols)
-    ]
-    for row_idx in sorted(row_indices):
-        row = [_grid_cell(grid, row_idx, col_idx) for col_idx in range(n_cols)]
-        if not trust_structural_header_rows and _looks_like_title_or_continuation_header(row):
-            continue
-        row_runs: list[_HeaderRun] = []
-        geometry_gap_used = False
-        if header_row_roles.get(row_idx) == "group_header":
-            row_runs = _geometry_role_group_runs(
-                grid,
-                n_cols,
-                row_idx,
-                metadata,
-                leaf_header_row_indices or [],
-            )
-            geometry_gap_used = bool(row_runs)
-        row_has_adjacent_repeated_value_labels = any(
-            row[col_idx] and row[col_idx] == row[col_idx - 1]
-            for col_idx in range(2, n_cols)
-        )
-        if not row_runs and repeated_leaf_blocks and not row_has_adjacent_repeated_value_labels:
-            for block_start, block_end in repeated_leaf_blocks:
-                values = [row[col_idx] for col_idx in range(block_start, block_end + 1) if row[col_idx]]
-                if not values:
-                    continue
-                positions = tuple(
-                    (row_idx, col_idx)
-                    for col_idx in range(block_start, block_end + 1)
-                    if row[col_idx]
-                )
-                row_runs.append(
-                    _HeaderRun(
-                        row_idx,
-                        row_idx,
-                        block_start,
-                        block_end,
-                        clean_text(" ".join(values)),
-                        positions,
-                        "explicit_cell_span",
-                        0.88,
-                    )
-                )
-        if (
-            not row_runs
-            and n_cols >= 4
-            and clean_text(row[0]).lower() in LABEL_COLUMN_TOKENS
-            and all(row[col_idx] for col_idx in range(1, n_cols))
-        ):
-            gaps: list[tuple[int, float]] = []
-            for col_idx in range(1, n_cols - 1):
-                left_bbox = _metadata_cell_bbox(metadata.get("table_cells"), row_idx, col_idx)
-                right_bbox = _metadata_cell_bbox(metadata.get("table_cells"), row_idx, col_idx + 1)
-                if left_bbox is not None and right_bbox is not None:
-                    gaps.append((col_idx, float(right_bbox[0]) - float(left_bbox[2])))
-            positive_gaps = [gap for _, gap in gaps if gap > 0]
-            split_cols = [
-                col_idx
-                for col_idx, gap in gaps
-                if positive_gaps and gap >= max(24.0, median(positive_gaps) * 3.0)
-            ]
-            if split_cols:
-                geometry_gap_used = True
-                start = 1
-                for split_col in [*split_cols, n_cols - 1]:
-                    label = clean_text(" ".join(row[col_idx] for col_idx in range(start, split_col + 1)))
-                    if split_col > start and label:
-                        positions = tuple((row_idx, col_idx) for col_idx in range(start, split_col + 1))
-                        row_runs.append(
-                            _HeaderRun(row_idx, row_idx, start, split_col, label, positions, "explicit_cell_span", 0.82)
-                        )
-                    start = split_col + 1
-        if not row_runs:
-            split_distinct_cols: set[int] = set()
-            probe_col = 0
-            while probe_col < n_cols:
-                if not row[probe_col]:
-                    probe_col += 1
-                    continue
-                segment_start = probe_col
-                seen_segment: set[str] = set()
-                while probe_col < n_cols and row[probe_col] and row[probe_col] not in seen_segment:
-                    seen_segment.add(row[probe_col])
-                    probe_col += 1
-                if probe_col == n_cols and len(seen_segment) > 3 and segment_start <= max(1, n_cols // 3):
-                    split_distinct_cols.update(range(segment_start, probe_col))
-                while probe_col < n_cols and row[probe_col]:
-                    probe_col += 1
-            col_idx = 0
-            while col_idx < n_cols:
-                if not row[col_idx]:
-                    col_idx += 1
-                    continue
-                start = col_idx
-                values: list[str] = []
-                positions: list[tuple[int, int]] = []
-                repeated_block = start + 1 < n_cols and row[start + 1] == row[start]
-                seen: set[str] = set()
-                while col_idx < n_cols and row[col_idx] and (start != 0 or col_idx == 0):
-                    if start in split_distinct_cols and col_idx > start:
-                        break
-                    if col_idx > start and leaf_stack_has_label[col_idx] and not leaf_stack_has_label[start]:
-                        break
-                    if repeated_block and row[col_idx] != row[start]:
-                        break
-                    if not repeated_block and row[col_idx] in seen:
-                        break
-                    values.append(row[col_idx])
-                    positions.append((row_idx, col_idx))
-                    seen.add(row[col_idx])
-                    col_idx += 1
-                label = values[0] if len(set(values)) == 1 else clean_text(" ".join(values))
-                inference_rule = "repeated_label_span" if len(values) > 1 and len(set(values)) == 1 else "explicit_cell_span"
-                confidence = 0.92 if inference_rule == "repeated_label_span" else 0.86
-                row_runs.append(_HeaderRun(row_idx, row_idx, start, col_idx - 1, label, tuple(positions), inference_rule, confidence))
-        value_runs = [
-            run
-            for run in row_runs
-            if not (run.col_start == 0 and clean_text(run.label).lower() in LABEL_COLUMN_TOKENS)
-        ]
-        if (
-            value_runs
-            and not geometry_gap_used
-            and value_runs[-1].col_start > 0
-            and value_runs[-1].col_end < n_cols - 1
-            and value_runs[-1].inference_rule != "repeated_label_span"
-            and all(not row[col_idx] for col_idx in range(value_runs[-1].col_end + 1, n_cols))
-        ):
-            tail_run = value_runs[-1]
-            row_runs = [
-                run._replace(
-                    col_end=n_cols - 1,
-                    inference_rule="single_cell_blank_span",
-                    confidence=min(run.confidence, 0.78),
-                )
-                if run == tail_run
-                else run
-                for run in row_runs
-            ]
-            value_runs = [
-                run
-                for run in row_runs
-                if not (run.col_start == 0 and clean_text(run.label).lower() in LABEL_COLUMN_TOKENS)
-            ]
-        has_blank_gap = any(
-            next_run.col_start > run.col_end + 1
-            for run, next_run in zip(value_runs, value_runs[1:], strict=False)
-        )
-        has_text_run = any(
-            run.col_end > run.col_start and run.inference_rule == "explicit_cell_span"
-            for run in value_runs
-        )
-        repeated_single_cell_labels = (
-            len(value_runs) > 1
-            and len({run.label for run in value_runs}) == 1
-            and all(run.col_start == run.col_end for run in value_runs)
-        )
-        if repeated_single_cell_labels:
-            expanded_repeated: list[_HeaderRun] = []
-            for run in row_runs:
-                if run in value_runs and run.col_start > 1 and not row[run.col_start - 1]:
-                    expanded_repeated.append(
-                        run._replace(
-                            col_start=run.col_start - 1,
-                            inference_rule="single_cell_blank_span",
-                            confidence=min(run.confidence, 0.78),
-                        )
-                    )
-                else:
-                    expanded_repeated.append(run)
-            row_runs = expanded_repeated
-            value_runs = [
-                run
-                for run in row_runs
-                if not (run.col_start == 0 and clean_text(run.label).lower() in LABEL_COLUMN_TOKENS)
-            ]
-        if not geometry_gap_used and len(value_runs) >= 2 and (has_blank_gap or has_text_run) and not repeated_single_cell_labels:
-            centered_group_labels = (
-                has_text_run
-                and value_runs[0].col_start > 1
-                and all(
-                    next_run.col_start - run.col_start >= max(4, run.col_end - run.col_start + 2)
-                    for run, next_run in zip(value_runs, value_runs[1:], strict=False)
-                )
-            )
-            expanded: list[_HeaderRun] = []
-            for run in row_runs:
-                if run not in value_runs:
-                    expanded.append(run)
-                    continue
-                if centered_group_labels:
-                    target_start = max(1, run.col_start - 1)
-                elif not has_text_run and run == value_runs[0] and run.col_start > 1:
-                    target_start = 1
-                else:
-                    target_start = run.col_start
-                next_starts = [next_run.col_start for next_run in value_runs if next_run.col_start > run.col_start]
-                span_end = min(next_starts) - (2 if centered_group_labels else 1) if next_starts else n_cols - 1
-                expanded.append(
-                    run._replace(
-                        col_start=target_start,
-                        col_end=max(run.col_end, span_end, target_start),
-                        inference_rule="single_cell_blank_span" if run.col_start == run.col_end else run.inference_rule,
-                        confidence=min(run.confidence, 0.78) if span_end > run.col_end else run.confidence,
-                    )
-                )
-            row_runs = expanded
-        for run in row_runs:
-            match_idx = next(
-                (
-                    idx
-                    for idx in range(len(runs) - 1, -1, -1)
-                    if _can_stack_header_runs(runs[idx], run, metadata)
-                ),
-                None,
-            )
-            if match_idx is None:
-                runs.append(run)
-            else:
-                upper = runs[match_idx]
-                runs[match_idx] = _HeaderRun(
-                    upper.row_idx,
-                    run.row_end_idx,
-                    min(upper.col_start, run.col_start),
-                    max(upper.col_end, run.col_end),
-                    clean_text(f"{upper.label} {run.label}"),
-                    (*upper.evidence_positions, *run.evidence_positions),
-                    "explicit_cell_span",
-                    min(upper.confidence, run.confidence),
-                )
-    return runs
-
-
-def _geometry_role_group_runs(
-    grid: list[list[str]],
-    n_cols: int,
-    row_idx: int,
-    metadata: dict[str, object],
-    leaf_header_row_indices: list[int],
-) -> list[_HeaderRun]:
-    if n_cols <= 1:
-        return []
-    table_cells = metadata.get("table_cells")
-    leaf_centers: dict[int, float] = {}
-    for col_idx in range(1, n_cols):
-        centers: list[float] = []
-        for leaf_row_idx in leaf_header_row_indices:
-            bbox = _metadata_cell_bbox(table_cells, leaf_row_idx, col_idx)
-            if bbox is not None:
-                centers.append((bbox[0] + bbox[2]) / 2.0)
-        if centers:
-            leaf_centers[col_idx] = median(centers)
-    if not leaf_centers:
-        return []
-    sorted_centers = [leaf_centers[col_idx] for col_idx in sorted(leaf_centers)]
-    center_gaps = [
-        sorted_centers[index + 1] - sorted_centers[index]
-        for index in range(len(sorted_centers) - 1)
-        if sorted_centers[index + 1] > sorted_centers[index]
-    ]
-    median_center_gap = median(center_gaps) if center_gaps else 48.0
-    group_entries: list[tuple[int, str, tuple[float, float, float, float] | None, float | None]] = []
-    for col_idx in range(1, n_cols):
-        label = _grid_cell(grid, row_idx, col_idx)
-        if not label:
-            continue
-        bbox = _metadata_cell_bbox(table_cells, row_idx, col_idx)
-        center = ((bbox[0] + bbox[2]) / 2.0) if bbox is not None else leaf_centers.get(col_idx)
-        group_entries.append((col_idx, label, bbox, center))
-    if len(group_entries) > 1:
-        assignments: dict[int, list[int]] = {col_idx: [] for col_idx, _label, _bbox, _center in group_entries}
-        for leaf_col_idx, leaf_center in leaf_centers.items():
-            nearest_group_col = min(
-                group_entries,
-                key=lambda item: abs(leaf_center - (item[3] if item[3] is not None else leaf_center)),
-            )[0]
-            assignments[nearest_group_col].append(leaf_col_idx)
-        runs: list[_HeaderRun] = []
-        for col_idx, label, _bbox, _center in group_entries:
-            span_cols = assignments.get(col_idx, [])
-            if not span_cols:
-                span_cols = [col_idx]
-            runs.append(
-                _HeaderRun(
-                    row_idx,
-                    row_idx,
-                    min(span_cols),
-                    max(span_cols),
-                    label,
-                    ((row_idx, col_idx),),
-                    "explicit_cell_span",
-                    0.86,
-                )
-            )
-        return runs
-    runs: list[_HeaderRun] = []
-    for col_idx, label, bbox, _center in group_entries:
-        if bbox is None:
-            runs.append(_HeaderRun(row_idx, row_idx, col_idx, col_idx, label, ((row_idx, col_idx),), "explicit_cell_span", 0.86))
-            continue
-        center = (bbox[0] + bbox[2]) / 2.0
-        width = max(1.0, bbox[2] - bbox[0])
-        half_window = max(width * 2.0, median_center_gap * 1.5)
-        span_cols = [
-            leaf_col_idx
-            for leaf_col_idx, leaf_center in leaf_centers.items()
-            if center - half_window <= leaf_center <= center + half_window
-        ]
-        if not span_cols:
-            nearest_col = min(leaf_centers, key=lambda leaf_col_idx: abs(leaf_centers[leaf_col_idx] - center))
-            span_cols = [nearest_col]
-        col_start = min(span_cols)
-        col_end = max(span_cols)
-        runs.append(
-            _HeaderRun(
-                row_idx,
-                row_idx,
-                col_start,
-                col_end,
-                label,
-                ((row_idx, col_idx),),
-                "explicit_cell_span",
-                0.86,
-            )
-        )
-    return runs
-
-
-def _repeated_leaf_header_blocks(
-    grid: list[list[str]],
-    n_cols: int,
-    leaf_header_row_indices: list[int],
-) -> list[tuple[int, int]]:
-    if n_cols <= 3 or not leaf_header_row_indices:
-        return []
-    leaf_labels = [
-        clean_text(" ".join(_grid_cell(grid, row_idx, col_idx) for row_idx in leaf_header_row_indices))
-        for col_idx in range(1, n_cols)
-    ]
-    if not any(leaf_labels):
-        return []
-    value_col_count = len(leaf_labels)
-    for block_width in range(2, min(6, value_col_count) + 1):
-        if value_col_count % block_width != 0:
-            continue
-        pattern = leaf_labels[:block_width]
-        if not all(pattern):
-            continue
-        block_count = value_col_count // block_width
-        if block_count < 2:
-            continue
-        if all(
-            leaf_labels[block_idx * block_width : (block_idx + 1) * block_width] == pattern
-            for block_idx in range(block_count)
-        ):
-            return [
-                (1 + block_idx * block_width, block_idx * block_width + block_width)
-                for block_idx in range(block_count)
-            ]
-    return []
-
-
-def _can_stack_header_runs(
-    upper: _HeaderRun,
-    lower: _HeaderRun,
-    metadata: dict[str, object],
-) -> bool:
-    if lower.row_idx <= upper.row_end_idx:
-        return False
-    if lower.row_idx - upper.row_end_idx > 1 and _physical_row_gap(metadata, upper.row_end_idx, lower.row_idx) > 5.0:
-        return False
-    overlap = min(upper.col_end, lower.col_end) - max(upper.col_start, lower.col_start) + 1
-    smaller_width = min(upper.col_end - upper.col_start + 1, lower.col_end - lower.col_start + 1)
-    if (
-        overlap > 0
-        and overlap / max(1, smaller_width) >= 0.75
-        and upper.col_start == lower.col_start
-        and upper.col_end == lower.col_end
-    ):
-        return True
-    lower_width = lower.col_end - lower.col_start + 1
-    return (
-        upper.col_start <= lower.col_start
-        and lower.col_end <= upper.col_end
-        and overlap == lower_width
-        and _physical_row_gap(metadata, upper.row_end_idx, lower.row_idx) <= 5.0
-    )
-
-
-def _schema_confidence(
-    diagnostics: list[str],
-    leaves: list[ColumnHeaderLeaf],
-    groups: list[ColumnHeaderGroup],
-) -> float | None:
-    if not leaves:
-        return None
-    base = 0.9
-    if any(diagnostic.startswith("missing_cleaned_rows") for diagnostic in diagnostics):
-        base -= 0.45
-    if any(diagnostic.startswith("no_header_rows_available") for diagnostic in diagnostics):
-        base -= 0.35
-    missing_coordinate_count = sum(diagnostic.startswith("missing_coordinate_evidence") for diagnostic in diagnostics)
-    if missing_coordinate_count:
-        base -= min(0.2, missing_coordinate_count / max(1, len(leaves)) * 0.2)
-    if not groups:
-        base -= 0.05
-    return round(max(0.05, min(0.98, base)), 4)
-
-
-def _nonnegative_int(value: object) -> int:
-    return value if isinstance(value, int) and value >= 0 else 0
 
 
 def _normalize_header_name(value: str) -> str:

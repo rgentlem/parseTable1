@@ -559,10 +559,10 @@ Completion evidence:
 Detailed cutover checklist:
 `docs/implementation/header_geometry_to_column_schema_checklist.md`.
 
-- [ ] Build `TableRegion` once from the selected grid, positioned rules,
+- [x] Build `TableRegion` once from the selected grid, positioned rules,
       typography, coverage, and adjacency evidence; do not use the header
       candidate as an input.
-- [ ] Build `HeaderStructureCandidate` once from the final region, canonical
+- [x] Build `HeaderStructureCandidate` once from the final region, canonical
       leaf bands, positioned text, and rules.
 - [ ] Build `NormalizedTable` without changing physical geometry.
 - [ ] Build `ColumnHeaderSchema` by directly projecting the validated header

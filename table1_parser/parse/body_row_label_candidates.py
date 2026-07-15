@@ -32,6 +32,13 @@ def build_body_row_label_candidates(
         raw_grid = _raw_grid(table)
         if not raw_grid:
             continue
+        extracted_table = extracted_by_table_id.get(table.table_id)
+        if extracted_table is not None:
+            for cell in extracted_table.cells:
+                if 0 <= cell.row_idx < len(raw_grid) and 0 <= cell.col_idx < len(
+                    raw_grid[cell.row_idx]
+                ):
+                    raw_grid[cell.row_idx][cell.col_idx] = cell.text
         cleaned_grid = [[clean_text(cell) for cell in row] for row in raw_grid]
         schema = schemas_by_table_id.get(table.table_id)
         label_col_indices = _label_col_indices(table, schema)
@@ -41,7 +48,7 @@ def build_body_row_label_candidates(
         body_rows = _candidate_body_rows(table, len(raw_grid))
         body_row_set = set(body_rows)
         source_col_indices = _source_col_indices(table)
-        extracted_cell_by_position = _extracted_cell_by_position(extracted_by_table_id.get(table.table_id))
+        extracted_cell_by_position = _extracted_cell_by_position(extracted_table)
         candidate_number = 0
         for row_idx in body_rows:
             anchor_label = _row_label_text(cleaned_grid, row_idx, label_col_indices)

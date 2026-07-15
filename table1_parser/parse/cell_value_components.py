@@ -261,10 +261,14 @@ def _build_parsed_cell_values_from_candidates(
         )
         if allowed_columns is not None and candidate.anchor_col_idx not in allowed_columns:
             continue
-        base_text = candidate.base_text or candidate.candidate_text
-        if not clean_text(base_text):
+        candidate_text = (
+            candidate.base_text
+            if candidate.marker_ids
+            else candidate.candidate_text or candidate.base_text
+        )
+        if not clean_text(candidate_text):
             continue
-        parsed = parse_cell_value_components(base_text)
+        parsed = parse_cell_value_components(candidate_text)
         notes = list(parsed.notes)
         if candidate.kind != "single_cell":
             notes.append(f"body_element_candidate:{candidate.kind}")

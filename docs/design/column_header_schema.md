@@ -11,6 +11,12 @@ artifact that represents what the parser believes the table columns are, how
 multi-row headers attach to those columns, and what raw extracted evidence
 supports each relationship.
 
+The implemented Phase J path makes this artifact a direct projection of the
+matching `HeaderStructureCandidate`. Candidate `base_text`, node IDs,
+evidence IDs, canonical bounds, groups, and group-to-leaf relationships are
+preserved. Schema construction does not choose header rows or reconstruct
+leaf/group geometry.
+
 There are two major customers:
 
 - parser semantics, especially `TableDefinition` and later value parsing
@@ -202,12 +208,12 @@ records preserve:
 - normalized/cleaned text used by parser logic
 - bounding box coordinates when available
 - page number when available
-- source artifact, such as `extracted_cell`, `metadata_table_cells`, or
-  `normalized_cleaned_row`
+- source artifact; projected positioned evidence uses
+  `header_structure_candidate`
 
-If raw extracted evidence is unavailable, the schema may still be built from
-`NormalizedTable.metadata["cleaned_rows"]`, but diagnostics must say that raw
-coordinates are missing.
+The matching candidate is required in the canonical path. Missing candidates
+or incomplete axes produce a fail-closed schema with diagnostics; they never
+trigger reconstruction from normalized strings.
 
 ## Proposed Canonical Models
 
@@ -230,6 +236,7 @@ class ColumnHeaderCellEvidence(BaseModel):
         "extracted_cell",
         "metadata_table_cells",
         "normalized_cleaned_row",
+        "header_structure_candidate",
     ]
 
 
@@ -295,132 +302,38 @@ class ColumnHeaderSchema(BaseModel):
     confidence: float | None = None
 ```
 
-## Inference Rules
+## Projection Rules
 
-### 1. Build a Parser-Facing Grid
-
-Use `NormalizedTable.metadata["cleaned_rows"]` as the parser-facing text grid.
-If it is missing or malformed, return a degraded schema with diagnostics rather
-than crashing.
-
-Raw extraction evidence should be joined by table ID and normalized row/column
-mapping when an `ExtractedTable` is available. Prefer
-`NormalizedTable.metadata["source_col_indices"]` for the normalized-to-original
-column map when it is present. Older or degraded normalized tables may require
-falling back to `dropped_leading_cols`, `dropped_trailing_cols`, and
-`column_repairs`.
-
-### 2. Choose Leaf Columns
-
-Start with the normalized column range `0..n_cols-1`.
-
-For each column, record body evidence from `body_rows`. A column can still be a
-leaf when body evidence is sparse if it has a leaf-header cell. A column should
-not be invented solely from a higher header group.
-
-Column `0` is the default label column unless existing normalization metadata
-later supplies a better label-column index.
-
-### 3. Choose the Leaf Header Row
-
-Choose the header row closest to the body:
-
-1. prefer the maximum row in `header_rows` that is before the first body row
-2. otherwise use the maximum row in `header_rows`
-3. if no header rows exist, set `leaf_header_row_idx = None`
-
-When there is no leaf header row, leaves should still exist from body columns,
-but their labels should be blank or generated as low-confidence placeholders
-with diagnostics.
-
-When extraction metadata supplies geometry roles for only an upper prefix of
-the declared header rows, lower declared header rows before the body may be the
-actual leaf band. In that case the schema builder should use those lower rows
-as the leaf band and keep the upper prefix as group-header evidence. Rows with
-body-value evidence, such as a row label plus repeated numeric/reference values,
-must not be promoted into the leaf band merely because they were declared as
-headers upstream.
-
-### 4. Build Leaf Labels
-
-For each leaf column, take the cleaned cell from the leaf header row at that
-column. Preserve a direct evidence reference to the raw extracted cell when
-available.
-
-If the leaf header is a wrapped band, concatenate the cleaned cells for the
-same leaf column across the whole band. Upstream extraction should group
-positioned words into visual text runs using small between-word spacing, then
-assign those runs to body-derived column extents. Value-column anchors may help
-derive the extents, but they should not glue visually separated header runs
-together. This keeps labels such as `N = ...` with the value column to their
-right while preserving tight wrapped labels such as diet/activity categories.
-
-When adjacent body value columns repeatedly show a comma split across cells
-(`left value ending in comma` plus a populated right value), a comma-containing
-leaf-band header may be split across that same adjacent pair. This is body and
-geometry evidence, not a header-token shortcut: unit labels such as `Mean AL,
-mm` stay intact when the body does not show adjacent comma-pair support, and
-interval values with commas inside one body cell do not trigger a split. If a
-single-row header also has a group label adjacent to the comma-composite label,
-record that group as a `ColumnHeaderGroup` spanning the two supported leaves.
-
-Do not place upper group text into `leaf_label`. Upper rows belong in
-`ColumnHeaderGroup` records and relationships.
-
-When geometry shows that a short leading text fragment in a leaf-band cell lies
-to the left of the boundary between adjacent leaf columns, the schema builder
-may attach that fragment to the preceding leaf and keep the source cell as
-evidence. This is a coordinate-based repair for extractor cell-boundary drift,
-not a vocabulary-based header interpretation.
-
-### 5. Attach Higher Header Rows
-
-Process header rows above the leaf header row from bottom to top or top to
-bottom, but preserve the original row index in every group.
-
-For each higher header row:
-
-- ignore rows that are only continuation markers, captions, or table-title text
-  when normalization has clearly misclassified them as headers
-- collapse adjacent repeated labels into one `repeated_label_span` group
-- when the leaf-header row repeats the same sequence across value blocks, use
-  that repeated sequence as a candidate upper-group partition only for sparse
-  or centered upper rows; do not override an upper row whose own adjacent
-  repeated labels already define its span
-- let a non-empty cell span following blank cells until the next non-empty cell
-  only when the span covers real leaves and does not cross another explicit
-  group boundary
-- create `single_leaf_group` records for one-label-per-leaf upper rows
-- record a diagnostic instead of forcing a span when the evidence is ambiguous
-
-Every group-to-leaf attachment becomes a `ColumnHeaderRelationship`.
-
-### 6. Preserve Coordinates
-
-Coordinates should be taken from raw extracted `TableCell.bbox` first. If those
-are unavailable, use normalized metadata such as `table_cells` when present. If
-neither is available, keep the relationship but record missing coordinate
-evidence.
-
-Coordinates should not be normalized away in the primary evidence record. If a
-consumer needs normalized page/table coordinates, it can derive them or use an
-additional convenience profile.
+1. Match the candidate to the normalized table by `table_id`.
+2. Require candidate header/body rows to equal the normalized region-owned rows.
+3. Project exactly one schema leaf from each candidate leaf at the same
+   canonical index.
+4. Use cleaned candidate `base_text` for structural labels; derive
+   parser-facing names only afterward.
+5. Preserve candidate leaf, group, relationship, and evidence IDs so marker
+   attachments remain joinable without another mapping layer.
+6. Project each candidate group over exactly its candidate leaf coverage.
+7. Retain positioned raw text and canonical bounds in schema evidence.
+8. Derive body non-empty row indices as a non-operative view over the preserved
+   normalized grid.
+9. Return a diagnostic, zero-confidence schema when the candidate is missing,
+   mismatched, or internally incomplete. Do not reconstruct a substitute
+   header.
 
 ## Validation Rules
 
-Validation should ensure:
+Validation requires:
 
-- every leaf `col_idx` is within `0..n_cols-1`
-- every group span is contiguous in normalized column space
-- every relationship points to an existing group and leaf
-- every relationship leaf column is included in the parent group's
-  `leaf_col_indices`
-- evidence IDs referenced by leaves, groups, and relationships exist
-- no group spans zero leaves
-- no raw coordinates are invented when source evidence lacks coordinates
+- complete leaf coverage of `0..n_cols-1`
+- leaf and evidence coordinates within the schema column axis
+- every referenced evidence, leaf, and group ID to exist
+- every group to span at least two contiguous leaves
+- no crossing group spans
+- exactly one group-to-leaf relationship for every projected group member
+- relationship leaf indices to agree with their referenced leaves and groups
 
-Validation failures should produce structured errors or diagnostics. A single
-bad table should not crash the whole parse.
+Invalid candidate projections remain explicit fail-closed artifacts. A
+validation failure must not activate another builder or repair pass.
 
 ## Consumers
 
@@ -494,65 +407,16 @@ R helpers should be able to load:
 Printed R methods can show the tree view, but the loaded object should preserve
 the flat records.
 
-## Test Strategy
+## Corpus Validation
 
-Tests should cover both structurally difficult cases and ordinary tables.
+The retained Phase J Step 5 checkpoint is
+`outputs/testpapers_batch_phase_j_step5_final_20260715`. Across 28 PDFs and
+91 source grids, candidate and schema structures agree exactly for 663 leaves,
+115 groups, and 376 relationships, with no marker-node, evidence-reference,
+coverage, or crossing-span mismatch.
 
-Use compact in-repo fixtures, not full PDF outputs or large generated files.
-When tests need Eke coverage, create small Eke-derived normalized/extracted
-table slices that preserve the header structure and coordinate pattern without
-checking in the full paper artifacts.
-
-Required tests:
-
-- Eke Table 1-derived fixture with a prevalence-style multi-column header,
-  body/value columns, raw header-cell bboxes, and table-title rows that must not
-  become spanning groups
-- Eke Table 2-derived fixture with two higher-level case-definition groups
-  spanning multiple prevalence category leaves
-- a simple one-row Table 1 header such as `Characteristic`, `Overall`, `RA`,
-  `P-value`
-- a multi-row grouped header such as `Cobalt quartile` over `Q1` and `Q2`
-- an extra-wide repaired header stack such as `Severity -> >=3 mm -> %/SE`
-- a table with no reliable header rows, which should produce a degraded schema
-  rather than invented structure
-- a non-descriptive or result-style table so the schema builder does not
-  overfit to Table 1-only assumptions
-
-Regression expectations should assert:
-
-- leaf labels come from the closest-to-body header row
-- upper rows become groups, not leaf labels
-- repeated upper labels collapse into spans
-- each group-to-leaf relationship has evidence
-- raw text and bbox coordinates are preserved when available
-- missing raw evidence is explicit in diagnostics
-
-## Implementation Plan
-
-1. Add Pydantic schemas in `table1_parser/schemas/column_header_schema.py`.
-2. Add deterministic assembly in a separate parser module, for example
-   `table1_parser/column_header_schema.py`.
-3. Add validation for schema integrity.
-4. Write `column_header_schemas.json` from `table1-parser parse`.
-5. Refactor `TableDefinition` column assembly to consume the schema.
-6. Update continuation compatibility checks to consume schema-derived column
-   headers and coordinate evidence after the primary schema contract is stable.
-7. Add R inspection helpers after the JSON contract has tests.
-
-The implementation should be staged so step 4 can land before changing
-`TableDefinition` behavior if needed. That makes the artifact inspectable before
-it becomes parser-critical.
-
-## Open Questions
-
-- Should placeholder leaf names be blank strings or generated names such as
-  `column_3`? The model can support either, but diagnostics must distinguish
-  generated names from printed labels.
-- Should label-column detection remain hardcoded to column `0` initially, or
-  should it consume normalization repair metadata from the first implementation?
-- Should coordinate convenience fields use page coordinates only, or should the
-  schema also store normalized table-relative coordinates?
-- Should `column_header_schemas.json` include every table family immediately,
-  or only tables routed toward descriptive parsing? The preferred default is
-  every normalized table, because column structure is family-neutral.
+Continuation reporting must count both outcomes of the compatibility gate. The
+current corpus has 13 recognized continuation candidates: 12 accepted
+integrations and one rejected candidate. The rejected candidate is
+`periodontis2.pdf`, PDF pages 10–11, printed Table 1; its projected column
+paths remain inconsistent, so it correctly fails closed.

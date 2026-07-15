@@ -7,7 +7,12 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
-ColumnHeaderEvidenceSource = Literal["extracted_cell", "metadata_table_cells", "normalized_cleaned_row"]
+ColumnHeaderEvidenceSource = Literal[
+    "extracted_cell",
+    "metadata_table_cells",
+    "normalized_cleaned_row",
+    "header_structure_candidate",
+]
 ColumnHeaderGroupInferenceRule = Literal[
     "repeated_label_span",
     "single_cell_blank_span",

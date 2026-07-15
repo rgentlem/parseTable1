@@ -35,10 +35,74 @@ resolve together, and printed Tables 2–3 remain separate. The Step 3 planning
 reset is complete: the refreshed 91-grid audit and focused implementation
 contract are in
 `docs/implementation/header_geometry_to_column_schema_checklist.md`. Phase J
-is next, pending explicit approval for the documented parser-logic change: one
-region decision, one geometry-driven candidate construction, and a
-projection-only `ColumnHeaderSchema`, with the older reconstruction path
-removed rather than retained as a repair layer.
+Step 1 is complete at
+`outputs/testpapers_batch_phase_j_step1_final_20260715`. The one general
+text-table rule uses a complete first row, adjacent full-width rules,
+character-weighted bold contrast, and full-column coverage. It changes only
+PDF page 3, printed Table 1 of `mdpi-The Relationship Between a Mediterranean
+Diet and Frailty in Older Adults- NHANES 2007–2017.pdf`: row 0 becomes the
+header, candidate completeness rises from 90/91 to 91/91, and all physical
+grids, occupancy separators, canonical leaf bounds, marker occurrences,
+continuations, resolved counts, and status categories remain unchanged. Phase
+J Step 2 is complete at
+`outputs/testpapers_batch_phase_j_step2_final_closed_20260715`. One compact
+rule-banded path now builds all 663 candidate leaves and 115 contiguous groups
+from the final region, canonical leaf bands, positioned text, and rules. It
+removes the former flat-grid override, body-row promotion, body-anchor repair,
+cross-band helper layer, and separate grouping branches. All 91 candidates are
+complete; all 56 header marker links and eight inherited continuation labels
+retain their logical targets and provenance; no evidence comes from a body
+row. The 91 physical grids, regions, occupancy, leaf geometry, marker
+occurrences, 82 resolved tables, nine continuation integrations, and 17 `ok` /
+65 `rescued` statuses remain exact. Phase J Step 3 is next: confirm
+`NormalizedTable` preserves the settled grid and region without rerunning
+header inference or changing source identity. Phase J Step 3 is complete:
+normalization now requires the matching final `TableRegion`, copies its row
+ownership directly, preserves the complete physical column axis, and no longer
+contains either the legacy header/body detector fallback or sparse edge-column
+removal. Phase J Step 4 is complete at
+`outputs/testpapers_batch_phase_j_step4_final_20260715`: all 91 schemas are
+exact projections of 663 candidate leaves, 115 groups, and 376 relationships,
+with stable marker-node and evidence IDs. Direct projection corrects three
+explicit continuations that the former independent schema builder alone had
+rejected, yielding the approved current baseline of 79 resolved tables and 12
+integrations from the unchanged 91 grids. Phase J Step 5 is next: delete the
+now-unreachable independent schema reconstruction code and remove the resolved
+schema rebuild call. Phase J Step 5 is complete at
+`outputs/testpapers_batch_phase_j_step5_final_20260715`. The schema module is
+reduced from 2,248 to 401 lines, with the independent builder, repair/grouping
+helpers, continuation override, and resolved rebuild fallback deleted. The 28
+PDFs reproduce Step 4 except for report timestamps: 79 resolved tables from 91
+grids, with 13 recognized continuation candidates, 12 accepted integrations,
+and one correctly rejected candidate (`periodontis2.pdf`, PDF pages 10–11,
+printed Table 1) whose projected column paths disagree. Phase J Step 6 is next:
+confirm body candidates consume the projected schemas without changing source
+cells, physical rows, marker provenance, or semantics. Phase J Step 6 is
+complete at `outputs/testpapers_batch_phase_j_step6_final_20260715`. All 9,523
+body-value candidates and 56 logical row-label candidates join the expected
+projected leaf, and all 7,873 final values carry the matching projected header
+path. Exact physical source text now comes directly from `ExtractedTable` in
+both existing builders; the former marker-only CLI raw-text rewrite is gone.
+This corrects 1,306 source-cell provenance strings without changing candidate
+identity, parser-facing text, parsed components, semantic values, marker
+attachments, geometry, schemas, resolved tables, or statuses. Phase J Step 7
+is complete using the existing fresh Step 6 corpus. All six focused examples
+pass, all 91 physical grids remain exact, the one approved MDPI row-ownership
+change is isolated, and all 663 leaves, 115 groups, and 376 relationships are
+exact candidate projections. The 87 changed candidates are exactly the
+general Step 2 rebuild set; all 91 schema changes are the intended direct
+projections. Continuation decisions differ from Step 3 only for the three
+approved integrations. No test was added and pytest was not run. Phase J Step
+8 implementation audit is complete: parser code is net 1,382 lines smaller,
+no new class, artifact, helper, or fallback exists, documentation is aligned,
+and static checks pass. With explicit approval, the 13 schema-builder tests for
+the deleted independent reconstruction path and the 22 direct-normalization
+tests that omitted the now-required `TableRegion` were removed. Active schema
+validation, header detection, and row-signature coverage remains. No new test
+was added and pytest was not run. Phase J is ready to stage.
+After Phase J closes, return explicitly to the rejected
+`periodontis2.pdf` continuation on PDF pages 10–11, printed Table 1, and resolve
+why its projected column paths disagree.
 
 Current table-geometry implementation checklist:
 `docs/implementation/table_geometry_reconstruction_checklist.md`. Use it to
@@ -727,7 +791,12 @@ the positioned document artifact.
   normalization repairs now uses region-owned header/body rows when available.
   Footer/note rows remain available in extraction and table-region artifacts,
   but they cannot keep a footer-only column alive in the normalized data grid.
-- Recent normalization update: header/body selection now uses validated full-width separator rules first, first value-region anchors second, and content scoring only as fallback. Full-width separator evidence is derived from drawn rule geometry so filled row highlighting/background shading does not create false hlines. Future work still needs a more principled model for data/estimate tables without clear separator or value-anchor evidence, rather than adding more ordered special cases.
+- Superseded normalization note: the former rule/value-anchor/content fallback
+  now runs only while constructing `TableRegion`. Phase J Step 3 removed it
+  from normalization, which copies final region rows without making another
+  selection. Full-width separator evidence remains derived from drawn rule
+  geometry so filled row highlighting/background shading does not create false
+  hlines.
 - Recent column-schema update: full-width hlines inside an already selected header band now split upper spanning-group rows from lower wrapped leaf-header rows. Cardiovascular Table 2 keeps body start row 7 while using rows 4-6 as leaf labels and rows 0-3 as training/testing cohort groups.
 - Recent column-schema update: comma-containing leaf headers are split across
   adjacent value columns only when body rows repeatedly show the same adjacent
