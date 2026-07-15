@@ -192,12 +192,6 @@ from table1_parser.schemas.table_processing_status import (
     TableProcessingStatus,
 )
 from table1_parser.schemas.table_profile import TableProfile
-from table1_parser.schemas.token_start_evidence import (
-    TokenStartEvidenceTable,
-    TokenStartEvaluationReason,
-    TokenStartLineEvidence,
-    TokenStartObservation,
-)
 
 __all__ = [
     "BodyOccupancyGap",
@@ -335,8 +329,4 @@ __all__ = [
     "ValueRecord",
     "ValueRelation",
     "TableProfile",
-    "TokenStartEvidenceTable",
-    "TokenStartEvaluationReason",
-    "TokenStartLineEvidence",
-    "TokenStartObservation",
 ]

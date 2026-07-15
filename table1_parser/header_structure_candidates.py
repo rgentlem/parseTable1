@@ -354,7 +354,6 @@ def build_header_structure_candidate(
     if len(header_rows) == 1 and isinstance(raw_selection, dict):
         raw_boundaries = raw_selection.get("selected_column_boundaries")
         raw_band_ids = raw_selection.get("selected_band_ids")
-        selected_source = raw_selection.get("selected_column_source")
         selected_boundaries: list[float] = []
         if isinstance(raw_boundaries, list):
             for value in raw_boundaries:
@@ -366,10 +365,6 @@ def build_header_structure_candidate(
                 except (TypeError, ValueError):
                     selected_boundaries = []
                     break
-        selected_axis_supported = (
-            len(local_bands) == table.n_cols
-            or selected_source == "confirmed_continuation_parent_leaf_geometry"
-        )
         cells_by_col = {
             cell.col_idx: cell
             for cell in table.cells
@@ -377,7 +372,7 @@ def build_header_structure_candidate(
         }
         if (
             raw_selection.get("status") == "accepted"
-            and selected_axis_supported
+            and len(local_bands) == table.n_cols
             and len(selected_boundaries) == table.n_cols + 1
             and all(
                 right > left

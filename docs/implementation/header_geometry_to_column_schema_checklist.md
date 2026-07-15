@@ -98,8 +98,8 @@ Physical comparison baseline:
 - [x] Run all 27 external PDFs plus `inst/extdata/NutritionEx.pdf` with bounded
       workers.
 - [x] Require unchanged physical IDs, shapes, cells, bboxes, coordinates,
-      occupancy, leaf candidates, and token-start evidence unless separately
-      approved extraction evidence requires a change.
+      occupancy, and leaf candidates unless separately approved extraction
+      evidence requires a change.
 - [x] Enumerate every changed candidate, schema, resolved table, definition,
       parsed table, status, and R inspection input.
 - [ ] Confirm every schema change was predicted by the initial audit and no

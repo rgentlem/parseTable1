@@ -126,9 +126,8 @@ Then use the documents below as needed.
 
 - `docs/implementation/table_geometry_reconstruction_checklist.md`
   Ordered checklist for table-local marker inventory, body occupancy evidence,
-  optional token-start evaluation, leaf-column candidates, preliminary
-  LaTeX-like header structure, canonical extraction, marker attachment, footer
-  resolution, and corpus verification.
+  leaf-column candidates, preliminary LaTeX-like header structure, canonical
+  extraction, marker attachment, footer resolution, and corpus verification.
 
 - `docs/implementation/sideways_table_extraction_implementation_spec.md`
   Concrete implementation plan for extracting visually landscape tables drawn sideways on portrait pages.

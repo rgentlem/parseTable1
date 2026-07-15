@@ -309,64 +309,25 @@ PDF page 6, Table 1.
 Phase F review note:
 
 - The Q1/Q2 failure was caused by the diagnostic bin origin hiding a real
-  character-box gap, not by missing token-start evidence. Exact font-qualified
-  gaps correct that earlier geometry defect first. Token-start evaluation
-  remains pending only for unresolved bands that have no qualifying gap.
+  character-box gap. Exact font-qualified gaps correct that earlier geometry
+  defect without token-start evidence.
 
 ## F. Decide Whether Token-Start Evidence Adds Value
 
-- [x] Inspect the ambiguous or conflicting candidates produced by Phases E
-      and G, including cross-band header words, header bands without text, and
-      bands carrying multiple positioned header fragments.
-- [x] Identify tables where font-qualified exact gaps cannot distinguish
-      tightly packed adjacent columns or split components that may belong to
-      one leaf.
-- [x] For only those cases, calculate ordinary token-left-edge distributions
-      by physical body line.
-- [x] Compare occupancy-only and occupancy-plus-token-start candidates across
-      the corpus.
-- [x] Retain token-start evidence only if it adds stable column information
-      without splitting components such as `n (%)`, `mean (SD)`, or estimates
-      and confidence intervals.
-- [x] Otherwise remove it from the planned extraction path.
+- [x] Compare token-start and exact-occupancy evidence across the corpus.
+- [x] Confirm that repeated token starts are ambiguous inside compound values.
+- [x] Correct the missing stub/value separators with exact occupancy geometry.
+- [x] Remove token-start evidence and both token-dependent grid overrides.
 
-Decision rule:
+Final decision:
 
-- Token starts may support an existing candidate, reject an occupancy-only
-  split, or reveal a column hidden by weak whitespace evidence. They must not
-  independently define the final grid.
-- Implemented narrow use: an explicit next-page continuation may reuse its
-  already-finalized parent's leaf bands only when provisional leaf headers and
-  column counts match, value anchors align within the observed character scale,
-  and every inherited value band has token support on every body line.
-
-Phase F checkpoint:
-
-- `outputs/testpapers_batch_phase_f_token_start_20260713` covers all 28 PDFs
-  and 90 tables with no command failure. Thirty-two tables have actionable
-  refinement evidence and are evaluated; the other 58 retain explicit
-  unevaluated records. All evaluated tables have complete physical-line token
-  observations and no diagnostic.
-- The 32-table review set is the union of 22 candidate-versus-current-grid
-  count disagreements, 11 tables containing 20 cross-band header runs, four
-  tables containing 13 non-stub bands without header text, and one header
-  diagnostic. Categories overlap. Thirty-one blank stub labels are recorded
-  separately; 21 occur without another concern and do not trigger token-start
-  measurement.
-- At a descriptive 50% physical-line support threshold, raw token-start bins
-  show multiple repeated starts in the broad stub band of seven tables.
-  Visual review confirms that each contains row labels plus the first value
-  column in one occupancy band. The same review finds repeated starts inside
-  legitimate value bands in 14 tables, commonly from estimates and confidence
-  intervals. The threshold is review analysis, not parser logic.
-- Token starts therefore add useful supporting evidence for a missing
-  stub/value boundary, but are not specific enough to define separators.
-  `token_start_evidence.json` retains exact source-referenced starts and raw
-  counts without clustering, smoothing, splitting bands, or changing any
-  accepted parser artifact.
-- Relative to the preceding full run, all existing artifacts are byte-identical
-  except timestamped quality reports. `token_start_evidence.json` is the only
-  new parser output.
+- Exact occupancy now establishes every needed separator in the 92-table
+  corpus. Token starts are less specific, duplicate positioned evidence, and
+  no longer participate in extraction or diagnostics.
+- `token_start_evidence.json`, its schema/builder, the local positioned-axis
+  override, and the continuation parent-band override are removed. Canonical
+  selection has only count-confirmed positioned geometry and occupancy
+  materialization.
 
 ## G. Build `HeaderStructureCandidate`
 
@@ -416,8 +377,6 @@ Phase G checkpoint:
   also record the new separator count in region diagnostics propagated through
   normalized and resolved provenance; selected rows and semantic data do not
   change.
-- Phase F subsequently adds exact token-start evidence for flagged tables.
-  Neither Phase G nor Phase F selects a canonical physical grid.
 - Complete flat-header preservation is checkpointed in
   `outputs/testpapers_batch_flat_header_cells_20260714`. All 28 PDFs completed
   and all 92 physical extracts retain accepted, byte-identical canonical grids.
@@ -427,8 +386,8 @@ Phase G checkpoint:
   exact header leaves. The page-6 candidate retains
   `local_leaf_axis_disagrees_with_canonical_grid:local=3:canonical=5`; the
   resolved table remains 61 x 5. Relative to the preceding checkpoint, only
-  these two header-candidate records and their token-start diagnostics change;
-  all other JSON is byte-identical after quality-report timestamps are removed.
+  these two header-candidate records change; all other JSON is byte-identical
+  after quality-report timestamps are removed.
   Corpus cross-band header-run concerns fall from 25 to 23.
 - Incomplete and multilevel header reconstruction is checkpointed in
   `outputs/testpapers_batch_header_structure_geometry_20260714`. The finalized
@@ -450,13 +409,6 @@ Phase G checkpoint:
   92-table corpus falls from 23 concerns to two, both attached to the two
   caption-owned false tables on `cobaltpaper.pdf`, PDF page 3. These require
   later table-region ownership work, not another header run rule.
-- All canonical `ExtractedTable` content is identical after removing the two
-  token-evaluation metadata fields. `TableRegion`, body occupancy, leaf-column
-  candidates, accepted `ColumnHeaderSchema`, table definitions, parsed tables,
-  parsed cell values, and continuation groups are identical. Eleven tables
-  lose only the resolved `cross_band_header_run` token trigger; token-start
-  logic is retained unchanged, and only `periodontis2.pdf`, PDF page 11,
-  changes from evaluated to unevaluated.
 - `periodontis2.pdf`, PDF page 13, printed Table 2 (continued), still preserves
   blank local child labels beneath its reconstructed parent groups. Supplying
   those labels is a later continuation-inheritance task, not local geometry or
@@ -476,13 +428,8 @@ Phase G checkpoint:
       physical row.
 - [x] Default a local positioned/occupancy count disagreement to occupancy
       materialization.
-- [x] Preserve a disagreeing strongly ruled positioned axis only when repeated
-      value anchors, distinct physical header-line starts, complete label-column
-      support, and repeated token support in every value column corroborate the
-      already-established axis.
-- [x] Confirm parent leaf bands for an explicit continuation only from matching
-      provisional leaf headers, aligned value anchors, and complete per-line
-      token support; do not add a general token-derived separator path.
+- [x] Do not preserve a disagreeing positioned axis through token starts or
+      replace a continuation's local bands with its parent's axis.
 - [x] Select a physical grid only when leaf and row geometry are adequate.
 - [x] Emit the canonical `ExtractedTable` with raw text and source-faithful
       coordinates.
@@ -523,25 +470,13 @@ Phase H checkpoint:
   Health Diet and risk of mortality and chronic diseases- Results from US
   NHANES, UK Biobank, and a meta-analysis.pdf` resolves with PDF page 2 as one
   68-row, 9-column logical table.
-- Strict explicit-continuation parent-band confirmation is checkpointed in
-  `outputs/testpapers_batch_continuation_parent_bands_final_20260713`. All 28
-  PDFs completed and all 92 physical tables were accepted. The confirmation
-  fired exactly once: Table 1 on PDF page 5 of `Systemic inflammation markers
-  and the prevalence of hypertension- A NHANES cross-sectional study.pdf`
-  supplied five parent leaf bands to the matching `Table 1 (continued)` on PDF
-  page 6. The page-6 physical extract changed from 14 x 3 to 14 x 5 and now
-  resolves with page 5 as one 61-row, 5-column logical table. No other
-  `ExtractedTable` changed; outside this source PDF, persisted JSON is unchanged
-  after removing parse timestamps. The still-disagreeing local three-band body
-  occupancy and header candidate remain visible diagnostics for the next
-  header-geometry task.
-- Final canonical-axis validation is checkpointed in
+- The historical canonical-axis validation is checkpointed in
   `outputs/testpapers_batch_canonical_axis_validation_final_20260714`. All 28
   PDFs completed; all 92 tables have non-empty accepted grids. Fifty-six tables
   preserve positioned cells after count and cell-bbox validation, 29 use local
-  occupancy materialization, and seven preserve a disagreeing positioned axis
-  through the strict header-line-plus-token confirmation. Visual review covers
-  all seven. The repeated header-cell conflict rejects only printed Table 2 on
+  occupancy materialization, and seven formerly preserved a disagreeing
+  positioned axis through the now-retired token confirmation. The repeated
+  header-cell conflict rejects only printed Table 2 on
   PDF page 4 and printed Table 4 on PDF page 6 of `GOLD BioAge and depression-
   Associations with mortality among depressed NHANES participants
   (2005–2018).pdf`; both return to their clean committed cells. All five tables
@@ -575,6 +510,14 @@ Phase H checkpoint:
   prevalence among United States population insights from NHANES data
   analysis.pdf`, printed Table 3 on PDF page 8 of `periodontitis.pdf`, and the
   inherited 28 x 11 plus 22 x 11 `periodontis2.pdf` Table 2 pair.
+- Phase H is closed at
+  `outputs/testpapers_batch_geometry_phase_h_closed_20260715`. Token-start
+  output, schema, builder, both token-dependent canonical-grid overrides, and
+  the downstream continuation-source exception are removed. All 28 PDFs and
+  92 physical tables match the preceding occupancy checkpoint exactly in ID,
+  page, shape, cells, and bboxes. The remaining selection paths are 64
+  count-confirmed positioned grids and 28 occupancy-materialized grids. Work
+  resumes at Phase I; no Phase I logic is included in this checkpoint.
 
 ## I. Attach Markers To Stable Elements
 

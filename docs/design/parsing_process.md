@@ -11,14 +11,11 @@ PDF -> ExtractedTable -> TableBoundaryProposal -> TableRegion -> NormalizedTable
 ```
 
 After `TableRegion`, `parse` also writes `body_occupancy.json`,
-`leaf_column_candidates.json`, `header_structure_candidates.json`, and
-`token_start_evidence.json` as diagnostic side artifacts. They use positioned
-table evidence in the canonical orientation-group frame but are not consumed
-by normalization or semantic parsing. Token starts are measured only for
-tables already carrying candidate refinement signals and do not define
-separators. The same raw occupancy calculation is used transiently before
-`TableRegion` is finalized only when multiple canonical body intervals remain
-plausible.
+`leaf_column_candidates.json`, and `header_structure_candidates.json` as
+inspectable geometry artifacts. They use positioned table evidence in the
+canonical orientation-group frame. Occupancy and leaf candidates participate
+in canonical extraction; header structure remains post-extraction evidence and
+none of them enables normalization-time geometry repair.
 
 The early document stages have a strict order:
 
@@ -174,7 +171,7 @@ This separation keeps the parser safer and easier to debug.
 
 If you are looking at parser outputs:
 
-- `table1-parser parse path/to/paper.pdf` is the main entry point and currently writes `extracted_tables.json`, `table_boundary_proposals.json`, `table_regions.json`, `body_occupancy.json`, `leaf_column_candidates.json`, `header_structure_candidates.json`, `token_start_evidence.json`, `normalized_tables.json`, `column_header_schemas.json`, `body_element_candidates.json`, `body_row_label_candidates.json`, `resolved_tables.json`, `table_profiles.json`, `paper_table_inventory.json`, `table_definitions.json`, `parsed_cell_values.json`, `parsed_tables.json`, `paper_page_furniture.json`, `paper_markdown.md`, `paper_text_stream.json`, `paper_sections.json`, `paper_footnotes.json`, `paper_bibliography.json`, `paper_style_profile.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and per-table context JSON files
+- `table1-parser parse path/to/paper.pdf` is the main entry point and currently writes `extracted_tables.json`, `table_boundary_proposals.json`, `table_regions.json`, `body_occupancy.json`, `leaf_column_candidates.json`, `header_structure_candidates.json`, `normalized_tables.json`, `column_header_schemas.json`, `body_element_candidates.json`, `body_row_label_candidates.json`, `resolved_tables.json`, `table_profiles.json`, `paper_table_inventory.json`, `table_definitions.json`, `parsed_cell_values.json`, `parsed_tables.json`, `paper_page_furniture.json`, `paper_markdown.md`, `paper_text_stream.json`, `paper_sections.json`, `paper_footnotes.json`, `paper_bibliography.json`, `paper_style_profile.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and per-table context JSON files
 - `extract` and `normalize` remain useful for inspecting a single stage in isolation
 
 - raw extraction output answers: "What table did the PDF extractor recover?"

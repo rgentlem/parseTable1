@@ -76,7 +76,6 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Body occupancy | `BodyOccupancyTable` | Written now as `body_occupancy.json` by `parse` | Persist raw physical-body-line occupancy in character-width-derived x bins plus exact font-qualified zero-gap evidence, without smoothing or downstream grid changes |
 | Leaf-column candidates | `LeafColumnCandidateTable` | Written now as `leaf_column_candidates.json` by `parse` | Persist provisional stub/value bands from exact zero-occupancy gaps at least two observed table-font spaces wide, with supporting unmerged rule endpoints, without changing the extracted grid |
 | Header-structure candidates | `HeaderStructureCandidate` | Written now as `header_structure_candidates.json` by `parse` | Persist positioned leaf/header evidence, preserving a complete flat canonical header cell-for-cell and otherwise classifying one-leaf labels and contiguous multileaf groups from observed anchors, per-band evidence, and individual partial rules; retain unresolved fragments and post-assignment diagnostics without changing the accepted column schema |
-| Token-start evidence | `TokenStartEvidenceTable` | Written now as `token_start_evidence.json` by `parse` | Persist exact ordinary-token left edges by physical body line for tables already carrying refinement signals; corroborate only an axis already established by stronger positioned geometry and never infer a separator independently |
 | Cell text annotations | `CellTextAnnotationTable` | Written now as `cell_text_annotations.json` by `parse` | Preserve superscript, subscript, and small marker geometry as extraction-side evidence without rewriting raw cell text |
 | Normalization | `NormalizedTable` | Written now as `normalized_tables.json` by `normalize` and `parse` | Clean rows, apply table-region row ownership when available, and derive row features |
 | Column header schema | `ColumnHeaderSchema` | Written now as `column_header_schemas.json` by `parse` | Persist parser-native leaf columns, spanning header groups, group-to-leaf relationships, raw cell evidence, and coordinates before semantic column projection |
@@ -194,18 +193,10 @@ Important current `metadata` keys produced by extraction may include:
 - `canonical_grid_selection`
 
 `metadata.canonical_grid_selection` records the accepted row and column source,
-selected boundaries and bands, token-start evaluation status, and structured
-diagnostics. For a strictly confirmed explicit continuation it may also record
-`continuation_parent_band_confirmation`: the parent table/page, matching leaf
-header rows, parent and continuation value anchors, their maximum delta and
-font-scaled tolerance, and the body-line token support that allowed the
-continuation to reuse the parent's canonical leaf bands. A locally confirmed
-positioned axis records `local_positioned_axis_confirmation`, including the
-positioned and occupancy counts, positioned boundaries, repeated value anchors,
-qualifying physical header rows and line-start columns, and per-column body-row
-token support. `positioned_grid_validation` records repeated header-cell bboxes
-that are wholly contained by different occupancy leaves when that hard conflict
-rejects otherwise equal-count positioned cell ownership.
+selected boundaries and bands, and structured diagnostics.
+`positioned_grid_validation` records repeated header-cell bboxes that are wholly
+contained by different occupancy leaves when that hard conflict rejects
+otherwise equal-count positioned cell ownership.
 
 `metadata.table_positioned_evidence` is a compact, typed table-local projection
 of `paper_positioned_document.json`. It records the candidate page-space bbox,
@@ -377,11 +368,8 @@ with the provisional leaf bands, with one preliminary leaf per occupancy band.
 After canonical extraction, a complete flat header is preserved directly when
 there is exactly one header row, every selected canonical column already has a
 non-empty extracted cell, and the selected axis is supported by the local leaf
-count or a confirmed continuation parent. That row yields one evidence record
-and one leaf per canonical cell; it is not regrouped by a word-height gap
-threshold. A continuation using confirmed parent bands records those parent
-band IDs on its leaves and retains any local occupancy-count disagreement as a
-concern.
+count. That row yields one evidence record and one leaf per canonical cell; it
+is not regrouped by a word-height gap threshold.
 
 Incomplete and multilevel headers retain the provisional path. Positioned
 header runs attach to the band with greatest horizontal overlap; multiple runs
@@ -406,40 +394,6 @@ signals support later Phase F review but do not create, merge, or split leaves.
 This artifact is diagnostic only. It is not consumed by `TableRegion`,
 normalization, `ColumnHeaderSchema`, continuation resolution, or semantic
 parsing.
-
-## Token-Start Evidence
-
-`token_start_evidence.json` contains one `TokenStartEvidenceTable` per physical
-table. Exact token starts are calculated only when Phase E or Phase G already
-reports a grid-count disagreement, a cross-band header run, a non-stub band
-without header text, an ambiguous header attachment, or a candidate diagnostic.
-A blank stub label alone does not trigger token measurement.
-
-Token starts do not independently create separators. They may corroborate a
-strongly ruled local positioned axis that has already been established by
-repeated value anchors and distinct physical header-line starts. The label
-column must occur on every measured body line and every value column must occur
-on at least three body rows. They may also confirm already-established parent
-leaf bands for an explicit next-page continuation when the parent and
-continuation provisional leaf headers and column counts match, value anchors
-align within the observed character scale, and every inherited value band
-contains a token on every continuation body line. If any check fails, ordinary
-local occupancy/leaf selection remains in force.
-
-Each observation identifies the positioned source word, the first ordinary
-source character, source line and extracted row, exact canonical x coordinate,
-word bbox, and containing occupancy band. Observations are grouped by the same
-canonical physical lines used by `body_occupancy.json`. Exact marker character
-links are excluded before selecting the first ordinary character. The artifact
-also provides raw start-count and distinct-line-count vectors on the existing
-diagnostic occupancy bins; exact observations remain authoritative when a bin
-boundary divides nearby starts.
-
-Token starts are supporting evidence only. Repeated starts can expose a first
-value column hidden inside a broad stub band, but compound values such as an
-estimate followed by a confidence interval also produce repeated starts inside
-one legitimate leaf. The artifact therefore does not cluster starts, smooth
-counts, create separators, split bands, or alter any downstream parser output.
 
 ## 3. `table_regions.json`
 

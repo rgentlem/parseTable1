@@ -44,17 +44,8 @@ outputs/testpapers_batch_header_inheritance_recovered_20260714
 
 Its physical comparison baseline is
 `outputs/testpapers_batch_canonical_axis_validation_final_20260714`.
-All 28 parse commands completed and emitted 92 non-empty accepted physical
-tables. Fifty-six tables preserve positioned cells after column-count and
-header-cell bbox validation, 29 use occupancy materialization, and seven use
-strict header-line-plus-token confirmation of an already-established positioned
-axis. The seven visually confirmed cases are printed Table 3 on PDF page 11 of
-`Association between anthropometric indices and chronic kidney disease-
-Insights from NHANES 2009–2018.pdf`; printed Tables 3-4 on PDF pages 6-7 of
-`Lead exposure as a contributor to the Black–White racial disparity in blood
-pressure- evidence from NHANES 1988–1994 and 2017–2020.pdf`; printed Table 3 on
-PDF page 6 of `NutritionEx.pdf`; printed Tables 4-5 on PDF pages 4-5 of
-`cobaltpaper.pdf`; and printed Table 2 on PDF page 6 of `periodontitis.pdf`.
+That historical checkpoint is superseded by the occupancy-only canonical-
+geometry checkpoint below.
 
 The equal-count cell-bbox check rejects only printed Table 2 on PDF page 4 and
 printed Table 4 on PDF page 6 of `GOLD BioAge and depression- Associations with
@@ -99,27 +90,17 @@ Systemic inflammation paper adds one 1-row, 5-column page-5 candidate with
 `no_variables_for_descriptive_table` failure. These failures isolate the next
 rule-region and column-grid problems and are not furniture regressions.
 
-Current accepted Phase F token-start checkpoint:
+Current accepted canonical-geometry checkpoint:
 
 ```text
-outputs/testpapers_batch_phase_f_token_start_20260713
+outputs/testpapers_batch_geometry_phase_h_closed_20260715
 ```
 
-This run covers all 28 PDFs and 90 tables with no command failure. It writes
-`token_start_evidence.json` without changing extraction, table-region
-ownership, normalization, the accepted column schema, or semantic parsing.
-Thirty-two tables are evaluated because Phase E or G already reports an
-actionable grid or header signal; all have complete physical-line observations
-and no diagnostic. The other 58 records remain explicitly unevaluated.
-
-At a descriptive 50% physical-line support threshold, seven evaluated tables
-show repeated starts in a broad stub band that visual review confirms contains
-both row labels and the first value column. Fourteen tables also show repeated
-starts inside legitimate value leaves, usually because estimates and confidence
-intervals are separate positioned tokens. Token starts are therefore retained
-as exact source-referenced supporting evidence, not as independent separators.
-All pre-existing files are byte-identical to the preceding full run except
-timestamped quality reports.
+This run covers all 28 PDFs and 92 physical tables with no command failure.
+Positioned geometry and exact body occupancy establish every selected axis;
+token-start evidence is no longer part of the parser output or selection path.
+All physical IDs, pages, shapes, cells, and bboxes match
+`outputs/testpapers_batch_gated_sparse_body_occupancy_first_edge_20260715`.
 
 The same run retains the accepted preliminary header-structure checkpoint.
 Eighty-nine tables have usable header rows; their 627 preliminary leaves match

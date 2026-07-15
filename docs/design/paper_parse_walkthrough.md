@@ -36,7 +36,6 @@ Today that directory may contain:
 - `body_occupancy.json`
 - `leaf_column_candidates.json`
 - `header_structure_candidates.json`
-- `token_start_evidence.json`
 - `resolved_tables.json`
 - `table1_continuation_groups.json`
 - `table_continuation_column_checks.json`
@@ -401,14 +400,10 @@ those bands after the last supported value row. When the parent is numbered,
 the fragment inherits the existing continuation identity fields so ordinary
 column-schema validation can decide whether to integrate it.
 
-Canonical grid selection may retain the preceding fragment's leaf bands for an
-explicit next-page continuation only when the preceding fragment has already
-finalized at the continuation's provisional width, the provisional leaf-header
-cells match, value anchors align within the continuation's observed character
-scale, and token-start evidence places a token in every inherited value band on
-every body line. This confirms an existing parent axis; token starts do not
-independently invent a separator. The decision and all measurements are stored
-in `metadata.canonical_grid_selection.continuation_parent_band_confirmation`.
+Canonical grid selection uses the same local positioned and occupancy geometry
+for base tables and continuation fragments. Continuation identity is retained
+for later schema and header-inheritance decisions, but it does not replace the
+continuation's local physical bands with a parent-derived axis.
 
 Rotated orientation groups are transformed once into the same canonical
 upright frame before candidate construction. The positioned grid builder then
@@ -575,25 +570,10 @@ used to rewrite the grid. A header/leaf-count disagreement is likewise recorded
 on this artifact after extraction and does not participate in canonical-grid
 acceptance.
 
-`token_start_evidence.json` is built next for tables already carrying a grid or
-header refinement signal. It records the exact left edge of each ordinary
-positioned token by canonical physical body line and preserves source word,
-character, row, line, bbox, and occupancy-band references. Linked marker
-characters are excluded geometrically. Raw bin counts are an inspection view;
-the exact starts remain available so bin origin cannot become an extraction
-rule. Repeated starts may support a hidden first value column, but they do not
-independently create a separator because compound values produce the same
-pattern. They may corroborate an already-established local positioned axis
-under the strict header-line, value-anchor, label-column, and repeated body-row
-checks described above. They may also confirm an already-finalized parent axis
-for an explicit continuation under the complete header, anchor, page-order, and
-per-line band-support checks.
-
 Persisted header structure does not gate physical extraction. Occupancy and
-leaf evidence are operative during canonical extraction, and token starts only
-corroborate an axis already established by stronger positioned geometry. The
-only current schema consumer is provenance-bearing blank-label inheritance for
-a structurally aligned continuation; normalization performs no repair.
+leaf evidence are operative during canonical extraction. The only current
+header-candidate consumer is provenance-bearing blank-label inheritance for a
+structurally aligned continuation; normalization performs no repair.
 
 ## Step 4: Normalization
 

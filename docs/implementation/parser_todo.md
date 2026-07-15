@@ -11,9 +11,9 @@ Current corpus-driven hardening guide:
 real-paper review loop across extraction, normalization, continuation handling,
 table semantics, footnote/reference artifacts, and mixed-family routing. The
 current retained reference run is
-`outputs/testpapers_batch_gated_sparse_body_occupancy_first_edge_20260715`;
+`outputs/testpapers_batch_geometry_phase_h_closed_20260715`;
 its physical comparison baseline is
-`outputs/testpapers_batch_header_inheritance_recovered_20260714`.
+`outputs/testpapers_batch_gated_sparse_body_occupancy_first_edge_20260715`.
 
 Fallback/removal inventory:
 `docs/implementation/fallback_inventory.md`. Do not add new fallback tools or
@@ -25,8 +25,8 @@ insufficient.
 Current table-geometry implementation checklist:
 `docs/implementation/table_geometry_reconstruction_checklist.md`. Use it to
 track marker occurrences, body occupancy, provisional leaf-column candidates,
-the explicit decision on whether token-start evidence is useful, preliminary header
-structure, canonical extraction, marker attachment, and footer resolution.
+the completed removal of token-start evidence, preliminary header structure,
+canonical extraction, marker attachment, and footer resolution.
 The first minimal canonical-extraction boundary cleanup is complete:
 pre-selection grids now use the internal typed `ProvisionalExtractedTable`,
 while only the selected grid is returned for persistence as `ExtractedTable`.
@@ -37,14 +37,8 @@ Canonical selection now validates rather than routinely rewrites the positioned
 grid. When the retained positioned and occupancy leaf counts agree, positioned
 cells are preserved unless at least two header cells in one physical row are
 wholly contained by different occupancy leaves. A count disagreement defaults
-to occupancy materialization. A strongly ruled positioned axis may survive
-that disagreement only when repeated value anchors establish it, distinct
-physical header-line starts cover every non-stub column, the label column is
-supported on every token-evidence body line, and every value column is
-supported on at least three body rows. Token starts corroborate that existing
-axis; they still do not create or move a separator. Strict explicit-continuation
-parent confirmation remains available under its separate page, header, anchor,
-and per-line support checks.
+to occupancy materialization. Token starts and continuation parent-band
+replacement are no longer part of canonical extraction.
 
 The 28-PDF checkpoint
 `outputs/testpapers_batch_gated_sparse_body_occupancy_first_edge_20260715`
@@ -76,8 +70,7 @@ checkpoint to 46, with no table moving away from a prior exact match. Printed
 Table 1 on PDF pages 5-6 of `Systemic inflammation markers and the prevalence
 of hypertension- A NHANES cross-sectional study.pdf` remains 48 x 5 plus 14 x
 5, has identical five-leaf headers, and merges as one 61-row, 5-column logical
-table. Token-start evidence is therefore retained: it is useful only as
-corroboration inside these strict geometric checks. The finalized corpus has no
+table. The finalized corpus has no
 cross-band header-run concern and no Cobalt header concern. Its only non-stub
 missing-header case was the eight intentionally blank local child labels in
 printed Table 2 (continued) on PDF page 13 of `periodontis2.pdf`. The recovered
@@ -212,22 +205,17 @@ Adults- NHANES 2007–2017.pdf`, PDF page 9. Canonical extracts and accepted
 semantic artifacts do not change. Missing continuation child labels remain
 explicitly blank for later inheritance rather than being invented locally.
 
-Phase F is complete as a source-referenced supporting artifact. The current run is
-`outputs/testpapers_batch_phase_f_token_start_20260713`: all 28 PDFs and 90
-tables parse without command failure, and 32 tables with actionable Phase E/G
-signals receive exact ordinary-token left edges grouped by canonical physical
-body line. The review set combines 22 grid-count disagreements, 11 tables with
-20 cross-band header runs, four tables with 13 non-stub headerless bands, and
-one header diagnostic; categories overlap. Blank stub labels alone do not
-trigger measurement. A descriptive 50% line-support review identifies seven
-tables where repeated starts expose the first value column inside a broad stub
-band, but also 14 tables where repeated starts occur inside legitimate compound
-value leaves. Retain `token_start_evidence.json` as source-referenced supporting
-evidence. It must not independently define a separator. Its only operative role
-is to corroborate an axis already established by stronger positioned geometry:
-either the strict local header-line/value-anchor confirmation or the explicit-
-continuation parent-band confirmation recorded above. All other uses remain
-diagnostic.
+Phase F is complete. Corpus review showed that repeated token starts are
+ambiguous inside compound values, while exact occupancy now establishes every
+needed separator. `token_start_evidence.json`, its schema/builder, and both
+token-dependent canonical-grid overrides are removed.
+
+Phase H is closed at
+`outputs/testpapers_batch_geometry_phase_h_closed_20260715`. All 28 PDFs and
+92 physical tables match the preceding occupancy checkpoint exactly in ID,
+page, shape, cells, and bboxes. Canonical selection has only two paths: 64
+count-confirmed positioned grids and 28 occupancy-materialized grids. Phase I
+marker attachment is the next table-geometry checklist boundary.
 
 Phase H canonical extraction is complete. Candidate regions now use only the
 shared PyMuPDF positioned evidence: horizontally compatible caption/rule

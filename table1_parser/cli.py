@@ -128,7 +128,6 @@ from table1_parser.schemas import (
     Table1ContinuationGroup,
     TableProfile,
     TableRegion,
-    TokenStartEvidenceTable,
 )
 from table1_parser.table_boundary_proposals import (
     build_table_boundary_proposals,
@@ -143,11 +142,6 @@ from table1_parser.table1_continuations import (
     build_table1_continuation_artifacts,
     table1_continuation_groups_to_payload,
 )
-from table1_parser.token_start_evidence import (
-    build_token_start_evidence_tables,
-    token_start_evidence_tables_to_payload,
-)
-
 DEFAULT_OUTPUT_DIR = Path("outputs")
 
 
@@ -174,7 +168,6 @@ class CanonicalExtractionArtifacts:
     body_occupancy: list[BodyOccupancyTable]
     leaf_column_candidates: list[LeafColumnCandidateTable]
     header_structure_candidates: list[HeaderStructureCandidate]
-    token_start_evidence: list[TokenStartEvidenceTable]
 
 
 @dataclass(slots=True)
@@ -188,7 +181,6 @@ class PaperParseArtifacts:
     body_occupancy: list[BodyOccupancyTable]
     leaf_column_candidates: list[LeafColumnCandidateTable]
     header_structure_candidates: list[HeaderStructureCandidate]
-    token_start_evidence: list[TokenStartEvidenceTable]
     normalized_tables: list[NormalizedTable]
     column_header_schemas: list[ColumnHeaderSchema]
     resolved_table_set: ResolvedTableSet
@@ -427,13 +419,6 @@ def _build_table_geometry_artifacts(
         leaf_column_candidates=leaf_column_candidates,
         cell_text_annotations=cell_text_annotations,
     )
-    token_start_evidence = build_token_start_evidence_tables(
-        extracted_tables,
-        paper_positioned_document=paper_context.paper_positioned_document,
-        body_occupancy_tables=body_occupancy,
-        leaf_column_candidates=leaf_column_candidates,
-        header_structure_candidates=header_structure_candidates,
-    )
     return CanonicalExtractionArtifacts(
         extracted_tables=list(extracted_tables),
         cell_text_annotations=cell_text_annotations,
@@ -442,7 +427,6 @@ def _build_table_geometry_artifacts(
         body_occupancy=body_occupancy,
         leaf_column_candidates=leaf_column_candidates,
         header_structure_candidates=header_structure_candidates,
-        token_start_evidence=token_start_evidence,
     )
 
 
@@ -471,7 +455,6 @@ def _build_canonical_extraction_artifacts(
         paper_positioned_document=paper_context.paper_positioned_document,
         table_boundary_proposals=provisional.table_boundary_proposals,
         leaf_column_candidates=provisional.leaf_column_candidates,
-        token_start_evidence=provisional.token_start_evidence,
     )
     final = _build_table_geometry_artifacts(
         pdf_path,
@@ -754,7 +737,6 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     body_occupancy = canonical.body_occupancy
     leaf_column_candidates = canonical.leaf_column_candidates
     header_structure_candidates = canonical.header_structure_candidates
-    token_start_evidence = canonical.token_start_evidence
     normalized_tables = normalize_extracted_tables(extracted_tables, table_regions=table_regions)
     column_header_schemas = build_column_header_schemas(
         normalized_tables,
@@ -1024,7 +1006,6 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         body_occupancy=body_occupancy,
         leaf_column_candidates=leaf_column_candidates,
         header_structure_candidates=header_structure_candidates,
-        token_start_evidence=token_start_evidence,
         normalized_tables=normalized_tables,
         column_header_schemas=column_header_schemas,
         resolved_table_set=resolved_table_set,
@@ -1113,7 +1094,6 @@ def _write_parse_outputs(
     body_occupancy_output_path = paper_dir / "body_occupancy.json"
     leaf_column_candidates_output_path = paper_dir / "leaf_column_candidates.json"
     header_structure_candidates_output_path = paper_dir / "header_structure_candidates.json"
-    token_start_evidence_output_path = paper_dir / "token_start_evidence.json"
     normalize_output_path = paper_dir / "normalized_tables.json"
     column_header_schema_output_path = paper_dir / "column_header_schemas.json"
     resolved_table_output_path = paper_dir / "resolved_tables.json"
@@ -1204,14 +1184,6 @@ def _write_parse_outputs(
             header_structure_candidates_to_payload(
                 artifacts.header_structure_candidates
             ),
-            indent=2,
-        )
-        + "\n",
-        encoding="utf-8",
-    )
-    token_start_evidence_output_path.write_text(
-        json.dumps(
-            token_start_evidence_tables_to_payload(artifacts.token_start_evidence),
             indent=2,
         )
         + "\n",

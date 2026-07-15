@@ -59,20 +59,19 @@ The stages must remain separate:
 - `ParsedTable` combines the normalized grid, table definition, and value
   parsing into final structured value records.
 
-The current geometry path also writes four non-operative diagnostics after
+The current geometry path also writes three inspectable geometry artifacts after
 `TableRegion`: `body_occupancy.json`, `leaf_column_candidates.json`, and
-`header_structure_candidates.json`, followed by `token_start_evidence.json`.
+`header_structure_candidates.json`.
 `HeaderStructureCandidate` preserves
 preliminary leaves, partial-rule groups, wrapped fragments, source-supported
 marker attachments, and cross-band header diagnostics. Preliminary leaves are
 defined by exact zero-occupancy gaps at least two observed space-glyph widths
 wide in the dominant table font and size; positioned header text attaches to
 the resulting bands but does not create additional physical columns.
-`TokenStartEvidenceTable` records exact ordinary-token left edges only for
-tables already carrying grid or header refinement signals. It does not infer
-separators. These artifacts do not alter `ExtractedTable` or feed
-normalization, `ColumnHeaderSchema`, or semantic parsing. Phase H requires
-separate approval before any candidate grid can become canonical extraction.
+Body occupancy and leaf candidates participate in canonical extraction;
+header-structure candidates remain post-extraction evidence and do not rewrite
+the physical grid. None of these artifacts feeds normalization-time geometry
+repair.
 
 For continued-table work, the confirmed semantic working path is:
 
