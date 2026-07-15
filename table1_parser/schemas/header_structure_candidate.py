@@ -26,6 +26,8 @@ class HeaderLeafCandidate(BaseModel):
     leaf_id: str
     leaf_index: int = Field(ge=0)
     label: str
+    raw_text: str = ""
+    base_text: str = ""
     canonical_x_bounds: tuple[float, float]
     evidence_ids: list[str] = Field(default_factory=list)
     occupancy_band_ids: list[str] = Field(default_factory=list)
@@ -46,6 +48,8 @@ class HeaderGroupCandidate(BaseModel):
 
     group_id: str
     label: str
+    raw_text: str = ""
+    base_text: str = ""
     canonical_x_bounds: tuple[float, float]
     leaf_ids: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)

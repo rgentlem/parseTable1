@@ -211,6 +211,14 @@ def build_body_element_candidates(
                     )
                 )
                 candidate_number += 1
+    for candidate in candidates:
+        candidate.raw_text = (
+            " ".join(source_cell.text for source_cell in candidate.source_cells)
+            if candidate.kind != "row_sequence_reconstruction"
+            else " ".join(candidate.raw_fragments)
+        )
+        candidate.base_text = candidate.raw_text
+        candidate.candidate_text = clean_text(candidate.base_text)
     return candidates
 
 

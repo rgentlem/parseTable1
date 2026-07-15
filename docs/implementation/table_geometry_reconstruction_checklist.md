@@ -521,20 +521,38 @@ Phase H checkpoint:
 
 ## I. Attach Markers To Stable Elements
 
-- [ ] Link marker occurrences to physical cells and header candidate nodes.
-- [ ] After logical body candidates exist, link occurrences to body values and
+- [x] Link marker occurrences to physical cells and header candidate nodes.
+- [x] After logical body candidates exist, link occurrences to body values and
       row-label elements as well.
-- [ ] Expose unchanged `raw_text`, marker-free `base_text`, and associated
+- [x] Expose unchanged `raw_text`, marker-free `base_text`, and associated
       `marker_ids` on logical candidates.
-- [ ] Remove a glyph from `base_text` only when exact character/span geometry
+- [x] Remove a glyph from `base_text` only when exact character/span geometry
       supports the association.
-- [ ] Keep uncertain glyphs in `base_text` with diagnostics.
+- [x] Keep uncertain glyphs in `base_text` with diagnostics.
 
 Completion evidence:
 
 - Marker handling does not mutate `ExtractedTable.text`.
 - Header and body interpretation can use marker-free text without losing the
   visible marker or its provenance.
+- Phase I is closed at
+  `outputs/testpapers_batch_geometry_phase_i_marker_attachment_final_20260715`:
+  all 28 PDFs completed with 92 physical extracted/normalized tables and 84
+  resolved working tables after eight accepted two-fragment continuation
+  merges. All 433 marker occurrences preserve physical-cell/character/span
+  evidence; 56 header, 317 body-value, and one existing vertical row-label
+  occurrence have unique logical links.
+- Exact alignment removes 372 linked occurrences from `base_text`. The two
+  uncertain header occurrences in
+  `mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017.pdf`,
+  PDF page 9, printed Table 5, remain visible with alignment diagnostics. All
+  114 repeated-symbol residues without distinct occurrences also remain with
+  diagnostics.
+- Compared with the retained Phase H baseline, extracted cells, table regions,
+  body occupancy, leaf candidates, canonical selection, normalized tables,
+  column schemas, resolved tables, continuation groups, merged continuation
+  views, inherited header labels, and unmarked logical candidates are
+  unchanged.
 
 ## J. Build Final Table Regions And Logical Candidates
 

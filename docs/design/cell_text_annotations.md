@@ -11,26 +11,27 @@ The parser should preserve:
 
 - raw cell text in `extracted_tables.json`
 - visual marker evidence in `cell_text_annotations.json`
-- normalized text and parsed values unchanged until a later explicit consumer is added
+- linked logical-candidate text views without rewriting either source artifact
 
-## Known Gap And Required Consumer
+## Logical Candidate Consumer
 
 The sidecar identifies attached glyph geometry, but the same glyph can still be
 embedded in the extracted cell string, for example a p-value ending in a
-superscript marker. Detection alone therefore does not yet give downstream
-header and value parsing clean base text.
+superscript marker. Header nodes and existing logical body candidates therefore
+carry:
 
-The required logical candidate representation should carry:
-
-- unchanged source `raw_text`
+- unchanged physical/logical source `raw_text`
 - marker-free `base_text`
-- the annotation IDs and visible glyphs associated with the removed characters
+- occurrence-level `marker_ids` that resolve back to this sidecar
 
 Marker removal must be supported by exact character/span geometry. If the
 source characters cannot be associated reliably, the glyph remains in
 `base_text` and a diagnostic is recorded. `ExtractedTable.text` is never
-rewritten. Header assembly, row-label interpretation, and value parsing may use
-`base_text`; footnote resolution continues to use the linked marker records.
+rewritten. Repeated visible glyphs without distinct occurrence evidence also
+remain in `base_text` with a diagnostic. Header and row-label candidate aliases
+use `base_text`; value-component parsing uses `base_text` while
+`ParsedCellValue.raw_value` preserves `raw_text`. Footnote resolution continues
+to use the linked marker records.
 
 ## File
 
@@ -109,8 +110,11 @@ Each detected annotation is also the canonical early marker occurrence. Its
 `glyph_key` provides shared Unicode-normalized identity for later footer
 matching. `source_char_indices` and `source_span_references` resolve into
 `paper_positioned_document.json`; `source_cell_id` is a physical cell
-association, not a later logical header/body attachment. Marker meaning is not
-decided here, and the source glyph is not removed from cell text.
+association, not a later logical header/body attachment. Logical attachment is
+recorded on `HeaderLeafCandidate`, `HeaderGroupCandidate`,
+`BodyElementCandidate`, or an existing `BodyRowLabelCandidate` only after that
+candidate exists. Marker meaning is not decided here, and the source glyph is
+not removed from cell text.
 
 For rotated or sideways-transformed tables, annotation `bbox` values use the
 same coordinate frame as the table cell bboxes, recorded in table-level
@@ -138,8 +142,11 @@ R should display persisted evidence only, not infer marker meaning.
 Column-header LaTeX rendering should be derived later by joining this artifact
 to `ColumnHeaderSchema`; it should not be hard-coded into extraction.
 
-## First Implementation
+## Implementation State
 
-1. Add R loading and compact inspection helpers.
-2. Extend support for rotated/local-coordinate refined tables.
-3. Leave normalization, value parsing, and footnote linking unchanged until an explicit consumer is added.
+1. R loading and compact inspection helpers expose the sparse sidecar.
+2. Rotated/local-coordinate refined tables retain marker geometry in their
+   canonical coordinate frame.
+3. Header and body logical candidates link stable occurrence IDs and expose
+   `raw_text`/`base_text`; ambiguous text alignment fails closed without
+   changing physical cells or footnote evidence.

@@ -97,6 +97,10 @@ def build_body_row_label_candidates(
                 )
             )
             candidate_number += 1
+    for candidate in candidates:
+        candidate.raw_text = " ".join(source_cell.text for source_cell in candidate.source_cells)
+        candidate.base_text = candidate.raw_text
+        candidate.candidate_label = clean_text(candidate.base_text)
     return candidates
 
 

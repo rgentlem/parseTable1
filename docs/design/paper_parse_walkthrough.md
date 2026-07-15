@@ -67,11 +67,12 @@ Some of these are per-table artifacts. Others are paper-level context artifacts.
 
 `cell_text_annotations.json` records superscript, subscript, and small marker
 geometry by table cell when compatible PyMuPDF character geometry and extracted
-cell bboxes are available. It does not change the raw extracted grid. A known
-remaining gap is that the same marker glyph may still be pasted onto the base
-cell string. The planned logical candidate view will preserve the unchanged raw
-string while exposing marker-free base text linked to the annotation record;
-uncertain glyphs will not be stripped.
+cell bboxes are available. It does not change the raw extracted grid. After
+header and body logical candidates exist, stable annotation IDs are attached to
+those candidates. Each linked candidate preserves `raw_text` and exposes
+marker-free `base_text` only when exact character/span geometry and text
+alignment identify the occurrence; uncertain or unassociated repeated glyphs
+remain visible with diagnostics.
 
 Each detected annotation now also serves as a stable early marker occurrence:
 it records a unique occurrence ID, normalized glyph key, physical source cell,
@@ -1041,7 +1042,10 @@ logical values from one or more physical source cells, including:
   settled value column
 
 Each candidate keeps its source cells, original row and column indices when
-known, bboxes when available, printed fragments, and candidate text.
+known, bboxes when available, printed fragments, candidate text, `raw_text`,
+`base_text`, and linked `marker_ids`. Marker attachment occurs only after the
+candidate exists and only through a stable source-cell ID. It never changes a
+physical row, column, cell, occupancy band, or bbox.
 
 This lets later value parsing use good element-candidate text while R and
 Python inspection can still show what was physically printed in the PDF.
@@ -1051,13 +1055,18 @@ layer. It records candidate logical labels from adjacent physical body rows
 where the anchor row has values and following label-continuation rows have
 label text but empty value columns. It gives row classification and
 `TableDefinition` the candidate label while preserving the physical rows in
-`normalized_tables.json`.
+`normalized_tables.json`. Marker-bearing ordinary single-row labels remain
+physical-cell-only links unless a logical row-label candidate already exists.
 
 ## Step 10: Parse Source-Cell Value Components
 
 After body element candidates exist, the parser builds
 `parsed_cell_values.json` from those candidates in schema-derived value
 columns.
+
+Value-component parsing consumes candidate `base_text`, while each parsed
+record's `raw_value` preserves candidate `raw_text`. Candidate diagnostics make
+any retained uncertain marker glyph explicit.
 
 This is deliberately earlier than the final semantic value join. Each record is
 keyed by:

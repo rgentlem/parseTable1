@@ -39,6 +39,9 @@ class BodyElementCandidate(BaseModel):
     anchor_col_idx: int = Field(ge=0)
     kind: BodyElementCandidateKind
     candidate_text: str
+    raw_text: str = ""
+    base_text: str = ""
+    marker_ids: list[str] = Field(default_factory=list)
     raw_fragments: list[str] = Field(default_factory=list)
     source_cells: list[BodyElementSourceCell] = Field(default_factory=list)
     reason: str | None = None

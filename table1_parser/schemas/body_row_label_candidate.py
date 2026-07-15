@@ -35,6 +35,9 @@ class BodyRowLabelCandidate(BaseModel):
     anchor_col_idx: int = Field(ge=0)
     kind: BodyRowLabelCandidateKind
     candidate_label: str
+    raw_text: str = ""
+    base_text: str = ""
+    marker_ids: list[str] = Field(default_factory=list)
     raw_fragments: list[str] = Field(default_factory=list)
     source_cells: list[BodyRowLabelSourceCell] = Field(default_factory=list)
     continuation_row_indices: list[int] = Field(default_factory=list)

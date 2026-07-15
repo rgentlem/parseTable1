@@ -75,12 +75,12 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Table region ownership | `TableRegion` | Written now as `table_regions.json` by `parse` | Persist geometry-derived row ownership for captions, preamble rows, column-header bands, body rows, and footer/note bands before normalization consumes them |
 | Body occupancy | `BodyOccupancyTable` | Written now as `body_occupancy.json` by `parse` | Persist raw physical-body-line occupancy in character-width-derived x bins plus exact font-qualified zero-gap evidence, without smoothing or downstream grid changes |
 | Leaf-column candidates | `LeafColumnCandidateTable` | Written now as `leaf_column_candidates.json` by `parse` | Persist provisional stub/value bands from exact zero-occupancy gaps at least two observed table-font spaces wide, with supporting unmerged rule endpoints, without changing the extracted grid |
-| Header-structure candidates | `HeaderStructureCandidate` | Written now as `header_structure_candidates.json` by `parse` | Persist positioned leaf/header evidence, preserving a complete flat canonical header cell-for-cell and otherwise classifying one-leaf labels and contiguous multileaf groups from observed anchors, per-band evidence, and individual partial rules; retain unresolved fragments and post-assignment diagnostics without changing the accepted column schema |
+| Header-structure candidates | `HeaderStructureCandidate` | Written now as `header_structure_candidates.json` by `parse` | Persist positioned leaf/header evidence, preserving a complete flat canonical header cell-for-cell and otherwise classifying one-leaf labels and contiguous multileaf groups from observed anchors, per-band evidence, and individual partial rules; retain linked marker IDs plus raw/base node text, unresolved fragments, and post-assignment diagnostics without changing the accepted column schema |
 | Cell text annotations | `CellTextAnnotationTable` | Written now as `cell_text_annotations.json` by `parse` | Preserve superscript, subscript, and small marker geometry as extraction-side evidence without rewriting raw cell text |
 | Normalization | `NormalizedTable` | Written now as `normalized_tables.json` by `normalize` and `parse` | Clean rows, apply table-region row ownership when available, and derive row features |
 | Column header schema | `ColumnHeaderSchema` | Written now as `column_header_schemas.json` by `parse` | Persist parser-native leaf columns, spanning header groups, group-to-leaf relationships, raw cell evidence, and coordinates before semantic column projection |
-| Body element candidates | `BodyElementCandidate` | Written now as `body_element_candidates.json` by `parse` | Persist logical body-value candidates built over the settled column grid without changing extracted or normalized physical cells |
-| Body row-label candidates | `BodyRowLabelCandidate` | Written now as `body_row_label_candidates.json` by `parse` | Persist logical body row-label candidates built over adjacent physical source rows without changing extracted or normalized physical rows |
+| Body element candidates | `BodyElementCandidate` | Written now as `body_element_candidates.json` by `parse` | Persist logical body-value candidates, linked marker IDs, and raw/base text built over the settled column grid without changing extracted or normalized physical cells |
+| Body row-label candidates | `BodyRowLabelCandidate` | Written now as `body_row_label_candidates.json` by `parse` | Persist logical body row-label candidates, linked marker IDs, and raw/base text built over adjacent physical source rows without changing extracted or normalized physical rows |
 | Resolved table set | `ResolvedTableSet` | Written now as `resolved_tables.json` by `parse` | Persist the semantic working table list after continuation resolution while preserving `normalized_tables.json` as full source evidence |
 | Table 1 continuation inspection | `Table1ContinuationGroup`, `NormalizedTable` | Written now as `table1_continuation_groups.json` and `merged_table1_tables.json` by `parse` | Persist source-fragment grouping and merged normalized-row review views for explicit or strongly inferred Table 1 continuations |
 | Continuation column compatibility | `TableContinuationColumnCheck` | Written now as `table_continuation_column_checks.json` by `parse` | Persist schema-derived source-fragment column-header compatibility checks for explicit or strongly inferred descriptive continuations |
@@ -287,7 +287,10 @@ source-cell ID, bbox, source character indices, source line/span references,
 and font evidence. These records preserve visual identity and provenance only:
 they do not remove glyphs from raw text or decide whether a marker is a
 footnote, citation, mathematical notation, unit exponent, or artifact. Later
-footer resolution consumes the same glyph keys.
+footer resolution consumes the same glyph keys. After header/body candidates
+exist, their `marker_ids` link back to these occurrences. Candidate `base_text`
+removes only an exactly aligned character/span occurrence; `raw_text` and the
+annotation sidecar remain unchanged.
 
 ## 2. `table_boundary_proposals.json`
 
@@ -383,7 +386,11 @@ and intervening-rule geometry support the join.
 Header marker attachments record the marker ID, source evidence IDs, all
 candidate leaf or group node IDs, an optional selected node, and a status of
 `linked`, `ambiguous`, or `unresolved`. The parser does not fall back to the
-nearest leaf when source evidence cannot identify one node.
+same-row or nearest leaf when exact source-line and marker-bbox evidence cannot
+identify one node. Leaf and group nodes expose `raw_text`, `base_text`, and
+`marker_ids`; exact text alignment removes the linked occurrence from
+`base_text`, while uncertain alignment retains it and adds a root candidate
+concern.
 
 Outside a complete flat canonical header, words from one intact header run
 that cross candidate band boundaries are not divided. The artifact records
@@ -1187,6 +1194,9 @@ Top-level record design components:
 - `anchor_col_idx`
 - `kind`
 - `candidate_text`
+- `raw_text`
+- `base_text`
+- `marker_ids`
 - `raw_fragments`
 - `source_cells`
 - `reason`
@@ -1222,8 +1232,11 @@ Design rules:
   physical cell
 - do not use candidate reconstruction to assign physical columns, physical
   rows, or cell bounding boxes
-- use `candidate_text` for value-component parsing, while preserving
-  `raw_fragments` and `source_cells` for inspection
+- attach an occurrence only through its stable physical source-cell ID and
+  only when that source cell belongs to one logical candidate
+- use marker-free `base_text`/`candidate_text` for value-component parsing,
+  while preserving `raw_text`, `raw_fragments`, and `source_cells` for
+  inspection
 
 ### `body_row_label_candidates.json`
 
@@ -1253,6 +1266,9 @@ Top-level record design components:
 - `anchor_col_idx`
 - `kind`
 - `candidate_label`
+- `raw_text`
+- `base_text`
+- `marker_ids`
 - `raw_fragments`
 - `source_cells`
 - `continuation_row_indices`
@@ -1271,6 +1287,9 @@ Design rules:
 - require adjacent body rows, an anchor row with values, continuation rows with
   label-column text, and empty value columns in those continuation rows
 - keep every candidate traceable to one or more physical source cells
+- attach markers only after the vertical label candidate exists; ordinary
+  single-row labels remain linked only to their physical cells until they have
+  a logical candidate
 - do not use label reconstruction to assign physical columns, physical rows, or
   cell bounding boxes
 
@@ -1284,6 +1303,11 @@ Current status:
 This artifact records parsed source-cell value components before row and column
 semantics are joined onto those values. It is intentionally index-keyed rather
 than semantic-label-keyed.
+
+For candidate-derived records, component parsing consumes the candidate's
+marker-free `base_text`, while `raw_value` preserves the candidate's unchanged
+`raw_text`. Residual glyphs retained for lack of distinct occurrence evidence
+remain visible in `base_text` and in the candidate's diagnostics.
 
 Current CLI path:
 

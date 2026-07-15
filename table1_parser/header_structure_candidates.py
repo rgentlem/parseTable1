@@ -220,6 +220,8 @@ def inherit_adjacent_continuation_leaf_labels(
                     local.model_copy(
                         update={
                             "label": source.label,
+                            "raw_text": source.label,
+                            "base_text": source.label,
                             "label_source": "inherited_continuation",
                             "local_label": local.label,
                             "inherited_from_table_id": parent_table.table_id,
@@ -1481,6 +1483,8 @@ def build_header_structure_candidate(
                 leaf_id=f"{candidate_id}:leaf:{len(leaves)}",
                 leaf_index=len(leaves),
                 label=label,
+                raw_text=label,
+                base_text=label,
                 canonical_x_bounds=bounds,
                 evidence_ids=evidence_ids_by_band.get(band_id, []),
                 occupancy_band_ids=[band_id],
@@ -1705,6 +1709,8 @@ def build_header_structure_candidate(
             HeaderGroupCandidate(
                 group_id=group_id,
                 label=group_label,
+                raw_text=group_label,
+                base_text=group_label,
                 canonical_x_bounds=(group_left, group_right),
                 leaf_ids=child_ids,
                 evidence_ids=[item.evidence_id for item in cluster],
@@ -1753,12 +1759,6 @@ def build_header_structure_candidate(
             for item in header_evidence
             if source_line_ids.intersection(item.source_line_ids)
         ]
-        if not source_evidence:
-            source_evidence = [
-                item
-                for item in header_evidence
-                if annotation.row_idx in item.header_row_indices
-            ]
         selected_evidence_ids: list[str] = []
         if marker_bboxes and source_evidence:
             marker_left = min(bbox[0] for bbox in marker_bboxes)
@@ -1780,8 +1780,6 @@ def build_header_structure_candidate(
                 for distance, evidence_id in distances
                 if abs(distance - minimum_distance) <= 0.5
             ]
-        elif len(source_evidence) == 1:
-            selected_evidence_ids = [source_evidence[0].evidence_id]
         candidate_node_ids = list(
             dict.fromkeys(
                 node_id

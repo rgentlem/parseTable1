@@ -214,8 +214,22 @@ Phase H is closed at
 `outputs/testpapers_batch_geometry_phase_h_closed_20260715`. All 28 PDFs and
 92 physical tables match the preceding occupancy checkpoint exactly in ID,
 page, shape, cells, and bboxes. Canonical selection has only two paths: 64
-count-confirmed positioned grids and 28 occupancy-materialized grids. Phase I
-marker attachment is the next table-geometry checklist boundary.
+count-confirmed positioned grids and 28 occupancy-materialized grids.
+
+Phase I marker attachment is complete at
+`outputs/testpapers_batch_geometry_phase_i_marker_attachment_final_20260715`.
+The 28 PDFs yield 92 physical extracted/normalized tables and 84 resolved
+working tables after eight accepted two-fragment continuation merges. All 433
+marker occurrences retain complete physical-cell/character/span
+provenance; 56 header occurrences link to one header node, 317 link to body
+value candidates, and one links to an existing vertical row-label candidate.
+The remaining 59 occurrences stay physical-cell-only because no eligible
+logical body/header candidate exists. Exact alignment removes 372 linked
+occurrences from candidate `base_text`; two uncertain header glyphs remain with
+diagnostics, and 114 repeated symbol residues remain with explicit
+unassociated-glyph diagnostics. All Phase H physical, occupancy, canonical,
+normalized, column-schema, resolved-table, and continuation artifacts are
+unchanged. Phase J is the next table-geometry checklist boundary.
 
 Phase H canonical extraction is complete. Candidate regions now use only the
 shared PyMuPDF positioned evidence: horizontally compatible caption/rule
@@ -584,18 +598,18 @@ the positioned document artifact.
    - Single-row split label tails such as `Coronary heart disease, n` plus adjacent `(\%)`/`(%)` in the next cell when the fragment is physically adjacent to the row label and clearly before the first value column.
    Recent update: footnote-suffixed p-values such as `<0.001a` now count as p-value tokens for word-position column anchoring and value parsing, so a far-right p-value cluster is not collapsed into the last data column.
    Sidecar: `docs/design/cell_text_annotations.md` defines `cell_text_annotations.json` for superscript, subscript, and small-marker geometry; parse now populates page-coordinate cell-bbox annotations when PyMuPDF char geometry is available, and R inspection loads and displays the sidecar. Implementation checklist is in `docs/implementation/cell_text_annotations_implementation_plan.md`. Keep this separate from symbol canonicalization and value parsing.
-   Unfinished marker-preservation task: annotations currently preserve marker
-   geometry, but the corresponding glyph often remains pasted onto the base
-   text in extracted and downstream strings. Add a canonical linked-text view
-   for header, row-label, and value candidates with three explicit pieces:
-   unchanged `raw_text`, marker-free `base_text`, and the annotation IDs/glyphs
-   removed from that base text. Removal must be backed by exact character/span
-   geometry; uncertain glyphs remain in `base_text` with a diagnostic. This is
-   a logical candidate representation, not an `ExtractedTable` rewrite.
-   Footnote linking should consume the associated marker records later, while
-   header assembly, value parsing, and row-label interpretation consume
-   `base_text`. The same mechanism must handle superscripts, subscripts, and
-   inline symbols without assuming that every raised glyph is a footnote.
+   Marker-preservation update: header nodes and existing logical body value or
+   vertical row-label candidates now expose unchanged `raw_text`, marker-free
+   `base_text`, and occurrence-level `marker_ids`. Attachment uses the stable
+   physical source-cell ID only after the logical candidate exists. Removal is
+   backed by bbox plus exact character/span provenance and exact text alignment;
+   uncertain glyphs and repeated symbols without distinct occurrence evidence
+   remain in `base_text` with diagnostics. `ExtractedTable`, normalized rows,
+   occupancy, canonical selection, continuation identity, and inherited header
+   labels are unchanged. Value parsing consumes `base_text` while
+   `ParsedCellValue.raw_value` preserves `raw_text`; footnote linking continues
+   to consume the associated marker records without assuming that every raised
+   glyph is a footnote.
    Footnote follow-up: `docs/design/paper_footnotes.md` defines the `paper_footnotes.json` artifact contract, and `docs/implementation/paper_footnotes_implementation_plan.md` tracks the staged work. Core Python schemas, anchor inventories, table-local footer metadata, definition inventories, glyph canonicalization, deterministic links, parse output, R data-frame helpers, `ObservedFootnotes` attachment, and real-PDF smoke passes are in place. Review found resolved, unresolved, and ambiguous real examples; links remain review-only and should not be consumed downstream.
    Recent footnote update: table-local note lines can now define markers after leading explanatory prose, including embedded and bracketed markers such as `significance. a Represents ... b Represents ...` and `[a] ... [b] ...`. This resolves the `metabolic` Table 1 p-value superscripts against the local Chi-square and Kruskal-Wallis definitions while keeping links as review evidence only.
    Recent footer update: statistical-significance footer lines can now define repeated asterisk runs such as `* P value < 0.05, ** P value < 0.01, *** P value < 0.001`, and anchors attached to p-values preserve the visible asterisk count. This resolves the `stroke` Table 1-3 asterisk superscripts.

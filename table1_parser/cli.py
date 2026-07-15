@@ -97,6 +97,7 @@ from table1_parser.processing_status import build_table_processing_statuses
 from table1_parser.resolved_tables import build_resolved_table_set
 from table1_parser.schemas import (
     BodyOccupancyTable,
+    CellTextAnnotation,
     CellTextAnnotationTable,
     ColumnHeaderSchema,
     BodyElementCandidate,
@@ -142,6 +143,7 @@ from table1_parser.table1_continuations import (
     build_table1_continuation_artifacts,
     table1_continuation_groups_to_payload,
 )
+from table1_parser.text_cleaning import clean_text
 DEFAULT_OUTPUT_DIR = Path("outputs")
 
 
@@ -811,6 +813,150 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         column_header_schemas,
         extracted_tables,
     )
+    logical_body_candidates: list[BodyElementCandidate | BodyRowLabelCandidate] = [
+        *body_element_candidates,
+        *body_row_label_candidates,
+    ]
+    candidate_ids_by_source_cell_id: dict[str, set[str]] = {}
+    candidate_source_cell_ids: dict[str, list[str]] = {}
+    physical_text_by_source_cell_id = {
+        f"{table.table_id}:r{cell.row_idx}:c{cell.col_idx}": cell.text
+        for table in extracted_tables
+        for cell in table.cells
+    }
+    for candidate in logical_body_candidates:
+        for source_cell in candidate.source_cells:
+            if (
+                source_cell.original_row_idx is not None
+                and source_cell.original_col_idx is not None
+            ):
+                source_cell_id = (
+                    f"{source_cell.source_table_id}:"
+                    f"r{source_cell.original_row_idx}:c{source_cell.original_col_idx}"
+                )
+                candidate_ids_by_source_cell_id.setdefault(source_cell_id, set()).add(
+                    candidate.candidate_id
+                )
+                candidate_source_cell_ids.setdefault(candidate.candidate_id, []).append(source_cell_id)
+    marker_ids_by_source_cell_id: dict[str, list[str]] = {}
+    annotations_by_marker_id: dict[str, CellTextAnnotation] = {}
+    for annotation_table in cell_text_annotations:
+        for annotation_index, annotation in enumerate(annotation_table.annotations):
+            marker_id = annotation.annotation_id or (
+                f"{annotation_table.table_id}:marker:{annotation_index}"
+            )
+            annotations_by_marker_id[marker_id] = annotation
+            if annotation.source_cell_id is not None:
+                marker_ids_by_source_cell_id.setdefault(annotation.source_cell_id, []).append(marker_id)
+    for candidate in logical_body_candidates:
+        candidate.marker_ids.extend(
+            marker_id
+            for source_cell_id in dict.fromkeys(
+                candidate_source_cell_ids.get(candidate.candidate_id, [])
+            )
+            if len(candidate_ids_by_source_cell_id[source_cell_id]) == 1
+            for marker_id in marker_ids_by_source_cell_id.get(source_cell_id, [])
+        )
+        if candidate.marker_ids and candidate.kind != "row_sequence_reconstruction":
+            source_cell_ids = list(
+                dict.fromkeys(candidate_source_cell_ids.get(candidate.candidate_id, []))
+            )
+            if all(source_cell_id in physical_text_by_source_cell_id for source_cell_id in source_cell_ids):
+                candidate.raw_text = " ".join(
+                    physical_text_by_source_cell_id[source_cell_id]
+                    for source_cell_id in source_cell_ids
+                )
+                candidate.base_text = candidate.raw_text
+
+    logical_text_candidates = [
+        *((candidate, candidate.notes) for candidate in logical_body_candidates),
+        *(
+            (node, header_candidate.concerns)
+            for header_candidate in header_structure_candidates
+            for node in [
+                *header_candidate.leaf_candidates,
+                *header_candidate.group_candidates,
+            ]
+        ),
+    ]
+    for candidate, candidate_diagnostics in logical_text_candidates:
+        marker_annotations = [
+            (marker_id, annotations_by_marker_id[marker_id])
+            for marker_id in candidate.marker_ids
+            if marker_id in annotations_by_marker_id
+        ]
+        if not marker_annotations:
+            continue
+        compact_indices = [
+            index
+            for index, character in enumerate(candidate.raw_text)
+            if not character.isspace() and character != "\ufeff"
+        ]
+        compact_text = "".join(candidate.raw_text[index] for index in compact_indices)
+        removal_indices: set[int] = set()
+        for marker_id, annotation in marker_annotations:
+            marker_text = "".join(annotation.text.split()).replace("\ufeff", "")
+            attached_text = "".join((annotation.attached_to_text or "").split()).replace(
+                "\ufeff", ""
+            )
+            exact_geometry = (
+                annotation.bbox is not None
+                and bool(annotation.source_span_references)
+                and len(annotation.source_char_indices) == len(marker_text)
+            )
+            alignment_text = compact_text
+            marker_start = len(attached_text)
+            if isinstance(candidate, (BodyElementCandidate, BodyRowLabelCandidate)):
+                source_text = physical_text_by_source_cell_id.get(
+                    annotation.source_cell_id or "", ""
+                )
+                compact_source_text = "".join(source_text.split()).replace("\ufeff", "")
+                source_start = compact_text.find(compact_source_text)
+                if (
+                    compact_source_text
+                    and source_start >= 0
+                    and compact_text.find(compact_source_text, source_start + 1) < 0
+                ):
+                    alignment_text = compact_source_text
+                    marker_start += source_start
+                else:
+                    alignment_text = ""
+            if (
+                exact_geometry
+                and marker_text
+                and alignment_text.startswith(attached_text + marker_text)
+            ):
+                removal_indices.update(
+                    compact_indices[marker_start : marker_start + len(marker_text)]
+                )
+            else:
+                candidate_diagnostics.append(
+                    "marker_base_text_retained_without_exact_"
+                    f"{'geometry' if not exact_geometry else 'alignment'}:{marker_id}"
+                )
+        candidate.base_text = "".join(
+            character
+            for index, character in enumerate(candidate.raw_text)
+            if index not in removal_indices
+        )
+        if isinstance(candidate, BodyElementCandidate):
+            candidate.candidate_text = clean_text(candidate.base_text)
+        elif isinstance(candidate, BodyRowLabelCandidate):
+            candidate.candidate_label = clean_text(candidate.base_text)
+        else:
+            candidate.label = clean_text(candidate.base_text)
+        compact_base_text = "".join(candidate.base_text.split()).replace("\ufeff", "")
+        for marker_id, annotation in marker_annotations:
+            marker_text = "".join(annotation.text.split()).replace("\ufeff", "")
+            if (
+                marker_text
+                and all(not character.isalnum() for character in marker_text)
+                and marker_text in compact_base_text
+            ):
+                candidate_diagnostics.append(
+                    f"marker_glyph_retained_without_occurrence:{marker_id}"
+                )
+        candidate_diagnostics[:] = list(dict.fromkeys(candidate_diagnostics))
     parsed_cell_values = build_parsed_cell_values(
         normalized_tables,
         value_column_indices_by_table_id=value_column_indices_by_table_id,
