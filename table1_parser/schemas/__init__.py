@@ -92,6 +92,8 @@ from table1_parser.schemas.paper_positioned_document import (
     PaperPositionedWord,
 )
 from table1_parser.schemas.paper_text_stream import (
+    PaperTextBlock,
+    PaperTextBlockRole,
     PaperTextLine,
     PaperTextLineRole,
     PaperTextOrientation,
@@ -243,6 +245,8 @@ __all__ = [
     "PaperTableInventory",
     "PaperTableRecord",
     "PaperTableMention",
+    "PaperTextBlock",
+    "PaperTextBlockRole",
     "PaperTextLine",
     "PaperTextLineRole",
     "PaperTextOrientation",

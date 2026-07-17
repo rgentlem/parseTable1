@@ -11,6 +11,31 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
   `docs/implementation/paper_text_reading_order_repair.md`. The existing
   `PaperPositionedDocument` block and line evidence must feed the existing
   `PaperTextStream`; do not add another text stream or extraction pass.
+  The first approved step now keeps each positioned source block contiguous
+  and retains its block-local line order in `PaperTextStream`. The focused run
+  is `outputs/task1_step2_block_order_20260717`; PDF page 4 of
+  `Role of Estimated Glucose Disposal Rate in Staging and Death Risk of Cardiovascular-Kidney-Metabolic Syndrome- Insights from NHANES 1999-2018.pdf`
+  now emits source blocks 3, 4, then 6. Mixed-layout region ownership and the
+  later section ownership remain pending. `PaperTextStream.blocks` now exposes
+  those ordered source blocks as typed `PaperTextBlock` records. The focused
+  Step 4 run is `outputs/task1_step4_typed_blocks_20260717`: 161 blocks contain
+  all 1,366 stream lines exactly once, with exact recomputed bboxes, text, and
+  roles; one mixed-role source block remains for the approved split step.
+  The approved heading correction removes the exact heading-name list. The
+  current stream assigns a heading only from complete-line bold evidence plus a
+  font strictly larger than the dominant body font, excluding table captions and
+  entirely bold source blocks containing completed sentence prose. The 28-PDF
+  final run is
+  `outputs/testpapers_batch_confirmed_bibliography_headings_accepted_20260717`:
+  all 28 commands completed with 326 heading lines, including 29 exact
+  bibliography labels confirmed by the immediately following reference list;
+  1,350 bibliography entries; 92 extracted tables; and no block coverage or
+  block-role inconsistency. In the eGDR paper, PDF page 2,
+  source line `page-2-line-114` remains the real `Covariates` heading while the
+  sentence fragment at `page-2-line-116` remains body. On PDF page 9 of the
+  Planetary Health paper, both `References` and `REFERENCES AND NOTES` are
+  confirmed headings. The one failed Helicobacter continuation is unchanged
+  from the preceding corpus run. Step 5 block splitting remains pending.
 - [ ] Complete the canonical positioned-evidence unification in
   `docs/implementation/canonical_orientation_unification_checklist.md` before
   making another footer-specific correction. The required path is

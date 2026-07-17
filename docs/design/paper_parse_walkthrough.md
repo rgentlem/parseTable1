@@ -260,7 +260,21 @@ cannot turn a prose reference into the start of a table candidate.
 Raw and derived artifacts remain side by side through the R handoff:
 `paper_positioned_document.json` preserves shared source geometry,
 `paper_text_stream.json` adds orientation-aware reading order without replacing
-it, and `extracted_tables.json` preserves the selected physical table grid.
+it. It orders positioned source blocks rather than independently sorting their
+lines: block-local lines retain source order, one-column blocks sort by top then
+left, and detected columns read top-to-bottom before proceeding left-to-right.
+Its typed `PaperTextBlock` records preserve the block order, source block index,
+exact union bbox, ordered source line IDs, role, and text.
+After the dominant body font profile is available, a line receives the heading
+role only when all of its visible spans are bold and its font is strictly larger
+than the dominant body font. Table-caption lines and entirely bold source blocks
+containing completed sentence prose are excluded. No heading-name list is used.
+Exact whole-line bibliography labels are the narrow exception: the existing
+bibliography parser confirms them from the immediately following reference list,
+then the confirmed source lines receive the heading role before Markdown and
+section generation. Their existing source blocks are relabeled `heading` or
+`mixed`; block splitting remains a later step.
+`extracted_tables.json` preserves the selected physical table grid.
 Later normalized and continuation-resolved artifacts reference these records;
 they do not replace them.
 
@@ -1236,7 +1250,9 @@ state. A font or bold-state change ends that proposed continuation; this uses
 the positioned boundary spans and does not compare point sizes or line gaps.
 The text stream records `has_bold_text` when any source span is bold, but this
 descriptive line-level fact does not assign a heading role or independently
-support a caption candidate. Explicit heading evidence may support a caption
+support a caption candidate. A heading requires complete-line bold evidence and
+a font strictly larger than the dominant body font; it is never assigned from a
+heading-name match. Explicit heading evidence may support a caption
 candidate, but it does not by itself create a table. Line-initial
 `Table S...` listings under an active `Supplementary Information` heading are
 classified as `prose_reference`, not `caption_candidate`, because they describe

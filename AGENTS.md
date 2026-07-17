@@ -203,7 +203,17 @@ any non-generated project files.
 
 ## Commit Hygiene
 
+Before staging or committing a parser change, enumerate every new or changed
+parser decision rule and compare it with this `AGENTS.md` file and the relevant
+design and implementation documents. Report every conflict or violation to the
+user. Do not stage or commit while a conflict remains unless the implementation
+is corrected or the user explicitly approves that specific exception.
+
 Do not stage or commit generated files under `outputs/`.
+
+Before every commit, remove all older generated output directories. The
+`outputs/` directory must retain only the single most recent generated run; do
+not keep comparison baselines or focused runs there at commit time.
 
 Before committing parser changes, report:
 

@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 
 PaperTextLineRole = Literal["body", "heading", "full_width"]
+PaperTextBlockRole = Literal["body", "heading", "full_width", "mixed"]
 PaperTextOrientation = Literal["upright", "vertical_text_up", "vertical_text_down"]
 
 
@@ -33,6 +34,20 @@ class PaperTextLine(BaseModel):
     dominant_font_size: float | None = None
     spans: list[dict[str, Any]] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
+
+
+class PaperTextBlock(BaseModel):
+    """One positioned source block in document reading order."""
+
+    block_id: str
+    order: int = Field(ge=0)
+    page_num: int = Field(ge=1)
+    source_block_index: int | None = Field(default=None, ge=0)
+    orientation: PaperTextOrientation = "upright"
+    bbox: tuple[float, float, float, float]
+    line_ids: list[str] = Field(min_length=1)
+    role: PaperTextBlockRole = "body"
+    text: str = ""
 
 
 class PaperTextOrientationGroup(BaseModel):
@@ -71,5 +86,6 @@ class PaperTextStream(BaseModel):
     source_pdf: str
     markdown: str = ""
     lines: list[PaperTextLine] = Field(default_factory=list)
+    blocks: list[PaperTextBlock] = Field(default_factory=list)
     pages: list[PaperTextPage] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)

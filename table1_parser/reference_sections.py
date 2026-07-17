@@ -8,11 +8,11 @@ from table1_parser.text_cleaning import clean_text
 
 
 REFERENCE_HEADING_LINE_PATTERN = re.compile(
-    r"^(?:references?|bibliography|works cited|literature cited)\s*[:.]?$",
+    r"^(?:references and notes|references|bibliography|works cited|literature cited)\s*[:.]?$",
     re.IGNORECASE,
 )
 INLINE_REFERENCE_START_PATTERN = re.compile(
-    r"^(?P<heading>references?|bibliography|works cited|literature cited)\s+"
+    r"^(?P<heading>references and notes|references|bibliography|works cited|literature cited)\s+"
     r"(?P<body>(?:\[\s*)?\d{1,3}(?:\s*\])?[.)]?\s+.*)$",
     re.IGNORECASE,
 )

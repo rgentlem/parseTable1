@@ -952,7 +952,7 @@ Canonical models:
 - child models: `PaperPositionedPage`, `PaperPositionedLine`, `PaperPositionedSpan`
 - `PaperSection`
 - `PaperTextStream`
-- child models: `PaperTextLine`, `PaperTextPage`
+- child models: `PaperTextBlock`, `PaperTextLine`, `PaperTextPage`
 - `PaperTableMention`
 - `PaperBibliography`
 - child models: `BibliographyEntry`, `BibliographyReferenceMention`
@@ -985,11 +985,18 @@ Design components:
   with repeated page-furniture lines removed, page-level
   `column_boundaries`/`column_bands`, orientation-group metadata, original
   source line IDs and page-space bboxes, canonical upright bboxes for rotated
-  groups, line-level role/style fields, and minimal span records. The
+  groups, line-level role/style fields, minimal span records, and ordered typed
+  source blocks carrying their exact union bbox and ordered line IDs. The
   descriptive `has_bold_text` note never assigns a heading role or qualifies a
-  caption candidate. Lines are
-  ordered by page, orientation group, column, then vertical position; contextual
-  adjacency cannot cross page or orientation-group boundaries.
+  caption candidate. A heading requires every visible line span to be bold and
+  a font strictly larger than the dominant paper body font. Entirely bold source
+  blocks containing completed sentence prose are excluded, and no heading-name
+  vocabulary participates in general heading detection. Exact whole-line
+  bibliography labels are promoted only after the bibliography parser confirms
+  an immediately following reference list. Blocks are ordered by page,
+  orientation group, column,
+  then block top; their lines retain source order. Contextual adjacency cannot
+  cross page or orientation-group boundaries.
 - `paper_sections.json`
   sections derived from the layout-aware text stream when available, with heading level and simple role hints
 - `paper_table_mentions.json`

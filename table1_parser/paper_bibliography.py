@@ -175,20 +175,17 @@ def build_paper_bibliography(
 
 def build_bibliography_entries_from_text_stream(
     paper_text_stream: PaperTextStream,
-) -> list[BibliographyEntry]:
-    """Parse bibliography entries from positioned layout text."""
+) -> tuple[list[BibliographyEntry], list[str]]:
+    """Parse bibliography entries and return confirmed heading line IDs."""
     if not paper_text_stream.lines:
-        return []
+        return [], []
 
-    candidate_entry_sets: list[list[BibliographyEntry]] = []
+    candidate_entry_sets: list[tuple[list[BibliographyEntry], str | None]] = []
     for line_index, line in enumerate(paper_text_stream.lines):
         start_text = reference_start_text(line.text)
         heading_match = REFERENCE_HEADING_LINE_PATTERN.match(start_text)
         inline_match = INLINE_REFERENCE_START_PATTERN.match(start_text)
-        if inline_match is None and (
-            heading_match is None
-            or not _line_has_reference_section_heading_layout(line, paper_text_stream)
-        ):
+        if inline_match is None and heading_match is None:
             continue
         inline_body = inline_match.group("body") if inline_match is not None else None
         entries = _build_bibliography_entries_from_layout_region(
@@ -197,54 +194,40 @@ def build_bibliography_entries_from_text_stream(
             inline_body=inline_body,
             heading=inline_match.group("heading") if inline_match is not None else start_text,
         )
-        if entries and _bibliography_entries_have_reference_list_shape(entries):
-            candidate_entry_sets.append(entries)
+        first_entry_line_id = (
+            entries[0].source_line_ids[0]
+            if entries and entries[0].source_line_ids
+            else None
+        )
+        bibliography_follows_heading = inline_match is not None or (
+            line_index + 1 < len(paper_text_stream.lines)
+            and first_entry_line_id == paper_text_stream.lines[line_index + 1].line_id
+        )
+        if (
+            entries
+            and bibliography_follows_heading
+            and _bibliography_entries_have_reference_list_shape(entries)
+        ):
+            candidate_entry_sets.append(
+                (entries, line.line_id if heading_match is not None else None)
+            )
 
     if not candidate_entry_sets:
-        return []
-    return max(
+        return [], []
+    selected_entries, _selected_heading_line_id = max(
         candidate_entry_sets,
-        key=lambda entries: (
-            len(entries),
-            sum(entry.reference_number is not None for entry in entries),
-            max((entry.reference_number or 0 for entry in entries), default=0),
-            -sum(len(entry.clean_text) for entry in entries),
+        key=lambda candidate: (
+            len(candidate[0]),
+            sum(entry.reference_number is not None for entry in candidate[0]),
+            max((entry.reference_number or 0 for entry in candidate[0]), default=0),
+            -sum(len(entry.clean_text) for entry in candidate[0]),
         ),
     )
-
-
-def _line_has_reference_section_heading_layout(
-    line: PaperTextLine,
-    paper_text_stream: PaperTextStream,
-) -> bool:
-    """Return whether a reference-heading text line has section-heading layout."""
-    if line.role != "heading" and "layout_section_heading" not in line.notes:
-        return False
-    page = next(
-        (page for page in paper_text_stream.pages if page.page_num == line.page_num),
-        None,
-    )
-    if page is None:
-        return True
-    page_width = max(float(page.page_width), 1.0)
-    column_bands = page.column_bands or [(0.0, page_width)]
-    column_index = min(max(line.column_index, 0), len(column_bands) - 1)
-    band_left, band_right = column_bands[column_index]
-    same_column_lines = [
-        stream_line
-        for stream_line in paper_text_stream.lines
-        if stream_line.page_num == line.page_num and stream_line.column_index == line.column_index
+    return selected_entries, [
+        heading_line_id
+        for _entries, heading_line_id in candidate_entry_sets
+        if heading_line_id is not None
     ]
-    content_left = min((float(stream_line.bbox[0]) for stream_line in same_column_lines), default=float(band_left))
-    content_right = max((float(stream_line.bbox[2]) for stream_line in same_column_lines), default=float(band_right))
-    band_width = max(float(band_right) - float(band_left), 1.0)
-    left, _top, right, _bottom = line.bbox
-    line_center = (float(left) + float(right)) / 2.0
-    content_center = (content_left + content_right) / 2.0
-    content_width = max(content_right - content_left, band_width)
-    left_aligned = float(left) <= content_left + max(24.0, content_width * 0.06)
-    centered_heading = abs(line_center - content_center) <= max(32.0, content_width * 0.12)
-    return left_aligned or centered_heading or "full_width_line" in line.notes
 
 
 def _bibliography_entries_have_reference_list_shape(entries: Sequence[BibliographyEntry]) -> bool:

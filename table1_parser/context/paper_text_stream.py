@@ -13,6 +13,7 @@ from table1_parser.schemas import (
     PaperPageFurniture,
     PaperPositionedDocument,
     PaperPositionedLine,
+    PaperTextBlock,
     PaperTextLine,
     PaperTextOrientationGroup,
     PaperTextPage,
@@ -23,40 +24,6 @@ from table1_parser.text_cleaning import clean_text
 
 BODY_TEXT_STYLE_MIN_FONT_SIZE = 5.0
 BODY_TEXT_STYLE_MAX_FONT_SIZE = 18.0
-SECTION_HEADING_TEXTS = {
-    "abstract",
-    "introduction",
-    "methods",
-    "materials and methods",
-    "patients and methods",
-    "study population",
-    "healthy lifestyle score",
-    "covariates",
-    "assessment of the outcomes",
-    "statistical analysis",
-    "results",
-    "discussion",
-    "conclusion",
-    "conclusions",
-    "supplementary information",
-    "acknowledgements",
-    "acknowledgments",
-    "author contributions",
-    "funding",
-    "availability of data and materials",
-    "declarations",
-    "ethics approval and consent to participate",
-    "consent for publication",
-    "competing interests",
-    "author details",
-    "references",
-    "bibliography",
-    "works cited",
-    "literature cited",
-    "abbreviations",
-    "publisher's note",
-    "publisher’s note",
-}
 TABLE_CAPTION_LINE_PATTERN = re.compile(r"^\s*table\s+[A-Za-z]?\d+[A-Za-z]?\b", re.IGNORECASE)
 
 
@@ -67,7 +34,7 @@ def build_paper_text_stream(
     paper_positioned_document: PaperPositionedDocument | None = None,
     paper_id: str | None = None,
 ) -> PaperTextStream:
-    """Build layout-aware full-paper text ordered by page, column, then y-position."""
+    """Build full-paper text ordered by page, orientation, source block, and column."""
     if paper_positioned_document is None:
         from table1_parser.context.paper_positioned_document import build_paper_positioned_document
 
@@ -150,7 +117,7 @@ def build_paper_text_stream(
                 oriented_records,
                 canonical_width,
             )
-            ordered_records = _order_page_lines(oriented_records, group_boundaries, canonical_width)
+            ordered_records = _order_page_blocks(oriented_records, group_boundaries, canonical_width)
             for record in ordered_records:
                 record["group_column_count"] = group_column_count
             ordered_groups.append(((source_top, source_left), ordered_records))
@@ -184,13 +151,10 @@ def build_paper_text_stream(
             column_count, column_boundaries, column_bands = upright_columns
         for logical_index, record in enumerate(ordered_records):
             text = str(record["text"])
-            role = "heading" if _looks_like_section_heading(text) else "body"
             column_index = int(record.get("column_index", 0))
             line_notes = list(record.get("notes", [])) if isinstance(record.get("notes"), list) else []
             if record.get("has_bold"):
                 line_notes.append("has_bold_text")
-            if role == "heading":
-                line_notes.append("layout_section_heading")
             orientation = str(record.get("orientation") or "upright")
             if orientation != "upright":
                 line_notes.append(f"orientation_group:{orientation}")
@@ -222,8 +186,8 @@ def build_paper_text_stream(
                     orientation_group_id=str(record["orientation_group_id"]),
                     column_index=column_index,
                     column_count=int(record["group_column_count"]),
-                    role=role,
-                    confidence=0.86 if role == "heading" else 0.78,
+                    role="body",
+                    confidence=0.78,
                     dominant_font=str(record["dominant_font"]) if isinstance(record.get("dominant_font"), str) else None,
                     dominant_font_size=float(record["dominant_font_size"]) if isinstance(record.get("dominant_font_size"), (int, float)) else None,
                     spans=list(record.get("spans", [])) if isinstance(record.get("spans"), list) else [],
@@ -246,7 +210,6 @@ def build_paper_text_stream(
             )
         )
 
-    markdown = paper_text_stream_to_markdown(stream_lines)
     total_style_characters = sum(font_style_counts.values())
     font_style_summary = [
         {
@@ -257,20 +220,119 @@ def build_paper_text_stream(
         }
         for (font, font_size), character_count in font_style_counts.most_common()
     ]
+    dominant_body_text_style = font_style_summary[0] if font_style_summary else None
+    body_font_size = (
+        dominant_body_text_style.get("font_size")
+        if isinstance(dominant_body_text_style, dict)
+        else None
+    )
+    classified_stream_lines: list[PaperTextLine] = []
+    for line in stream_lines:
+        visible_spans = [
+            span
+            for span in line.spans
+            if isinstance(span, dict) and "".join(str(span.get("text", "")).split())
+        ]
+        is_heading = (
+            visible_spans
+            and all(
+                "bold" in str(span.get("font") or "").lower()
+                or "semibold" in str(span.get("font") or "").lower()
+                or (isinstance(span.get("flags"), int) and bool(int(span["flags"]) & 16))
+                for span in visible_spans
+            )
+            and isinstance(body_font_size, (int, float))
+            and line.dominant_font_size is not None
+            and line.block_index is not None
+            and float(line.dominant_font_size) > float(body_font_size)
+            and TABLE_CAPTION_LINE_PATTERN.match(line.text) is None
+        )
+        if is_heading:
+            source_block_lines = [
+                block_line
+                for block_line in stream_lines
+                if block_line.page_num == line.page_num
+                and block_line.orientation_group_id == line.orientation_group_id
+                and block_line.block_index == line.block_index
+            ]
+            source_block_visible_spans = [
+                span
+                for block_line in source_block_lines
+                for span in block_line.spans
+                if isinstance(span, dict) and "".join(str(span.get("text", "")).split())
+            ]
+            source_block_is_all_bold = bool(source_block_visible_spans) and all(
+                "bold" in str(span.get("font") or "").lower()
+                or "semibold" in str(span.get("font") or "").lower()
+                or (isinstance(span.get("flags"), int) and bool(int(span["flags"]) & 16))
+                for span in source_block_visible_spans
+            )
+            source_block_text = " ".join(block_line.text for block_line in source_block_lines)
+            if source_block_is_all_bold and re.search(r"[.!?](?=\s|$)", source_block_text):
+                is_heading = False
+        if is_heading:
+            classified_stream_lines.append(
+                line.model_copy(
+                    update={
+                        "role": "heading",
+                        "confidence": 0.86,
+                        "notes": [*line.notes, "layout_section_heading"],
+                    }
+                )
+            )
+            continue
+        classified_stream_lines.append(line)
+
+    text_blocks: list[PaperTextBlock] = []
+    current_block_lines: list[PaperTextLine] = []
+    for line in [*classified_stream_lines, None]:
+        if current_block_lines and (
+            line is None
+            or line.page_num != current_block_lines[-1].page_num
+            or line.orientation_group_id != current_block_lines[-1].orientation_group_id
+            or line.block_index != current_block_lines[-1].block_index
+        ):
+            block_roles = {block_line.role for block_line in current_block_lines}
+            text_blocks.append(
+                PaperTextBlock(
+                    block_id=(
+                        f"paper_text_block:page-{current_block_lines[0].page_num}:"
+                        f"{current_block_lines[0].orientation}:"
+                        f"{current_block_lines[0].block_index}"
+                    ),
+                    order=len(text_blocks),
+                    page_num=current_block_lines[0].page_num,
+                    source_block_index=current_block_lines[0].block_index,
+                    orientation=current_block_lines[0].orientation,
+                    bbox=(
+                        min(block_line.bbox[0] for block_line in current_block_lines),
+                        min(block_line.bbox[1] for block_line in current_block_lines),
+                        max(block_line.bbox[2] for block_line in current_block_lines),
+                        max(block_line.bbox[3] for block_line in current_block_lines),
+                    ),
+                    line_ids=[block_line.line_id for block_line in current_block_lines],
+                    role=next(iter(block_roles)) if len(block_roles) == 1 else "mixed",
+                    text="\n".join(block_line.text for block_line in current_block_lines),
+                )
+            )
+            current_block_lines = []
+        if line is not None:
+            current_block_lines.append(line)
+
     return PaperTextStream(
         paper_id=paper_id or Path(pdf_path).stem,
         source_pdf=Path(pdf_path).name,
-        markdown=markdown,
-        lines=stream_lines,
+        lines=classified_stream_lines,
+        blocks=text_blocks,
         pages=stream_pages,
         metadata={
             "source_artifacts": ["paper_positioned_document.json", "paper_page_furniture.json"],
             "line_count": len(stream_lines),
             "page_count": len(stream_pages),
             "removed_page_furniture_line_count": removed_furniture_line_count,
-            "column_order": "page_then_orientation_group_then_column_then_y",
+            "column_order": "page_then_orientation_group_then_source_block_column_then_block_top",
             "font_style_character_counts": font_style_summary,
-            "dominant_body_text_style": font_style_summary[0] if font_style_summary else None,
+            "dominant_body_text_style": dominant_body_text_style,
         },
     )
 
@@ -471,65 +533,110 @@ def _detect_caption_aligned_columns(
     return None
 
 
-def _order_page_lines(
+def _order_page_blocks(
     line_records: list[dict[str, object]],
     column_boundaries: list[float],
     page_width: float,
 ) -> list[dict[str, object]]:
+    source_blocks: dict[int, list[dict[str, object]]] = {}
+    for record_order, record in enumerate(line_records):
+        block_index = record.get("block_index")
+        source_blocks.setdefault(
+            int(block_index) if isinstance(block_index, int) else -(record_order + 1),
+            [],
+        ).append(record)
+    ordered_blocks: list[dict[str, object]] = []
+    for block_index, block_records in source_blocks.items():
+        source_ordered_records = sorted(
+            block_records,
+            key=lambda record: (
+                int(record["line_index"])
+                if isinstance(record.get("line_index"), int)
+                else 10**9
+            ),
+        )
+        ordered_blocks.append(
+            {
+                "block_index": block_index,
+                "bbox": (
+                    min(float(record["bbox"][0]) for record in source_ordered_records),
+                    min(float(record["bbox"][1]) for record in source_ordered_records),
+                    max(float(record["bbox"][2]) for record in source_ordered_records),
+                    max(float(record["bbox"][3]) for record in source_ordered_records),
+                ),
+                "records": source_ordered_records,
+            }
+        )
+
     column_count = len(column_boundaries) + 1
     if column_count <= 1:
-        ordered = sorted(line_records, key=lambda record: (float(record["bbox"][1]), float(record["bbox"][0])))
-        for record in ordered:
-            record["column_index"] = 0
-        return ordered
+        output_records: list[dict[str, object]] = []
+        for block in sorted(
+            ordered_blocks,
+            key=lambda item: (
+                float(item["bbox"][1]),
+                float(item["bbox"][0]),
+                int(item["block_index"]),
+            ),
+        ):
+            for record in block["records"]:
+                record["column_index"] = 0
+                output_records.append(record)
+        return output_records
 
     top_full_width: list[dict[str, object]] = []
     bottom_full_width: list[dict[str, object]] = []
-    column_records: list[dict[str, object]] = []
-    non_full_records = [
-        record
-        for record in line_records
-        if not _is_full_width_record(record, page_width)
+    column_blocks: list[dict[str, object]] = []
+    non_full_blocks = [
+        block
+        for block in ordered_blocks
+        if not _is_full_width_record(block, page_width)
     ]
-    min_column_top = min((float(record["bbox"][1]) for record in non_full_records), default=0.0)
-    max_column_bottom = max((float(record["bbox"][3]) for record in non_full_records), default=0.0)
-    for record in line_records:
-        if _is_full_width_record(record, page_width):
-            record["column_index"] = 0
-            record.setdefault("notes", []).append("full_width_line")
-            if float(record["bbox"][3]) <= min_column_top + 4.0:
-                top_full_width.append(record)
-            elif float(record["bbox"][1]) >= max_column_bottom - 4.0:
-                bottom_full_width.append(record)
+    min_column_top = min((float(block["bbox"][1]) for block in non_full_blocks), default=0.0)
+    max_column_bottom = max((float(block["bbox"][3]) for block in non_full_blocks), default=0.0)
+    for block in ordered_blocks:
+        if _is_full_width_record(block, page_width):
+            for record in block["records"]:
+                record["column_index"] = 0
+                record.setdefault("notes", []).append("full_width_line")
+            if float(block["bbox"][3]) <= min_column_top:
+                top_full_width.append(block)
+            elif float(block["bbox"][1]) >= max_column_bottom:
+                bottom_full_width.append(block)
             else:
-                column_records.append(record)
+                column_blocks.append(block)
             continue
-        record["column_index"] = sum(float(record["bbox"][0]) >= boundary for boundary in column_boundaries)
-        column_records.append(record)
+        column_index = sum(float(block["bbox"][0]) >= boundary for boundary in column_boundaries)
+        for record in block["records"]:
+            record["column_index"] = column_index
+        block["column_index"] = column_index
+        column_blocks.append(block)
 
-    ordered_columns: list[dict[str, object]] = []
+    ordered_output_blocks: list[dict[str, object]] = []
+    ordered_output_blocks.extend(
+        sorted(
+            top_full_width,
+            key=lambda block: (float(block["bbox"][1]), float(block["bbox"][0])),
+        )
+    )
     for column_index in range(column_count):
-        ordered_columns.extend(
+        ordered_output_blocks.extend(
             sorted(
-                [record for record in column_records if int(record.get("column_index", 0)) == column_index],
-                key=lambda record: (float(record["bbox"][1]), float(record["bbox"][0])),
+                [block for block in column_blocks if int(block.get("column_index", 0)) == column_index],
+                key=lambda block: (float(block["bbox"][1]), float(block["bbox"][0])),
             )
         )
+    ordered_output_blocks.extend(
+        sorted(
+            bottom_full_width,
+            key=lambda block: (float(block["bbox"][1]), float(block["bbox"][0])),
+        )
+    )
     return [
-        *sorted(top_full_width, key=lambda record: (float(record["bbox"][1]), float(record["bbox"][0]))),
-        *ordered_columns,
-        *sorted(bottom_full_width, key=lambda record: (float(record["bbox"][1]), float(record["bbox"][0]))),
+        record
+        for block in ordered_output_blocks
+        for record in block["records"]
     ]
-
-
-def _looks_like_section_heading(text: str) -> bool:
-    normalized = clean_text(text).strip(" :").lower()
-    if not normalized or len(normalized) > 120:
-        return False
-    if normalized in SECTION_HEADING_TEXTS:
-        return True
-    return False
-
 
 def _bbox_width(bbox: object) -> float:
     left, _top, right, _bottom = bbox

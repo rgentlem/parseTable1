@@ -43,6 +43,7 @@ from table1_parser.context import (
     paper_variable_inventory_to_payload,
     paper_sections_to_payload,
     paper_table_mentions_to_payload,
+    paper_text_stream_to_markdown,
     parse_markdown_sections,
 )
 from table1_parser.diagnostics import ParseQualityReport, build_parse_quality_report
@@ -511,15 +512,54 @@ def _build_paper_context_artifacts(pdf_path: str) -> PaperContextArtifacts:
         paper_positioned_document=paper_positioned_document,
         paper_id=paper_stem,
     )
+    bibliography_entries, bibliography_heading_line_ids = (
+        build_bibliography_entries_from_text_stream(paper_text_stream)
+    )
+    if bibliography_heading_line_ids:
+        bibliography_heading_line_id_set = set(bibliography_heading_line_ids)
+        updated_lines = [
+            line.model_copy(
+                update={
+                    "role": "heading",
+                    "confidence": 0.98,
+                    "notes": [*line.notes, "confirmed_bibliography_heading"],
+                }
+            )
+            if line.line_id in bibliography_heading_line_id_set
+            else line
+            for line in paper_text_stream.lines
+        ]
+        updated_line_roles = {line.line_id: line.role for line in updated_lines}
+        updated_blocks = []
+        for block in paper_text_stream.blocks:
+            block_roles = {
+                updated_line_roles[line_id]
+                for line_id in block.line_ids
+                if line_id in updated_line_roles
+            }
+            updated_blocks.append(
+                block.model_copy(
+                    update={
+                        "role": (
+                            next(iter(block_roles))
+                            if len(block_roles) == 1
+                            else "mixed"
+                        )
+                    }
+                )
+            )
+        paper_text_stream = paper_text_stream.model_copy(
+            update={"lines": updated_lines, "blocks": updated_blocks}
+        )
+    paper_text_stream = paper_text_stream.model_copy(
+        update={"markdown": paper_text_stream_to_markdown(paper_text_stream.lines)}
+    )
     if not paper_text_stream.markdown.strip():
         raise RuntimeError(
             "PyMuPDF positioned text stream did not produce paper_markdown.md."
         )
     paper_sections = parse_markdown_sections(paper_text_stream.markdown)
     paper_table_mentions = build_paper_table_mentions(paper_text_stream)
-    bibliography_entries = build_bibliography_entries_from_text_stream(
-        paper_text_stream
-    )
     if not bibliography_entries:
         bibliography_entries = build_bibliography_entries_from_sections(paper_sections)
     return PaperContextArtifacts(

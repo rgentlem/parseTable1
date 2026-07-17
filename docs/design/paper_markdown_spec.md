@@ -34,8 +34,8 @@ The parser builds one shared PyMuPDF positioned-document pass first. Page
 furniture detection consumes that shared evidence, extraction and cell
 annotation consume its words/chars/rules, then `paper_text_stream.json` filters
 repeated furniture lines, partitions each page by writing direction, projects
-rotated groups into upright local coordinates, and orders text by page,
-orientation group, detected group-local column, and vertical position.
+rotated groups into upright local coordinates, and orders positioned source
+blocks by page, orientation group, detected group-local column, and block top.
 `paper_markdown.md` is rendered from that filtered stream.
 
 There is no `pymupdf4llm.to_markdown(...)` fallback. If PyMuPDF positioned text
@@ -85,7 +85,7 @@ The pipeline should therefore:
 - derive paper-level marker, caption, and reference-style summaries in
   `paper_style_profile.json` from the structured paper artifacts
 - tolerate section-name variation
-- avoid hardcoding exact heading names as the only way to find methods-like or results-like content
+- do not use a heading-name list to assign heading roles
 - avoid using the references or bibliography as a primary source for paper-level variable inventory
 - treat references/bibliography as a separate document section, not as table
   content; bibliography extraction should keep each citation as an atomic
@@ -100,9 +100,10 @@ evidence.
 `paper_text_stream.json` is the layout-aware document-context artifact. It
 records orientation groups, group-local column boundaries and bands, original
 source line IDs/page-space bboxes, canonical bboxes, per-line geometry/style,
-and minimal source span records. It orders text as page, orientation group,
-column, then vertical position. The raw positioned document remains unchanged;
-the canonical orientation is a derived reading-order projection.
+minimal source span records, and typed `PaperTextBlock` records. Each block
+stores its document order, page, source block index, orientation, exact union
+bbox, ordered line IDs, role, and text. The raw positioned document remains
+unchanged; the canonical orientation is a derived reading-order projection.
 
 The extraction caption path consumes this stream directly. Caption labels are
 recognized from line/span evidence, bound to table candidates in the canonical
@@ -115,6 +116,16 @@ evidence needed to recognize a label.
 `paper_sections.json` is the structured interpretation of that layout-aware
 stream. The parser no longer falls back to backend markdown when positioned text
 cannot be read.
+
+Heading roles are assigned from the positioned typography after the paper body
+font profile is available. Every visible span on the line must be bold and the
+line font size must be strictly greater than the dominant body font size. A
+table-caption line is excluded, as is an entirely bold source block containing
+completed sentence prose. General heading text is not matched against a
+vocabulary. Separately, exact whole-line `References`, `References and Notes`,
+`Bibliography`, `Works Cited`, and `Literature Cited` labels become headings
+when the existing bibliography parser confirms an immediately following
+reference list. This confirmation occurs before Markdown rendering.
 
 Page furniture filtering removes repeated running headers, footers, watermarks,
 and similar recurring non-content lines. It should not be used as the semantic
