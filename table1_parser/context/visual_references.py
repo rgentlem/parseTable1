@@ -181,7 +181,7 @@ def annotate_visual_reference_checks(
 
 
 def section_paragraphs(section: PaperSection) -> list[str]:
-    """Return cleaned prose chunks for one markdown-derived section, excluding embedded table bodies."""
+    """Return cleaned prose chunks for one block-derived section, excluding embedded table bodies."""
     if not section.content:
         return []
     chunks: list[str] = []

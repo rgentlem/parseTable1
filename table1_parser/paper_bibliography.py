@@ -252,7 +252,7 @@ def _bibliography_entries_have_reference_list_shape(entries: Sequence[Bibliograp
 def build_bibliography_entries_from_sections(
     paper_sections: Sequence[PaperSection],
 ) -> list[BibliographyEntry]:
-    """Parse numbered bibliography entries from markdown-derived paper sections."""
+    """Parse numbered bibliography entries from paper sections."""
     entries: list[BibliographyEntry] = []
     seen_entry_ids: set[str] = set()
     for section in paper_sections:

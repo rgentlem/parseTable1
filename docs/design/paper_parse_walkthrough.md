@@ -232,7 +232,7 @@ bibliographic resolution belongs in `paper_bibliography.json`.
 numbered or unnumbered, and observed numeric reference markers linked to
 numbered entries. Bibliography entries are extracted from layout-aware,
 page-furniture-filtered `paper_text_stream.json` before table extraction, with
-markdown-derived sections retained as fallback. The layout reader uses one
+block-derived sections retained as fallback. The layout reader uses one
 entry-boundary workflow: read page, column, then vertical position; start a new
 entry when the row returns to the column's left edge, either at a numeric label
 or at the first author/organization text in a hanging-indent list; keep indented
@@ -272,8 +272,9 @@ containing completed sentence prose are excluded. No heading-name list is used.
 Exact whole-line bibliography labels are the narrow exception: the existing
 bibliography parser confirms them from the immediately following reference list,
 then the confirmed source lines receive the heading role before Markdown and
-section generation. Their existing source blocks are relabeled `heading` or
-`mixed`; block splitting remains a later step.
+section generation. Once these final roles are available, source blocks are
+split at heading/body transitions. Consecutive heading lines stay together, and
+each logical block preserves its source block index and ordered line provenance.
 `extracted_tables.json` preserves the selected physical table grid.
 Later normalized and continuation-resolved artifacts reference these records;
 they do not replace them.
@@ -1193,7 +1194,7 @@ This is separate from table extraction.
 The current paper-context path is:
 
 ```text
-PDF -> paper_positioned_document.json -> paper_page_furniture.json -> paper_text_stream.json -> paper_markdown.md -> paper_sections.json -> paper_table_mentions.json -> paper_bibliography.json -> paper_visual_inventory.json -> paper_references.json -> paper_style_profile.json -> paper_variable_inventory.json -> table_contexts/*.json
+PDF -> paper_positioned_document.json -> paper_page_furniture.json -> paper_text_stream.json -> paper_sections.json + paper_markdown.md -> paper_table_mentions.json -> paper_bibliography.json -> paper_visual_inventory.json -> paper_references.json -> paper_style_profile.json -> paper_variable_inventory.json -> table_contexts/*.json
 ```
 
 ### `paper_markdown.md`
@@ -1204,7 +1205,6 @@ It is not the canonical table grid.
 
 It is used for:
 
-- section detection
 - table mention retrieval
 - variable-term retrieval
 - future semantic grounding
@@ -1228,9 +1228,12 @@ bbox, font name, font size, and flags without reparsing the PDF.
 
 ### `paper_sections.json`
 
-The layout-aware stream is rendered to lightweight markdown and split into a
-linear list of sections, with simple role hints such as methods-like or
-results-like.
+The ordered text blocks are grouped into a linear list of sections. Each
+heading block starts a section, and following body blocks belong to that
+heading until the next heading block. `heading_block_id` and ordered
+`body_block_ids` preserve that ownership; section content is assembled directly
+from those body blocks. Simple role hints such as methods-like or results-like
+remain derived from the heading text.
 
 This gives the parser a document structure that is easier to retrieve from than raw markdown alone.
 
@@ -1330,7 +1333,7 @@ The parser builds a paper-level inventory of actual in-paper visual objects.
 
 For tables, this starts from extracted table titles and captions and links back to `table_id` when possible.
 
-For figures, the implemented scope is caption inventory from markdown-derived
+For figures, the implemented scope is caption inventory from block-derived
 text plus a narrow positioned-text case: when a standalone `.gNNN` DOI directly
 follows a same-page caption sequence beginning with the matching `Figure/Fig
 N` label at the same text origin, that caption is retained as a figure visual.

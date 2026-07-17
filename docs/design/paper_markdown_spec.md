@@ -113,9 +113,11 @@ fallbacks are not caption sources. Raw line text and page coordinates remain
 unchanged in the stream even when span order or font separation provides the
 evidence needed to recognize a label.
 
-`paper_sections.json` is the structured interpretation of that layout-aware
-stream. The parser no longer falls back to backend markdown when positioned text
-cannot be read.
+`paper_sections.json` is built directly from the ordered blocks in that
+layout-aware stream. Each section stores its heading block ID and ordered body
+block IDs, and its content is assembled from those body blocks. Markdown is a
+view of the same blocks and is not the source of section structure. The parser
+no longer falls back to backend markdown when positioned text cannot be read.
 
 Heading roles are assigned from the positioned typography after the paper body
 font profile is available. Every visible span on the line must be bold and the
@@ -125,11 +127,15 @@ completed sentence prose. General heading text is not matched against a
 vocabulary. Separately, exact whole-line `References`, `References and Notes`,
 `Bibliography`, `Works Cited`, and `Literature Cited` labels become headings
 when the existing bibliography parser confirms an immediately following
-reference list. This confirmation occurs before Markdown rendering.
+reference list. After these final roles are available, each source block is
+split at heading/body transitions into ordered logical blocks. Split blocks
+retain their source block index and ordered line provenance; only their block
+ID, union bbox, role, and text reflect the segment. This occurs before Markdown
+rendering.
 
 Page furniture filtering removes repeated running headers, footers, watermarks,
 and similar recurring non-content lines. It should not be used as the semantic
-section classifier for arbitrary one-off headings. Section parsing should
+section classifier for arbitrary one-off headings. Section construction should
 preserve the original heading text while mapping headings into broad paper roles
 such as abstract, introduction/background, methods, results, discussion,
 conclusion, references, and other.

@@ -8,7 +8,6 @@ from pathlib import Path
 
 from table1_parser.page_furniture_mask import page_furniture_cluster_ids_for_bbox
 from table1_parser.paper_page_furniture import normalize_page_furniture_text
-from table1_parser.reference_sections import INLINE_REFERENCE_START_PATTERN
 from table1_parser.schemas import (
     PaperPageFurniture,
     PaperPositionedDocument,
@@ -337,27 +336,23 @@ def build_paper_text_stream(
     )
 
 
-def paper_text_stream_to_markdown(lines: list[PaperTextLine]) -> str:
-    """Render layout-ordered paper text lines as lightweight markdown for section parsing."""
+def paper_text_stream_to_markdown(blocks: list[PaperTextBlock]) -> str:
+    """Render ordered paper text blocks as lightweight markdown."""
     markdown_lines: list[str] = []
     previous_page_num: int | None = None
-    for line in lines:
-        if previous_page_num is not None and line.page_num != previous_page_num:
+    for block in blocks:
+        if previous_page_num is not None and block.page_num != previous_page_num:
             markdown_lines.append("")
-        previous_page_num = line.page_num
-        inline_match = INLINE_REFERENCE_START_PATTERN.match(line.text)
-        if inline_match is not None:
-            markdown_lines.append(f"## {inline_match.group('heading')}")
-            markdown_lines.append(inline_match.group("body"))
-            continue
-        if line.role == "heading":
+        previous_page_num = block.page_num
+        if block.role == "heading":
             if markdown_lines and markdown_lines[-1] != "":
                 markdown_lines.append("")
-            markdown_lines.append(f"## {line.text}")
+            markdown_lines.append(f"## {clean_text(block.text)}")
             markdown_lines.append("")
             continue
-        markdown_lines.append(line.text)
+        markdown_lines.append(block.text)
     return "\n".join(markdown_lines).strip() + ("\n" if markdown_lines else "")
+
 
 def _line_record_from_positioned_line(line: PaperPositionedLine) -> dict[str, object]:
     return {

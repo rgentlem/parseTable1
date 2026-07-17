@@ -34,6 +34,7 @@ from table1_parser.continued_variable_integration import (
 from table1_parser.context import (
     annotate_visual_reference_checks,
     build_paper_positioned_document,
+    build_paper_sections_from_blocks,
     build_paper_text_stream,
     build_paper_table_mentions,
     build_paper_visual_inventory,
@@ -44,7 +45,6 @@ from table1_parser.context import (
     paper_sections_to_payload,
     paper_table_mentions_to_payload,
     paper_text_stream_to_markdown,
-    parse_markdown_sections,
 )
 from table1_parser.diagnostics import ParseQualityReport, build_parse_quality_report
 from table1_parser.extract import build_extractor
@@ -515,6 +515,7 @@ def _build_paper_context_artifacts(pdf_path: str) -> PaperContextArtifacts:
     bibliography_entries, bibliography_heading_line_ids = (
         build_bibliography_entries_from_text_stream(paper_text_stream)
     )
+    updated_lines = paper_text_stream.lines
     if bibliography_heading_line_ids:
         bibliography_heading_line_id_set = set(bibliography_heading_line_ids)
         updated_lines = [
@@ -529,36 +530,61 @@ def _build_paper_context_artifacts(pdf_path: str) -> PaperContextArtifacts:
             else line
             for line in paper_text_stream.lines
         ]
-        updated_line_roles = {line.line_id: line.role for line in updated_lines}
-        updated_blocks = []
-        for block in paper_text_stream.blocks:
-            block_roles = {
-                updated_line_roles[line_id]
-                for line_id in block.line_ids
-                if line_id in updated_line_roles
-            }
+    updated_lines_by_id = {line.line_id: line for line in updated_lines}
+    updated_blocks = []
+    for block in paper_text_stream.blocks:
+        block_lines = [updated_lines_by_id[line_id] for line_id in block.line_ids]
+        block_segments = []
+        current_segment = []
+        for line in block_lines:
+            if (
+                current_segment
+                and line.role != current_segment[-1].role
+                and {line.role, current_segment[-1].role} == {"heading", "body"}
+            ):
+                block_segments.append(current_segment)
+                current_segment = []
+            current_segment.append(line)
+        if current_segment:
+            block_segments.append(current_segment)
+        for segment_index, segment_lines in enumerate(block_segments):
+            segment_roles = {line.role for line in segment_lines}
             updated_blocks.append(
                 block.model_copy(
                     update={
+                        "block_id": (
+                            block.block_id
+                            if len(block_segments) == 1
+                            else f"{block.block_id}:segment-{segment_index + 1}"
+                        ),
+                        "order": len(updated_blocks),
+                        "bbox": (
+                            min(line.bbox[0] for line in segment_lines),
+                            min(line.bbox[1] for line in segment_lines),
+                            max(line.bbox[2] for line in segment_lines),
+                            max(line.bbox[3] for line in segment_lines),
+                        ),
+                        "line_ids": [line.line_id for line in segment_lines],
                         "role": (
-                            next(iter(block_roles))
-                            if len(block_roles) == 1
+                            next(iter(segment_roles))
+                            if len(segment_roles) == 1
                             else "mixed"
-                        )
+                        ),
+                        "text": "\n".join(line.text for line in segment_lines),
                     }
                 )
             )
-        paper_text_stream = paper_text_stream.model_copy(
-            update={"lines": updated_lines, "blocks": updated_blocks}
-        )
     paper_text_stream = paper_text_stream.model_copy(
-        update={"markdown": paper_text_stream_to_markdown(paper_text_stream.lines)}
+        update={"lines": updated_lines, "blocks": updated_blocks}
+    )
+    paper_text_stream = paper_text_stream.model_copy(
+        update={"markdown": paper_text_stream_to_markdown(paper_text_stream.blocks)}
     )
     if not paper_text_stream.markdown.strip():
         raise RuntimeError(
             "PyMuPDF positioned text stream did not produce paper_markdown.md."
         )
-    paper_sections = parse_markdown_sections(paper_text_stream.markdown)
+    paper_sections = build_paper_sections_from_blocks(paper_text_stream.blocks)
     paper_table_mentions = build_paper_table_mentions(paper_text_stream)
     if not bibliography_entries:
         bibliography_entries = build_bibliography_entries_from_sections(paper_sections)

@@ -191,7 +191,7 @@ Tests:
 
 ### Phase 4: Figure Caption Inventory
 
-Implement figure caption detection from markdown-derived sections.
+Implement figure caption detection from block-derived sections.
 
 Function:
 

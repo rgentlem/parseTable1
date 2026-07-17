@@ -16,26 +16,42 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
   is `outputs/task1_step2_block_order_20260717`; PDF page 4 of
   `Role of Estimated Glucose Disposal Rate in Staging and Death Risk of Cardiovascular-Kidney-Metabolic Syndrome- Insights from NHANES 1999-2018.pdf`
   now emits source blocks 3, 4, then 6. Mixed-layout region ownership and the
-  later section ownership remain pending. `PaperTextStream.blocks` now exposes
-  those ordered source blocks as typed `PaperTextBlock` records. The focused
-  Step 4 run is `outputs/task1_step4_typed_blocks_20260717`: 161 blocks contain
-  all 1,366 stream lines exactly once, with exact recomputed bboxes, text, and
-  roles; one mixed-role source block remains for the approved split step.
+  later section ownership remain pending. `PaperTextStream.blocks` exposes
+  those ordered source blocks as typed `PaperTextBlock` records and, after
+  final heading classification, splits them only at heading/body transitions.
   The approved heading correction removes the exact heading-name list. The
   current stream assigns a heading only from complete-line bold evidence plus a
   font strictly larger than the dominant body font, excluding table captions and
   entirely bold source blocks containing completed sentence prose. The 28-PDF
-  final run is
-  `outputs/testpapers_batch_confirmed_bibliography_headings_accepted_20260717`:
+  final Step 5 run is
+  `outputs/testpapers_batch_step5_heading_body_blocks_20260717`:
   all 28 commands completed with 326 heading lines, including 29 exact
   bibliography labels confirmed by the immediately following reference list;
-  1,350 bibliography entries; 92 extracted tables; and no block coverage or
-  block-role inconsistency. In the eGDR paper, PDF page 2,
+  1,350 bibliography entries; and 92 extracted tables. The 174 mixed source
+  blocks became 348 single-role logical blocks, increasing the total from 4,500
+  to 4,674 with every line present exactly once in unchanged order and with no
+  downstream artifact changes. In the eGDR paper, PDF page 2,
   source line `page-2-line-114` remains the real `Covariates` heading while the
   sentence fragment at `page-2-line-116` remains body. On PDF page 9 of the
   Planetary Health paper, both `References` and `REFERENCES AND NOTES` are
   confirmed headings. The one failed Helicobacter continuation is unchanged
-  from the preceding corpus run. Step 5 block splitting remains pending.
+  from the preceding corpus run. Steps 6-9 are complete in
+  `outputs/testpapers_batch_steps6_9_block_sections_20260717`: all 4,674 blocks
+  are assigned exactly once across 313 sections; 287 heading blocks own 4,387
+  ordered body blocks. `PaperSection` now stores `heading_block_id` and
+  `body_block_ids`, section content comes directly from those body blocks, and
+  Markdown is a view of the same blocks. Reference occurrences, visual
+  captions, variable mentions, candidate labels, extracted tables,
+  bibliographies, table mentions, and footnotes are semantically unchanged.
+  Two contexts gained one passage through the new ownership: printed Table 3
+  in `Asthma prevalence among United States population insights from NHANES data analysis.pdf`
+  and printed Table 2 in
+  `Science-Advanaced-Planetary Health Diet and risk of mortality and chronic diseases- Results from US NHANES, UK Biobank, and a meta-analysis.pdf`.
+  No corrective rule was added. Steps 10-11 remove the unused legacy
+  Markdown-to-section function and regenerate the full corpus in
+  `outputs/testpapers_batch_steps10_11_canonical_sections_20260717`. All 28
+  papers are semantically identical to the Steps 6-9 run after excluding report
+  timestamps, with zero section block-ownership failures.
 - [ ] Complete the canonical positioned-evidence unification in
   `docs/implementation/canonical_orientation_unification_checklist.md` before
   making another footer-specific correction. The required path is

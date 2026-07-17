@@ -20,7 +20,7 @@ PassageMatchType = Literal["table_reference", "methods_term_match", "results_ter
 
 
 class PaperSection(BaseModel):
-    """One markdown-derived section of the source paper."""
+    """One block-derived section of the source paper."""
 
     section_id: str
     order: int = Field(ge=0)
@@ -28,6 +28,8 @@ class PaperSection(BaseModel):
     level: int = Field(default=0, ge=0, le=6)
     role_hint: SectionRoleHint = "other"
     content: str = ""
+    heading_block_id: str | None = None
+    body_block_ids: list[str] = Field(default_factory=list)
 
 
 class RetrievedPassage(BaseModel):

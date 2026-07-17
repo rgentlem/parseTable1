@@ -392,16 +392,10 @@ Use a Pydantic settings class.
 
 ---
 
-# Tests
+# Verification
 
-Create pytest tests for:
-
-1. schema validation
-2. object creation
-3. serialization
-4. CLI import
-
-Tests should confirm models can be instantiated and serialized.
+This repository intentionally has no pytest suite. Parser changes are verified
+through explicitly approved real-paper checks.
 
 ---
 
@@ -415,7 +409,6 @@ The repository should contain:
 - Pydantic schemas
 - CLI stub
 - config module
-- tests passing with pytest
 
 The code should import correctly and install locally.
 

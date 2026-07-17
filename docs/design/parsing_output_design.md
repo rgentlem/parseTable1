@@ -998,7 +998,9 @@ Design components:
   then block top; their lines retain source order. Contextual adjacency cannot
   cross page or orientation-group boundaries.
 - `paper_sections.json`
-  sections derived from the layout-aware text stream when available, with heading level and simple role hints
+  sections derived directly from ordered text blocks, with heading block ID,
+  ordered body block IDs, content assembled from those body blocks, heading
+  level, and simple role hints
 - `paper_table_mentions.json`
   pre-extraction table mention records derived from the layout-aware text stream,
   including whether each `Table N` line is likely a caption candidate,

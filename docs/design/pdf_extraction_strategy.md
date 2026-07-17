@@ -20,9 +20,9 @@ These should not be forced into one representation.
 # Primary Design Decision
 
 ## Narrative document text
-Primary representation: **Markdown**
+Primary representation: **ordered `PaperTextStream` blocks**
 
-Use Markdown for:
+Use block-owned `PaperSection` records for:
 - titles
 - abstract
 - section text
@@ -31,7 +31,9 @@ Use Markdown for:
 - RAG
 
 Reason:
-Markdown is well suited for narrative text and preserves useful section/document structure for retrieval workflows.
+Ordered blocks preserve positioned reading order and explicit heading/body
+ownership. Markdown remains a derived human-readable view of those blocks; it
+does not define section structure.
 
 ## Tables
 Primary representation: **JSON / structured table objects**

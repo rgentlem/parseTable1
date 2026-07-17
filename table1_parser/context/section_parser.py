@@ -1,14 +1,11 @@
-"""Markdown section parsing for paper-level context retrieval."""
+"""Block-based paper section construction."""
 
 from __future__ import annotations
 
-import re
-
-from table1_parser.schemas import PaperSection
+from table1_parser.schemas import PaperSection, PaperTextBlock
 from table1_parser.text_cleaning import clean_text
 
 
-HEADING_PATTERN = re.compile(r"^(#{1,6})\s+(.*\S)\s*$")
 ABSTRACT_HINTS = ("abstract",)
 METHODS_HINTS = (
     "method",
@@ -27,30 +24,40 @@ CONCLUSION_HINTS = ("conclusion", "conclusions", "summary")
 REFERENCES_HINTS = ("reference", "references", "bibliography", "works cited")
 
 
-def parse_markdown_sections(markdown: str) -> list[PaperSection]:
-    """Parse markdown into a linear list of sections with simple role hints."""
+def build_paper_sections_from_blocks(blocks: list[PaperTextBlock]) -> list[PaperSection]:
+    """Build sections by assigning each body block to its preceding heading block."""
     sections: list[PaperSection] = []
-    current_heading: str | None = None
-    current_level = 0
-    current_lines: list[str] = []
-    order = 0
-
-    for raw_line in markdown.splitlines():
-        match = HEADING_PATTERN.match(raw_line.strip())
-        if match is None:
-            current_lines.append(raw_line)
+    heading_block: PaperTextBlock | None = None
+    body_blocks: list[PaperTextBlock] = []
+    for block in blocks:
+        if block.role != "heading":
+            body_blocks.append(block)
             continue
-        if current_heading is not None or current_lines:
-            sections.append(_build_section(order, current_heading, current_level, current_lines))
-            order += 1
-        current_heading = clean_text(match.group(2))
-        current_level = len(match.group(1))
-        current_lines = []
-
-    if current_heading is not None or current_lines:
-        sections.append(_build_section(order, current_heading, current_level, current_lines))
-
-    return sections or [PaperSection(section_id="section_0", order=0, content=clean_text(markdown))]
+        if heading_block is not None or body_blocks:
+            sections.append(
+                _build_section(
+                    len(sections),
+                    clean_text(heading_block.text) if heading_block is not None else None,
+                    2 if heading_block is not None else 0,
+                    [body_block.text for body_block in body_blocks],
+                    heading_block_id=(heading_block.block_id if heading_block is not None else None),
+                    body_block_ids=[body_block.block_id for body_block in body_blocks],
+                )
+            )
+        heading_block = block
+        body_blocks = []
+    if heading_block is not None or body_blocks:
+        sections.append(
+            _build_section(
+                len(sections),
+                clean_text(heading_block.text) if heading_block is not None else None,
+                2 if heading_block is not None else 0,
+                [body_block.text for body_block in body_blocks],
+                heading_block_id=(heading_block.block_id if heading_block is not None else None),
+                body_block_ids=[body_block.block_id for body_block in body_blocks],
+            )
+        )
+    return sections or [PaperSection(section_id="section_0", order=0)]
 
 
 def paper_sections_to_payload(sections: list[PaperSection]) -> list[dict[str, object]]:
@@ -58,7 +65,15 @@ def paper_sections_to_payload(sections: list[PaperSection]) -> list[dict[str, ob
     return [section.model_dump(mode="json") for section in sections]
 
 
-def _build_section(order: int, heading: str | None, level: int, lines: list[str]) -> PaperSection:
+def _build_section(
+    order: int,
+    heading: str | None,
+    level: int,
+    lines: list[str],
+    *,
+    heading_block_id: str | None,
+    body_block_ids: list[str],
+) -> PaperSection:
     """Build one section object from heading and collected lines."""
     content = clean_text("\n".join(lines))
     lowered = clean_text(heading or "").lower()
@@ -89,4 +104,6 @@ def _build_section(order: int, heading: str | None, level: int, lines: list[str]
             )
         ),
         content=content,
+        heading_block_id=heading_block_id,
+        body_block_ids=body_block_ids,
     )

@@ -50,11 +50,11 @@ Before implementing parser logic changes, first report:
 - the proposed logic change
 - why the change is structural rather than ad hoc
 - what existing fallback, repair, or competing path would be removed or aligned
-- which real-paper checks and pytest commands would be run
+- which real-paper checks would be run
 
 Then wait for explicit approval before editing code. Investigation, read-only
-analysis, artifact inspection, documentation-only clarification, and test runs
-are allowed without approval. If the user explicitly says to implement a named
+analysis, artifact inspection, documentation-only clarification, and real-paper
+checks are allowed without approval. If the user explicitly says to implement a named
 logic change, that counts as approval only for that described change; do not
 expand the scope without asking again.
 
@@ -220,7 +220,6 @@ Before committing parser changes, report:
 - which testpaper PDFs were run
 - which output directory was used
 - which papers failed, if any
-- whether `pytest` passed
 
 # Project Goals
 
@@ -469,11 +468,9 @@ Do not collapse modules into one file.
 
 ## Tests
 
-All modules must be testable.
-
-Do not create new tests without specific user permission. To request permission,
-explain exactly what behavior the test would cover and why that coverage is
-worth adding.
+This repository intentionally has no pytest suite. Do not add, run, suggest, or
+ask to restore pytest tests unless the user explicitly requests reinstating
+pytest. Validate parser changes through the approved real-paper checks.
 
 ---
 

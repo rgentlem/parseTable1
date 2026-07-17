@@ -8,7 +8,10 @@ from table1_parser.context.paper_positioned_document import build_paper_position
 from table1_parser.context.retrieval import (
     build_table_contexts,
 )
-from table1_parser.context.section_parser import parse_markdown_sections, paper_sections_to_payload
+from table1_parser.context.section_parser import (
+    build_paper_sections_from_blocks,
+    paper_sections_to_payload,
+)
 from table1_parser.context.table_mentions import build_paper_table_mentions, paper_table_mentions_to_payload
 from table1_parser.context.variable_inventory import (
     build_paper_variable_inventory,
@@ -25,6 +28,7 @@ __all__ = [
     "build_table_contexts",
     "build_paper_text_stream",
     "build_paper_positioned_document",
+    "build_paper_sections_from_blocks",
     "build_paper_table_mentions",
     "build_figure_visuals",
     "build_paper_visual_inventory",
@@ -36,5 +40,4 @@ __all__ = [
     "paper_variable_inventory_to_payload",
     "paper_sections_to_payload",
     "paper_table_mentions_to_payload",
-    "parse_markdown_sections",
 ]
