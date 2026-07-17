@@ -184,11 +184,11 @@ def build_paper_text_stream(
             column_count, column_boundaries, column_bands = upright_columns
         for logical_index, record in enumerate(ordered_records):
             text = str(record["text"])
-            role = "heading" if _looks_like_section_heading(text, bool(record.get("bold_like"))) else "body"
+            role = "heading" if _looks_like_section_heading(text) else "body"
             column_index = int(record.get("column_index", 0))
             line_notes = list(record.get("notes", [])) if isinstance(record.get("notes"), list) else []
-            if record.get("bold_like"):
-                line_notes.append("bold_like_text")
+            if record.get("has_bold"):
+                line_notes.append("has_bold_text")
             if role == "heading":
                 line_notes.append("layout_section_heading")
             orientation = str(record.get("orientation") or "upright")
@@ -306,7 +306,7 @@ def _line_record_from_positioned_line(line: PaperPositionedLine) -> dict[str, ob
         "direction": line.direction,
         "block_index": line.block_index,
         "line_index": line.line_index,
-        "bold_like": line.bold_like,
+        "has_bold": line.has_bold,
         "dominant_font": line.dominant_font,
         "dominant_font_size": line.dominant_font_size,
         "dominant_style_character_count": line.dominant_style_character_count,
@@ -522,13 +522,11 @@ def _order_page_lines(
     ]
 
 
-def _looks_like_section_heading(text: str, bold_like: bool) -> bool:
+def _looks_like_section_heading(text: str) -> bool:
     normalized = clean_text(text).strip(" :").lower()
     if not normalized or len(normalized) > 120:
         return False
     if normalized in SECTION_HEADING_TEXTS:
-        return True
-    if bold_like and len(normalized.split()) <= 8 and not re.search(r"[.;,]\s", normalized):
         return True
     return False
 

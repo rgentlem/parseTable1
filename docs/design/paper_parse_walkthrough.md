@@ -236,7 +236,10 @@ markdown-derived sections retained as fallback. The layout reader uses one
 entry-boundary workflow: read page, column, then vertical position; start a new
 entry when the row returns to the column's left edge, either at a numeric label
 or at the first author/organization text in a hanging-indent list; keep indented
-rows as continuations across column and page boundaries. When this
+rows as continuations across column and page boundaries. The reference region
+uses only lines with the same writing orientation as its reference heading, so
+an upright bibliography cannot claim a rotated table or other rotated visual
+object on a later page. When this
 purpose-built pass finds a bibliography, table extraction receives
 bibliography-owned source-line IDs and entry bboxes so positioned bibliography
 words/chars can be removed before table candidates are built. If this pass does
@@ -1226,9 +1229,15 @@ context line IDs, source-line text, cue, and whether the mention is a
 
 This artifact is used as extraction evidence, not as a table source. A line
 beginning with `Table 5.` is rejected as a fallback table start when the previous
-line makes the sentence read as `... is shown in Table 5.`. Bold-like or
-heading-like text-stream evidence is preserved in line notes and can support a
-caption candidate, but it does not by itself create a table. Line-initial
+line makes the sentence read as `... is shown in Table 5.`. Before an unfinished
+previous line can provide weaker continuation evidence, its last visible span
+and the current line's first visible span must retain the same font and bold
+state. A font or bold-state change ends that proposed continuation; this uses
+the positioned boundary spans and does not compare point sizes or line gaps.
+The text stream records `has_bold_text` when any source span is bold, but this
+descriptive line-level fact does not assign a heading role or independently
+support a caption candidate. Explicit heading evidence may support a caption
+candidate, but it does not by itself create a table. Line-initial
 `Table S...` listings under an active `Supplementary Information` heading are
 classified as `prose_reference`, not `caption_candidate`, because they describe
 external supplementary material rather than an extractable in-paper table.

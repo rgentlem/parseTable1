@@ -6,6 +6,11 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
 
 ## Current Priorities
 
+- [ ] After the current caption/footer regression is resolved and checkpointed,
+  repair mixed-layout page reading order using
+  `docs/implementation/paper_text_reading_order_repair.md`. The existing
+  `PaperPositionedDocument` block and line evidence must feed the existing
+  `PaperTextStream`; do not add another text stream or extraction pass.
 - [ ] Complete the canonical positioned-evidence unification in
   `docs/implementation/canonical_orientation_unification_checklist.md` before
   making another footer-specific correction. The required path is
@@ -16,9 +21,16 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
   descriptive title currently doubles the candidate width, its real closing
   rule is missing from `ExtractedTable.metadata.horizontal_rules` despite
   remaining in canonical positioned evidence, and downstream consumers use
-  different rule representations. Keep the current parser code frozen until
-  the checklist's complete producer/consumer inventory and exact Step 1 patch
-  have been reviewed and explicitly approved.
+  different rule representations. The revised checklist now starts with the
+  selected extracted table, applies one exact identity-or-sideways transform,
+  and only then establishes authoritative metadata and size. The withdrawn
+  nullable-field proposal must not be implemented. The first behavior patch
+  starts from the selected extracted table and applies one exact identity-or-
+  sideways affine transform to its cells and referenced positioned evidence.
+  Only after that canonical result is verified does the next patch atomically
+  move the existing evidence from untyped metadata to one typed
+  `ExtractedTable.positioned_evidence` field, migrate every consumer, and delete
+  the old key. Parser source remains frozen pending approval.
 - [ ] Complete and validate the unified bottom-of-table footer detector tracked
   in `docs/implementation/footer_detection_unification_checklist.md`. Ownership
   is now implemented once in `build_table_region()` with mandatory typography,
@@ -66,6 +78,43 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
   body rows, and y=263.197 closing boundary remain unchanged; one footer and
   the explicit `a`/`b` definitions are restored, resolving all 12 letter-marker
   links.
+  The focused `has_bold` correction is complete at
+  `outputs/prism_has_bold_footer_20260717`. `PaperPositionedLine.has_bold` now
+  records only that at least one source span is bold; it no longer assigns a
+  heading role or supports a caption candidate. In
+  `The prevalence and mortality risks of PRISm and COPD in the United States from NHANES 2007–2012.pdf`,
+  PDF page 7, printed Table 2, source line `page-7-line-40` remains ordinary
+  MyriadPro-Regular 7-point body text with a descriptive `has_bold_text` note
+  for its single bold word. The existing y=474.641 closing boundary now owns
+  that line and `paper_footnotes.json` records `Values in bold are statistically
+  significant`. Both physical grids, captions, processing statuses, mention
+  identities, and mention kinds are unchanged; the two real table-caption cues
+  now use line-initial label evidence instead of bold presence. The approved
+  follow-up makes an unfinished previous line eligible for continuation only
+  when its final visible span and the current line's first visible span retain
+  the same font and bold state; it adds no point-size or distance comparison.
+  The focused output `outputs/role_font_continuation_20260717` restores PDF page
+  4, printed Table 1 of
+  `Role of Estimated Glucose Disposal Rate in Staging and Death Risk of Cardiovascular-Kidney-Metabolic Syndrome- Insights from NHANES 1999-2018.pdf`
+  as 48 x 7 with the y=711.570 closing rule and its original three-line footer.
+  The 28-PDF output-only comparison is
+  `outputs/testpapers_batch_font_continuation_20260717`: all 91 tables return
+  and 27 papers retain identical extraction against
+  `outputs/testpapers_batch_no_end_rule_distinct_font_20260717`.
+  The subsequent bibliography-orientation repair limits a reference region to
+  the writing orientation of its reference heading. In `periodontis2.pdf`,
+  reference 20 now ends on PDF page 9 instead of claiming 192 rotated lines on
+  PDF page 10; printed Table 1 is restored from 24 x 4 to 30 x 13 with no
+  bibliography mask. The final 28-PDF output-only comparison is
+  `outputs/testpapers_batch_bibliography_orientation_20260717`: all 91 table
+  extractions and all processing statuses match
+  `outputs/testpapers_batch_no_end_rule_distinct_font_20260717`. Compared with
+  the immediately preceding font-continuation run, bibliography output changes
+  only for `periodontis2.pdf`. `cardiovascular.pdf`, PDF page 5, printed Table
+  2 still assigns `Performance of models` as a footer, and the Planetary Health
+  paper's extra unnumbered `REFERENCES AND NOTES` entry was already present
+  after the `has_bold` change; neither is caused by the orientation repair. No
+  pytest was run.
 - [ ] Review or explicitly accept the deferred corpus gaps and uncertainties in
   `docs/implementation/corpus_artifact_uncertainties_20260715.md`. This records
   unsupported rotated marker geometry, unresolved header/visual identities,

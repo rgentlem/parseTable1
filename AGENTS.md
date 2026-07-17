@@ -212,12 +212,6 @@ Before committing parser changes, report:
 - which papers failed, if any
 - whether `pytest` passed
 
-Before staging or committing changes for GitHub, explicitly check whether new
-tests are needed for the work being committed. If new tests may be needed, stop
-and describe the proposed tests, what behavior they protect, and why they are
-worth adding. Do not implement those tests until the user gives specific
-permission.
-
 # Project Goals
 
 The package should:

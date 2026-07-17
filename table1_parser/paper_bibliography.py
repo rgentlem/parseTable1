@@ -543,6 +543,8 @@ def _build_bibliography_entries_from_layout_region(
     for line_index, line in enumerate(paper_text_stream.lines):
         if line_index == start_line_index or line.page_num < start_line.page_num:
             continue
+        if line.orientation != start_line.orientation:
+            continue
         if line.page_num == start_line.page_num and float(line.bbox[2]) < float(start_line.bbox[0]) - 6.0:
             continue
         if (

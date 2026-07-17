@@ -64,7 +64,7 @@ class PaperPositionedLine(BaseModel):
     bbox: tuple[float, float, float, float]
     direction: tuple[float, float] | None = None
     orientation: str | None = None
-    bold_like: bool = False
+    has_bold: bool = False
     dominant_font: str | None = None
     dominant_font_size: float | None = None
     dominant_style_character_count: int = Field(default=0, ge=0)

@@ -161,7 +161,7 @@ def positioned_line_from_pymupdf_line(
     bbox_parts: list[tuple[float, float, float, float]] = []
     span_counts: Counter[tuple[str, float]] = Counter()
     span_records: list[PaperPositionedSpan] = []
-    bold_like = False
+    has_bold = False
     for span in line.get("spans", []):
         if not isinstance(span, dict):
             continue
@@ -189,7 +189,7 @@ def positioned_line_from_pymupdf_line(
             )
         font_key = str(span.get("font", "")).lower()
         if "bold" in font_key or "semibold" in font_key or (isinstance(span_flags, int) and span_flags & 16):
-            bold_like = True
+            has_bold = True
 
     raw_text = join_pymupdf_line_spans(line.get("spans", []))
     text = clean_text(raw_text)
@@ -225,7 +225,7 @@ def positioned_line_from_pymupdf_line(
         ),
         direction=direction,
         orientation=orientation,
-        bold_like=bold_like,
+        has_bold=has_bold,
         dominant_font=dominant_font,
         dominant_font_size=dominant_font_size,
         dominant_style_character_count=dominant_style_character_count,

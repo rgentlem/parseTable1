@@ -357,7 +357,7 @@ Supplementary Information listings:
   metabolic Table S2 -> prose_reference, supplementary_information_table_listing
   periodontitis Table S1/S2/S3 -> prose_reference, supplementary_information_table_listing
 known weak bucket:
-  line_initial_table_label without bold/heading evidence can still include
+  line_initial_table_label without heading evidence can still include
   false positives such as Eke `Table 2 also shows...`; current policy is to
   monitor this bucket rather than add another rule until it causes extraction
   harm.

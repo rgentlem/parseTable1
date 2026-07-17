@@ -96,7 +96,10 @@ def build_paper_table_mentions(paper_text_stream: object) -> list[PaperTableMent
                 CAPTION_LINE_START_PATTERN.match(mention_text) is not None
                 and match.start() <= 2
             )
-            bold_or_heading = getattr(line, "role", "body") == "heading" or "bold_like_text" in line_notes
+            heading_evidence = (
+                getattr(line, "role", "body") == "heading"
+                or "layout_section_heading" in line_notes
+            )
             cue: str | None = None
             if CONTINUATION_PATTERN.search(text):
                 mention_kind = "continuation_label"
@@ -114,11 +117,11 @@ def build_paper_table_mentions(paper_text_stream: object) -> list[PaperTableMent
                 mention_kind = "prose_reference"
                 cue = "same_line_prose_verb_after"
                 confidence = 0.9
-            elif line_starts_with_label and bold_or_heading:
+            elif line_starts_with_label and heading_evidence:
                 mention_kind = "caption_candidate"
-                cue = "bold_or_heading_caption_line"
+                cue = "heading_caption_line"
                 confidence = 0.9
-            elif line_starts_with_label and not _line_continues_previous_sentence(previous_text):
+            elif line_starts_with_label and not _line_continues_previous_sentence(previous_line, line):
                 mention_kind = "caption_candidate"
                 cue = "line_initial_table_label"
                 confidence = 0.74
@@ -141,7 +144,7 @@ def build_paper_table_mentions(paper_text_stream: object) -> list[PaperTableMent
                 table_mention_kind = mention_kind
                 table_cue = cue
                 table_confidence = confidence
-                notes = _mention_notes(line_starts_with_label, bold_or_heading)
+                notes = _mention_notes(line_starts_with_label, heading_evidence)
                 if (
                     mention_kind == "caption_candidate"
                     and table_number.startswith("S")
@@ -201,16 +204,53 @@ def _table_numbers(raw_numbers: str) -> list[str]:
     return [clean_text(match.group(0)).upper() for match in TABLE_NUMBER_PATTERN.finditer(raw_numbers)]
 
 
-def _line_continues_previous_sentence(previous_text: str) -> bool:
+def _line_continues_previous_sentence(previous_line: object | None, line: object) -> bool:
+    previous_text = (
+        clean_text(getattr(previous_line, "text", ""))
+        if previous_line is not None
+        else ""
+    )
     if not previous_text:
         return False
+    previous_spans = [
+        span
+        for span in list(getattr(previous_line, "spans", []) or [])
+        if isinstance(span, dict) and str(span.get("text", "")).strip()
+    ]
+    current_spans = [
+        span
+        for span in list(getattr(line, "spans", []) or [])
+        if isinstance(span, dict) and str(span.get("text", "")).strip()
+    ]
+    if previous_spans and current_spans:
+        previous_span = previous_spans[-1]
+        current_span = current_spans[0]
+        previous_font = str(previous_span.get("font") or "").strip().lower()
+        current_font = str(current_span.get("font") or "").strip().lower()
+        previous_flags = previous_span.get("flags")
+        current_flags = current_span.get("flags")
+        previous_bold = (
+            "bold" in previous_font
+            or "semibold" in previous_font
+            or (isinstance(previous_flags, int) and bool(previous_flags & 16))
+        )
+        current_bold = (
+            "bold" in current_font
+            or "semibold" in current_font
+            or (isinstance(current_flags, int) and bool(current_flags & 16))
+        )
+        if (
+            (previous_font and current_font and previous_font != current_font)
+            or previous_bold != current_bold
+        ):
+            return False
     return not previous_text.rstrip().endswith((".", "!", "?", ":", ";"))
 
 
-def _mention_notes(line_starts_with_label: bool, bold_or_heading: bool) -> list[str]:
+def _mention_notes(line_starts_with_label: bool, heading_evidence: bool) -> list[str]:
     notes: list[str] = []
     if line_starts_with_label:
         notes.append("line_starts_with_table_label")
-    if bold_or_heading:
-        notes.append("bold_or_heading_evidence")
+    if heading_evidence:
+        notes.append("heading_evidence")
     return notes

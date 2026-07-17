@@ -970,7 +970,10 @@ Design components:
 - `paper_positioned_document.json`
   shared whole-paper PyMuPDF positioned text pass with page sizes, visual lines,
   span text, bboxes, font names, font sizes, flags, line direction/orientation,
-  words, characters, horizontal rule segments, and raw/cleaned text. Downstream
+  words, characters, horizontal rule segments, and raw/cleaned text. A line's
+  `has_bold` field records only that at least one source span is bold; it is not
+  a line-wide style classification and does not make the line a heading or a
+  table caption. Downstream
   paper-context, extraction, and annotation stages should consume this artifact
   or a typed projection of it instead of reopening the PDF for another
   positioned-geometry pass.
@@ -982,7 +985,9 @@ Design components:
   with repeated page-furniture lines removed, page-level
   `column_boundaries`/`column_bands`, orientation-group metadata, original
   source line IDs and page-space bboxes, canonical upright bboxes for rotated
-  groups, line-level role/style fields, and minimal span records. Lines are
+  groups, line-level role/style fields, and minimal span records. The
+  descriptive `has_bold_text` note never assigns a heading role or qualifies a
+  caption candidate. Lines are
   ordered by page, orientation group, column, then vertical position; contextual
   adjacency cannot cross page or orientation-group boundaries.
 - `paper_sections.json`
