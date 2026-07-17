@@ -1722,13 +1722,19 @@ def build_text_layout_candidates(
         ):
             captured_line_ranges.append((prior_caption_index + 1, start_index))
 
-    if allow_uncaptioned_orientation_group and lines and not segments:
+    if (
+        allow_uncaptioned_orientation_group or candidate_region_bbox is not None
+    ) and lines and not segments:
         append_geometry_segment(
             content_lines=lines,
             bbox_top=float(lines[0]["top"]),
             caption=None,
             caption_signal=False,
-            segment_source="orientation_group",
+            segment_source=(
+                "bounded_candidate_region"
+                if candidate_region_bbox is not None
+                else "orientation_group"
+            ),
         )
     for table_index, segment in enumerate(segments):
         raw_rows = segment.get("rows", [])

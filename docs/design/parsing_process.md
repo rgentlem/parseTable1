@@ -49,14 +49,13 @@ ExtractedTable
 
 `TableBoundaryProposal` records
 canonical row bounds, unmerged rule-segment references, stub/value coverage,
-font changes, alternative boundary roles, and the selected `TableRegion` edges
-for comparison. It is built before `TableRegion`. If credible rule geometry
-and a coherent positioned grid are both absent, no row split is manufactured.
-Otherwise `TableRegion` uses a single supported body/footer model directly; if
-multiple canonical body intervals remain plausible, raw body occupancy chooses
-among those models, with the largest interval winning a qualified exact-gap
-tie. A gap qualifies only when no ordinary body character occupies it and it
-is at least two observed spaces wide in the dominant table font and size.
+font changes, adjacent final-rule text, alternative boundary roles, and the
+selected `TableRegion` edges for comparison. It is built before `TableRegion`
+and does not accept footer ownership. If credible rule geometry and a coherent
+positioned grid are both absent, no row split is manufactured. Otherwise
+`TableRegion` runs one bottom scan for internal rows and final-rule-adjacent
+text. It requires a font or font-size change, preceding data support, and a
+consecutive prose block without an exact gap at least two observed spaces wide.
 Selected edges are then attached to the proposal for inspection.
 `HeaderStructureCandidate` is now an evidence-preserving first pass over
 positioned header spans, individual rule segments, and candidate physical
@@ -92,7 +91,7 @@ In plain terms:
   aligned with body occupancy and positioned marker evidence
 - `TableBoundaryProposal` is geometry-only evidence for reviewing the current
   caption/start, header/body, and body/footer boundaries
-- `TableRegion` is the geometry-derived ownership model for captions,
+- `TableRegion` is the structural ownership model anchored by body geometry for captions,
   column-header bands, body rows, and footer/note bands, including footer
   marker-row evidence from cell-text annotation geometry
 - `NormalizedTable` is the cleaned and organized version used for interpretation

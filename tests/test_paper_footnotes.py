@@ -5,7 +5,6 @@ from __future__ import annotations
 from table1_parser.paper_footnotes import (
     build_paper_footnote_anchor_inventory,
     build_paper_footnote_definition_candidates,
-    build_paper_footnote_definition_lines_from_extracted_tables,
     glyph_fields,
     link_paper_footnotes,
 )

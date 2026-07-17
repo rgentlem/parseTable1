@@ -411,8 +411,6 @@ def build_resolved_table_set(
             for candidate_index in reversed(parent_candidates):
                 candidate = normalized_tables[candidate_index]
                 candidate_page = candidate.metadata.get("source_page_num")
-                candidate_orientation = candidate.metadata.get("orientation_strategy")
-                continuation_orientation = table.metadata.get("orientation_strategy")
                 if (
                     isinstance(candidate_page, int)
                     and not isinstance(candidate_page, bool)
@@ -420,13 +418,6 @@ def build_resolved_table_set(
                     and candidate_page > source_page_num
                 ):
                     parent_diagnostics.append(f"parent_page_after_continuation:table_index={candidate_index}")
-                    continue
-                if (
-                    isinstance(candidate_orientation, str)
-                    and isinstance(continuation_orientation, str)
-                    and candidate_orientation != continuation_orientation
-                ):
-                    parent_diagnostics.append(f"parent_orientation_mismatch:table_index={candidate_index}")
                     continue
                 compatible_parent_indices.append(candidate_index)
 

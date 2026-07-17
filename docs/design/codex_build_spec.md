@@ -27,7 +27,7 @@ The stages must remain separate:
 
 - `ExtractedTable` preserves the raw recovered grid, raw cell text, page
   information, cell bounding boxes where available, and extraction metadata.
-- `TableRegion` records geometry-derived ownership of extracted rows and
+- `TableRegion` records structural row roles anchored by body geometry and
   columns before normalization: table caption/title rows, preamble rows,
   column-header bands, body rows, and footer/note bands. It is built from
   extracted table entries, row/cell geometry, horizontal rules, and cell-text

@@ -2,28 +2,24 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from statistics import median
 
 from table1_parser.schemas import (
     ExtractedTable,
     PaperPositionedDocument,
     PaperPositionedPage,
-    PaperTextLine,
-    PaperTextStream,
     TableBoundaryCandidate,
     TableBoundaryProposal,
     TableBoundaryRuleReference,
     TablePositionedEvidence,
 )
-from table1_parser.table_regions import _is_value_matrix_row, _value_like_count
 
 
 def build_table_boundary_proposals(
     extracted_tables: Sequence[ExtractedTable],
     *,
     paper_positioned_document: PaperPositionedDocument | None,
-    paper_text_stream: PaperTextStream | None = None,
 ) -> list[TableBoundaryProposal]:
     """Build geometry-only boundary alternatives for extracted tables."""
     pages_by_num = {
@@ -34,85 +30,19 @@ def build_table_boundary_proposals(
             else []
         )
     }
-    body_style_record = (
-        paper_text_stream.metadata.get("dominant_body_text_style")
-        if paper_text_stream is not None
-        else None
-    )
-    body_font = (
-        str(body_style_record.get("font", "")).strip()
-        if isinstance(body_style_record, Mapping)
-        else ""
-    )
-    body_size_value = (
-        body_style_record.get("font_size")
-        if isinstance(body_style_record, Mapping)
-        else None
-    )
-    body_text_style = (
-        (body_font, round(float(body_size_value), 1))
-        if body_font and isinstance(body_size_value, (int, float))
-        else None
-    )
-    text_lines_by_page: dict[int, list[PaperTextLine]] = {}
-    for line in paper_text_stream.lines if paper_text_stream is not None else []:
-        text_lines_by_page.setdefault(line.page_num, []).append(line)
-    table_starts: dict[str, tuple[int, str | None, float]] = {}
-    for table in extracted_tables:
-        raw_evidence = table.metadata.get("table_positioned_evidence")
-        if not isinstance(raw_evidence, dict):
-            continue
-        evidence = TablePositionedEvidence.model_validate(raw_evidence)
-        if evidence.canonical_bbox is None:
-            continue
-        start_y = evidence.canonical_bbox[1]
-        if evidence.canonical_caption_bbox is not None:
-            start_y = min(start_y, evidence.canonical_caption_bbox[1])
-        table_starts[table.table_id] = (
-            table.page_num,
-            evidence.orientation_group_id,
-            start_y,
+    return [
+        build_table_boundary_proposal(
+            table,
+            positioned_page=pages_by_num.get(table.page_num),
         )
-    proposals: list[TableBoundaryProposal] = []
-    for table in extracted_tables:
-        current_start = table_starts.get(table.table_id)
-        next_table_start_y = None
-        if current_start is not None:
-            page_num, orientation_group_id, start_y = current_start
-            next_table_start_y = min(
-                (
-                    other_start_y
-                    for other_table_id, (
-                        other_page_num,
-                        other_orientation_group_id,
-                        other_start_y,
-                    ) in table_starts.items()
-                    if other_table_id != table.table_id
-                    and other_page_num == page_num
-                    and other_orientation_group_id == orientation_group_id
-                    and other_start_y > start_y
-                ),
-                default=None,
-            )
-        proposals.append(
-            build_table_boundary_proposal(
-                table,
-                positioned_page=pages_by_num.get(table.page_num),
-                text_lines=text_lines_by_page.get(table.page_num, []),
-                body_text_style=body_text_style,
-                next_table_start_y=next_table_start_y,
-            )
-        )
-    return proposals
+        for table in extracted_tables
+    ]
 
 
 def build_table_boundary_proposal(
     table: ExtractedTable,
     *,
     positioned_page: PaperPositionedPage | None,
-    text_lines: Sequence[PaperTextLine] = (),
-    body_text_style: tuple[str, float] | None = None,
-    next_table_start_y: float | None = None,
 ) -> TableBoundaryProposal:
     """Build one canonical boundary proposal without selecting row ownership."""
     concerns: list[str] = []
@@ -126,7 +56,7 @@ def build_table_boundary_proposal(
             concerns=["missing_table_positioned_evidence"],
         )
     evidence = TablePositionedEvidence.model_validate(raw_evidence)
-    table_bbox = evidence.canonical_bbox
+    table_bbox = evidence.canonical_candidate_bbox or evidence.canonical_bbox
     if table_bbox is None:
         return TableBoundaryProposal(
             table_id=table.table_id,
@@ -135,58 +65,27 @@ def build_table_boundary_proposal(
             concerns=["missing_canonical_table_bbox"],
         )
 
-    dx = 0.0
-    dy = 0.0
-    geometry_frame = str(table.metadata.get("geometry_coordinate_frame") or "")
-    if geometry_frame == "table_local_rotated_normalized":
-        old_source_bbox = table.metadata.get("geometry_transform_source_bbox")
-        new_source_bbox = (
-            evidence.canonical_transform.source_bbox
-            if evidence.canonical_transform is not None
-            else None
-        )
-        if (
-            isinstance(old_source_bbox, (list, tuple))
-            and len(old_source_bbox) == 4
-            and new_source_bbox is not None
-        ):
-            old_left, old_top, old_right, old_bottom = (
-                float(value) for value in old_source_bbox
-            )
-            new_left, new_top, new_right, new_bottom = new_source_bbox
-            if evidence.rotation_direction == "vertical_text_up":
-                dx = new_bottom - old_bottom
-                dy = old_left - new_left
-            elif evidence.rotation_direction == "vertical_text_down":
-                dx = old_top - new_top
-                dy = new_right - old_right
-        else:
-            diagnostics.append("missing_rotated_row_geometry_transform")
-    elif geometry_frame != "page":
-        diagnostics.append("unsupported_row_geometry_frame")
-
     raw_row_bounds = table.metadata.get("row_bounds")
     row_y_bounds: list[tuple[float, float] | None] = [None] * table.n_rows
     if isinstance(raw_row_bounds, list) and len(raw_row_bounds) == table.n_rows:
         for row_idx, item in enumerate(raw_row_bounds):
             if isinstance(item, (list, tuple)) and len(item) == 2:
-                row_y_bounds[row_idx] = (float(item[0]) + dy, float(item[1]) + dy)
+                row_y_bounds[row_idx] = (float(item[0]), float(item[1]))
 
-    grid = [["" for _ in range(table.n_cols)] for _ in range(table.n_rows)]
     positioned_columns_by_row: dict[int, set[int]] = {}
-    cell_bboxes_by_row: dict[int, list[tuple[int, tuple[float, float, float, float]]]] = {}
+    cell_bboxes_by_row: dict[
+        int, list[tuple[int, tuple[float, float, float, float]]]
+    ] = {}
     for cell in table.cells:
-        if cell.row_idx < table.n_rows and cell.col_idx < table.n_cols:
-            grid[cell.row_idx][cell.col_idx] = cell.text
         if cell.bbox is None or cell.row_idx >= table.n_rows:
             continue
         if cell.text.strip():
             positioned_columns_by_row.setdefault(cell.row_idx, set()).add(cell.col_idx)
         canonical_cell_bbox = (
-            float(cell.bbox[0]) + dx,
-            float(cell.bbox[1]) + dy,
-            float(cell.bbox[2]) + dx,
-            float(cell.bbox[3]) + dy,
+            float(cell.bbox[0]),
+            float(cell.bbox[1]),
+            float(cell.bbox[2]),
+            float(cell.bbox[3]),
         )
         cell_bboxes_by_row.setdefault(cell.row_idx, []).append(
             (cell.col_idx, canonical_cell_bbox)
@@ -254,9 +153,7 @@ def build_table_boundary_proposal(
         if bbox[3] > bbox[1]
     ]
     rule_tolerance = max(0.5, median(char_heights) * 0.2) if char_heights else 1.0
-    horizontal_records: list[
-        tuple[float, TableBoundaryRuleReference]
-    ] = []
+    horizontal_records: list[tuple[float, TableBoundaryRuleReference]] = []
     for source, indices, segments in (
         (
             "rule_segment",
@@ -288,7 +185,8 @@ def build_table_boundary_proposal(
     for record in sorted(horizontal_records, key=lambda item: item[0]):
         if (
             not rule_clusters
-            or record[0] - median(item[0] for item in rule_clusters[-1]) > rule_tolerance
+            or record[0] - median(item[0] for item in rule_clusters[-1])
+            > rule_tolerance
         ):
             rule_clusters.append([record])
         else:
@@ -299,25 +197,15 @@ def build_table_boundary_proposal(
         for row_idx, bounds in enumerate(row_y_bounds)
         if bounds is not None
     }
-    canonical_text_lines = sorted(
-        (
-            (line, line.canonical_bbox)
-            for line in text_lines
-            if line.canonical_bbox is not None
-            and (
-                evidence.orientation_group_id is None
-                or line.orientation_group_id == evidence.orientation_group_id
-            )
-        ),
-        key=lambda item: (item[1][1], item[1][0]),
-    )
-    line_start_gap = max(8.0, median(char_heights) * 1.5) if char_heights else 8.0
-    line_continuation_gap = max(8.0, median(char_heights)) if char_heights else 8.0
     boundary_candidates: list[TableBoundaryCandidate] = []
     for cluster in rule_clusters:
         canonical_y = median(item[0] for item in cluster)
-        rows_before = [row_idx for row_idx, center in row_centers.items() if center < canonical_y]
-        rows_after = [row_idx for row_idx, center in row_centers.items() if center > canonical_y]
+        rows_before = [
+            row_idx for row_idx, center in row_centers.items() if center < canonical_y
+        ]
+        rows_after = [
+            row_idx for row_idx, center in row_centers.items() if center > canonical_y
+        ]
         row_before_idx = max(rows_before, default=None)
         row_after_idx = min(rows_after, default=None)
         segments = [item[1].canonical_segment for item in cluster]
@@ -341,107 +229,6 @@ def build_table_boundary_proposal(
             after_styles = row_styles.get(row_after_idx, set())
             if before_styles and after_styles:
                 font_change = before_styles != after_styles
-        following_lines: list[tuple[PaperTextLine, tuple[float, float, float, float]]] = []
-        rows_after_grid = grid[row_after_idx:] if row_after_idx is not None else []
-        body_resumes = any(_is_value_matrix_row(row) for row in rows_after_grid)
-        sparse_value_follows = bool(
-            rows_after_grid and _value_like_count(rows_after_grid[0][1:]) > 0
-        )
-        if body_text_style is not None and not sparse_value_follows:
-            structural_boundary_y = min(
-                (
-                    bbox[1]
-                    for line, bbox in canonical_text_lines
-                    if line.role == "heading"
-                    and bbox[1] > canonical_y
-                    and max(
-                        0.0,
-                        min(bbox[2], table_bbox[2])
-                        - max(bbox[0], table_bbox[0]),
-                    )
-                    / max(bbox[2] - bbox[0], 1.0)
-                    >= 0.25
-                ),
-                default=None,
-            )
-            lower_boundary_y = min(
-                (
-                    boundary_y
-                    for boundary_y in (
-                        next_table_start_y,
-                        structural_boundary_y,
-                        (
-                            evidence.canonical_caption_bbox[1]
-                            if evidence.canonical_caption_bbox is not None
-                            and evidence.canonical_caption_bbox[1] > canonical_y
-                            else None
-                        ),
-                    )
-                    if boundary_y is not None and boundary_y > canonical_y
-                ),
-                default=None,
-            )
-            following_style: tuple[str, float] | None = None
-            following_bottom: float | None = None
-            for line, bbox in canonical_text_lines:
-                if (bbox[1] + bbox[3]) / 2.0 <= canonical_y:
-                    continue
-                if lower_boundary_y is not None and bbox[1] >= lower_boundary_y - rule_tolerance:
-                    break
-                overlap = max(
-                    0.0,
-                    min(bbox[2], table_bbox[2]) - max(bbox[0], table_bbox[0]),
-                )
-                if overlap / max(bbox[2] - bbox[0], 1.0) < 0.25:
-                    continue
-                if line.dominant_font is None or line.dominant_font_size is None:
-                    break
-                line_style = (
-                    line.dominant_font,
-                    round(float(line.dominant_font_size), 1),
-                )
-                if not following_lines:
-                    if bbox[1] - canonical_y > line_start_gap or line_style == body_text_style:
-                        break
-                    following_lines.append((line, bbox))
-                    following_style = line_style
-                    following_bottom = bbox[3]
-                    continue
-                if (
-                    following_bottom is None
-                    or bbox[1] > following_bottom + line_continuation_gap
-                    or following_style is None
-                    or line_style[0] != following_style[0]
-                    or abs(line_style[1] - following_style[1]) > 0.2
-                ):
-                    break
-                following_lines.append((line, bbox))
-                following_bottom = max(following_bottom, bbox[3])
-        following_sizes = [
-            round(float(line.dominant_font_size or 0.0), 1)
-            for line, _ in following_lines
-        ]
-        smaller_than_before = bool(
-            before_styles
-            and following_sizes
-            and max(following_sizes) < min(size for _, size in before_styles)
-        )
-        if body_resumes and not (
-            font_change is True
-            and len(following_lines) >= 2
-            and smaller_than_before
-        ):
-            following_lines = []
-        following_bbox = (
-            (
-                min(bbox[0] for _, bbox in following_lines),
-                min(bbox[1] for _, bbox in following_lines),
-                max(bbox[2] for _, bbox in following_lines),
-                max(bbox[3] for _, bbox in following_lines),
-            )
-            if following_lines
-            else None
-        )
         boundary_candidates.append(
             TableBoundaryCandidate(
                 canonical_y=canonical_y,
@@ -452,17 +239,6 @@ def build_table_boundary_proposal(
                 stub_coverage_fraction=stub_coverage,
                 value_coverage_fraction=value_coverage,
                 immediate_font_style_change=font_change,
-                following_text_line_ids=[line.line_id for line, _ in following_lines],
-                following_text_bbox=following_bbox,
-                following_text_styles=list(
-                    dict.fromkeys(
-                        (
-                            line.dominant_font or "",
-                            round(float(line.dominant_font_size or 0.0), 1),
-                        )
-                        for line, _ in following_lines
-                    )
-                ),
             )
         )
 
@@ -483,10 +259,13 @@ def build_table_boundary_proposal(
                     boundary_candidates[index + 1],
                 )
             ]
-            if candidate.following_text_line_ids or candidate.immediate_font_style_change is True or any(
-                max(abs(left - right) for left, right in zip(current_scope, scope))
-                > 0.05
-                for scope in neighboring_scopes
+            if (
+                candidate.immediate_font_style_change is True
+                or any(
+                    max(abs(left - right) for left, right in zip(current_scope, scope))
+                    > 0.05
+                    for scope in neighboring_scopes
+                )
             ):
                 retained_indices.add(index)
         boundary_candidates = [
@@ -496,10 +275,6 @@ def build_table_boundary_proposal(
         ]
 
     if boundary_candidates:
-        for candidate in boundary_candidates[:-1]:
-            candidate.following_text_line_ids = []
-            candidate.following_text_bbox = None
-            candidate.following_text_styles = []
         first_candidate = boundary_candidates[0]
         first_candidate.possible_roles = ["table_start"]
         if first_candidate.row_before_idx is not None:
@@ -510,10 +285,10 @@ def build_table_boundary_proposal(
                 candidate.possible_roles.append("table_end")
             else:
                 candidate.possible_roles.append("header_body")
-            if candidate.following_text_line_ids:
-                candidate.possible_roles.append("body_footer")
     header_body_candidates = [
-        candidate for candidate in boundary_candidates if "header_body" in candidate.possible_roles
+        candidate
+        for candidate in boundary_candidates
+        if "header_body" in candidate.possible_roles
     ]
     if not boundary_candidates:
         concerns.append("no_horizontal_rule_candidates")
@@ -529,8 +304,15 @@ def build_table_boundary_proposal(
         table.n_rows >= 2
         and table.n_cols >= 2
         and all(bounds is not None for bounds in row_y_bounds)
-        and sum(len(column_indices) >= 2 for column_indices in positioned_columns_by_row.values()) >= 2
-        and sum(len(row_indices) >= 2 for row_indices in positioned_rows_by_column.values()) >= 2
+        and sum(
+            len(column_indices) >= 2
+            for column_indices in positioned_columns_by_row.values()
+        )
+        >= 2
+        and sum(
+            len(row_indices) >= 2 for row_indices in positioned_rows_by_column.values()
+        )
+        >= 2
     )
     credible_rule_geometry = bool(boundary_candidates)
     if not credible_rule_geometry and not coherent_positioned_grid:
@@ -547,9 +329,7 @@ def build_table_boundary_proposal(
         canonical_caption_bbox=caption_bbox,
         canonical_stub_band=stub_band,
         canonical_value_band=value_band,
-        canonical_row_bounds=[
-            bounds for bounds in row_y_bounds if bounds is not None
-        ],
+        canonical_row_bounds=[bounds for bounds in row_y_bounds if bounds is not None],
         boundary_candidates=boundary_candidates,
         credible_rule_geometry=credible_rule_geometry,
         coherent_positioned_grid=coherent_positioned_grid,

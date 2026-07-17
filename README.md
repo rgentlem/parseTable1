@@ -72,6 +72,10 @@ This separation is intentional. It keeps extraction, normalization, semantic int
 At the moment, the repository can persist:
 
 - `ExtractedTable`
+- `TableBoundaryProposal`
+- `BodyOccupancyTable`
+- `LeafColumnCandidateTable`
+- `HeaderStructureCandidate`
 - `NormalizedTable`
 - `ColumnHeaderSchema`
 - `TableProfile`
@@ -111,6 +115,11 @@ By default this writes:
 
 ```text
 outputs/papers/<paper_stem>/extracted_tables.json
+outputs/papers/<paper_stem>/table_boundary_proposals.json
+outputs/papers/<paper_stem>/table_regions.json
+outputs/papers/<paper_stem>/body_occupancy.json
+outputs/papers/<paper_stem>/leaf_column_candidates.json
+outputs/papers/<paper_stem>/header_structure_candidates.json
 outputs/papers/<paper_stem>/normalized_tables.json
 outputs/papers/<paper_stem>/column_header_schemas.json
 outputs/papers/<paper_stem>/table_profiles.json

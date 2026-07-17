@@ -1,25 +1,26 @@
-"""Geometry-first row-region detection for extracted tables."""
+"""Classify row roles around the geometry-defined table body."""
 
 from __future__ import annotations
 
 import re
 from collections.abc import Mapping, Sequence
+from statistics import median
 
-from table1_parser.body_occupancy import (
-    build_body_occupancy_table,
-    collect_paper_space_widths_by_style,
-)
-from table1_parser.heuristics.value_pattern_detector import detect_value_pattern
+from table1_parser.body_occupancy import collect_paper_space_widths_by_style
+from table1_parser.context.visual_references import VISUAL_OBJECT_DOI_PATTERN
 from table1_parser.normalize.header_detector import detect_header_rows_with_metadata
 from table1_parser.schemas import (
     CellTextAnnotationTable,
     ExtractedTable,
     PaperPositionedDocument,
     PaperPositionedPage,
-    TableBoundaryCandidate,
+    PaperTextLine,
+    PaperTextStream,
     TableBoundaryProposal,
+    TablePositionedEvidence,
 )
 from table1_parser.schemas.table_region import TableRegion, TableRegionRow
+from table1_parser.table1_continuations import CONTINUATION_PATTERN
 from table1_parser.text_cleaning import clean_text
 
 
@@ -31,16 +32,13 @@ TABLE_CAPTION_PATTERN = re.compile(r"^\s*table\s*\d+\b", re.IGNORECASE)
 def build_table_regions(
     extracted_tables: Sequence[ExtractedTable],
     *,
-    paper_text_stream: object | None = None,
+    paper_text_stream: PaperTextStream | None = None,
     paper_page_furniture: object | None = None,
     cell_text_annotations: Sequence[CellTextAnnotationTable] | None = None,
     table_boundary_proposals: Sequence[TableBoundaryProposal] | None = None,
     paper_positioned_document: PaperPositionedDocument | None = None,
 ) -> list[TableRegion]:
     """Build row-region decisions for extracted tables."""
-    footer_marker_rows_by_table_id = _footer_marker_rows_by_table_id(
-        cell_text_annotations or [], extracted_tables
-    )
     proposals_by_table_id = {
         proposal.table_id: proposal for proposal in table_boundary_proposals or []
     }
@@ -61,14 +59,43 @@ def build_table_regions(
         if paper_positioned_document is not None
         else {}
     )
+    positioned_text_lines_by_id = {
+        line.line_id: line
+        for line in (paper_text_stream.lines if paper_text_stream is not None else [])
+    }
+    visual_object_owned_line_ids = {
+        line.line_id
+        for line in positioned_text_lines_by_id.values()
+        if VISUAL_OBJECT_DOI_PATTERN.fullmatch(clean_text(line.raw_text)) is not None
+    }
+    body_style_record = (
+        paper_text_stream.metadata.get("dominant_body_text_style")
+        if paper_text_stream is not None
+        else None
+    )
+    body_font = (
+        str(body_style_record.get("font", "")).strip()
+        if isinstance(body_style_record, Mapping)
+        else ""
+    )
+    body_size = (
+        body_style_record.get("font_size")
+        if isinstance(body_style_record, Mapping)
+        else None
+    )
+    body_text_style = (
+        (body_font, round(float(body_size), 1))
+        if body_font and isinstance(body_size, (int, float))
+        else None
+    )
     return [
         build_table_region(
             table,
-            footer_marker_rows=footer_marker_rows_by_table_id.get(
-                table.table_id, set()
-            ),
             table_boundary_proposal=proposals_by_table_id.get(table.table_id),
             positioned_page=pages_by_num.get(table.page_num),
+            positioned_text_lines_by_id=positioned_text_lines_by_id,
+            visual_object_owned_line_ids=visual_object_owned_line_ids,
+            body_text_style=body_text_style,
             annotation_table=annotations_by_table_id.get(table.table_id),
             paper_space_widths_by_style=paper_space_widths_by_style,
         )
@@ -79,9 +106,11 @@ def build_table_regions(
 def build_table_region(
     table: ExtractedTable,
     *,
-    footer_marker_rows: set[int] | None = None,
     table_boundary_proposal: TableBoundaryProposal | None = None,
     positioned_page: PaperPositionedPage | None = None,
+    positioned_text_lines_by_id: Mapping[str, PaperTextLine] | None = None,
+    visual_object_owned_line_ids: set[str] | None = None,
+    body_text_style: tuple[str, float] | None = None,
     annotation_table: CellTextAnnotationTable | None = None,
     paper_space_widths_by_style: Mapping[tuple[str, float], Sequence[float]]
     | None = None,
@@ -251,8 +280,7 @@ def build_table_region(
                 and lower_rule > upper_rule
                 and row_top - upper_rule <= max(RULE_TOLERANCE, row_height)
                 and lower_rule - row_bottom <= max(RULE_TOLERANCE, row_height)
-                and lower_rule
-                <= row_bounds[following_row][0] + RULE_TOLERANCE
+                and lower_rule <= row_bounds[following_row][0] + RULE_TOLERANCE
                 and isinstance(line_ids, list)
                 and isinstance(canonical_line_bboxes, list)
                 and len(line_ids) == len(canonical_line_bboxes)
@@ -297,9 +325,7 @@ def build_table_region(
                             or (span.flags is not None and span.flags & 16)
                         ):
                             style_counts[matched_row][1] += visible_characters
-                header_characters, header_bold_characters = style_counts[
-                    first_body_row
-                ]
+                header_characters, header_bold_characters = style_counts[first_body_row]
                 following_characters, following_bold_characters = style_counts[
                     following_row
                 ]
@@ -318,113 +344,627 @@ def build_table_region(
                         "text_header_from_complete_bold_rule_bounded_first_row"
                     )
 
+    if table_boundary_proposal is not None:
+        for candidate in table_boundary_proposal.boundary_candidates:
+            if "body_footer" in candidate.possible_roles:
+                candidate.possible_roles.remove("body_footer")
+            candidate.following_text_line_ids = []
+            candidate.following_text_bbox = None
+            candidate.following_text_styles = []
+
+    if table.metadata.get("continues_on_next_page") is True:
+        diagnostics.append("footer_detection_skipped:continues_on_next_page")
+
     if (
-        table_boundary_proposal is not None
-        and positioned_page is not None
-        and body_rows
+        table.metadata.get("continues_on_next_page") is not True
+        and table_boundary_proposal is not None
+        and row_bounds is not None
     ):
-        first_body_row = min(body_rows)
-        last_body_row = max(body_rows)
-        later_boundaries = [
-            candidate
-            for candidate in table_boundary_proposal.boundary_candidates
-            if (
-                candidate.row_before_idx is not None
-                and candidate.row_after_idx is not None
-                and candidate.row_before_idx >= first_body_row
-                and candidate.row_before_idx < last_body_row
-                and candidate.row_after_idx > candidate.row_before_idx
+        raw_positioned_evidence = table.metadata.get("table_positioned_evidence")
+        positioned_evidence = (
+            TablePositionedEvidence.model_validate(raw_positioned_evidence)
+            if isinstance(raw_positioned_evidence, Mapping)
+            else None
+        )
+        if (
+            positioned_text_lines_by_id is not None
+            and positioned_evidence is not None
+            and body_text_style is not None
+        ):
+            table_bbox = (
+                table_boundary_proposal.canonical_table_bbox
+                or positioned_evidence.canonical_candidate_bbox
+                or positioned_evidence.canonical_bbox
             )
-        ]
-        supported_footer_boundaries = [
-            candidate
-            for candidate in later_boundaries
-            if "body_footer" in candidate.possible_roles
-        ]
-        selected_candidate: TableBoundaryCandidate | None = None
-        if len(supported_footer_boundaries) == 1:
-            selected_candidate = supported_footer_boundaries[0]
-            diagnostics.append("body_interval_selected_by_boundary_evidence")
-        else:
-            competing_boundaries = (
-                supported_footer_boundaries
-                if supported_footer_boundaries
-                else later_boundaries
-            )
-            competing_body_ends = {
-                candidate.row_before_idx: candidate
-                for candidate in competing_boundaries
-                if candidate.row_before_idx is not None
-            }
-            if not supported_footer_boundaries and competing_body_ends:
-                competing_body_ends[last_body_row] = None
-            if len(competing_body_ends) > 1:
-                interval_candidates: list[
-                    tuple[int, int, int, TableBoundaryCandidate | None]
-                ] = []
-                for body_end, candidate in competing_body_ends.items():
-                    candidate_rows = [
-                        row_idx for row_idx in body_rows if row_idx <= body_end
-                    ]
-                    candidate_occupancy = build_body_occupancy_table(
-                        table,
-                        positioned_page=positioned_page,
-                        body_row_indices=candidate_rows,
-                        table_boundary_proposal=table_boundary_proposal,
-                        annotation_table=annotation_table,
-                        paper_space_widths_by_style=(paper_space_widths_by_style or {}),
+            if table_bbox is not None:
+                raw_caption_region = table.metadata.get("caption_region")
+                caption_line_ids = {
+                    str(line_id)
+                    for line_id in (
+                        raw_caption_region.get("line_ids", [])
+                        if isinstance(raw_caption_region, Mapping)
+                        else []
                     )
-                    if candidate_occupancy.diagnostics:
-                        continue
-                    interval_candidates.append(
+                }
+                aligned_page_lines = sorted(
+                    (
+                        (line, line.canonical_bbox)
+                        for line in positioned_text_lines_by_id.values()
+                        if line.page_num == table.page_num
+                        and line.line_id not in caption_line_ids
+                        and line.canonical_bbox is not None
+                        and (
+                            positioned_evidence.orientation_group_id is None
+                            or line.orientation_group_id
+                            == positioned_evidence.orientation_group_id
+                        )
+                        and max(
+                            0.0,
+                            min(line.canonical_bbox[2], table_bbox[2])
+                            - max(line.canonical_bbox[0], table_bbox[0]),
+                        )
+                        / max(line.canonical_bbox[2] - line.canonical_bbox[0], 1.0)
+                        >= 0.25
+                        and table_bbox[1] - RULE_TOLERANCE
+                        <= (line.canonical_bbox[1] + line.canonical_bbox[3]) / 2.0
+                    ),
+                    key=lambda item: (item[1][1], item[1][0]),
+                )
+                visual_object_barrier = min(
+                    (
+                        record
+                        for record in aligned_page_lines
+                        if record[0].line_id
+                        in (visual_object_owned_line_ids or set())
+                    ),
+                    key=lambda item: (item[1][1], item[1][0]),
+                    default=None,
+                )
+                visual_object_doi_barrier_y = (
+                    visual_object_barrier[1][1]
+                    if visual_object_barrier is not None
+                    else None
+                )
+                raw_candidate_visual_object_barrier_bbox = table.metadata.get(
+                    "candidate_visual_object_barrier_bbox"
+                )
+                candidate_visual_object_barrier_y = (
+                    float(raw_candidate_visual_object_barrier_bbox[1])
+                    if isinstance(
+                        raw_candidate_visual_object_barrier_bbox, (list, tuple)
+                    )
+                    and len(raw_candidate_visual_object_barrier_bbox) == 4
+                    and all(
+                        isinstance(value, (int, float))
+                        for value in raw_candidate_visual_object_barrier_bbox
+                    )
+                    and float(raw_candidate_visual_object_barrier_bbox[1])
+                    >= table_bbox[3]
+                    else None
+                )
+                visual_object_barrier_y = min(
+                    (
+                        barrier_y
+                        for barrier_y in (
+                            visual_object_doi_barrier_y,
+                            candidate_visual_object_barrier_y,
+                        )
+                        if barrier_y is not None
+                    ),
+                    default=None,
+                )
+                raw_lines = [
+                    record
+                    for record in aligned_page_lines
+                    if (record[1][1] + record[1][3]) / 2.0
+                    <= table_bbox[3] + RULE_TOLERANCE
+                    and (
+                        visual_object_barrier_y is None
+                        or record[1][1] < visual_object_barrier_y
+                    )
+                ]
+                closing_rule_y = max(
+                    (
+                        float(rule_y)
+                        for rule_y in horizontal_rules
+                        if float(rule_y) <= table_bbox[3] + RULE_TOLERANCE
+                        and (
+                            visual_object_barrier_y is None
+                            or float(rule_y) < visual_object_barrier_y
+                        )
+                    ),
+                    default=None,
+                )
+                if (
+                    closing_rule_y is not None
+                    and abs(closing_rule_y - table_bbox[3]) <= RULE_TOLERANCE
+                ):
+                    external_groups: list[
+                        list[
+                            tuple[
+                                PaperTextLine,
+                                tuple[float, float, float, float],
+                            ]
+                        ]
+                    ] = []
+                    for record in aligned_page_lines:
+                        if (
+                            candidate_visual_object_barrier_y is not None
+                            and record[1][1]
+                            >= candidate_visual_object_barrier_y
+                        ):
+                            break
+                        if (
+                            (record[1][1] + record[1][3]) / 2.0
+                            <= table_bbox[3] + RULE_TOLERANCE
+                        ):
+                            continue
+                        if (
+                            not external_groups
+                            or record[1][1]
+                            - median(item[1][1] for item in external_groups[-1])
+                            > 1.0
+                        ):
+                            external_groups.append([record])
+                        else:
+                            external_groups[-1].append(record)
+
+                    adjacent_external_lines: list[
+                        tuple[
+                            PaperTextLine,
+                            tuple[float, float, float, float],
+                        ]
+                    ] = []
+                    external_footer_style: tuple[str, float] | None = None
+                    previous_external_block_indices: set[int] | None = None
+                    for group in external_groups:
+                        if any(line.role == "heading" for line, _bbox in group):
+                            diagnostics.append(
+                                "footer_external_scan_stopped_at_positioned_heading:"
+                                f"{min(line.line_id for line, _bbox in group)}"
+                            )
+                            break
+                        if any(
+                            line.line_id in (visual_object_owned_line_ids or set())
+                            for line, _bbox in group
+                        ):
+                            diagnostics.append(
+                                "footer_external_scan_stopped_at_visual_object_doi:"
+                                f"{min(line.line_id for line, _bbox in group)}"
+                            )
+                            break
+                        group_styles = {
+                            (
+                                str(line.dominant_font),
+                                round(float(line.dominant_font_size), 1),
+                            )
+                            for line, _bbox in group
+                            if line.dominant_font is not None
+                            and line.dominant_font_size is not None
+                        }
+                        group_style = (
+                            next(iter(group_styles))
+                            if len(group_styles) == 1
+                            else None
+                        )
+                        group_block_indices = {
+                            line.block_index
+                            for line, _bbox in group
+                            if line.block_index is not None
+                        }
+                        if adjacent_external_lines:
+                            same_font_within_block = (
+                                group_style is not None
+                                and external_footer_style is not None
+                                and group_style[0] == external_footer_style[0]
+                                and bool(group_block_indices)
+                                and group_block_indices
+                                == previous_external_block_indices
+                            )
+                            if (
+                                group_style != external_footer_style
+                                and not same_font_within_block
+                            ):
+                                break
+                        else:
+                            external_footer_style = group_style
+                        adjacent_external_lines.extend(group)
+                        previous_external_block_indices = group_block_indices
+                    raw_lines.extend(adjacent_external_lines)
+                    raw_lines.sort(key=lambda item: (item[1][1], item[1][0]))
+                physical_line_groups: list[
+                    list[
+                        tuple[
+                            PaperTextLine,
+                            tuple[float, float, float, float],
+                        ]
+                    ]
+                ] = []
+                for record in raw_lines:
+                    if (
+                        not physical_line_groups
+                        or record[1][1]
+                        - median(item[1][1] for item in physical_line_groups[-1])
+                        > 1.0
+                    ):
+                        physical_line_groups.append([record])
+                    else:
+                        physical_line_groups[-1].append(record)
+
+                classified_groups: list[
+                    tuple[
+                        float,
+                        tuple[str, float] | None,
+                        bool,
+                        bool,
+                        list[int],
+                        list[
+                            tuple[
+                                PaperTextLine,
+                                tuple[float, float, float, float],
+                            ]
+                        ],
+                    ]
+                ] = []
+                for group in physical_line_groups:
+                    ordered_group = sorted(group, key=lambda item: item[1][0])
+                    valid_footer_text = True
+                    for line, _bbox in ordered_group:
+                        text = clean_text(line.raw_text)
+                        if (
+                            not text
+                            or line.dominant_font is None
+                            or line.dominant_font_size is None
+                            or CONTINUATION_PATTERN.fullmatch(text) is not None
+                            or VISUAL_OBJECT_DOI_PATTERN.fullmatch(text) is not None
+                        ):
+                            valid_footer_text = False
+                            break
+
+                    prose_continuous = True
+                    for left_record, right_record in zip(
+                        ordered_group,
+                        ordered_group[1:],
+                        strict=False,
+                    ):
+                        gap = right_record[1][0] - left_record[1][2]
+                        if gap <= 0.0:
+                            continue
+                        observed_spaces = list(
+                            (paper_space_widths_by_style or {}).get(
+                                (
+                                    str(left_record[0].dominant_font),
+                                    round(
+                                        float(
+                                            left_record[0].dominant_font_size or 0.0
+                                        ),
+                                        3,
+                                    ),
+                                ),
+                                [],
+                            )
+                        )
+                        if (
+                            not observed_spaces
+                            or gap > 2.0 * median(observed_spaces)
+                        ):
+                            prose_continuous = False
+                            break
+
+                    group_top = min(bbox[1] for _line, bbox in ordered_group)
+                    group_bottom = max(bbox[3] for _line, bbox in ordered_group)
+                    group_styles = {
                         (
-                            len(candidate_occupancy.qualified_zero_gaps),
-                            len(candidate_rows),
-                            body_end,
-                            candidate,
+                            str(line.dominant_font),
+                            round(float(line.dominant_font_size), 1),
+                        )
+                        for line, _bbox in ordered_group
+                        if line.dominant_font is not None
+                        and line.dominant_font_size is not None
+                    }
+                    group_style = (
+                        next(iter(group_styles)) if len(group_styles) == 1 else None
+                    )
+                    group_rows = sorted(
+                        {
+                            row_idx
+                            for _line, bbox in ordered_group
+                            for row_idx in range(len(row_bounds))
+                            if row_bounds[row_idx][0] - 1.0
+                            <= (bbox[1] + bbox[3]) / 2.0
+                            <= row_bounds[row_idx][1] + 1.0
+                        }
+                    )
+                    classified_groups.append(
+                        (
+                            (group_top + group_bottom) / 2.0,
+                            group_style,
+                            valid_footer_text,
+                            prose_continuous,
+                            group_rows,
+                            ordered_group,
                         )
                     )
-                if len(interval_candidates) > 1:
-                    maximum_separator_count = max(
-                        separator_count
-                        for separator_count, _, _, _ in interval_candidates
+
+                ordered_events = [
+                    (group[0], "line", group_index)
+                    for group_index, group in enumerate(classified_groups)
+                ]
+                ordered_events.extend(
+                    (float(rule_y), "rule", -1)
+                    for rule_y in horizontal_rules
+                    if table_bbox[1] - RULE_TOLERANCE
+                    <= float(rule_y)
+                    <= table_bbox[3] + RULE_TOLERANCE
+                    and (
+                        visual_object_barrier_y is None
+                        or float(rule_y) < visual_object_barrier_y
                     )
-                    _, _, _, selected_candidate = max(
+                )
+                ordered_events.sort(
+                    key=lambda item: (item[0], 1 if item[1] == "rule" else 0)
+                )
+
+                if ordered_events:
+                    event_index = len(ordered_events) - 1
+                    started_after_closing_rule = (
+                        ordered_events[event_index][1] == "rule"
+                    )
+                    if started_after_closing_rule:
+                        event_index -= 1
+
+                    if (
+                        event_index >= 0
+                        and ordered_events[event_index][1] == "line"
+                    ):
+                        first_group = classified_groups[
+                            ordered_events[event_index][2]
+                        ]
                         (
-                            item
-                            for item in interval_candidates
-                            if item[0] == maximum_separator_count
-                        ),
-                        key=lambda item: item[1],
-                    )
-                    diagnostics.append(
-                        "body_interval_selected_from_competing_models:"
-                        f"models={len(interval_candidates)}:"
-                        f"separators={maximum_separator_count}"
-                    )
-        if selected_candidate is not None:
-            selected_row_before = selected_candidate.row_before_idx
-            if isinstance(selected_row_before, int):
-                footer_rows = [
-                    row_idx for row_idx in body_rows if row_idx > selected_row_before
-                ]
-                body_rows = [
-                    row_idx for row_idx in body_rows if row_idx <= selected_row_before
-                ]
-                body_footer_rule_y = selected_candidate.canonical_y
-    elif row_bounds is not None and body_rows:
-        footer_rule_source = full_width_rules or boundary_rules
-        footer_rows, body_footer_rule_y, footer_basis = _footer_rows(
-            grid,
-            row_bounds,
-            footer_rule_source,
-            body_rows,
-            footer_marker_rows=footer_marker_rows or set(),
-        )
-        if footer_rows:
-            footer_set = set(footer_rows)
-            body_rows = [row_idx for row_idx in body_rows if row_idx not in footer_set]
-            diagnostics.append(f"footer_rows_detected:{footer_basis}")
+                            _first_center,
+                            footer_style,
+                            valid_footer_text,
+                            prose_continuous,
+                            first_group_rows,
+                            first_lines,
+                        ) = first_group
+                        if (
+                            footer_style is not None
+                            and footer_style != body_text_style
+                            and valid_footer_text
+                            and prose_continuous
+                        ):
+                            complete_lines = list(first_lines)
+                            top_group_lines = list(first_lines)
+                            current_footer_group_lines = list(first_lines)
+                            candidate_footer_rows = set(first_group_rows)
+                            stopping_rule_y: float | None = None
+                            stop_reason = "candidate_start"
+                            event_index -= 1
+
+                            while event_index >= 0:
+                                _event_y, event_kind, group_index = ordered_events[
+                                    event_index
+                                ]
+                                if event_kind == "rule":
+                                    stopping_rule_y = ordered_events[event_index][0]
+                                    stop_reason = "horizontal_rule"
+                                    break
+                                (
+                                    _group_center,
+                                    group_style,
+                                    valid_footer_text,
+                                    prose_continuous,
+                                    group_rows,
+                                    group_lines,
+                                ) = classified_groups[group_index]
+                                current_block_indices = {
+                                    line.block_index
+                                    for line, _bbox in current_footer_group_lines
+                                    if line.block_index is not None
+                                }
+                                group_block_indices = {
+                                    line.block_index
+                                    for line, _bbox in group_lines
+                                    if line.block_index is not None
+                                }
+                                same_font_within_block = (
+                                    group_style is not None
+                                    and footer_style is not None
+                                    and group_style[0] == footer_style[0]
+                                    and bool(group_block_indices)
+                                    and group_block_indices == current_block_indices
+                                )
+                                if (
+                                    group_style != footer_style
+                                    and not same_font_within_block
+                                ):
+                                    stop_reason = "font_or_size_change"
+                                    break
+                                if not valid_footer_text:
+                                    stop_reason = "not_footer_text"
+                                    break
+                                if not prose_continuous:
+                                    stop_reason = "data_spacing"
+                                    break
+                                complete_lines.extend(group_lines)
+                                top_group_lines = list(group_lines)
+                                current_footer_group_lines = list(group_lines)
+                                candidate_footer_rows.update(group_rows)
+                                event_index -= 1
+
+                            continues_preceding_positioned_line = False
+                            for top_line, top_bbox in top_group_lines:
+                                preceding_lines = [
+                                    line
+                                    for line in positioned_text_lines_by_id.values()
+                                    if line.page_num == top_line.page_num
+                                    and line.block_index == top_line.block_index
+                                    and line.line_index == top_line.line_index - 1
+                                    and line.orientation_group_id
+                                    == top_line.orientation_group_id
+                                    and line.canonical_bbox is not None
+                                ]
+                                for preceding_line in preceding_lines:
+                                    if (
+                                        preceding_line.dominant_font
+                                        != top_line.dominant_font
+                                        or preceding_line.dominant_font_size is None
+                                        or top_line.dominant_font_size is None
+                                        or round(
+                                            float(
+                                                preceding_line.dominant_font_size
+                                            ),
+                                            1,
+                                        )
+                                        != round(
+                                            float(top_line.dominant_font_size), 1
+                                        )
+                                    ):
+                                        continue
+                                    preceding_bbox = preceding_line.canonical_bbox
+                                    if preceding_bbox is None:
+                                        continue
+                                    preceding_center = (
+                                        preceding_bbox[1] + preceding_bbox[3]
+                                    ) / 2.0
+                                    top_center = (top_bbox[1] + top_bbox[3]) / 2.0
+                                    if any(
+                                        min(preceding_center, top_center)
+                                        < float(rule_y)
+                                        < max(preceding_center, top_center)
+                                        for rule_y in horizontal_rules
+                                    ):
+                                        continue
+                                    continues_preceding_positioned_line = True
+                                    break
+                                if continues_preceding_positioned_line:
+                                    break
+                            if continues_preceding_positioned_line:
+                                diagnostics.append(
+                                    "footer_candidate_rejected:"
+                                    "consecutive_same_block_same_style_line"
+                                )
+                                complete_lines = []
+                                candidate_footer_rows.clear()
+                                stopping_rule_y = None
+
+                            has_table_end_rule = any(
+                                "table_end" in candidate.possible_roles
+                                and candidate.row_after_idx is None
+                                for candidate in (
+                                    table_boundary_proposal.boundary_candidates
+                                )
+                            )
+                            if complete_lines and not has_table_end_rule:
+                                candidate_line_ids = {
+                                    line.line_id for line, _bbox in complete_lines
+                                }
+                                candidate_fonts = {
+                                    line.dominant_font
+                                    for line, _bbox in complete_lines
+                                    if line.dominant_font is not None
+                                }
+                                other_table_fonts = {
+                                    line.dominant_font
+                                    for line_id in positioned_evidence.line_ids
+                                    if line_id not in candidate_line_ids
+                                    and line_id not in caption_line_ids
+                                    and (
+                                        line := positioned_text_lines_by_id.get(line_id)
+                                    )
+                                    is not None
+                                    and line.dominant_font is not None
+                                }
+                                if (
+                                    not candidate_fonts
+                                    or not other_table_fonts
+                                    or not candidate_fonts.isdisjoint(
+                                        other_table_fonts
+                                    )
+                                ):
+                                    diagnostics.append(
+                                        "footer_candidate_rejected:"
+                                        "no_table_end_rule_without_distinct_table_font"
+                                    )
+                                    complete_lines = []
+                                    candidate_footer_rows.clear()
+                                    stopping_rule_y = None
+
+                            complete_lines.sort(
+                                key=lambda item: (item[1][1], item[1][0])
+                            )
+                            footer_rows = sorted(candidate_footer_rows)
+                            boundary_candidate = (
+                                min(
+                                    table_boundary_proposal.boundary_candidates,
+                                    key=lambda item: abs(
+                                        item.canonical_y - stopping_rule_y
+                                    ),
+                                    default=None,
+                                )
+                                if stopping_rule_y is not None
+                                else None
+                            )
+                            if (
+                                boundary_candidate is not None
+                                and stopping_rule_y is not None
+                                and abs(
+                                    boundary_candidate.canonical_y
+                                    - stopping_rule_y
+                                )
+                                > RULE_TOLERANCE
+                            ):
+                                boundary_candidate = None
+
+                            if footer_rows:
+                                footer_set = set(footer_rows)
+                                body_rows = [
+                                    row_idx
+                                    for row_idx in body_rows
+                                    if row_idx not in footer_set
+                                ]
+                                body_footer_rule_y = stopping_rule_y
+                            elif boundary_candidate is not None:
+                                boundary_candidate.following_text_line_ids = [
+                                    line.line_id for line, _bbox in complete_lines
+                                ]
+                                boundary_candidate.following_text_bbox = (
+                                    min(bbox[0] for _line, bbox in complete_lines),
+                                    min(bbox[1] for _line, bbox in complete_lines),
+                                    max(bbox[2] for _line, bbox in complete_lines),
+                                    max(bbox[3] for _line, bbox in complete_lines),
+                                )
+                                boundary_candidate.following_text_styles = [
+                                    footer_style
+                                ]
+                                boundary_candidate.possible_roles.append(
+                                    "body_footer"
+                                )
+                                body_footer_rule_y = (
+                                    boundary_candidate.canonical_y
+                                )
+                            else:
+                                complete_lines = []
+                                diagnostics.append(
+                                    "raw_positioned_footer_unowned:"
+                                    "no_internal_rows_or_boundary_rule"
+                                )
+
+                            if complete_lines:
+                                diagnostics.append(
+                                    "raw_positioned_footer_accepted:"
+                                    f"lines={len(complete_lines)}:"
+                                    f"rows={len(footer_rows)}:"
+                                    f"paper_prose_style={body_text_style[0]}@"
+                                    f"{body_text_style[1]}:"
+                                    f"footer_style={footer_style[0]}@"
+                                    f"{footer_style[1]}:"
+                                    f"started_after_closing_rule="
+                                    f"{str(started_after_closing_rule).lower()}:"
+                                    f"stop={stop_reason}:"
+                                    "no_gap_over_two_observed_spaces"
+                                )
 
     assigned = {*caption_rows, *preamble_rows, *header_rows, *body_rows, *footer_rows}
     if len(assigned) < table.n_rows:
@@ -466,57 +1006,6 @@ def build_table_region(
 def table_regions_to_payload(regions: Sequence[TableRegion]) -> list[dict[str, object]]:
     """Serialize table regions as JSON-friendly records."""
     return [region.model_dump(mode="json") for region in regions]
-
-
-def _footer_marker_rows_by_table_id(
-    cell_text_annotations: Sequence[CellTextAnnotationTable],
-    extracted_tables: Sequence[ExtractedTable],
-) -> dict[str, set[int]]:
-    tables_by_id = {table.table_id: table for table in extracted_tables}
-    first_populated_cell_by_row: dict[
-        str, dict[int, tuple[int, tuple[float, float, float, float] | None]]
-    ] = {}
-    for table in extracted_tables:
-        row_cells: dict[
-            int, list[tuple[int, tuple[float, float, float, float] | None, str]]
-        ] = {}
-        for cell in table.cells:
-            if clean_text(cell.text):
-                row_cells.setdefault(cell.row_idx, []).append(
-                    (cell.col_idx, cell.bbox, cell.text)
-                )
-        first_populated_cell_by_row[table.table_id] = {
-            row_idx: (
-                min(cells, key=lambda item: item[0])[0],
-                min(cells, key=lambda item: item[0])[1],
-            )
-            for row_idx, cells in row_cells.items()
-        }
-
-    marker_rows: dict[str, set[int]] = {}
-    for annotation_table in cell_text_annotations:
-        if annotation_table.table_id not in tables_by_id:
-            continue
-        first_cells = first_populated_cell_by_row.get(annotation_table.table_id, {})
-        for annotation in annotation_table.annotations:
-            if annotation.annotation_type != "superscript":
-                continue
-            first_cell = first_cells.get(annotation.row_idx)
-            if first_cell is None:
-                continue
-            first_col_idx, first_bbox = first_cell
-            if annotation.col_idx != first_col_idx:
-                continue
-            if (
-                first_bbox is not None
-                and annotation.bbox is not None
-                and annotation.bbox[0] > first_bbox[0] + 6.0
-            ):
-                continue
-            marker_rows.setdefault(annotation_table.table_id, set()).add(
-                annotation.row_idx
-            )
-    return marker_rows
 
 
 def _cell_grid(table: ExtractedTable) -> list[list[str]]:
@@ -612,54 +1101,6 @@ def _rows_before_first_table_rule(
     return [], None
 
 
-def _footer_rows(
-    grid: list[list[str]],
-    row_bounds: list[tuple[float, float]],
-    rules: list[float],
-    body_rows: list[int],
-    *,
-    footer_marker_rows: set[int],
-) -> tuple[list[int], float | None, str]:
-    for rule_y in rules:
-        rows_above = [
-            row_idx
-            for row_idx in body_rows
-            if row_bounds[row_idx][1] <= rule_y + RULE_TOLERANCE
-        ]
-        rows_below = [
-            row_idx
-            for row_idx in body_rows
-            if row_bounds[row_idx][0] >= rule_y - RULE_TOLERANCE
-        ]
-        if (
-            rows_above
-            and rows_below
-            and any(_is_value_matrix_row(grid[row_idx]) for row_idx in rows_above)
-            and not any(_is_value_matrix_row(grid[row_idx]) for row_idx in rows_below)
-            and _value_like_count(grid[rows_below[0]][1:]) == 0
-        ):
-            return rows_below, rule_y, "after_body_footer_rule"
-
-    value_rows = [
-        row_idx for row_idx in body_rows if _is_value_matrix_row(grid[row_idx])
-    ]
-    if not value_rows:
-        return [], None, "no_value_matrix_rows"
-    last_value = max(value_rows)
-    footer_rows = [
-        row_idx
-        for row_idx in body_rows
-        if row_idx > last_value
-        and row_idx in footer_marker_rows
-        and _value_like_count(grid[row_idx][1:]) == 0
-    ]
-    return (
-        (footer_rows, None, "after_last_value_matrix_row_with_structured_marker")
-        if footer_rows
-        else ([], None, "no_footer_rows")
-    )
-
-
 def _row_regions(
     n_rows: int,
     grid: list[list[str]],
@@ -696,31 +1137,6 @@ def _row_text(row: list[str]) -> str:
 
 def _nonempty_count(row: list[str]) -> int:
     return sum(bool(clean_text(cell)) for cell in row)
-
-
-def _is_value_matrix_row(row: list[str]) -> bool:
-    trailing = [cell for cell in row[1:] if clean_text(cell)]
-    if not trailing:
-        return False
-    required = 1 if len(row) <= 3 else 2
-    return _value_like_count(trailing) >= required
-
-
-def _value_like_count(cells: list[str]) -> int:
-    return sum(_is_value_like(cell) for cell in cells if clean_text(cell))
-
-
-def _is_value_like(value: str) -> bool:
-    text = clean_text(value)
-    pattern = detect_value_pattern(text).pattern
-    if pattern == "p_value" and not any(char.isdigit() for char in text):
-        return False
-    if pattern != "unknown":
-        return True
-    return (
-        any(char.isdigit() for char in text)
-        and sum(char.isalpha() for char in text) <= 3
-    )
 
 
 def _row_matches_caption(row: list[str], table: ExtractedTable) -> bool:

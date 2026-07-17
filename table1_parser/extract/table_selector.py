@@ -19,8 +19,6 @@ def _positioned_source_preference(candidate: DetectedTableCandidate) -> int:
         and candidate.metadata.get("uncaptioned_segment_source") == "horizontal_rule_block"
     ):
         return 3
-    if layout_source.startswith("sideways_text_positions"):
-        return 3
     return 1
 
 

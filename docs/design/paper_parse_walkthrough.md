@@ -81,7 +81,7 @@ This inventory deliberately retains numeric citations, mathematical notation,
 and other unresolved candidates; classification and footer resolution happen
 later.
 
-`table_regions.json` records geometry-derived ownership for each extracted
+`table_regions.json` records row roles around the geometry-defined body for each extracted
 table before normalization: caption/title rows, preamble rows, column-header
 bands, body rows, footer/note bands, and row-level role assignments. It is
 built from extracted table entries, row bounds, cell bboxes when needed, and
@@ -89,24 +89,26 @@ horizontal rules after page-furniture filtering. Table captions and titles are
 represented here as table identity/component evidence, not as column headers.
 Discontinuous same-y rule segments are preserved as ordinary horizontal-rule
 evidence; only continuous near-edge-to-near-edge drawn rules are treated as
-full-width boundary rules.
+full-width boundary rules. The same stage owns the one bottom-of-table footer
+decision. Every accepted footer requires a positioned font or font-size change,
+a consecutive prose block without a horizontal gap of at least two observed
+space widths, and preceding data-band support. A final horizontal rule is
+supporting boundary evidence, not sufficient footer evidence. Internal accepted
+rows move from `body_rows` to `footer_note_rows`; accepted text below the final
+rule remains outside the physical grid and is linked through that rule's
+existing positioned-line references.
 
 `table_boundary_proposals.json` is built between canonical extracted geometry
-and `TableRegion`. It keeps alternative
-rule-supported table-start, header/body, and body/footer edges in one upright
-frame for both ordinary and rotated tables. Individual rule segments remain
-referenced rather than merged. A footer alternative requires immediate
-changed-font text after the final retained rule and stops at a known caption,
-later table, or section heading. Continuation lines in the same font remain in
-that band across font-size jitter of at most 0.2 PDF points. It stores source
-line IDs, canonical bounds, and font styles without interpreting the text. It
-also records whether credible
+and `TableRegion`. It keeps rule-supported table-start and header/body edges,
+plus final-rule and adjacent positioned-text evidence, in one upright frame for
+both ordinary and rotated tables. Individual rule segments remain referenced
+rather than merged. Adjacent text collection stops at a known caption, later
+table, or section heading; continuation lines retain source line IDs, canonical
+bounds, and font styles across font-size jitter of at most 0.2 PDF points. The
+proposal does not accept or reject footer ownership. It also records whether credible
 rule geometry or a coherent repeated positioned grid exists. If neither exists,
 `TableRegion` fails closed with no manufactured header/body bands, and
-normalization preserves that decision. A single supported body/footer model is
-used directly. When multiple canonical body intervals remain plausible, raw
-body occupancy selects among those intervals and favors the largest interval
-when font-qualified exact-gap support ties. Selected region edges are attached
+normalization preserves that decision. Selected region edges are attached
 afterward for inspection.
 
 `paper_positioned_document.json` records the shared PyMuPDF positioned text pass
@@ -157,8 +159,9 @@ the complete character, span, font, bbox, and attachment evidence in
 `cell_text_annotations.json`; no second positional anchor identity is generated.
 Definition candidates are fed first by the extracted rows owned by the matching
 final `TableRegion.footer_note_rows`. `find_table_footer_rows()` does not rerun
-last-value-row or horizontal-rule inference. Rows that start a marker definition
-are grouped with adjacent continuation rows in extracted row order. Confirmed
+last-value-row or horizontal-rule inference. Every accepted footer band enters
+definition processing; observed markers may split that band into several
+definitions but do not decide whether the accepted text is processed. Confirmed
 footer rows can carry marker-start evidence from cell-text annotation geometry
 when a raised marker begins the first populated footer cell; raw extracted
 strings that visually run the marker into the next word are preserved as
@@ -173,10 +176,10 @@ Context adjacency stops at page and orientation-group boundaries. It is also the
 positioned text source for footer candidates absent from the extracted grid.
 The stream preserves visual lines, page/column order, line bbox, dominant font
 name, dominant font size, and document-level font-style counts after
-page-furniture filtering. The table-footer finder starts only from the final
-`body_footer` candidate's `TableBoundaryProposal.following_text_line_ids` and
-uses exact marker geometry, table-local smaller type, or a multi-line footer
-band to retain or reject that adjacent group. It does not scan arbitrary text
+page-furniture filtering. The external table-footer consumer starts only from
+the final `body_footer` candidate's
+`TableBoundaryProposal.following_text_line_ids` after `TableRegion` has accepted
+ownership. It does not requalify that adjacent group or scan arbitrary text
 below the table bbox. Retained groups are persisted as unsplit `footers`
 records, so review can inspect the same raw footer region that later produces
 split definition records.
@@ -207,6 +210,10 @@ A standalone DOI ending in an exact visual-object suffix such as `.t001` or
 `.g002` terminates an adjacent external footer block before the DOI line. The
 line remains unchanged in `paper_text_stream.json` and is consumed as visual
 caption metadata by `paper_visual_inventory.json`, not as definition text.
+An extracted candidate's existing `candidate_visual_object_barrier_bbox`
+similarly terminates the external scan at the image's top edge when that edge
+is structurally below the canonical table bbox. It limits footer ownership but
+does not enlarge or otherwise rewrite the table bbox.
 R footnote review helpers filter by table fragment ID and by paper visual ID,
 so a table-number review includes footer records found on continued fragments
 such as `Table 1. (continued)` without treating the continuation label itself as
@@ -560,12 +567,12 @@ cell boxes, row bounds, table bboxes, full-width and ordinary horizontal rules,
 and already-filtered page context. After caption/preamble ownership is removed,
 the same structural header detector used by normalization selects the
 header/body split from retained separator rules and then value-region evidence.
-Footer ownership starts from the canonical models in
-`table_boundary_proposals.json`. One supported body/footer model is accepted
-directly. When multiple body intervals remain plausible, the stage computes
-raw body occupancy for each interval and chooses the model preserving the most
-zero-occupancy valleys; a tie retains the largest body. It does not search
-beyond the proposed intervals or infer boundaries from footer wording.
+Footer ownership is decided once in this stage from the table bottom. The same
+scan evaluates extracted trailing rows and final-rule-adjacent positioned text,
+requires a local typography change and prose continuity without a gap of two
+observed spaces, and uses data-band content plus any final rule only as
+supporting geometry. It does not infer boundaries from footer wording or let a
+later footnote consumer revise ownership.
 
 This stage deliberately separates three concepts that should not share one
 generic "header" label:

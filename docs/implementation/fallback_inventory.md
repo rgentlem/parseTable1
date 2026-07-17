@@ -166,9 +166,21 @@ canonical extraction logic with explicit provenance.
     `table1_parser/paper_footnotes.py::find_table_footer_definition_lines`.
   - Status: retired in Phase K Step 1. External footer text now starts only
     from the final retained rule's
-    `TableBoundaryProposal.following_text_line_ids`; the same function qualifies
-    that one adjacent band from positioned marker, typography, and physical-line
-    evidence.
+    `TableBoundaryProposal.following_text_line_ids`. Footer ownership is now
+    accepted once by `table1_parser/table_regions.py::build_table_region`;
+    `find_table_footer_definition_lines` only consumes accepted text and builds
+    definition evidence.
+
+- Competing boundary-model and marker-only footer ownership
+  - Former code:
+    `table1_parser/table_boundary_proposals.py::build_table_boundary_proposal`,
+    the proposal-backed interval selector in
+    `table1_parser/table_regions.py::build_table_region`, and the former
+    `_footer_marker_rows_by_table_id` / `_footer_rows` pair.
+  - Status: retired by the footer-unification work tracked in
+    `docs/implementation/footer_detection_unification_checklist.md`. Boundary
+    proposals collect geometry only. One bottom scan in `build_table_region`
+    owns internal rows or final-rule-adjacent text before body occupancy.
 
 ## Normalization Shape Repairs
 

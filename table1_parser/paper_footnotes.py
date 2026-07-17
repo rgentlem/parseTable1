@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from pathlib import Path
 from statistics import median
 
@@ -15,7 +15,6 @@ from table1_parser.context.visual_references import (
 )
 from table1_parser.marker_glyphs import glyph_fields
 from table1_parser.schemas import (
-    CellTextAnnotation,
     CellTextAnnotationTable,
     ColumnHeaderSchema,
     ExtractedTable,
@@ -30,7 +29,6 @@ from table1_parser.schemas import (
     PaperTextStream,
     ResolvedTableSet,
     TableBoundaryProposal,
-    TableCell,
 )
 from table1_parser.schemas.table_region import TableRegion
 from table1_parser.text_cleaning import clean_text
@@ -261,30 +259,65 @@ def find_table_footer_definition_lines(
     resolved_table_set: ResolvedTableSet | None = None,
     paper_text_stream: PaperTextStream | None = None,
     table_boundary_proposals: Sequence[TableBoundaryProposal] | None = None,
+    table_regions: Sequence[TableRegion] | None = None,
 ) -> list[FootnoteDefinitionCandidateLine]:
-    """Build external footer lines only from final-rule boundary evidence."""
+    """Project positioned lines from the footer boundary accepted by TableRegion."""
     if paper_text_stream is None:
         return []
     visual_id_by_table_id = _table_visual_ids(extracted_tables, resolved_table_set)
     proposal_by_table_id = {
         proposal.table_id: proposal for proposal in table_boundary_proposals or []
     }
+    region_by_table_id = {region.table_id: region for region in table_regions or []}
     lines_by_id = {line.line_id: line for line in paper_text_stream.lines}
     page_heights = {page.page_num: page.page_height for page in paper_text_stream.pages}
 
     footer_lines: list[FootnoteDefinitionCandidateLine] = []
     for table_position, table in enumerate(extracted_tables):
         proposal = proposal_by_table_id.get(table.table_id)
-        if proposal is None or not proposal.boundary_candidates:
+        if proposal is None:
             continue
-        final_rule = proposal.boundary_candidates[-1]
-        if (
-            "body_footer" not in final_rule.possible_roles
-            or not final_rule.following_text_line_ids
-        ):
+        region = region_by_table_id.get(table.table_id)
+        footer_rules = [
+            candidate
+            for candidate in proposal.boundary_candidates
+            if "body_footer" in candidate.possible_roles
+            and candidate.following_text_line_ids
+        ]
+        footer_line_ids: list[str] = []
+        if len(footer_rules) == 1:
+            footer_line_ids = footer_rules[0].following_text_line_ids
+        elif region is not None and region.footer_note_rows:
+            footer_bounds = [
+                proposal.canonical_row_bounds[row_idx]
+                for row_idx in region.footer_note_rows
+                if row_idx < len(proposal.canonical_row_bounds)
+            ]
+            table_bbox = proposal.canonical_table_bbox
+            if footer_bounds and table_bbox is not None:
+                footer_line_ids = [
+                    line.line_id
+                    for line in paper_text_stream.lines
+                    if line.page_num == table.page_num
+                    and line.canonical_bbox is not None
+                    and any(
+                        top - 1.0
+                        <= (line.canonical_bbox[1] + line.canonical_bbox[3]) / 2.0
+                        <= bottom + 1.0
+                        for top, bottom in footer_bounds
+                    )
+                    and max(
+                        0.0,
+                        min(line.canonical_bbox[2], table_bbox[2])
+                        - max(line.canonical_bbox[0], table_bbox[0]),
+                    )
+                    / max(line.canonical_bbox[2] - line.canonical_bbox[0], 1.0)
+                    >= 0.25
+                ]
+        if not footer_line_ids:
             continue
         group = []
-        for line_id in final_rule.following_text_line_ids:
+        for line_id in footer_line_ids:
             line = lines_by_id.get(line_id)
             if line is None:
                 group = []
@@ -315,9 +348,7 @@ def find_table_footer_definition_lines(
             span_offset = 0
             for span in sorted(
                 line.spans,
-                key=lambda item: float(
-                    (item.get("bbox") or (0.0, 0.0, 0.0, 0.0))[0]
-                ),
+                key=lambda item: float((item.get("bbox") or (0.0, 0.0, 0.0, 0.0))[0]),
             ):
                 span_text = str(span.get("text", ""))
                 start = span_offset
@@ -361,11 +392,7 @@ def find_table_footer_definition_lines(
                 prefix = raw_text[:evidence_start].rstrip()
                 suffix = raw_text[evidence_end:].lstrip()
                 physical_line_start = not str(line.raw_text)[:start].strip()
-                if (
-                    not physical_line_start
-                    and prefix
-                    and prefix[-1] not in ".;:,)]"
-                ):
+                if not physical_line_start and prefix and prefix[-1] not in ".;:,)]":
                     continue
                 if not suffix:
                     continue
@@ -401,80 +428,11 @@ def find_table_footer_definition_lines(
                     )
                 )
 
-        table_bbox = proposal.canonical_table_bbox
-        raw_positioned_evidence = table.metadata.get("table_positioned_evidence")
-        orientation_group_id = (
-            raw_positioned_evidence.get("orientation_group_id")
-            if isinstance(raw_positioned_evidence, Mapping)
-            else None
-        )
-        table_font_size_counts: dict[float, int] = {}
-        if table_bbox is not None:
-            for line in paper_text_stream.lines:
-                bbox = line.canonical_bbox
-                if (
-                    line.page_num != table.page_num
-                    or bbox is None
-                    or line.dominant_font_size is None
-                    or (
-                        orientation_group_id is not None
-                        and line.orientation_group_id != orientation_group_id
-                    )
-                ):
-                    continue
-                center_y = (bbox[1] + bbox[3]) / 2.0
-                overlap = max(
-                    0.0,
-                    min(bbox[2], table_bbox[2]) - max(bbox[0], table_bbox[0]),
-                )
-                if (
-                    table_bbox[1] <= center_y < final_rule.canonical_y
-                    and overlap / max(bbox[2] - bbox[0], 1.0) >= 0.25
-                ):
-                    font_size = round(float(line.dominant_font_size), 1)
-                    table_font_size_counts[font_size] = (
-                        table_font_size_counts.get(font_size, 0) + 1
-                    )
-        table_font_size = (
-            max(
-                table_font_size_counts,
-                key=lambda font_size: (table_font_size_counts[font_size], font_size),
-            )
-            if table_font_size_counts
-            else None
-        )
-        following_font_sizes = [
-            round(float(line.dominant_font_size), 1)
-            for line in group
-            if line.dominant_font_size is not None
-        ]
-        smaller_table_local_font = bool(
-            table_font_size is not None
-            and following_font_sizes
-            and max(following_font_sizes) < table_font_size
-        )
-        physical_line_tops: list[float] = []
-        for line in sorted(
-            group,
-            key=lambda item: (
-                (item.canonical_bbox or item.bbox)[1],
-                (item.canonical_bbox or item.bbox)[0],
-            ),
-        ):
-            top = float((line.canonical_bbox or line.bbox)[1])
-            if not physical_line_tops or top - physical_line_tops[-1] > 1.0:
-                physical_line_tops.append(top)
         structured_marker = bool(
             marker_evidence
             or _has_extracted_footer_definition_start(raw_text)
             or TEXTUAL_ASTERISK_DEFINITION_PATTERN.search(raw_text)
         )
-        if not (
-            structured_marker
-            or smaller_table_local_font
-            or len(physical_line_tops) >= 3
-        ):
-            continue
 
         group_bbox = (
             min(float(line.bbox[0]) for line in group),
@@ -485,29 +443,26 @@ def find_table_footer_definition_lines(
         group_line_indices = [
             line.line_index for line in group if line.line_index is not None
         ]
-        notes = ["table_boundary_final_rule_following_lines"]
-        if smaller_table_local_font:
-            notes.append("table_local_smaller_font")
+        notes = [
+            "table_region_accepted_raw_positioned_footer_lines",
+            "footer_ownership_accepted_by_table_region",
+        ]
         if structured_marker:
             notes.append("structured_definition_marker")
-        if len(physical_line_tops) >= 3:
-            notes.append("multiple_physical_footer_lines")
         notes.extend(f"source_text_line_id:{line.line_id}" for line in group)
         footer_lines.append(
             FootnoteDefinitionCandidateLine(
-                line_id=f"page-{table.page_num}-final-rule-footer-{table_position}",
+                line_id=f"page-{table.page_num}-accepted-footer-{table_position}",
                 page_num=table.page_num,
                 raw_text=raw_text,
                 source_scope="table_note",
-                source_id=f"{table.table_id}:final_rule_following_lines",
+                source_id=f"{table.table_id}:raw_positioned_footer_lines",
                 table_id=table.table_id,
                 visual_id=visual_id_by_table_id.get(table.table_id),
                 bbox=group_bbox,
                 page_height=page_heights.get(table.page_num),
                 line_index=(
-                    min(group_line_indices)
-                    if group_line_indices
-                    else table_position
+                    min(group_line_indices) if group_line_indices else table_position
                 ),
                 source_artifact="paper_text_stream.json",
                 confidence=0.9 if structured_marker else 0.82,
@@ -518,159 +473,11 @@ def find_table_footer_definition_lines(
     return footer_lines
 
 
-def build_paper_footnote_definition_lines_from_extracted_tables(
-    extracted_tables: Sequence[ExtractedTable],
-    resolved_table_set: ResolvedTableSet | None = None,
-    table_regions: Sequence[TableRegion] | None = None,
-    cell_text_annotations: Sequence[CellTextAnnotationTable] | None = None,
-) -> list[FootnoteDefinitionCandidateLine]:
-    """Collect table-local footer definition blocks from extracted table rows."""
-    lines: list[FootnoteDefinitionCandidateLine] = []
-    visual_id_by_table_id = _table_visual_ids(extracted_tables, resolved_table_set)
-    region_by_table_id = {region.table_id: region for region in table_regions or []}
-    footer_marker_annotations = _footer_marker_annotations_by_cell(cell_text_annotations or [], extracted_tables)
-    for table in extracted_tables:
-        rows_by_idx: dict[int, list[TableCell]] = {}
-        for cell in table.cells:
-            rows_by_idx.setdefault(cell.row_idx, []).append(cell)
-        if not rows_by_idx:
-            continue
-        ordered_rows = [
-            (row_idx, sorted(cells, key=lambda cell: cell.col_idx))
-            for row_idx, cells in sorted(rows_by_idx.items())
-        ]
-        footer_rows, _footer_detection_basis = find_table_footer_rows(
-            ordered_rows,
-            table_region=region_by_table_id.get(table.table_id),
-        )
-        if not footer_rows:
-            continue
-        table_marker_annotations = footer_marker_annotations.get(table.table_id, {})
-
-        current_start_row_idx: int | None = None
-        current_end_row_idx: int | None = None
-        current_rows: list[tuple[int, list[TableCell]]] = []
-
-        for row_idx, row_cells in footer_rows:
-            row_text = _row_text(row_cells)
-            if not row_text:
-                continue
-            if current_start_row_idx is not None and TABLE_CAPTION_ROW_PATTERN.match(row_text):
-                lines.append(
-                    _table_footer_definition_line(
-                        table=table,
-                        visual_id=visual_id_by_table_id.get(table.table_id),
-                        start_row_idx=current_start_row_idx,
-                        end_row_idx=current_end_row_idx or current_start_row_idx,
-                        rows=current_rows,
-                        marker_annotations=table_marker_annotations,
-                    )
-                )
-                current_start_row_idx = None
-                current_end_row_idx = None
-                current_rows = []
-                continue
-            starts_definition = (
-                _has_extracted_footer_definition_start(row_text)
-                or _row_has_structured_footer_marker(row_cells, table_marker_annotations)
-            )
-            if starts_definition:
-                if current_start_row_idx is not None and current_rows:
-                    lines.append(
-                        _table_footer_definition_line(
-                            table=table,
-                            visual_id=visual_id_by_table_id.get(table.table_id),
-                            start_row_idx=current_start_row_idx,
-                            end_row_idx=current_end_row_idx or current_start_row_idx,
-                            rows=current_rows,
-                            marker_annotations=table_marker_annotations,
-                        )
-                    )
-                current_start_row_idx = row_idx
-                current_end_row_idx = row_idx
-                current_rows = [(row_idx, row_cells)]
-                continue
-            if current_start_row_idx is not None:
-                current_end_row_idx = row_idx
-                current_rows.append((row_idx, row_cells))
-
-        if current_start_row_idx is not None and current_rows:
-            lines.append(
-                _table_footer_definition_line(
-                    table=table,
-                    visual_id=visual_id_by_table_id.get(table.table_id),
-                    start_row_idx=current_start_row_idx,
-                    end_row_idx=current_end_row_idx or current_start_row_idx,
-                    rows=current_rows,
-                    marker_annotations=table_marker_annotations,
-                )
-            )
-    return lines
-
-
-def build_paper_footnote_footers_from_extracted_tables(
-    extracted_tables: Sequence[ExtractedTable],
-    resolved_table_set: ResolvedTableSet | None = None,
-    table_regions: Sequence[TableRegion] | None = None,
-) -> list[FootnoteFooter]:
-    """Build reviewable table-footer regions from extracted table rows."""
-    footers: list[FootnoteFooter] = []
-    visual_id_by_table_id = _table_visual_ids(extracted_tables, resolved_table_set)
-    region_by_table_id = {region.table_id: region for region in table_regions or []}
-    for table_position, table in enumerate(extracted_tables):
-        rows_by_idx: dict[int, list[TableCell]] = {}
-        for cell in table.cells:
-            rows_by_idx.setdefault(cell.row_idx, []).append(cell)
-        if not rows_by_idx:
-            continue
-        ordered_rows = [
-            (row_idx, sorted(cells, key=lambda cell: cell.col_idx))
-            for row_idx, cells in sorted(rows_by_idx.items())
-        ]
-        footer_rows, detection_basis = find_table_footer_rows(
-            ordered_rows,
-            table_region=region_by_table_id.get(table.table_id),
-        )
-        if not footer_rows or detection_basis is None:
-            continue
-        footer_row_records = [
-            FootnoteFooterRow(
-                row_idx=row_idx,
-                raw_cells=[cell.text for cell in row_cells],
-                text=_row_text(row_cells),
-            )
-            for row_idx, row_cells in footer_rows
-            if _row_text(row_cells)
-        ]
-        if not footer_row_records:
-            continue
-        footers.append(
-            FootnoteFooter(
-                footer_id=f"footer:{table_position}",
-                table_id=table.table_id,
-                visual_id=visual_id_by_table_id.get(table.table_id),
-                page_num=table.page_num,
-                detection_basis=detection_basis,
-                start_row_idx=min(row.row_idx for row in footer_row_records),
-                end_row_idx=max(row.row_idx for row in footer_row_records),
-                raw_text=clean_text(" ".join(row.text for row in footer_row_records)),
-                rows=footer_row_records,
-                notes=["table_footer_rows_detected_from_extracted_table"],
-            )
-        )
-    return footers
-
-
 def build_paper_footnote_footers_from_text_stream_lines(
     footer_lines: Sequence[FootnoteDefinitionCandidateLine],
-    *,
-    existing_footers: Sequence[FootnoteFooter] | None = None,
 ) -> list[FootnoteFooter]:
     """Build reviewable table-footer regions from paper text-stream line groups."""
-    existing_keys = {
-        (footer.table_id, clean_text(footer.raw_text).casefold())
-        for footer in existing_footers or []
-    }
+    existing_keys: set[tuple[str | None, str]] = set()
     footers: list[FootnoteFooter] = []
     for line_index, line in enumerate(footer_lines):
         if line.source_scope != "table_note" or line.table_id is None:
@@ -696,7 +503,7 @@ def build_paper_footnote_footers_from_text_stream_lines(
                 visual_id=line.visual_id,
                 page_num=line.page_num,
                 source_artifact=line.source_artifact or "paper_text_stream.json",
-                detection_basis="table_boundary_final_rule_following_lines",
+                detection_basis="table_region_raw_positioned_footer_band",
                 start_row_idx=row_idx,
                 end_row_idx=row_idx,
                 raw_text=raw_text,
@@ -994,198 +801,6 @@ def paper_footnotes_to_payload(footnotes: PaperFootnotes) -> dict[str, object]:
     return footnotes.model_dump(mode="json")
 
 
-def _footer_marker_annotations_by_cell(
-    cell_text_annotations: Sequence[CellTextAnnotationTable],
-    extracted_tables: Sequence[ExtractedTable],
-) -> dict[str, dict[tuple[int, int], list[CellTextAnnotation]]]:
-    first_populated_cell_by_row: dict[str, dict[int, tuple[int, tuple[float, float, float, float] | None]]] = {}
-    for table in extracted_tables:
-        row_cells: dict[int, list[TableCell]] = {}
-        for cell in table.cells:
-            if clean_text(cell.text):
-                row_cells.setdefault(cell.row_idx, []).append(cell)
-        first_populated_cell_by_row[table.table_id] = {
-            row_idx: (min(cells, key=lambda cell: cell.col_idx).col_idx, min(cells, key=lambda cell: cell.col_idx).bbox)
-            for row_idx, cells in row_cells.items()
-        }
-
-    markers: dict[str, dict[tuple[int, int], list[CellTextAnnotation]]] = {}
-    for annotation_table in cell_text_annotations:
-        first_cells = first_populated_cell_by_row.get(annotation_table.table_id, {})
-        for annotation in annotation_table.annotations:
-            first_cell = first_cells.get(annotation.row_idx)
-            if first_cell is None:
-                continue
-            first_col_idx, first_bbox = first_cell
-            if annotation.col_idx != first_col_idx or annotation.annotation_type != "superscript":
-                continue
-            if first_bbox is not None and annotation.bbox is not None and annotation.bbox[0] > first_bbox[0] + 6.0:
-                continue
-            markers.setdefault(annotation_table.table_id, {}).setdefault(
-                (annotation.row_idx, annotation.col_idx),
-                [],
-            ).append(annotation)
-    return markers
-
-
-def _row_has_structured_footer_marker(
-    row_cells: Sequence[TableCell],
-    marker_annotations: Mapping[tuple[int, int], Sequence[CellTextAnnotation]],
-) -> bool:
-    populated_cells = [cell for cell in row_cells if clean_text(cell.text)]
-    if not populated_cells:
-        return False
-    first_cell = min(populated_cells, key=lambda cell: cell.col_idx)
-    return any(
-        _cell_has_row_start_marker_annotation(first_cell, annotation)
-        for annotation in marker_annotations.get((first_cell.row_idx, first_cell.col_idx), [])
-    )
-
-
-def _cell_has_row_start_marker_annotation(cell: TableCell, annotation: CellTextAnnotation) -> bool:
-    if annotation.annotation_type != "superscript" or not annotation.text.strip():
-        return False
-    if annotation.bbox is None or cell.bbox is None:
-        return annotation.attached_to_text is None
-    return annotation.bbox[0] <= cell.bbox[0] + 6.0
-
-
-def find_table_footer_rows(
-    ordered_rows: Sequence[tuple[int, list[TableCell]]],
-    *,
-    table_region: TableRegion | None = None,
-) -> tuple[list[tuple[int, list[TableCell]]], str | None]:
-    """Return footer rows owned by the final table region."""
-    if table_region is None or not table_region.footer_note_rows:
-        return [], None
-    footer_row_indices = set(table_region.footer_note_rows)
-    footer_rows = [
-        (row_idx, row_cells)
-        for row_idx, row_cells in ordered_rows
-        if row_idx in footer_row_indices
-    ]
-    return (
-        (footer_rows, "table_region_footer_note_band")
-        if footer_rows
-        else ([], None)
-    )
-
-
-def _row_text(row_cells: Sequence[TableCell]) -> str:
-    """Join extracted row cells in column order without discarding marker text."""
-    return clean_text(" ".join(cell.text for cell in row_cells if clean_text(cell.text)))
-
-
-def _table_footer_definition_line(
-    *,
-    table: ExtractedTable,
-    visual_id: str | None,
-    start_row_idx: int,
-    end_row_idx: int,
-    rows: Sequence[tuple[int, Sequence[TableCell]]],
-    marker_annotations: Mapping[tuple[int, int], Sequence[CellTextAnnotation]],
-) -> FootnoteDefinitionCandidateLine:
-    """Build one logical table-footer source line from one or more extracted rows."""
-    row_range = (
-        f"r{start_row_idx}"
-        if start_row_idx == end_row_idx
-        else f"r{start_row_idx}-r{end_row_idx}"
-    )
-    raw_text, marker_evidence = _text_and_marker_evidence_for_extracted_footer_rows(
-        rows,
-        marker_annotations=marker_annotations,
-    )
-    return FootnoteDefinitionCandidateLine(
-        line_id=f"{table.table_id}:footer:{row_range}",
-        page_num=table.page_num,
-        raw_text=raw_text,
-        source_scope="table_note",
-        source_id=f"{table.table_id}:footer:{row_range}",
-        table_id=table.table_id,
-        visual_id=visual_id,
-        line_index=start_row_idx,
-        source_artifact="extracted_tables.json",
-        confidence=0.9,
-        marker_evidence=marker_evidence,
-        notes=["table_footer_rows_after_value_matrix"],
-    )
-
-
-def _text_and_marker_evidence_for_extracted_footer_rows(
-    rows: Sequence[tuple[int, Sequence[TableCell]]],
-    *,
-    marker_annotations: Mapping[tuple[int, int], Sequence[CellTextAnnotation]],
-) -> tuple[str, list[FootnoteDefinitionMarkerEvidence]]:
-    """Build footer text and marker evidence from confirmed table-footer rows."""
-    text_parts: list[str] = []
-    cell_offsets: list[tuple[int, str, TableCell]] = []
-    offset = 0
-    for _row_idx, row_cells in rows:
-        ordered_cells = sorted(row_cells, key=lambda cell: cell.col_idx)
-        row_text_parts: list[str] = []
-        for cell in ordered_cells:
-            cell_text = clean_text(cell.text)
-            if not cell_text:
-                continue
-            if text_parts or row_text_parts:
-                text_parts.append(" ")
-                offset += 1
-            cell_offsets.append((offset, cell_text, cell))
-            text_parts.append(cell_text)
-            row_text_parts.append(cell_text)
-            offset += len(cell_text)
-
-    raw_text = clean_text("".join(text_parts))
-    marker_evidence: list[FootnoteDefinitionMarkerEvidence] = []
-    for cell_offset, cell_text, cell in cell_offsets:
-        for annotation in marker_annotations.get((cell.row_idx, cell.col_idx), []):
-            if not _cell_has_row_start_marker_annotation(cell, annotation):
-                continue
-            glyph_raw = annotation.text.strip()
-            if not glyph_raw:
-                continue
-            start = cell_offset
-            end = cell_offset + len(glyph_raw)
-            marker_evidence.append(
-                FootnoteDefinitionMarkerEvidence(
-                    glyph_raw=glyph_raw,
-                    evidence_type="cell_text_annotation_marker",
-                    text_start=start,
-                    text_end=end,
-                    confidence=annotation.confidence if annotation.confidence is not None else 0.9,
-                    bbox=annotation.bbox,
-                    metadata={
-                        "row_idx": cell.row_idx,
-                        "col_idx": cell.col_idx,
-                        "annotation_type": annotation.annotation_type,
-                        **annotation.metadata,
-                    },
-                    notes=["marker_from_superscript_cell_annotation"],
-                )
-            )
-        for match in EXTRACTED_FOOTER_MARKER_EVIDENCE_PATTERN.finditer(cell_text):
-            glyph_raw = _definition_glyph_from_marker(match.group("glyph"))
-            if not glyph_raw:
-                continue
-            start = cell_offset + match.start("glyph")
-            end = cell_offset + match.end("glyph")
-            if any(item.text_start == start and item.text_end == end and item.glyph_raw == glyph_raw for item in marker_evidence):
-                continue
-            marker_evidence.append(
-                FootnoteDefinitionMarkerEvidence(
-                    glyph_raw=glyph_raw,
-                    evidence_type="extracted_footer_marker_text",
-                    text_start=start,
-                    text_end=end,
-                    confidence=0.72,
-                    bbox=cell.bbox,
-                    metadata={"row_idx": cell.row_idx, "col_idx": cell.col_idx},
-                    notes=["marker_prefix_inside_confirmed_table_footer_cell"],
-                )
-            )
-    return raw_text, sorted(marker_evidence, key=lambda item: (item.text_start, item.text_end))
-
-
 def _is_math_unit_notation_marker(
     glyph_raw: str,
     annotation_type: str | None,
@@ -1293,9 +908,9 @@ def _table_visual_ids(
 ) -> dict[str, str]:
     visual_id_by_table_id: dict[str, str] = {}
     rejected_table_ids = {
-        source_table.source_table_id
-        for source_table in resolved_table_set.source_tables
-        if source_table.role == "rejected_continuation"
+            source_table.source_table_id
+            for source_table in resolved_table_set.source_tables
+            if source_table.role == "rejected_continuation"
     } if resolved_table_set is not None else set()
     for table in extracted_tables:
         if table.table_id in rejected_table_ids:

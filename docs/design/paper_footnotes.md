@@ -73,9 +73,10 @@ Rows inside the extracted grid come only from the matching final
 `TableRegion.footer_note_rows`. If the visual footer is outside that grid,
 `paper_text_stream.json` supplies only the positioned lines named by the final
 `body_footer` candidate's `TableBoundaryProposal.following_text_line_ids`.
-Those adjacent final-rule lines are retained when exact definition-marker
-geometry, table-local smaller type, or a multi-line footer band supports footer
-identity. They are persisted with
+`TableRegion` has already accepted those adjacent final-rule lines using
+mandatory typography, positioned prose continuity, and preceding-data
+evidence; the footnote stage does not decide ownership again. They are
+persisted with
 `source_artifact = "paper_text_stream.json"` and
 `detection_basis = "table_boundary_final_rule_following_lines"`. Source line
 IDs, bounding boxes, font evidence, and unsplit raw text remain available.

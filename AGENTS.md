@@ -58,6 +58,37 @@ are allowed without approval. If the user explicitly says to implement a named
 logic change, that counts as approval only for that described change; do not
 expand the scope without asking again.
 
+## Numeric Layout Tolerance Gate
+
+Do not add, restore, adjust, extend, or newly rely on a numeric layout
+tolerance in parser logic unless the user explicitly includes the exact,
+case-sensitive magic keyword:
+
+```text
+APPROVE_LAYOUT_TOLERANCE
+```
+
+This additional gate applies even when the user otherwise asks to implement or
+fix the parser. Without the magic keyword, agents may audit and propose a
+numeric tolerance, but they must not implement it.
+
+Numeric layout tolerances include fixed or derived thresholds involving PDF
+points, x/y distances, line or row gaps, bbox offsets, near-equality windows,
+font-size multiples, line-height multiples, overlap slop, or similar geometric
+allowances. Do not replace one prohibited tolerance with another numeric
+formulation.
+
+Prefer exact, typed structural evidence instead: PDF text-block and line
+identity, consecutive source order, font family and font-size transitions,
+orientation groups, drawn-rule crossings, candidate and structural-scope
+ownership, positioned heading/caption/DOI roles, and other explicit source
+artifacts.
+
+An existing numeric tolerance may be removed when the user explicitly approves
+its removal; the magic keyword is not required to remove it. Changing its
+value, moving it, restoring it, or using it in another decision path does
+require the magic keyword.
+
 When changing CLI behavior, persisted outputs, schema shape, markdown-context handling, or design assumptions, update the relevant `docs/*.md` files in the same change. Keep the design docs current.
 
 When updating or replacing a process, also remove, retire, or explicitly align

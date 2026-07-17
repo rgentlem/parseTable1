@@ -72,7 +72,7 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | --- | --- | --- | --- |
 | Extraction | `ExtractedTable` | Written now as `extracted_tables.json` by `extract` and `parse` | Preserve raw table grid and cell provenance |
 | Boundary proposal | `TableBoundaryProposal` | Written now as `table_boundary_proposals.json` by `parse` | Persist canonical geometry alternatives used to establish or compare provisional body intervals, plus review concerns and selected edges |
-| Table region ownership | `TableRegion` | Written now as `table_regions.json` by `parse` | Persist geometry-derived row ownership for captions, preamble rows, column-header bands, body rows, and footer/note bands before normalization consumes them |
+| Table region ownership | `TableRegion` | Written now as `table_regions.json` by `parse` | Persist row roles around the geometry-defined body: headers above it and footer/note bands below it, before normalization consumes them |
 | Body occupancy | `BodyOccupancyTable` | Written now as `body_occupancy.json` by `parse` | Persist raw physical-body-line occupancy in character-width-derived x bins plus exact font-qualified zero-gap evidence, without smoothing or downstream grid changes |
 | Leaf-column candidates | `LeafColumnCandidateTable` | Written now as `leaf_column_candidates.json` by `parse` | Persist provisional stub/value bands from exact zero-occupancy gaps at least two observed table-font spaces wide, with supporting unmerged rule endpoints, without changing the extracted grid |
 | Header-structure candidates | `HeaderStructureCandidate` | Written now as `header_structure_candidates.json` by `parse` | Persist positioned leaf/header evidence, preserving a complete flat canonical header cell-for-cell and otherwise classifying one-leaf labels and contiguous multileaf groups from observed anchors, per-band evidence, and individual partial rules; retain linked marker IDs plus raw/base node text, unresolved fragments, and post-assignment diagnostics without changing the accepted column schema |
@@ -183,6 +183,7 @@ Important current `metadata` keys produced by extraction may include:
 - `orientation_strategy`
 - `sideways_candidate`
 - `sideways_detection_signals`
+- `candidate_visual_object_barrier_bbox`
 - `caption_detection_space`
 - `table_cells`
 - `first_column_text_x0_by_row`
@@ -209,6 +210,13 @@ into the table's `paper_text_orientation_group` frame. Candidate, evidence,
 caption, and structural-scope bounds are retained in both page and canonical
 coordinates. The structural scope is only the union of evidence and caption
 bounds; its rule segments remain individual unclassified records.
+
+`metadata.candidate_visual_object_barrier_bbox` records the canonical bbox of
+an image object that constrained caption-and-rule candidate construction. When
+the image begins below the canonical table bbox, `TableRegion` may use its top
+edge as a hard terminal boundary for adjacent external footer text. The field
+does not expand the candidate, evidence, structural-scope, or extracted-table
+bbox.
 
 The projection duplicates geometry only, not text or font payloads. Consumers
 resolve those through the source references into the shared PyMuPDF artifact.
@@ -305,22 +313,20 @@ coverage; immediate font-change evidence; and review concerns. Repeated body
 rule patterns remain available in `table_positioned_evidence` and are not
 copied into this smaller proposal artifact.
 
-The artifact also records the header/body and body/footer row edges selected by
-`TableRegion` beside the retained alternatives. It does not judge a selected
-edge unsupported merely because the compact proposal omitted that candidate.
-One supported body/footer model establishes the provisional body directly. If
-multiple canonical body intervals remain plausible, `TableRegion` compares
-their raw occupancy valleys and selects the largest interval among tied best
-models.
+The artifact also records the header/body and internal body/footer row edges
+selected by `TableRegion` beside the retained alternatives. It does not judge a
+selected edge unsupported merely because the compact proposal omitted that
+candidate. Footer ownership itself is decided only by `TableRegion`.
 
-A `body_footer` candidate is limited to the final retained rule and may record
+A final retained rule may record
 `following_text_line_ids`, `following_text_bbox`, and
 `following_text_styles`. These fields reference the immediate, canonically
-positioned changed-font band below the rule. Same-font continuation lines allow
+positioned adjacent band below the rule. Same-font continuation lines allow
 font-size jitter of at most 0.2 PDF points. Known captions, later tables, and
-section headings stop the band. The text remains uninterpreted. External
-footnote harvesting can consume this exact line-ID band but cannot broaden it
-by scanning below the table bbox.
+section headings stop the band. The text remains uninterpreted. `TableRegion`
+adds `body_footer` only after the unified typography, prose-continuity, and
+preceding-data checks accept that exact band. External footnote harvesting can
+consume it but cannot broaden or requalify it.
 
 Each proposal also records `credible_rule_geometry` and
 `coherent_positioned_grid`. The proposal is built before row-region ownership.
@@ -331,9 +337,7 @@ afterward for inspection.
 
 ## Body Occupancy Diagnostic
 
-The occupancy builder first evaluates competing canonical body intervals when
-boundary evidence leaves more than one credible model. A single supported
-body/footer model bypasses this comparison. After `TableRegion` is finalized,
+After `TableRegion` has made the single footer-ownership decision,
 `body_occupancy.json` records the selected body interval before normalization.
 Each `BodyOccupancyTable` records the
 canonical table-local x extent, a character-width-derived bin width, physical
@@ -437,7 +441,7 @@ Canonical model:
 
 Design intent:
 
-- persist geometry-derived region ownership before normalization
+- persist structural region ownership anchored by body geometry before normalization
 - distinguish page headers, table captions/titles, column-header bands, body
   rows, and footer/note bands as separate concepts
 - use extracted table-entry geometry first: row bounds, cell boxes when row

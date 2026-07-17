@@ -83,6 +83,9 @@ class PaperPositionedPage(BaseModel):
     lines: list[PaperPositionedLine] = Field(default_factory=list)
     words: list[PaperPositionedWord] = Field(default_factory=list)
     chars: list[PaperPositionedChar] = Field(default_factory=list)
+    image_bboxes: list[tuple[float, float, float, float]] = Field(
+        default_factory=list
+    )
     rule_segments: list[tuple[float, float, float, float]] = Field(default_factory=list)
     stroked_rule_segments: list[tuple[float, float, float, float]] = Field(default_factory=list)
     diagnostics: list[str] = Field(default_factory=list)

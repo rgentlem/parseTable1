@@ -130,12 +130,11 @@ all attached unmerged rule endpoints lie inside their separator. Sixty-eight
 candidate counts agree with the extracted grid, while 22 disagreements remain
 diagnostic.
 
-Boundary evidence now defines the provisional body before occupancy. Eight
-tables accept one supported body/footer model directly. Eighteen compare
-multiple canonical body intervals with occupancy, choosing the largest model
-when qualified exact-gap counts tie. The previously accepted body/footer row
-selections remain unchanged by the font-gap refinement. The existing test suite
-passes with 138 tests.
+At the historical Phase F checkpoint, boundary evidence defined the provisional
+body before occupancy: eight tables used one supported body/footer model and 18
+compared multiple intervals. That selection path has since been retired. The
+current unified footer work leaves boundary proposals as evidence and makes one
+bottom-of-table ownership decision in `build_table_region()`.
 
 Current body-occupancy checkpoint:
 

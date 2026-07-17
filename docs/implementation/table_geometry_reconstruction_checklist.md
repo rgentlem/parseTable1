@@ -279,11 +279,11 @@ Phase E font-gap refinement checkpoint:
   leaf-candidate concern. Eighty-nine tables obtain their observed space width
   directly from table evidence; one uses the same font and size elsewhere in
   the paper-level positioned document.
-- Existing boundary evidence first defines the provisional body. A single
-  supported body/footer model is accepted directly. Occupancy is consulted
-  only when multiple canonical body intervals remain plausible, and the
-  largest interval wins when competing models preserve the same number of
-  qualified exact gaps.
+- Historical Phase F verification first defined the provisional body from
+  boundary models. That model-selection path is retired by
+  `docs/implementation/footer_detection_unification_checklist.md`; boundary
+  proposals now retain evidence only and `build_table_region()` owns one
+  bottom-of-table footer decision.
 - Eight tables use one supported boundary model and 18 tables compare multiple
   models. Only five region assignments differ from the Phase E diagnostic
   baseline: the four reviewed rotated tables now use body/footer row splits

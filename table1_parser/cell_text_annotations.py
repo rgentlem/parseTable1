@@ -7,7 +7,6 @@ from collections.abc import Mapping, Sequence
 from statistics import median
 
 from table1_parser.context.paper_positioned_document import build_paper_positioned_document
-from table1_parser.extract.layout_fallback import normalize_positioned_geometry_for_rotation
 from table1_parser.marker_glyphs import glyph_fields
 from table1_parser.page_furniture_mask import filter_positioned_items_for_page_furniture
 from table1_parser.schemas import (
@@ -18,16 +17,12 @@ from table1_parser.schemas import (
     PaperPositionedDocument,
     PositionedSpanReference,
     TableCell,
+    TablePositionedEvidence,
 )
 
 
 MARKER_SYMBOLS = {"*", "†", "‡", "§", "¶", "#", "|", "{", "}"}
 INLINE_MARKER_PREFIX_PATTERN = re.compile(r"^[<>=≤≥\d.,%()\s+\-±−×]+$")
-SUPPORTED_TRANSFORMED_FRAMES = {
-    "page_sideways_transformed",
-    "table_local_rotated_normalized",
-    "table_local_rotated_transposed_normalized",
-}
 
 
 def cell_text_annotation_tables_to_payload(
@@ -94,68 +89,62 @@ def build_cell_text_annotation_tables(
     """Match positioned chars into extracted table cells and detect small markers."""
     annotation_tables: list[CellTextAnnotationTable] = []
     for table in extracted_tables:
-        coordinate_frame = str(table.metadata.get("geometry_coordinate_frame") or "page")
         diagnostics: list[str] = []
         annotations: list[CellTextAnnotation] = []
         cells_with_bbox = [cell for cell in table.cells if cell.bbox is not None]
         page_num = table.page_num
         page_chars = list(page_chars_by_page.get(page_num, []))
-        positioned_chars: list[Mapping[str, object]] = page_chars
-        coordinate_frame_supported = coordinate_frame == "page"
-        transform_applied = False
-        transform_transposed = False
-        transform_bbox: tuple[float, float, float, float] | None = None
-        rotation_direction = ""
-        if coordinate_frame in SUPPORTED_TRANSFORMED_FRAMES:
-            transform_bbox_value = table.metadata.get("geometry_transform_source_bbox")
-            if isinstance(transform_bbox_value, (list, tuple)) and len(transform_bbox_value) == 4:
-                transform_bbox = tuple(float(part) for part in transform_bbox_value)
-            elif transform_bbox_value is not None:
-                diagnostics.append("geometry_transform_source_bbox_invalid")
-            rotation_direction = str(table.metadata.get("rotation_direction") or "")
-            transform_applied = bool(table.metadata.get("geometry_transform_applied"))
-            transform_transposed = bool(table.metadata.get("geometry_transform_transposed"))
-            if not transform_applied:
-                diagnostics.append("geometry_transform_not_applied")
-            if transform_bbox is None:
-                diagnostics.append("geometry_transform_source_bbox_missing")
-            if rotation_direction not in {"vertical_text_up", "vertical_text_down"}:
-                diagnostics.append("rotation_direction_missing")
-            if (
-                page_chars
-                and transform_applied
-                and transform_bbox is not None
-                and rotation_direction in {"vertical_text_up", "vertical_text_down"}
+        raw_evidence = table.metadata.get("table_positioned_evidence")
+        evidence: TablePositionedEvidence | None = None
+        if isinstance(raw_evidence, dict):
+            try:
+                evidence = TablePositionedEvidence.model_validate(raw_evidence)
+            except (TypeError, ValueError):
+                diagnostics.append("table_positioned_evidence_invalid")
+        else:
+            diagnostics.append("table_positioned_evidence_missing")
+        page_chars_by_index = {
+            int(char["char_index"]): char
+            for char in page_chars
+            if isinstance(char.get("char_index"), int)
+        }
+        positioned_chars: list[Mapping[str, object]] = []
+        if evidence is not None:
+            if len(evidence.char_indices) != len(evidence.canonical_char_bboxes):
+                diagnostics.append("canonical_char_reference_length_mismatch")
+            missing_source_count = 0
+            for char_index, bbox in zip(
+                evidence.char_indices,
+                evidence.canonical_char_bboxes,
+                strict=False,
             ):
-                source_left, source_top, source_right, source_bottom = transform_bbox
-                clipped_chars = [
-                    dict(char)
-                    for char in page_chars
-                    if float(char["x0"]) >= source_left - 2.0
-                    and float(char["x1"]) <= source_right + 2.0
-                    and float(char["top"]) >= source_top - 2.0
-                    and float(char["bottom"]) <= source_bottom + 2.0
-                ]
-                if clipped_chars:
-                    _, transformed_chars, _, _ = normalize_positioned_geometry_for_rotation(
-                        words=[],
-                        chars=clipped_chars,
-                        rule_segments=[],
-                        bbox=transform_bbox,
-                        rotation_direction=rotation_direction,
-                    )
-                    positioned_chars = transformed_chars
-                    coordinate_frame_supported = True
-                else:
-                    diagnostics.append("transformed_char_geometry_unavailable")
-        elif coordinate_frame != "page":
-            diagnostics.append(f"unsupported_coordinate_frame:{coordinate_frame}")
+                source_char = page_chars_by_index.get(char_index)
+                if source_char is None:
+                    missing_source_count += 1
+                    continue
+                canonical_char = dict(source_char)
+                canonical_char.update(
+                    {
+                        "x0": float(bbox[0]),
+                        "top": float(bbox[1]),
+                        "x1": float(bbox[2]),
+                        "bottom": float(bbox[3]),
+                        "char_height": float(bbox[3]) - float(bbox[1]),
+                    }
+                )
+                positioned_chars.append(canonical_char)
+            if missing_source_count:
+                diagnostics.append(
+                    f"canonical_char_sources_missing:{missing_source_count}"
+                )
         if not cells_with_bbox:
             diagnostics.append("cell_bboxes_missing")
         if not page_chars:
             diagnostics.append("char_geometry_unavailable")
+        elif evidence is not None and not positioned_chars:
+            diagnostics.append("canonical_char_geometry_unavailable")
 
-        if coordinate_frame_supported and cells_with_bbox and positioned_chars:
+        if cells_with_bbox and positioned_chars:
             for cell in cells_with_bbox:
                 assert cell.bbox is not None
                 left, top, right, bottom = cell.bbox
@@ -239,36 +228,12 @@ def build_cell_text_annotation_tables(
                         )
                     )
 
-        positioned_evidence = table.metadata.get("table_positioned_evidence")
-        if isinstance(positioned_evidence, dict):
-            source_indices = positioned_evidence.get("char_indices")
-            if isinstance(source_indices, list):
-                allowed_char_indices = {index for index in source_indices if isinstance(index, int)}
-                if any(
-                    not set(annotation.source_char_indices).issubset(allowed_char_indices)
-                    for annotation in annotations
-                ):
-                    diagnostics.append("marker_source_chars_outside_table_positioned_evidence")
-            else:
-                diagnostics.append("table_positioned_char_references_missing")
-        else:
-            diagnostics.append("table_positioned_evidence_missing")
-
         metadata: dict[str, object] = {
             "source": "paper_positioned_document_char_geometry",
-            "coordinate_frame": coordinate_frame,
+            "coordinate_frame": "paper_text_orientation_group",
             "marker_occurrence_count": len(annotations),
             "diagnostics": diagnostics,
         }
-        if coordinate_frame in SUPPORTED_TRANSFORMED_FRAMES:
-            metadata.update(
-                {
-                    "geometry_transform_applied": transform_applied,
-                    "geometry_transform_transposed": transform_transposed,
-                    "geometry_transform_source_bbox": transform_bbox,
-                    "rotation_direction": rotation_direction or None,
-                }
-            )
 
         annotation_tables.append(
             CellTextAnnotationTable(

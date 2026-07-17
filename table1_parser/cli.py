@@ -94,8 +94,6 @@ from table1_parser.parse import (
 from table1_parser.paper_footnotes import (
     build_paper_footnote_anchor_inventory,
     build_paper_footnote_definition_candidates,
-    build_paper_footnote_definition_lines_from_extracted_tables,
-    build_paper_footnote_footers_from_extracted_tables,
     build_paper_footnote_footers_from_text_stream_lines,
     find_table_footer_definition_lines,
     link_paper_footnotes,
@@ -398,7 +396,6 @@ def _build_table_geometry_artifacts(
     table_boundary_proposals = build_table_boundary_proposals(
         extracted_tables,
         paper_positioned_document=paper_context.paper_positioned_document,
-        paper_text_stream=paper_context.paper_text_stream,
     )
     table_regions = build_table_regions(
         extracted_tables,
@@ -423,18 +420,6 @@ def _build_table_geometry_artifacts(
                 max(region.body_rows),
                 min(region.footer_note_rows),
             )
-        if region.body_rows:
-            first_body_row = min(region.body_rows)
-            for candidate in proposal.boundary_candidates:
-                if (
-                    "body_footer" in candidate.possible_roles
-                    and candidate.row_before_idx is not None
-                    and candidate.row_before_idx < first_body_row
-                ):
-                    candidate.possible_roles.remove("body_footer")
-                    candidate.following_text_line_ids = []
-                    candidate.following_text_bbox = None
-                    candidate.following_text_styles = []
     body_occupancy = build_body_occupancy_tables(
         extracted_tables,
         paper_positioned_document=paper_context.paper_positioned_document,
@@ -1121,34 +1106,17 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         resolved_table_set=resolved_table_set,
     )
     paper_footnote_anchors_before_linking = list(paper_footnotes.anchors)
-    extracted_table_footers = build_paper_footnote_footers_from_extracted_tables(
-        extracted_tables,
-        resolved_table_set=resolved_table_set,
-        table_regions=table_regions,
-    )
-    table_local_footnote_definition_lines = (
-        build_paper_footnote_definition_lines_from_extracted_tables(
-            extracted_tables,
-            resolved_table_set=resolved_table_set,
-            table_regions=table_regions,
-            cell_text_annotations=cell_text_annotations,
-        )
-    )
     table_footer_text_stream_definition_lines = find_table_footer_definition_lines(
         extracted_tables,
         resolved_table_set=resolved_table_set,
         paper_text_stream=paper_text_stream,
         table_boundary_proposals=table_boundary_proposals,
+        table_regions=table_regions,
     )
-    paper_footnote_definition_lines = [
-        *table_local_footnote_definition_lines,
-        *table_footer_text_stream_definition_lines,
-    ]
-    text_stream_table_footers = build_paper_footnote_footers_from_text_stream_lines(
-        table_footer_text_stream_definition_lines,
-        existing_footers=extracted_table_footers,
+    paper_footnote_definition_lines = table_footer_text_stream_definition_lines
+    table_footers = build_paper_footnote_footers_from_text_stream_lines(
+        table_footer_text_stream_definition_lines
     )
-    table_footers = [*extracted_table_footers, *text_stream_table_footers]
     paper_footnote_definitions = build_paper_footnote_definition_candidates(
         paper_footnote_definition_lines,
         extracted_tables,
@@ -1170,11 +1138,9 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
                     ),
                     "page_furniture_filter_stage": "before_paper_text_stream_footer_detection",
                     "footer_count": len(table_footers),
-                    "footer_count_from_extracted_tables": len(extracted_table_footers),
-                    "footer_count_from_text_stream": len(text_stream_table_footers),
-                    "definition_line_count_from_extracted_tables": len(
-                        table_local_footnote_definition_lines
-                    ),
+                    "footer_count_from_extracted_tables": 0,
+                    "footer_count_from_text_stream": len(table_footers),
+                    "definition_line_count_from_extracted_tables": 0,
                     "definition_line_count_from_text_stream": len(
                         table_footer_text_stream_definition_lines
                     ),

@@ -67,8 +67,7 @@ class BibliographyEvidenceMask:
 def _caption_label_assignments(
     *,
     page_num: int,
-    table_bboxes: Sequence[tuple[float, float, float, float] | None],
-    orientation_metadata: Sequence[dict[str, Any]],
+    candidate_metadata: Sequence[dict[str, Any]],
     paper_text_stream: PaperTextStream | None,
     paper_table_mentions: Sequence[PaperTableMention] | None,
 ) -> dict[int, tuple[TableCaptionRegion, TableCaptionBinding]]:
@@ -87,39 +86,13 @@ def _caption_label_assignments(
     table_geometry: list[
         tuple[int, PaperTextOrientationGroup, tuple[float, float, float, float]]
     ] = []
-    for table_index, table_bbox in enumerate(table_bboxes):
-        if table_bbox is None or table_index >= len(orientation_metadata):
+    for table_index, metadata in enumerate(candidate_metadata):
+        orientation_group_id = metadata.get("orientation_group_id")
+        canonical_table_bbox = _as_bbox(metadata.get("canonical_candidate_bbox"))
+        if not isinstance(orientation_group_id, str) or canonical_table_bbox is None:
             continue
-        metadata = orientation_metadata[table_index]
-        rotation_direction = str(metadata.get("rotation_direction") or "upright")
-        orientation = (
-            rotation_direction
-            if rotation_direction in {"vertical_text_up", "vertical_text_down"}
-            else "upright"
-        )
-        for group in page.orientation_groups:
-            if group.orientation == orientation:
-                source_bbox = _as_bbox(metadata.get("rotated_text_block_bbox")) or table_bbox
-            elif orientation == "upright" and group.orientation != "upright":
-                source_bbox = (
-                    max(table_bbox[0], group.source_bbox[0]),
-                    max(table_bbox[1], group.source_bbox[1]),
-                    min(table_bbox[2], group.source_bbox[2]),
-                    min(table_bbox[3], group.source_bbox[3]),
-                )
-                if source_bbox[2] <= source_bbox[0] or source_bbox[3] <= source_bbox[1]:
-                    continue
-            else:
-                continue
-            canonical_table_bbox = (
-                normalize_bbox_for_rotation(
-                    source_bbox,
-                    source_bbox=group.source_bbox,
-                    rotation_direction=group.orientation,
-                )
-                if group.orientation != "upright"
-                else source_bbox
-            )
+        group = groups_by_id.get(orientation_group_id)
+        if group is not None:
             table_geometry.append((table_index, group, canonical_table_bbox))
 
     caption_records: list[tuple[PaperTableMention, PaperTextLine, TableCaptionRegion]] = []
@@ -235,18 +208,6 @@ def _complete_caption_region(
     )
     if label_index is None:
         return region, binding
-    page = next(
-        (item for item in paper_text_stream.pages if item.page_num == region.page_num),
-        None,
-    )
-    group = next(
-        (
-            item
-            for item in page.orientation_groups
-            if item.group_id == region.orientation_group_id
-        ),
-        None,
-    ) if page is not None else None
 
     boundary_y: float | None = None
     if binding.placement == "above":
@@ -259,21 +220,6 @@ def _complete_caption_region(
             )
         ]
         if rules:
-            transform_bbox = _as_bbox(
-                candidate_metadata.get("geometry_transform_source_bbox")
-            )
-            rotation_direction = str(candidate_metadata.get("rotation_direction") or "")
-            if transform_bbox is not None and group is not None:
-                if rotation_direction == "vertical_text_up":
-                    rules = [
-                        rule + transform_bbox[0] - group.source_bbox[0]
-                        for rule in rules
-                    ]
-                elif rotation_direction == "vertical_text_down":
-                    rules = [
-                        rule + group.source_bbox[2] - transform_bbox[2]
-                        for rule in rules
-                    ]
             rules_below_label = [
                 rule
                 for rule in rules
@@ -431,8 +377,7 @@ def _apply_complete_caption_bindings(
         page_candidates = [candidates[index] for index in candidate_indices]
         assignments = _caption_label_assignments(
             page_num=page_num,
-            table_bboxes=[candidate.bbox for candidate in page_candidates],
-            orientation_metadata=[candidate.metadata for candidate in page_candidates],
+            candidate_metadata=[candidate.metadata for candidate in page_candidates],
             paper_text_stream=paper_text_stream,
             paper_table_mentions=paper_table_mentions,
         )
@@ -737,47 +682,43 @@ class PyMuPDFExtractor(BaseExtractor):
             caption_region_values = caption_region if isinstance(caption_region, dict) else {}
             caption_bbox = _as_bbox(caption_region_values.get("bbox"))
             orientation_group_id = str(
-                caption_region_values.get("orientation_group_id") or ""
+                candidate.metadata.get("orientation_group_id") or ""
             ) or None
-            rotation_direction = str(candidate.metadata.get("rotation_direction") or "")
-            if rotation_direction not in {"vertical_text_up", "vertical_text_down"}:
-                rotation_direction = "upright"
             orientation_group = None
             if text_page is not None:
                 orientation_group = next(
                     (
                         group
                         for group in text_page.orientation_groups
-                        if (
-                            orientation_group_id is not None
-                            and group.group_id == orientation_group_id
-                        )
-                        or (
-                            orientation_group_id is None
-                            and group.orientation == rotation_direction
-                        )
+                        if orientation_group_id is not None
+                        and group.group_id == orientation_group_id
                     ),
                     None,
                 )
-            if orientation_group is not None:
-                orientation_group_id = orientation_group.group_id
-            transform_source_bbox = _as_bbox(
-                candidate.metadata.get("geometry_transform_source_bbox")
-            )
             evidence_bbox = (
                 candidate.bbox
                 if candidate.metadata.get("strong_ruled_geometry") is True
                 and candidate.bbox is not None
-                else transform_source_bbox or candidate.bbox
+                else (
+                    orientation_group.source_bbox
+                    if orientation_group is not None
+                    else candidate.bbox
+                )
             )
             canonical_transform_source_bbox = (
                 orientation_group.source_bbox
-                if orientation_group is not None and rotation_direction != "upright"
+                if orientation_group is not None
+                and orientation_group.orientation != "upright"
                 else (
                     (0.0, 0.0, positioned_page.page_width, positioned_page.page_height)
                     if positioned_page is not None
                     else evidence_bbox
                 )
+            )
+            rotation_direction = (
+                orientation_group.orientation
+                if orientation_group is not None
+                else "upright"
             )
             positioned_evidence = _table_local_positioned_evidence(
                 positioned_page,
@@ -992,6 +933,18 @@ class PyMuPDFExtractor(BaseExtractor):
                             rotation_direction=group.orientation,
                         )
                     )
+                    transformed_image_bboxes = [
+                        normalize_bbox_for_rotation(
+                            image_bbox,
+                            source_bbox=group.source_bbox,
+                            rotation_direction=group.orientation,
+                        )
+                        for image_bbox in positioned_page.image_bboxes
+                        if min(image_bbox[2], group.source_bbox[2])
+                        > max(image_bbox[0], group.source_bbox[0])
+                        and min(image_bbox[3], group.source_bbox[3])
+                        > max(image_bbox[1], group.source_bbox[1])
+                    ]
                     group_line_ids = {line.line_id for line in group_lines}
                     transformed_mentions = [
                         mention.model_copy(
@@ -1006,21 +959,24 @@ class PyMuPDFExtractor(BaseExtractor):
                     ]
                     group_text = "\n".join(line.text for line in group_lines) or page_text
                     if group.orientation == "upright":
-                        text_layout_candidates = _build_upright_rule_span_candidates(
+                        text_layout_candidates = _build_rule_span_candidates(
                             page_num=page_num,
                             page_text=group_text,
                             words=transformed_words,
                             chars=transformed_chars,
                             rule_segments=transformed_rules,
+                            image_bboxes=transformed_image_bboxes,
                             paper_table_mentions=transformed_mentions,
                         )
-                        continuation_candidates = _build_cross_page_continuation_candidates(
-                            page_num=page_num,
-                            page_text=group_text,
-                            words=transformed_words,
-                            chars=transformed_chars,
-                            rule_segments=transformed_rules,
-                            prior_candidates=candidates,
+                        continuation_candidates = (
+                            _build_cross_page_continuation_candidates(
+                                page_num=page_num,
+                                page_text=group_text,
+                                words=transformed_words,
+                                chars=transformed_chars,
+                                rule_segments=transformed_rules,
+                                prior_candidates=candidates,
+                            )
                         )
                         for continuation_candidate in continuation_candidates:
                             if any(
@@ -1059,7 +1015,8 @@ class PyMuPDFExtractor(BaseExtractor):
                             ),
                         )
                     for candidate in text_layout_candidates:
-                        source_candidate_bbox = candidate.bbox
+                        canonical_candidate_bbox = candidate.bbox
+                        source_candidate_bbox = canonical_candidate_bbox
                         if candidate.bbox is not None and group.orientation != "upright":
                             canonical_left, canonical_top, canonical_right, canonical_bottom = candidate.bbox
                             source_left, source_top, source_right, source_bottom = group.source_bbox
@@ -1083,17 +1040,9 @@ class PyMuPDFExtractor(BaseExtractor):
                                     "bbox": source_candidate_bbox,
                                     "metadata": {
                                         **candidate.metadata,
-                                        "geometry_coordinate_frame": (
-                                            "paper_text_orientation_group"
-                                            if group.orientation != "upright"
-                                            else "page"
-                                        ),
-                                        "geometry_transform_source_bbox": group.source_bbox,
-                                        "geometry_transform_applied": group.orientation != "upright",
-                                        "table_orientation": (
-                                            "rotated" if group.orientation != "upright" else "upright"
-                                        ),
-                                        "rotation_direction": group.orientation,
+                                        "geometry_coordinate_frame": "paper_text_orientation_group",
+                                        "canonical_candidate_bbox": canonical_candidate_bbox,
+                                        "source_candidate_bbox": source_candidate_bbox,
                                         "orientation_group_id": group.group_id,
                                     },
                                 }
@@ -1222,7 +1171,7 @@ def _horizontal_rule_spans(
         (
             ((float(y0) + float(y1)) / 2.0, min(float(x0), float(x1)), max(float(x0), float(x1)))
             for x0, y0, x1, y1 in rule_segments
-            if abs(float(y1) - float(y0)) <= 1.5 and abs(float(x1) - float(x0)) >= 4.0
+            if abs(float(y1) - float(y0)) <= 1.5 and abs(float(x1) - float(x0)) > 0.0
         ),
         key=lambda item: (item[0], item[1]),
     )
@@ -1383,16 +1332,17 @@ def _connected_rule_grid_regions(
     return sorted(regions, key=lambda region: (region[1], region[0]))
 
 
-def _build_upright_rule_span_candidates(
+def _build_rule_span_candidates(
     *,
     page_num: int,
     page_text: str,
     words: list[dict[str, object]],
     chars: list[dict[str, object]],
     rule_segments: list[tuple[float, float, float, float]],
+    image_bboxes: list[tuple[float, float, float, float]],
     paper_table_mentions: Sequence[PaperTableMention] | None,
 ) -> list[DetectedTableCandidate]:
-    """Build upright candidates from captions or connected cell-rule geometry."""
+    """Build canonical candidates from captions or connected cell-rule geometry."""
     if not words or not rule_segments:
         return []
     rule_spans = _horizontal_rule_spans(rule_segments)
@@ -1401,7 +1351,8 @@ def _build_upright_rule_span_candidates(
         (
             mention
             for mention in paper_table_mentions
-            if mention.page_num == page_num and mention.is_caption_candidate
+            if mention.page_num == page_num
+            and mention.is_caption_candidate
         ),
         key=lambda mention: (mention.source_line_bbox[1], mention.source_line_bbox[0]),
     )
@@ -1419,6 +1370,7 @@ def _build_upright_rule_span_candidates(
             or span[1] - 8.0 <= caption_left <= span[2] + 8.0
         ]
         selected_region: tuple[float, float, float, float] | None = None
+        selected_visual_object_bbox: tuple[float, float, float, float] | None = None
         for start_y, left, right in related_spans:
             overlapping_captions = [
                 other
@@ -1438,10 +1390,31 @@ def _build_upright_rule_span_candidates(
             if not caption_bottom - 2.0 <= start_y < next_caption_top - 2.0:
                 continue
             edge_tolerance = max(3.0, min(8.0, (right - left) * 0.02))
+            visual_object_bbox = min(
+                (
+                    image_bbox
+                    for image_bbox in image_bboxes
+                    if image_bbox[1] > start_y + 2.0
+                    and min(right, image_bbox[2]) - max(left, image_bbox[0])
+                    >= (right - left) * 0.25
+                    and (
+                        abs(image_bbox[0] - left) > edge_tolerance
+                        or abs(image_bbox[2] - right) > edge_tolerance
+                    )
+                ),
+                key=lambda image_bbox: image_bbox[1],
+                default=None,
+            )
+            candidate_bottom_limit = min(
+                next_caption_top - 2.0,
+                visual_object_bbox[1]
+                if visual_object_bbox is not None
+                else float("inf"),
+            )
             matching_rows = [
                 span
                 for span in rule_spans
-                if start_y <= span[0] < next_caption_top - 2.0
+                if start_y <= span[0] < candidate_bottom_limit
                 and abs(span[1] - left) <= edge_tolerance
                 and abs(span[2] - right) <= edge_tolerance
             ]
@@ -1452,6 +1425,7 @@ def _build_upright_rule_span_candidates(
                     right,
                     max(span[0] for span in matching_rows),
                 )
+                selected_visual_object_bbox = visual_object_bbox
                 break
 
         if selected_region is None:
@@ -1474,10 +1448,31 @@ def _build_upright_rule_span_candidates(
                 if not previous_caption_bottom + 2.0 < end_y <= caption_top + 2.0:
                     continue
                 edge_tolerance = max(3.0, min(8.0, (right - left) * 0.02))
+                visual_object_bbox = max(
+                    (
+                        image_bbox
+                        for image_bbox in image_bboxes
+                        if image_bbox[3] < end_y - 2.0
+                        and min(right, image_bbox[2]) - max(left, image_bbox[0])
+                        >= (right - left) * 0.25
+                        and (
+                            abs(image_bbox[0] - left) > edge_tolerance
+                            or abs(image_bbox[2] - right) > edge_tolerance
+                        )
+                    ),
+                    key=lambda image_bbox: image_bbox[3],
+                    default=None,
+                )
+                candidate_top_limit = max(
+                    previous_caption_bottom + 2.0,
+                    visual_object_bbox[3]
+                    if visual_object_bbox is not None
+                    else float("-inf"),
+                )
                 matching_rows = [
                     span
                     for span in rule_spans
-                    if previous_caption_bottom + 2.0 < span[0] <= end_y
+                    if candidate_top_limit < span[0] <= end_y
                     and abs(span[1] - left) <= edge_tolerance
                     and abs(span[2] - right) <= edge_tolerance
                 ]
@@ -1488,6 +1483,7 @@ def _build_upright_rule_span_candidates(
                         right,
                         caption_bottom,
                     )
+                    selected_visual_object_bbox = visual_object_bbox
                     break
 
         if selected_region is None:
@@ -1533,6 +1529,15 @@ def _build_upright_rule_span_candidates(
                             **candidate.metadata,
                             "candidate_region_source": "caption_and_rule_geometry",
                             "candidate_rule_span": [left, top, right, bottom],
+                            **(
+                                {
+                                    "candidate_visual_object_barrier_bbox": list(
+                                        selected_visual_object_bbox
+                                    )
+                                }
+                                if selected_visual_object_bbox is not None
+                                else {}
+                            ),
                         }
                     }
                 )
@@ -1580,7 +1585,7 @@ def _build_upright_rule_span_candidates(
             layout_source="pymupdf_text_positions",
             paper_page_furniture=None,
             paper_table_mentions=[],
-            allow_uncaptioned_orientation_group=True,
+            candidate_region_bbox=region_bbox,
         ):
             candidates.append(
                 candidate.model_copy(
@@ -1622,8 +1627,8 @@ def _build_cross_page_continuation_candidates(
         candidate
         for candidate in prior_candidates
         if candidate.page_num == page_num - 1
-        and candidate.bbox is not None
-        and candidate.metadata.get("table_orientation") != "rotated"
+        and isinstance(candidate.metadata.get("canonical_candidate_bbox"), (list, tuple))
+        and len(candidate.metadata["canonical_candidate_bbox"]) == 4
         and isinstance(candidate.metadata.get("value_matrix_column_anchors"), list)
         and len(candidate.metadata["value_matrix_column_anchors"]) >= 2
     ]
@@ -1631,11 +1636,12 @@ def _build_cross_page_continuation_candidates(
         return []
     prior_candidate = max(
         eligible_prior,
-        key=lambda candidate: float(candidate.bbox[3]) if candidate.bbox is not None else 0.0,
+        key=lambda candidate: candidate.table_index,
     )
-    prior_bbox = prior_candidate.bbox
-    if prior_bbox is None:
-        return []
+    prior_bbox = tuple(
+        float(value)
+        for value in prior_candidate.metadata["canonical_candidate_bbox"]
+    )
     anchors = sorted(float(value) for value in prior_candidate.metadata["value_matrix_column_anchors"])
     band_edges = [anchors[0] - (anchors[1] - anchors[0]) / 2.0]
     band_edges.extend((left + right) / 2.0 for left, right in zip(anchors, anchors[1:]))
@@ -1742,7 +1748,7 @@ def _build_cross_page_continuation_candidates(
             layout_source="pymupdf_text_positions",
             paper_page_furniture=None,
             paper_table_mentions=[],
-            allow_uncaptioned_orientation_group=True,
+            candidate_region_bbox=(left, top, right, bottom),
         )
     ]
 

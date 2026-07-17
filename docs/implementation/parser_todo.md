@@ -6,6 +6,66 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
 
 ## Current Priorities
 
+- [ ] Complete the canonical positioned-evidence unification in
+  `docs/implementation/canonical_orientation_unification_checklist.md` before
+  making another footer-specific correction. The required path is
+  `PaperPositionedDocument -> TablePositionedEvidence -> ExtractedTable ->
+  TableBoundaryProposal -> TableRegion/footer ownership`, with one canonical
+  implementation after the source orientation transform. The PDF-page-18
+  failure in `periodontis2.pdf`, printed Table 5, is the first guidepost: its
+  descriptive title currently doubles the candidate width, its real closing
+  rule is missing from `ExtractedTable.metadata.horizontal_rules` despite
+  remaining in canonical positioned evidence, and downstream consumers use
+  different rule representations. Keep the current parser code frozen until
+  the checklist's complete producer/consumer inventory and exact Step 1 patch
+  have been reviewed and explicitly approved.
+- [ ] Complete and validate the unified bottom-of-table footer detector tracked
+  in `docs/implementation/footer_detection_unification_checklist.md`. Ownership
+  is now implemented once in `build_table_region()` with mandatory typography,
+  positioned prose continuity, and preceding data support. The DOI-barrier
+  28-PDF comparison is complete; the remaining broader footer review must also
+  compare accepted internal footer rows with the settled body occupancy vector
+  and header-aligned bands, initially as a non-operative audit for body rows
+  accidentally assigned to the footer.
+  Visual-object DOI lines are now owned once from the shared positioned text
+  stream and act as a hard terminal barrier before footer text or rule events
+  are offered to that owner. The 28-PDF comparison in
+  `outputs/testpapers_batch_doi_barrier_20260716` changed physical table shapes
+  and region ownership only in
+  `Association between anthropometric indices and chronic kidney disease- Insights from NHANES 2009–2018.pdf`:
+  its five previously empty candidates on PDF pages 8, 10, 12, and 13 retained
+  their data grids and three-row footer bands. All table and figure DOI values
+  and source-line IDs remained unchanged in `paper_visual_inventory.json`.
+  Subsequent approved cleanup removed the external first-line distance gate and
+  table-left alignment gates, stops external collection at font/type changes,
+  rejects positioned headings and same-block consecutive body continuations,
+  and makes boundary proposals use `canonical_candidate_bbox` before broader
+  evidence scope. The 28-PDF run
+  `outputs/testpapers_batch_footer_current2_20260716` is the comparison baseline;
+  remaining footer failures are recorded in
+  `tmp/current_footer_detection4.md`. No new numeric layout tolerance may be
+  implemented without the `APPROVE_LAYOUT_TOLERANCE` gate in `AGENTS.md`.
+  The same-block typography correction is validated in
+  `outputs/testpapers_batch_footer_same_block_20260716`: PDF pages 6–9,
+  printed Tables 2 continued and 3–5 of
+  `mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older
+  Adults- NHANES 2007–2017.pdf` now retain their complete footer blocks across
+  the source PDF's 8.0/7.9-point variation. All 28 PDFs completed; table shapes
+  are unchanged, and no other table changed footer ownership. This uses source
+  block and font continuity and adds no numeric layout tolerance.
+  The existing candidate image bbox is now also a hard terminal barrier when
+  its top edge is exactly below the canonical table bbox. The 28-PDF checkpoint
+  is `outputs/testpapers_batch_visual_object_footer_barrier_final_20260716`.
+  All commands completed with 91 unchanged physical grids and 77 resolved
+  tables. Of the six candidates carrying
+  `candidate_visual_object_barrier_bbox`, five retain byte-identical structural
+  artifacts apart from parse-quality timestamps. In
+  `Systemic inflammation markers and the prevalence of hypertension- A NHANES cross-sectional study.pdf`,
+  PDF page 6, printed Table 1 continued, the y=337.890 image barrier limits the
+  external footer to source lines 72-75 at y=266.881-311.592. The 14 x 5 grid,
+  body rows, and y=263.197 closing boundary remain unchanged; one footer and
+  the explicit `a`/`b` definitions are restored, resolving all 12 letter-marker
+  links.
 - [ ] Review or explicitly accept the deferred corpus gaps and uncertainties in
   `docs/implementation/corpus_artifact_uncertainties_20260715.md`. This records
   unsupported rotated marker geometry, unresolved header/visual identities,
@@ -361,13 +421,15 @@ tables. Phase E writes `leaf_column_candidates.json`. Phase F review exposed a
 Phase E bin-origin defect: a real gap can straddle adjacent diagnostic bins and
 disappear. The refined occupancy artifact now records exact ordinary-character
 gaps and qualifies a separator only when it is at least two observed
-space-glyph widths in the dominant table font and size.
+space-glyph widths in the dominant table font and size. The Phase C
+body/footer-model selection described above is historical: the unified footer
+work now leaves proposals as evidence-only records and makes one ownership
+decision in `build_table_region()`.
 `outputs/testpapers_batch_phase_f_font_space_gap_20260713` covers all 28 PDFs
 and 90 tables with no command failure or occupancy/leaf diagnostic. Six tables
 gain one supported band, 68 candidate counts now agree with the current
-extract, and 22 remain diagnostic disagreements. `TableRegion` continues to
-accept one supported body/footer model directly and uses qualified-gap counts
-only to choose among multiple canonical body intervals.
+extract, and 22 remain diagnostic disagreements. The Phase F occupancy result
+remains geometry evidence; it no longer selects among competing footer models.
 
 Phase G is complete as a non-operative artifact.
 `header_structure_candidates.json` aligns positioned header words with the
@@ -624,7 +686,7 @@ the positioned document artifact.
 7. [ ] Make table-region ownership the single source of caption/header/body/footer truth.
    Initial implementation is in place: `table_regions.json` is built after
    extraction and cell-text annotation, before normalization. `TableRegion`
-   records geometry-derived caption rows, preamble rows, column-header rows,
+   records row roles anchored by body geometry: caption rows, preamble rows, column-header rows,
    body rows, footer-note rows, row-role assignments, rule evidence,
    confidence, and diagnostics. Normalization consumes
    `TableRegion.column_header_rows` and `TableRegion.body_rows` when available,
@@ -822,8 +884,10 @@ the positioned document artifact.
    `paper_text_stream.json` line groups for footer metadata instead of running a
    second PyMuPDF block parse. Candidate footer groups now come only from the
    final retained rule's `TableBoundaryProposal.following_text_line_ids` and
-   are qualified by positioned marker, table-local typography, and physical-line
-   evidence. Final accepted `ResolvedTableSet` membership supplies footnote
+   are accepted once by `TableRegion` using mandatory typography, positioned
+   prose continuity, and preceding-data evidence. The footnote stage does not
+   requalify them from marker or line-count evidence. Final accepted
+   `ResolvedTableSet` membership supplies footnote
    continuation scope, so a footer on a terminal uncaptioned fragment can
    resolve anchors from the earlier fragment only after canonical integration.
    Recent footer-finder update: table-local footers are persisted in
@@ -865,6 +929,20 @@ the positioned document artifact.
   coordinate transformation. This keeps a rotated table plus footer together when
   they occupy one column of a two-column page and excludes upright article text in
   the other column.
+- Recent rotated candidate restoration: an unintended working-tree expansion
+  applied caption-and-rule candidate construction to every canonical orientation
+  group and removed the complete uncaptioned orientation-group candidate. Narrow
+  local rule sequences then replaced full rotated table regions. Non-upright
+  groups again materialize their complete canonical positioned-text candidate
+  before entering the shared boundary, occupancy, and canonical-grid stages;
+  upright caption-and-rule candidates retain the positive-width connector and
+  image-object barrier changes. The 28-PDF checkpoint
+  `outputs/testpapers_batch_orientation_restoration_20260716` completed all
+  parses, restored PDF pages 5 and 6 of
+  `Helicobacter pylori infection in the United States beyond NHANES- a scoping review of seroprevalence estimates by racial and ethnic groups.pdf`
+  to 56 x 15 and 58 x 15, preserved its page-7 15-column grid, restored the
+  earlier rotated fragments in `periodontis2.pdf`, and left both focused Role
+  tables and all CKD canonical-grid failures unchanged.
 - Recent document-processing update: repeated page furniture is built near the
   front of parse processing and passed to paper text streaming, markdown
   filtering, table extraction, cell text annotation, and text-stream footer

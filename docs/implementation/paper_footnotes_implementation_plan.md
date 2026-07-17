@@ -137,9 +137,10 @@ Non-scope:
    - Start only from the positioned lines attached to the final retained rule
      by `TableBoundaryProposal.following_text_line_ids`; do not scan arbitrary
      styled text below the table bbox.
-   - Retain that adjacent group from exact definition-marker geometry,
-     table-local smaller type, or multi-line footer geometry. Treat same-font
-     size differences of at most 0.2 PDF points as harmless continuation jitter.
+   - Let `TableRegion` accept that adjacent group through the unified footer
+     detector. The footnote consumer must not requalify it from markers, local
+     type, or line count. Same-font size differences of at most 0.2 PDF points
+     remain harmless while the proposal collects adjacent line evidence.
    - Carry final accepted resolved-table visual IDs into footnote scoping so a
      footer on an uncaptioned terminal fragment can resolve anchors from earlier
      fragments of the same visual table.

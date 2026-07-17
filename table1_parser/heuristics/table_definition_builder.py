@@ -24,7 +24,6 @@ def build_table_definition(
         column_schema=column_schema,
     )
     column_definition = build_column_definition(table, column_schema)
-    notes = ["rotated_table_layout"] if table.metadata.get("table_orientation") == "rotated" else []
     confidences = [variable.confidence for variable in variables if getattr(variable, "confidence", None) is not None]
     if getattr(column_definition, "confidence", None) is not None:
         confidences.append(column_definition.confidence)
@@ -34,7 +33,6 @@ def build_table_definition(
         caption=table.caption,
         variables=variables,
         column_definition=column_definition,
-        notes=notes,
         overall_confidence=round(sum(confidences) / len(confidences), 4) if confidences else None,
     )
     return validate_table_definition(definition, table)

@@ -49,6 +49,7 @@ def build_paper_positioned_document(
     span_count = 0
     word_count = 0
     char_count = 0
+    image_count = 0
     rule_segment_count = 0
     try:
         page_count = int(getattr(document, "page_count", 0))
@@ -72,10 +73,15 @@ def build_paper_positioned_document(
 
             page_width, page_height = page_size_from_pymupdf_page(page)
             page_lines: list[PaperPositionedLine] = []
+            page_image_bboxes: list[tuple[float, float, float, float]] = []
             page_line_index = 0
             for block_index, block in enumerate(page_dict.get("blocks", [])):
                 if not isinstance(block, dict):
                     continue
+                if block.get("type") == 1:
+                    image_bbox = bbox_from_pymupdf_value(block.get("bbox"))
+                    if image_bbox is not None:
+                        page_image_bboxes.append(image_bbox)
                 for block_line_index, line in enumerate(block.get("lines", [])):
                     if not isinstance(line, dict):
                         continue
@@ -104,6 +110,7 @@ def build_paper_positioned_document(
             line_count += len(page_lines)
             word_count += len(page_words)
             char_count += len(page_chars)
+            image_count += len(page_image_bboxes)
             rule_segment_count += len(page_rule_segments)
             pages.append(
                 PaperPositionedPage(
@@ -114,6 +121,7 @@ def build_paper_positioned_document(
                     lines=page_lines,
                     words=page_words,
                     chars=page_chars,
+                    image_bboxes=page_image_bboxes,
                     rule_segments=page_rule_segments,
                     stroked_rule_segments=page_stroked_rule_segments,
                 )
@@ -134,6 +142,7 @@ def build_paper_positioned_document(
             "span_count": span_count,
             "word_count": word_count,
             "char_count": char_count,
+            "image_count": image_count,
             "rule_segment_count": rule_segment_count,
             "page_count": len(pages),
         },
