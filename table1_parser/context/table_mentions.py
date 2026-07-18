@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Sequence
+from typing import Literal
 
 from table1_parser.schemas import PaperTableMention
 from table1_parser.text_cleaning import clean_text
@@ -101,10 +102,21 @@ def build_paper_table_mentions(paper_text_stream: object) -> list[PaperTableMent
                 or "layout_section_heading" in line_notes
             )
             cue: str | None = None
+            continuation_role: Literal[
+                "from_previous_page",
+                "to_next_page",
+                "unspecified",
+            ] | None = None
             if CONTINUATION_PATTERN.search(text):
                 mention_kind = "continuation_label"
                 cue = "continuation_label"
                 confidence = 0.92
+                if re.search(r"\bnext\s+page\b", text, re.IGNORECASE):
+                    continuation_role = "to_next_page"
+                elif re.search(r"\bprevious\s+page\b", text, re.IGNORECASE):
+                    continuation_role = "from_previous_page"
+                else:
+                    continuation_role = "unspecified"
             elif PROSE_CUE_BEFORE_PATTERN.search(local_prefix):
                 mention_kind = "prose_reference"
                 cue = "same_line_prose_cue_before"
@@ -168,7 +180,13 @@ def build_paper_table_mentions(paper_text_stream: object) -> list[PaperTableMent
                         context_text=context_text,
                         matched_text=match.group("label"),
                         cue=table_cue,
-                        is_caption_candidate=table_mention_kind in {"caption_candidate", "continuation_label"},
+                        continuation_role=(
+                            continuation_role
+                            if table_mention_kind == "continuation_label"
+                            else None
+                        ),
+                        is_caption_candidate=table_mention_kind
+                        in {"caption_candidate", "continuation_label"},
                         source_line_role=str(getattr(line, "role", "body")),
                         source_line_notes=line_notes,
                         confidence=table_confidence,

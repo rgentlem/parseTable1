@@ -114,6 +114,7 @@ def _caption_label_assignments(
             mention_id=mention.mention_id,
             table_number=mention.table_number,
             mention_kind=mention.mention_kind,
+            continuation_role=mention.continuation_role,
             page_num=page_num,
             label_line_id=line.line_id,
             line_ids=[line.line_id],
@@ -958,16 +959,16 @@ class PyMuPDFExtractor(BaseExtractor):
                         and line_by_id[mention.source_line_id].canonical_bbox is not None
                     ]
                     group_text = "\n".join(line.text for line in group_lines) or page_text
+                    text_layout_candidates = _build_rule_span_candidates(
+                        page_num=page_num,
+                        page_text=group_text,
+                        words=transformed_words,
+                        chars=transformed_chars,
+                        rule_segments=transformed_rules,
+                        image_bboxes=transformed_image_bboxes,
+                        paper_table_mentions=transformed_mentions,
+                    )
                     if group.orientation == "upright":
-                        text_layout_candidates = _build_rule_span_candidates(
-                            page_num=page_num,
-                            page_text=group_text,
-                            words=transformed_words,
-                            chars=transformed_chars,
-                            rule_segments=transformed_rules,
-                            image_bboxes=transformed_image_bboxes,
-                            paper_table_mentions=transformed_mentions,
-                        )
                         continuation_candidates = (
                             _build_cross_page_continuation_candidates(
                                 page_num=page_num,
@@ -998,8 +999,6 @@ class PyMuPDFExtractor(BaseExtractor):
                             ):
                                 continue
                             text_layout_candidates.append(continuation_candidate)
-                    else:
-                        text_layout_candidates = []
                     if not text_layout_candidates:
                         text_layout_candidates = build_text_layout_candidates(
                             page_num=page_num,
@@ -1346,6 +1345,34 @@ def _build_rule_span_candidates(
     if not words or not rule_segments:
         return []
     rule_spans = _horizontal_rule_spans(rule_segments)
+    connected_rule_spans: list[tuple[float, float, float]] = []
+    for rule_y, span_left, span_right in rule_spans:
+        component_left = span_left
+        component_right = span_right
+        component_expanded = True
+        while component_expanded:
+            component_expanded = False
+            for x0, y0, x1, y1 in rule_segments:
+                if not min(y0, y1) <= rule_y <= max(y0, y1):
+                    continue
+                segment_left = min(x0, x1)
+                segment_right = max(x0, x1)
+                if (
+                    segment_right < component_left
+                    or segment_left > component_right
+                ):
+                    continue
+                if (
+                    segment_left < component_left
+                    or segment_right > component_right
+                ):
+                    component_left = min(component_left, segment_left)
+                    component_right = max(component_right, segment_right)
+                    component_expanded = True
+        connected_rule_spans.append(
+            (rule_y, component_left, component_right)
+        )
+    rule_spans = connected_rule_spans
 
     caption_mentions = sorted(
         (
@@ -1371,7 +1398,11 @@ def _build_rule_span_candidates(
         ]
         selected_region: tuple[float, float, float, float] | None = None
         selected_visual_object_bbox: tuple[float, float, float, float] | None = None
-        for start_y, left, right in related_spans:
+        for start_y, left, right in (
+            related_spans
+            if mention.continuation_role != "to_next_page"
+            else []
+        ):
             overlapping_captions = [
                 other
                 for other in caption_mentions
@@ -1419,16 +1450,37 @@ def _build_rule_span_candidates(
                 and abs(span[2] - right) <= edge_tolerance
             ]
             if len(matching_rows) >= 2:
+                scoped_word_bottoms = [
+                    float(word["bottom"])
+                    for word in words
+                    if left
+                    <= (float(word["x0"]) + float(word["x1"])) / 2.0
+                    <= right
+                    and start_y
+                    <= (float(word["top"]) + float(word["bottom"])) / 2.0
+                    < candidate_bottom_limit
+                ]
+                scoped_rule_rows = [
+                    span[0]
+                    for span in rule_spans
+                    if start_y <= span[0] < candidate_bottom_limit
+                    and min(right, span[2]) > max(left, span[1])
+                ]
+                if not scoped_word_bottoms:
+                    continue
                 selected_region = (
                     left,
                     caption_top,
                     right,
-                    max(span[0] for span in matching_rows),
+                    max(scoped_word_bottoms + scoped_rule_rows),
                 )
                 selected_visual_object_bbox = visual_object_bbox
                 break
 
-        if selected_region is None:
+        if (
+            selected_region is None
+            and mention.continuation_role != "from_previous_page"
+        ):
             for end_y, left, right in reversed(related_spans):
                 overlapping_captions = [
                     other

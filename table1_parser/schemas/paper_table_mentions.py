@@ -25,6 +25,11 @@ class PaperTableMention(BaseModel):
     context_text: str
     matched_text: str
     cue: str | None = None
+    continuation_role: Literal[
+        "from_previous_page",
+        "to_next_page",
+        "unspecified",
+    ] | None = None
     is_caption_candidate: bool = False
     source_line_role: str = "body"
     source_line_notes: list[str] = Field(default_factory=list)

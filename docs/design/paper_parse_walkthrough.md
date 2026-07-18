@@ -252,7 +252,12 @@ available.
 layout-aware text stream before table extraction. It records each observed
 `Table N` mention as a caption candidate, continuation label, or prose
 reference, preserving line IDs, the source-line bbox, local context, and cue
-evidence such as a previous line ending in `shown in`. Text-position table
+evidence such as a previous line ending in `shown in`. Continuation labels also
+record whether they continue from the previous page, continue to the next page,
+or leave the direction unspecified. Candidate construction uses this same typed
+role for every writing orientation: incoming labels may own following table
+evidence, outgoing labels may own preceding table evidence, and unspecified
+labels may be considered on either side. Text-position table
 fallback consumes this artifact and rejects proposed caption lines that overlap
 a prose-reference bbox, so differences between raw and normalized glyph text
 cannot turn a prose reference into the start of a table candidate.
@@ -1242,7 +1247,10 @@ This gives the parser a document structure that is easier to retrieve from than 
 The parser scans `paper_text_stream.json` for `Table N` mentions before table
 extraction. Each record keeps the table number, source line ID and bbox, local
 context line IDs, source-line text, cue, and whether the mention is a
-`caption_candidate`, `continuation_label`, or `prose_reference`.
+`caption_candidate`, `continuation_label`, or `prose_reference`. A continuation
+record additionally carries `continuation_role` as `from_previous_page`,
+`to_next_page`, or `unspecified`; this controls which side of the label may
+contain its table without branching on writing orientation.
 
 This artifact is used as extraction evidence, not as a table source. A line
 beginning with `Table 5.` is rejected as a fallback table start when the previous

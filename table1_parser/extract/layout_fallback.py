@@ -1513,22 +1513,22 @@ def build_text_layout_candidates(
         )
         if len(full_width_rules) >= 3:
             final_rule = max(full_width_rules)
-            if any(float(line["top"]) > final_rule + 2.0 for line in content_lines):
+            if any(float(line["top"]) > final_rule for line in content_lines):
                 content_lines = [
                     line
                     for line in content_lines
-                    if float(line["top"]) <= final_rule + 2.0
+                    if float(line["top"]) <= final_rule
                 ]
                 if not content_lines:
                     return False
                 bbox = (
-                    left,
+                    min(float(bbox[0]), left),
                     bbox_top,
-                    right,
+                    max(float(bbox[2]), right),
                     max(final_rule, max(float(line["bottom"]) for line in content_lines)),
                 )
                 horizontal_rules = [
-                    rule for rule in horizontal_rules if rule <= final_rule + 2.0
+                    rule for rule in horizontal_rules if rule <= final_rule
                 ]
         value_matrix_geometry: dict[str, object] = {}
         positioned_value_axis = _value_matrix_column_boundaries_from_lines(

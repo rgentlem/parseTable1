@@ -98,6 +98,63 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
   remaining footer failures are recorded in
   `tmp/current_footer_detection4.md`. No new numeric layout tolerance may be
   implemented without the `APPROVE_LAYOUT_TOLERANCE` gate in `AGENTS.md`.
+  The focused bottom-up restoration now stops the existing external collector
+  at an exact positioned font/style transition before offering its lines to the
+  single footer owner. In `gallstones.pdf`, PDF page 6, printed Table 1
+  continued, the y=470.263 closing rule again owns only source lines 161-162;
+  the following WarnockPro article prose is not offered to footer detection.
+  The focused comparison also restores the four correct footer assignments in
+  `GOLD BioAge and depression- Associations with mortality among depressed
+  NHANES participants (2005–2018).pdf` and preserves the selected eGDR and
+  `periodontis2.pdf` shapes and footer line IDs. The check used exact font and
+  source-block evidence and added no numeric layout tolerance. The subsequent
+  28-PDF run is `outputs/testpapers_batch_bottom_up_same_block_20260717`; all
+  commands completed. Against the retained canonical-sections run, PDF pages 5
+  and 6 of `Helicobacter pylori infection in the United States beyond NHANES-
+  a scoping review of seroprevalence estimates by racial and ethnic groups.pdf`
+  initially collapsed from 56 x 15 and 58 x 15 to empty candidates because
+  terminal `continuation_label` mentions entered caption-and-rule anchoring.
+  The exact font-change stop restores PDF page 7 from 48 x 12 to 48 x 15 and
+  assigns only `aValue shows median age rather than mean.` as its footer. The 28-PDF run
+  `outputs/testpapers_batch_footer_font_stop_20260717` completes successfully
+  and changes no other existing table's footer-row ownership. It does expose
+  that globally excluding `continuation_label` from rule-span anchoring removes
+  the real PDF-page-12 printed Table 3 continuation from `Association between
+  anthropometric indices and chronic kidney disease- Insights from NHANES
+  2009–2018.pdf`; printed Table 4 remains. The focused correction in
+  `outputs/connected_rule_span_focused_20260718` gives every continuation
+  mention one orientation-independent role (`from_previous_page`,
+  `to_next_page`, or `unspecified`), uses that role to select the side of the
+  mention that may contain the table, and expands each proposed horizontal span
+  through its exactly intersecting rule component before candidate extraction.
+  This restores the Helicobacter pages to 56 x 15, 58 x 15, and 48 x 15 while
+  preserving only the real page-7 footer, and restores both PDF-page-12 printed
+  Table 3 continued at 8 x 7 and printed Table 4 at 13 x 7 in the CKD paper.
+  No numeric layout tolerance is added. The subsequent 28-PDF run
+  `outputs/testpapers_batch_connected_rule_span_20260718` completes all papers
+  and yields 92 tables rather than 91. The sole table-count/shape change is the
+  intended restored CKD Table 3 continuation; every previously present table
+  retains its row/column shape and footer-row ownership. Eleven existing tables
+  receive connected-component candidate bbox or route metadata changes, but
+  their cell text and cell bboxes remain exact. Downstream parsed tables and
+  parsed cell values change only for the CKD paper. The Systemic-inflammation
+  paper now also owns its real four-line PDF-page-6 footer and resolves its
+  corresponding note markers. The two Helicobacter `to_next_page` roles remain
+  explicit in `paper_table_mentions.json`, but they are not yet copied to
+  `ExtractedTable.metadata.continues_on_next_page` and do not yet create a
+  continuation group; that ownership/linkage remains separate follow-up work.
+  Footer ownership also regresses in
+  `Journal of Periodontology - 2015 - Eke - Update on Prevalence of
+  Periodontitis in Adults in the United States  NHANES 2009.pdf`, PDF page 10,
+  printed Table 5, and `fld.pdf`, PDF page 6, printed Table 2; both claim
+  article prose. The exact same-font, same-source-block correction restores all
+  eight footer lines on PDF page 7, printed Table 3 of
+  `mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older
+  Adults- NHANES 2007–2017.pdf`, with its other footer assignments unchanged.
+  The improved 21 x 12 extraction and one-line footer on PDF page 18, printed
+  Table 5 of `periodontis2.pdf`, remain intentional changes. These known
+  extraction and prose-ownership defects are carried explicitly into the
+  pre-reading-order checkpoint rather than patched with another fallback.
   The same-block typography correction is validated in
   `outputs/testpapers_batch_footer_same_block_20260716`: PDF pages 6–9,
   printed Tables 2 continued and 3–5 of

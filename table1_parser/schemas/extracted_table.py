@@ -84,6 +84,11 @@ class TableCaptionRegion(BaseModel):
     mention_id: str
     table_number: str
     mention_kind: Literal["caption_candidate", "continuation_label"]
+    continuation_role: Literal[
+        "from_previous_page",
+        "to_next_page",
+        "unspecified",
+    ] | None = None
     page_num: int = Field(ge=1)
     label_line_id: str
     line_ids: list[str] = Field(min_length=1)
