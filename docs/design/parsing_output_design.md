@@ -992,7 +992,10 @@ Design components:
   also carry a non-operative `prose_candidate` flag derived only from upright
   source continuity, observed column extent, one font name with a
   largest-minus-smallest line font-size span below 0.5, sentence evidence,
-  confirmed headings, and unfinished prose crossing a page or column boundary.
+  confirmed headings, and unfinished prose crossing a page, column, or observed
+  spanning-layout boundary. An already-marked full-width block is treated as
+  spanning but cannot independently establish paragraph evidence; one spanning
+  residual block may sit between unfinished accepted prose and its continuation.
   Arbitrary body blocks are not promoted into headings, and opaque font names
   are not interpreted. The
   descriptive `has_bold_text` note never assigns a heading role or qualifies a

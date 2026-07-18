@@ -275,7 +275,10 @@ remains on those source lines rather than being copied into the block. The
 block's non-operative `prose_candidate` flag uses only upright source
 continuity, exact observed column extent, one font name with a
 largest-minus-smallest line font-size span below 0.5, sentence evidence,
-confirmed headings, and unfinished prose crossing a page or column boundary.
+confirmed headings, and unfinished prose crossing a page, column, or observed
+spanning-layout boundary. An already-marked full-width block is treated as
+spanning but cannot independently establish paragraph evidence; one spanning
+residual block may sit between unfinished accepted prose and its continuation.
 Arbitrary body blocks are not promoted into headings, and opaque font names are
 not interpreted.
 After the dominant body font profile is available, a line receives the heading

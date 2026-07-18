@@ -199,15 +199,23 @@ should not be a full-paper text dump.
   - [x] Defer the already-known false prose candidates and isolated residual
         prose until the next applicable general stage; do not broaden this
         correction.
-- [ ] Support a layout change down the page, including:
-  - [ ] full-width title or abstract followed by columns
-  - [ ] two-column prose followed by a spanning residual block
-  - [ ] prose resuming below a spanning residual block
-  - [ ] full-width prose after columns
-- [ ] Preserve legitimate short prose blocks and sentence continuations.
-- [ ] Keep uncertain blocks residual instead of guessing.
-- [ ] Do not use table labels, figure labels, statistical vocabulary, disease
+- [x] Support a layout change down the page, including:
+  - [x] full-width title or abstract followed by columns
+  - [x] two-column prose followed by a spanning residual block
+  - [x] prose resuming below a spanning residual block
+  - [x] full-width prose after columns
+- [x] Preserve legitimate short prose blocks and sentence continuations.
+- [x] Keep uncertain blocks residual instead of guessing.
+- [x] Do not use table labels, figure labels, statistical vocabulary, disease
       names, or expected semantic content to identify prose.
+  - [x] The minimal transition support uses the existing `full_width_line`
+        observation inside the non-operative prose-candidate pass. It adds no
+        schema, helper, tolerance, semantic vocabulary, or alternate ordering
+        path. The 28-PDF run in
+        `outputs/testpapers_batch_prose_layout_transition_20260718` leaves all
+        candidate sets and 196 compared downstream artifacts byte-identical to
+        the accepted font-span baseline. Step 3 will determine whether this
+        support works when producing the prose reading-order structure.
 
 ## Step 3: Produce the Prose Reading-Order Structure
 

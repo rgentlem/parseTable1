@@ -596,12 +596,22 @@ def _build_paper_context_artifacts(pdf_path: str) -> PaperContextArtifacts:
         block_lines = [updated_lines_by_id[line_id] for line_id in block.line_ids]
         line_indices = [line.line_index for line in block_lines]
         group = orientation_groups.get(block.orientation_group_id)
+        spanning = bool(block_lines) and all(
+            "full_width_line" in line.notes for line in block_lines
+        )
         structurally_eligible = (
             block.orientation == "upright"
             and group is not None
-            and block.column_index < len(group.column_bands)
-            and group.column_bands[block.column_index][0] <= block.canonical_bbox[0]
-            and block.canonical_bbox[2] <= group.column_bands[block.column_index][1]
+            and (
+                spanning
+                or (
+                    block.column_index < len(group.column_bands)
+                    and group.column_bands[block.column_index][0]
+                    <= block.canonical_bbox[0]
+                    and block.canonical_bbox[2]
+                    <= group.column_bands[block.column_index][1]
+                )
+            )
             and line_indices
             and all(line_index is not None for line_index in line_indices)
             and line_indices == list(range(line_indices[0], line_indices[0] + len(line_indices)))
@@ -619,8 +629,8 @@ def _build_paper_context_artifacts(pdf_path: str) -> PaperContextArtifacts:
         block_layouts[block.block_id] = (
             block.page_num,
             block.orientation_group_id,
-            block.column_index,
-            block.column_count,
+            "spanning" if spanning else "column",
+            0 if spanning else block.column_index,
         )
         if block.role == "heading":
             eligible_heading_block_ids.add(block.block_id)
@@ -653,6 +663,7 @@ def _build_paper_context_artifacts(pdf_path: str) -> PaperContextArtifacts:
         if (
             block.block_id in eligible_body_block_ids
             and block_styles.get(block.block_id) == body_style
+            and block_layouts[block.block_id][2] != "spanning"
             and any(
                 "\n" in block.text[match.end() :]
                 for match in re.finditer(
@@ -668,27 +679,34 @@ def _build_paper_context_artifacts(pdf_path: str) -> PaperContextArtifacts:
             previous_block.block_id in eligible_heading_block_ids
             and block.block_id in sentence_block_ids
             and block_styles.get(block.block_id) == body_style
-            and block_layouts.get(previous_block.block_id)
-            == block_layouts.get(block.block_id)
+            and block_layouts[previous_block.block_id][:2]
+            == block_layouts[block.block_id][:2]
         ):
             prose_block_ids.add(block.block_id)
+        continuation_block = previous_block
+        crossed_spanning_residual = False
         if (
-            previous_block.block_id in prose_block_ids
+            previous_block.block_id not in prose_block_ids
+            and block_layouts.get(previous_block.block_id, (None, None, None, None))[2]
+            == "spanning"
+            and block_index > 1
+        ):
+            continuation_block = updated_blocks[block_index - 2]
+            crossed_spanning_residual = True
+        if (
+            continuation_block.block_id in prose_block_ids
             and block.block_id in eligible_body_block_ids
             and block_styles.get(block.block_id) == body_style
             and block.block_id not in prose_block_ids
             and re.search(
-                r"[.!?](?:[\"'’”)]*)\s*$", previous_block.text
+                r"[.!?](?:[\"'’”)]*)\s*$", continuation_block.text
             )
             is None
             and (
-                previous_block.page_num != block.page_num
-                or (
-                    previous_block.orientation_group_id
-                    == block.orientation_group_id
-                    and previous_block.column_count == block.column_count
-                    and previous_block.column_index != block.column_index
-                )
+                continuation_block.page_num != block.page_num
+                or block_layouts.get(continuation_block.block_id)
+                != block_layouts.get(block.block_id)
+                or crossed_spanning_residual
             )
         ):
             prose_block_ids.add(block.block_id)
@@ -697,7 +715,8 @@ def _build_paper_context_artifacts(pdf_path: str) -> PaperContextArtifacts:
         if (
             block.block_id in eligible_heading_block_ids
             and next_block.block_id in prose_block_ids
-            and block_layouts[block.block_id] == block_layouts[next_block.block_id]
+            and block_layouts[block.block_id][:2]
+            == block_layouts[next_block.block_id][:2]
         ):
             prose_block_ids.add(block.block_id)
     updated_blocks = [

@@ -23,10 +23,11 @@ evidence have failed.
   added. The current Step 2 pass marks upright `prose_candidate` blocks from
   exact source-line continuity, observed column extents, one font name with an
   approved within-block line-size span below 0.5, sentence evidence, confirmed
-  headings, and unfinished prose crossing a page or column boundary. It does
-  not promote arbitrary body blocks into headings. Body candidates do not yet
-  filter sections or Markdown; mixed-layout transitions and the later freeze
-  remain pending.
+  headings, and unfinished prose crossing a page, column, or already-observed
+  spanning-layout boundary. It does not promote arbitrary body blocks into
+  headings. Body candidates do not yet filter sections or Markdown; Step 3
+  must still verify the mixed-layout transition support before the later
+  prose freeze.
   Focused checks pass on PDF pages 3–5, printed Tables 1–5, of
   `cobaltpaper.pdf`: the three previously missed section/subsection headings
   and surrounding prose are accepted while table, caption, and note blocks
@@ -145,6 +146,19 @@ evidence have failed.
   Risk Assessment- Trends, Challenges, and Opportunities.pdf`. Keep these and
   isolated residual prose for the next applicable general stage rather than
   broadening this font correction.
+  The approved non-operative layout-transition checkpoint is
+  `outputs/testpapers_batch_prose_layout_transition_20260718`. It uses the
+  existing `full_width_line` observation to distinguish spanning blocks from
+  column-local blocks, prevents a spanning block from independently
+  establishing paragraph evidence, permits confirmed headings to open prose
+  across a same-page layout change, and permits unfinished accepted prose to
+  continue across a layout change or one intervening spanning residual block.
+  It adds no schema, helper, tolerance, semantic vocabulary, or alternate
+  ordering path. All 28 commands complete, and the candidate sets plus 196
+  compared text-stream, section, Markdown, and table artifacts are
+  byte-identical to the accepted font-span baseline. This unchanged output is
+  intentional; Step 3 will determine whether the support works when producing
+  the prose reading-order structure.
   Focused in-memory checks on PDF page 4, printed Table 1, of
   `Role of Estimated Glucose Disposal Rate in Staging and Death Risk of Cardiovascular-Kidney-Metabolic Syndrome- Insights from NHANES 1999-2018.pdf`
   and PDF page 10, printed Table 5, of

@@ -113,10 +113,13 @@ body evidence requires upright orientation, consecutive block-local source
 lines, exact containment in the observed column extent, one font name, and a
 within-block largest-minus-smallest line font-size span below 0.5. Independent
 paragraph evidence requires the selected body style and a completed sentence
-before a later source line. Confirmed headings may open that prose flow. An
-unfinished accepted paragraph may continue into a body-style block only across
-a page or column change. Arbitrary body blocks are not promoted into headings,
-and opaque font names are not interpreted. Body candidates do not yet filter
+before a later source line. Confirmed headings may open that prose flow across
+a layout change within the same page orientation group. Blocks already marked
+as full-width are treated as spanning but cannot independently establish
+paragraph evidence. Unfinished accepted prose may continue across a page,
+column, or spanning-layout change, including across one intervening spanning
+residual block. Arbitrary body blocks are not promoted into headings, and
+opaque font names are not interpreted. Body candidates do not yet filter
 sections or Markdown.
 
 The extraction caption path consumes this stream directly. Caption labels are
