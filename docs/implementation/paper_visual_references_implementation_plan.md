@@ -68,7 +68,8 @@ Tests:
 
 ### Phase 1: Schemas Only
 
-Add explicit Pydantic schemas without wiring them into the CLI yet.
+Add only the explicit typed structures required by the artifact contract,
+without wiring them into the CLI yet.
 
 Models:
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping, Sequence
 
+from table1_parser.context.paper_document import iter_paper_document_lines
 from table1_parser.context.visual_references import VISUAL_OBJECT_DOI_PATTERN
 from table1_parser.normalize.header_detector import detect_header_rows_with_metadata
 from table1_parser.schemas import (
@@ -13,8 +14,6 @@ from table1_parser.schemas import (
     PaperPageFurniture,
     PaperPositionedDocument,
     PaperPositionedPage,
-    PaperTextLine,
-    PaperTextStream,
     TableBoundaryProposal,
     TablePositionedEvidence,
 )
@@ -31,7 +30,7 @@ TABLE_CAPTION_PATTERN = re.compile(r"^\s*table\s*\d+\b", re.IGNORECASE)
 def build_table_regions(
     extracted_tables: Sequence[ExtractedTable],
     *,
-    paper_text_stream: PaperTextStream | None = None,
+    paper_document: dict[str, object] | None = None,
     paper_page_furniture: PaperPageFurniture | None = None,
     cell_text_annotations: Sequence[CellTextAnnotationTable] | None = None,
     table_boundary_proposals: Sequence[TableBoundaryProposal] | None = None,
@@ -66,7 +65,11 @@ def build_table_regions(
         )
     positioned_text_lines_by_id = {
         line.line_id: line
-        for line in (paper_text_stream.lines if paper_text_stream is not None else [])
+        for line in (
+            iter_paper_document_lines(paper_document, paper_positioned_document)
+            if paper_document is not None and paper_positioned_document is not None
+            else []
+        )
     }
     visual_object_owned_line_ids = {
         line.line_id
@@ -95,7 +98,7 @@ def build_table_region(
     *,
     table_boundary_proposal: TableBoundaryProposal | None = None,
     positioned_page: PaperPositionedPage | None = None,
-    positioned_text_lines_by_id: Mapping[str, PaperTextLine] | None = None,
+    positioned_text_lines_by_id: Mapping[str, object] | None = None,
     visual_object_owned_line_ids: set[str] | None = None,
     annotation_table: CellTextAnnotationTable | None = None,
     page_furniture_rule_bboxes: Sequence[
@@ -483,7 +486,7 @@ def build_table_region(
                     external_groups: list[
                         list[
                             tuple[
-                                PaperTextLine,
+                                object,
                                 tuple[float, float, float, float],
                             ]
                         ]
@@ -509,7 +512,7 @@ def build_table_region(
 
                     adjacent_external_lines: list[
                         tuple[
-                            PaperTextLine,
+                            object,
                             tuple[float, float, float, float],
                         ]
                     ] = []
@@ -583,7 +586,7 @@ def build_table_region(
                 physical_line_groups: list[
                     list[
                         tuple[
-                            PaperTextLine,
+                            object,
                             tuple[float, float, float, float],
                         ]
                     ]
@@ -609,7 +612,7 @@ def build_table_region(
                         list[int],
                         list[
                             tuple[
-                                PaperTextLine,
+                                object,
                                 tuple[float, float, float, float],
                             ]
                         ],

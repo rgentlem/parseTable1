@@ -1,6 +1,8 @@
-# Table Definition Pydantic Schema
+# Table Definition Schema
 
-This document proposes the Pydantic models for the value-free semantic stage named `TableDefinition`.
+This document proposes the typed structures for the value-free semantic stage
+named `TableDefinition`. The artifact contract does not require a particular
+modeling framework.
 
 It is intentionally close to the existing `ParsedTable` schema, but excludes cell values.
 

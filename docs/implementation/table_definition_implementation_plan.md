@@ -81,7 +81,7 @@ Each column should preserve both:
 
 Implement:
 
-1. Pydantic schema for `TableDefinition`
+1. Minimal typed schema for `TableDefinition`
 2. Deterministic row-structure inference from `NormalizedTable`
 3. Deterministic column inference from normalized headers
 4. Validation of the `TableDefinition`

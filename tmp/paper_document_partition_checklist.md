@@ -1,12 +1,13 @@
-# Goal: Build the Paper's Prose Reading Order First
+# Goal: Build the Canonical PaperDocument Partition
 
 Identify headings, paragraphs, and sections directly from positioned PDF source
-blocks and their layout. Freeze that prose reading order before using table,
-figure, box, caption, or footer parsing.
+blocks and their layout. Move the established prose candidates into the
+canonical `PaperDocument`, with every other retained block initially preserved
+as residual.
 
-After prose is established, represent the residual document material as
-separate entities with distinct caption, content, note/footer, and metadata
-components.
+Then inspect the residual registry block by block and represent supported
+material as entities with distinct heading, caption, content, and footer
+components. Material that cannot yet be assigned remains residual.
 
 `paper_markdown.md` should be rendered from the prose reading order only. It
 should not be a full-paper text dump.
@@ -19,11 +20,13 @@ should not be a full-paper text dump.
 - [x] Expose ordered `PaperTextBlock` records.
 - [x] Build current sections directly from ordered blocks.
 - [x] Render current Markdown from the same ordered blocks.
-- [ ] Determine which source blocks are prose using block layout alone.
-- [ ] Freeze accepted prose before entity classification.
-- [ ] Build a prose-oriented reading-order structure whose segments correspond
-      to document sections or subsections.
-- [ ] Build a separate entity inventory from residual, non-prose blocks.
+- [x] Establish conservative prose candidates using positioned block layout.
+- [x] Define the canonical prose, entity, and residual structure in
+      `docs/design/paper_document_plan_and_contract.md`.
+- [ ] Atomically move the established prose candidates into `PaperDocument`
+      and place every other retained block in its residual registry.
+- [ ] Populate the distinct entity structure inside canonical `PaperDocument`
+      from residual, non-prose blocks; do not create a parallel owner.
 - [ ] Keep entity captions separate from entity content.
 - [ ] Keep entity notes, footers, and metadata separate from both prose and
       entity content.
@@ -48,8 +51,10 @@ should not be a full-paper text dump.
       claim.
 - [x] Figure-caption discovery currently scans completed section content. That
       is unsuitable once sections become prose-only.
-- [x] Existing design documents still describe Markdown and the text stream as
-      full-paper views.
+- [x] Existing design documents previously described Markdown and the text
+      stream as full-paper views; the Bullet 2 artifact documentation now
+      defines Markdown and sections as prose-only `PaperDocument` views while
+      recording the still-pending stream-consumer migration.
 
 ## Invariants
 
@@ -65,15 +70,22 @@ should not be a full-paper text dump.
       diagnostic against the entity claim.
 - [ ] Every retained block and line must preserve its source identity and
       geometry.
-- [ ] No second PDF text pass, competing reading-order stream, fallback
+- [ ] `PaperPositionedDocument` must preserve raw extractor evidence, including
+      imperfect grouping or text; accepted corrections must not overwrite it.
+- [x] `PaperDocument` is the corrected canonical representation. Consumers must
+      use its text, roles, order, and ownership rather than reconstructing the
+      document from raw positioned lines.
+- [x] No second PDF text pass, competing reading-order stream, fallback
       extractor, vocabulary shortcut, or unapproved numeric layout tolerance
       may be added. The one approved tolerance is the within-block font-size
       span below.
 
 ## Iteration Discipline
 
-- [ ] First make prose reading order broadly correct using general positioned
-      block and layout rules.
+- [x] First establish prose candidates using general positioned block and layout
+      rules.
+- [x] Replace `PaperTextStream` with `PaperDocument` without adding new
+      classification logic during the migration.
 - [ ] Then identify captions from the residual blocks without reopening
       accepted prose.
 - [ ] Once captions are broadly correct, inspect and classify what remains.
@@ -214,45 +226,101 @@ should not be a full-paper text dump.
         path. The 28-PDF run in
         `outputs/testpapers_batch_prose_layout_transition_20260718` leaves all
         candidate sets and 196 compared downstream artifacts byte-identical to
-        the accepted font-span baseline. Step 3 will determine whether this
-        support works when producing the prose reading-order structure.
+        the accepted font-span baseline. The `PaperDocument` migration will
+        verify that this evidence is preserved when prose ownership and its
+        derived views are populated.
 
-## Step 3: Produce the Prose Reading-Order Structure
+## Step 3: Replace PaperTextStream with PaperDocument
 
-- [ ] Decide whether to evolve `PaperTextStream` into the canonical prose
-      structure or replace it atomically with `PaperReadingOrder`.
-- [ ] Do not persist both an old full-paper stream and a new prose stream.
-- [ ] Treat positioned source blocks as atomic layout evidence, not as
-      reading-order segments.
-- [ ] Make each reading-order segment a heading-delimited section or
-      subsection.
-- [ ] Give each segment complete sentence-bearing paragraph text: normally
-      multiple paragraphs, with one paragraph allowed for a short section.
-- [ ] Store the ordered prose blocks and paragraphs owned by each segment.
-- [ ] Store source line IDs and geometry for every retained block.
-- [ ] Store residual block and line IDs for later entity classification.
-- [ ] Build sections only from accepted prose blocks.
-- [ ] Render `paper_markdown.md` only from accepted prose blocks.
-- [ ] Verify that every section body block belongs to the prose structure.
-- [ ] Verify that Markdown is an exact view of the same ordered prose blocks.
-- [ ] Keep the complete source text available in
-      `paper_positioned_document.json`.
+- [x] Build and persist `PaperDocument` from the existing filtered blocks and
+      current prose-candidate decisions. Populate prose, leave entities empty,
+      and place every other block in unassigned residual.
+  - [x] The focused run in
+        `outputs/paper_document_step3_bullet1_minimal_20260718` completed for
+        `Journal of Periodontology - 2015 - Eke - Update on Prevalence of
+        Periodontitis in Adults in the United States  NHANES 2009.pdf`, `Role
+        of Estimated Glucose Disposal Rate in Staging and Death Risk of
+        Cardiovascular-Kidney-Metabolic Syndrome- Insights from NHANES
+        1999-2018.pdf`, `cardiovascular.pdf`, `cobaltpaper.pdf`, and
+        `mdpi-The Relationship Between a Mediterranean Diet and Frailty in
+        Older Adults- NHANES 2007–2017.pdf`. Every retained block is assigned
+        exactly once to prose or residual, all entities are empty, and all
+        existing compared text, section, Markdown, and table artifacts are
+        unchanged. The only all-file comparison difference is the generated
+        timestamp in `parse_quality_reports.json`.
+- [x] Generate `paper_sections.json` and `paper_markdown.md` solely from
+      `PaperDocument.prose`.
+  - [x] In
+        `outputs/paper_document_step3_bullet2_prose_views_20260718`, the five
+        focused papers preserve the Bullet 1 ownership counts;
+        `paper_sections.json` exactly equals the prose segment list and
+        `paper_markdown.md` exactly renders its headings and paragraphs. No
+        rotated or residual block enters either view. Only these two intended
+        views and generated quality-report timestamps differ from the Bullet 1
+        output.
+- [x] Move existing non-prose consumers from `PaperTextStream` to
+      `PaperDocument` block ownership plus line/span evidence from
+      `PaperPositionedDocument`, without changing their decisions.
+  - [x] Preserve the accepted block role in `PaperDocument`.
+  - [x] Read canonical text, block order, and ownership from `PaperDocument`.
+  - [x] Join source IDs to `PaperPositionedDocument` only for raw typography,
+        characters, rules, and original PDF geometry.
+  - [x] Do not introduce a corrected positioned-document copy or another full
+        paper stream.
+  - [x] The five-paper run in
+        `outputs/paper_document_step3_bullet3_first_pass_20260718` preserves
+        prose sections and Markdown byte-for-byte and preserves table grids,
+        captions, table mentions, and footnote/footer decisions. Differences
+        are limited to the new block role, source-provenance names, generated
+        timestamps, and three retired-stream `full_width_line` diagnostic
+        notes whose exact block geometry remains in `PaperDocument`.
+- [x] Remove the `PaperTextStream` model, builder, JSON artifact, imports, and
+      provenance labels once no consumer remains.
+  - [x] The 28-PDF corpus run in
+        `outputs/testpapers_batch_paper_document_step3_bullet4_20260718`
+        completed without parser failures. It produced 92 extracted tables and
+        81 final parsed tables. Against the retained Bullet 3 corpus checkpoint,
+        all substantive JSON and Markdown content is unchanged; differences are
+        limited to generated timestamps, the intended provenance rename, and
+        removal of `paper_text_stream.json`. Prose/residual ownership remains
+        complete and disjoint, and no rotated block is prose.
 
-## Step 4: Build Entities from Residual Blocks
+## Step 4: Resolve Residual Blocks into Entities
 
-- [ ] Define a `PaperEntityInventory` or atomically evolve the existing visual
-      inventory into the broader entity structure.
+- [ ] Inspect every unassigned block with its page-local geometry, source order,
+      typography, orientation, column membership, intervening blocks, and
+      nearby established prose or entities.
+- [ ] Introduce line-preserving split proposals for mixed residual blocks and
+      component-assembly proposals for fragmented material before either kind
+      of proposal changes the registry or ownership.
+- [ ] Allow evidence-backed canonical text correction without changing the raw
+      positioned source; record the source evidence and correction basis.
+- [ ] Keep table-cell text correction in the specialized table artifacts, with
+      both raw and canonical values, rather than duplicating the grid in
+      `PaperDocument`.
+- [ ] First identify and assemble captions from residual blocks without
+      reopening accepted prose.
+- [ ] Then inspect what remains for entity heading, content, footer,
+      bibliography, supplementary, or unresolved ownership.
+- [ ] Populate `PaperDocument.entities` from unassigned residual blocks; do not
+      create a parallel entity-ownership artifact.
 - [ ] Support initial entity kinds:
   - [ ] table
   - [ ] figure
   - [ ] box
+  - [ ] bibliography
+  - [ ] supplementary data
+- [ ] Distinguish main and supplementary scope; represent a supplementary
+      table as a table entity with supplementary scope.
 - [ ] Give every entity distinct components for:
+  - [ ] heading
   - [ ] caption
   - [ ] content
   - [ ] note/footer
-  - [ ] metadata such as a visual-object DOI
-- [ ] Store source block IDs, line IDs, page, orientation, and bounds for each
-      component.
+- [ ] Make components own ordered block IDs whose page, line, orientation, and
+      bounds come from the canonical block registry.
+- [ ] Link structured content through typed artifact references rather than
+      duplicating table grids, figure assets, or bibliography entries.
 - [ ] Link table entities to `ExtractedTable` rather than duplicating the grid.
 - [ ] Use current table extraction only to interpret or link residual blocks.
 - [ ] Reject or diagnose any proposed table/footer ownership that overlaps
@@ -262,7 +330,15 @@ should not be a full-paper text dump.
 - [ ] Link figures to image geometry only when direct structural evidence
       exists.
 - [ ] Add boxes only when direct block/rule/bound evidence establishes them.
-- [ ] Leave residual material unclassified when no entity is established.
+- [ ] Make a strong general geometry-based effort to resolve residual blocks,
+      while leaving genuinely uncertain material explicitly unassigned.
+- [ ] Defer any LLM review until later; it may propose ownership only for
+      unassigned blocks and may not override frozen prose or established
+      entity ownership.
+- [ ] After the first residual-assignment pass, review the observed assignments
+      and residuals before deciding whether a separate reflective mechanism is
+      useful. Keep any such mechanism inspectable and non-operative until its
+      purpose is supported by corpus evidence.
 
 ## Step 5: Align Downstream Consumers
 
@@ -276,13 +352,17 @@ should not be a full-paper text dump.
 - [ ] Make footnote processing consume entity note/footer components.
 - [ ] Make style profiling consume entity captions and metadata.
 - [ ] Keep bibliography extraction early enough to protect table extraction,
-      while preserving its own structured entry artifact.
+      while making `PaperDocument` the final owner of its heading and entry
+      blocks and linking its structured entry artifact.
 - [ ] Allow pre-extraction table mentions to retain positioned source IDs even
       when their blocks are later classified as entity material.
 
 ## Step 6: Update and Retire Artifact Contracts
 
-- [ ] Update `paper_markdown_spec.md` to define Markdown as prose-oriented.
+- [x] Record the approved canonical plan and downstream contracts in
+      `docs/design/paper_document_plan_and_contract.md` and require it from
+      `AGENTS.md`.
+- [x] Update `paper_markdown_spec.md` to define Markdown as prose-oriented.
 - [ ] Update `paper_parse_walkthrough.md` with the prose-first processing order.
 - [ ] Update `parsing_output_design.md` with the prose and entity structures.
 - [ ] Update `paper_visual_references.md` for residual entity captions and
@@ -294,7 +374,7 @@ should not be a full-paper text dump.
 - [ ] Supersede the completed/stale portions of
       `paper_text_reading_order_repair.md`.
 - [ ] Update `parser_todo.md` after each approved checkpoint.
-- [ ] Remove documentation describing final Markdown as a full-paper view.
+- [x] Remove documentation describing final Markdown as a full-paper view.
 
 ## Step 7: Focused Validation
 

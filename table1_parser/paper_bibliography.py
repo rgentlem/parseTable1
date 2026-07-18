@@ -6,6 +6,8 @@ import re
 from dataclasses import dataclass
 from collections.abc import Sequence
 from pathlib import Path
+from types import SimpleNamespace
+from typing import Any
 
 from table1_parser.schemas import (
     BibliographyEntry,
@@ -14,8 +16,6 @@ from table1_parser.schemas import (
     FootnoteDefinition,
     PaperBibliography,
     PaperSection,
-    PaperTextLine,
-    PaperTextStream,
 )
 from table1_parser.reference_sections import (
     INLINE_REFERENCE_START_PATTERN,
@@ -152,7 +152,8 @@ def build_paper_bibliography(
         metadata={
             "source_artifacts": [
                 "paper_sections.json",
-                "paper_text_stream.json",
+                "paper_document.json",
+                "paper_positioned_document.json",
                 "paper_page_furniture.json",
                 "cell_text_annotations.json",
                 "paper_footnotes.json",
@@ -173,15 +174,15 @@ def build_paper_bibliography(
     )
 
 
-def build_bibliography_entries_from_text_stream(
-    paper_text_stream: PaperTextStream,
+def build_bibliography_entries_from_layout_lines(
+    lines: Sequence[Any],
 ) -> tuple[list[BibliographyEntry], list[str]]:
     """Parse bibliography entries and return confirmed heading line IDs."""
-    if not paper_text_stream.lines:
+    if not lines:
         return [], []
 
     candidate_entry_sets: list[tuple[list[BibliographyEntry], str | None]] = []
-    for line_index, line in enumerate(paper_text_stream.lines):
+    for line_index, line in enumerate(lines):
         start_text = reference_start_text(line.text)
         heading_match = REFERENCE_HEADING_LINE_PATTERN.match(start_text)
         inline_match = INLINE_REFERENCE_START_PATTERN.match(start_text)
@@ -189,7 +190,7 @@ def build_bibliography_entries_from_text_stream(
             continue
         inline_body = inline_match.group("body") if inline_match is not None else None
         entries = _build_bibliography_entries_from_layout_region(
-            paper_text_stream,
+            lines,
             start_line_index=line_index,
             inline_body=inline_body,
             heading=inline_match.group("heading") if inline_match is not None else start_text,
@@ -200,8 +201,8 @@ def build_bibliography_entries_from_text_stream(
             else None
         )
         bibliography_follows_heading = inline_match is not None or (
-            line_index + 1 < len(paper_text_stream.lines)
-            and first_entry_line_id == paper_text_stream.lines[line_index + 1].line_id
+            line_index + 1 < len(lines)
+            and first_entry_line_id == lines[line_index + 1].line_id
         )
         if (
             entries
@@ -493,17 +494,17 @@ def bibliography_extraction_metadata(
 
 
 def _build_bibliography_entries_from_layout_region(
-    paper_text_stream: PaperTextStream,
+    lines: Sequence[Any],
     *,
     start_line_index: int,
     inline_body: str | None,
     heading: str,
 ) -> list[BibliographyEntry]:
-    region_lines: list[PaperTextLine] = []
-    start_line = paper_text_stream.lines[start_line_index]
+    region_lines: list[Any] = []
+    start_line = lines[start_line_index]
     above_heading_right_label_x0s = [
         float(line.bbox[0])
-        for line in paper_text_stream.lines
+        for line in lines
         if (
             line.page_num == start_line.page_num
             and float(line.bbox[1]) < float(start_line.bbox[1]) - 3.0
@@ -514,8 +515,9 @@ def _build_bibliography_entries_from_layout_region(
     above_heading_right_reference_x0 = min(above_heading_right_label_x0s, default=None)
     if inline_body:
         region_lines.append(
-            start_line.model_copy(
-                update={
+            SimpleNamespace(
+                **{
+                    **vars(start_line),
                     "line_id": f"{start_line.line_id}:reference-body",
                     "raw_text": inline_body,
                     "text": inline_body,
@@ -523,7 +525,7 @@ def _build_bibliography_entries_from_layout_region(
                 }
             )
         )
-    for line_index, line in enumerate(paper_text_stream.lines):
+    for line_index, line in enumerate(lines):
         if line_index == start_line_index or line.page_num < start_line.page_num:
             continue
         if line.orientation != start_line.orientation:
@@ -671,8 +673,8 @@ def _build_bibliography_entries_from_layout_region(
     return entries
 
 
-def _build_bibliography_visual_rows(lines: Sequence[PaperTextLine]) -> list[_BibliographyVisualRow]:
-    grouped_lines: dict[int, list[PaperTextLine]] = {}
+def _build_bibliography_visual_rows(lines: Sequence[Any]) -> list[_BibliographyVisualRow]:
+    grouped_lines: dict[int, list[Any]] = {}
     for line in lines:
         grouped_lines.setdefault(line.page_num, []).append(line)
 
@@ -688,7 +690,7 @@ def _build_bibliography_visual_rows(lines: Sequence[PaperTextLine]) -> list[_Bib
 
 
 def _build_bibliography_visual_rows_for_column(
-    lines: Sequence[PaperTextLine],
+    lines: Sequence[Any],
     column_index: int,
     page_num: int,
 ) -> list[_BibliographyVisualRow]:
@@ -699,8 +701,8 @@ def _build_bibliography_visual_rows_for_column(
         lines,
         key=lambda line: (_bbox_center_y(line.bbox), float(line.bbox[0])),
     )
-    grouped_rows: list[list[PaperTextLine]] = []
-    active_row: list[PaperTextLine] = []
+    grouped_rows: list[list[Any]] = []
+    active_row: list[Any] = []
     active_center_y: float | None = None
     for line in ordered_lines:
         center_y = _bbox_center_y(line.bbox)
@@ -745,8 +747,8 @@ def _build_bibliography_visual_rows_for_column(
 
 
 def _group_lines_by_reference_columns(
-    lines: Sequence[PaperTextLine],
-) -> list[tuple[int, list[PaperTextLine]]]:
+    lines: Sequence[Any],
+) -> list[tuple[int, list[Any]]]:
     if len(lines) < 8:
         return [(0, list(lines))]
     column_candidate_lines = [
@@ -766,7 +768,7 @@ def _group_lines_by_reference_columns(
             centers[index + 1] - 6.0
             for index in range(len(centers) - 1)
         ]
-        column_lines: list[list[PaperTextLine]] = [[] for _ in centers]
+        column_lines: list[list[Any]] = [[] for _ in centers]
         for line in lines:
             column_index = sum(float(line.bbox[0]) >= boundary for boundary in boundaries)
             column_lines[column_index].append(line)
@@ -791,7 +793,7 @@ def _group_lines_by_reference_columns(
         (max(left_group) + min(right_group)) / 2.0
         for left_group, right_group in zip(x_start_groups, x_start_groups[1:])
     ]
-    column_lines: list[list[PaperTextLine]] = [[] for _ in x_start_groups]
+    column_lines: list[list[Any]] = [[] for _ in x_start_groups]
     for line in lines:
         column_index = sum(float(line.bbox[0]) >= boundary for boundary in boundaries)
         column_lines[column_index].append(line)
@@ -1080,7 +1082,7 @@ def _bibliography_entry_from_active_layout_entry(
         clean_text=clean_entry_text,
         heading=clean_text(heading),
         role_hint="references_like",
-        source_artifact="paper_text_stream.json",
+        source_artifact="paper_document.json",
         source_line_ids=[
             line_id
             for row in active_entry.rows

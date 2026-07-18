@@ -34,19 +34,18 @@ from table1_parser.continued_variable_integration import (
 )
 from table1_parser.context import (
     annotate_visual_reference_checks,
+    build_paper_document,
     build_paper_positioned_document,
-    build_paper_sections_from_blocks,
-    build_paper_text_stream,
+    build_paper_sections_from_document,
     build_paper_table_mentions,
     build_paper_visual_inventory,
     build_table_contexts,
     build_paper_variable_inventory,
     collect_paper_visual_references,
     paper_variable_inventory_to_payload,
-    paper_sections_to_payload,
     paper_table_mentions_to_payload,
-    paper_text_stream_to_markdown,
 )
+from table1_parser.context.paper_document import iter_paper_document_lines
 from table1_parser.diagnostics import ParseQualityReport, build_parse_quality_report
 from table1_parser.extract import build_extractor
 from table1_parser.extract.provisional_table import ProvisionalExtractedTable
@@ -96,14 +95,13 @@ from table1_parser.parse import (
 from table1_parser.paper_footnotes import (
     build_paper_footnote_anchor_inventory,
     build_paper_footnote_definition_candidates,
-    build_paper_footnote_footers_from_text_stream_lines,
+    build_paper_footnote_footers_from_document_lines,
     find_table_footer_definition_lines,
     link_paper_footnotes,
     paper_footnotes_to_payload,
 )
 from table1_parser.paper_bibliography import (
     build_bibliography_entries_from_sections,
-    build_bibliography_entries_from_text_stream,
     build_paper_bibliography,
     paper_bibliography_to_payload,
 )
@@ -138,7 +136,6 @@ from table1_parser.schemas import (
     PaperSection,
     PaperStyleProfile,
     PaperTableMention,
-    PaperTextStream,
     PaperVariableInventory,
     PaperVisual,
     PaperVisualReference,
@@ -176,7 +173,7 @@ class PaperContextArtifacts:
 
     paper_positioned_document: PaperPositionedDocument
     paper_page_furniture: PaperPageFurniture
-    paper_text_stream: PaperTextStream
+    paper_document: dict[str, object]
     paper_sections: list[PaperSection]
     paper_table_mentions: list[PaperTableMention]
     bibliography_entries: list[BibliographyEntry]
@@ -229,10 +226,10 @@ class PaperParseArtifacts:
     paper_bibliography: PaperBibliography
     paper_page_furniture: PaperPageFurniture
     paper_positioned_document: PaperPositionedDocument
+    paper_document: dict[str, object]
     paper_style_profile: PaperStyleProfile
-    paper_text_stream: PaperTextStream
     paper_markdown: str
-    paper_sections: list[PaperSection]
+    paper_sections: list[dict[str, object]]
     paper_table_mentions: list[PaperTableMention]
     paper_visual_inventory: list[PaperVisual]
     paper_variable_inventory: PaperVariableInventory
@@ -333,7 +330,7 @@ def _extract_tables_with_context(
     paper_page_furniture: PaperPageFurniture | None,
     paper_positioned_document: PaperPositionedDocument | None = None,
     paper_table_mentions: list[PaperTableMention] | None = None,
-    paper_text_stream: PaperTextStream | None = None,
+    paper_document: dict[str, object] | None = None,
     bibliography_entries: Sequence[BibliographyEntry] | None = None,
 ) -> list[ProvisionalExtractedTable]:
     """Run extraction while passing optional paper-level context when supported."""
@@ -346,7 +343,7 @@ def _extract_tables_with_context(
         parameter.kind == inspect.Parameter.VAR_KEYWORD
         for parameter in signature.parameters.values()
     )
-    supports_text_stream = "paper_text_stream" in signature.parameters or any(
+    supports_paper_document = "paper_document" in signature.parameters or any(
         parameter.kind == inspect.Parameter.VAR_KEYWORD
         for parameter in signature.parameters.values()
     )
@@ -369,8 +366,8 @@ def _extract_tables_with_context(
     }
     if supports_table_mentions:
         keyword_arguments["paper_table_mentions"] = paper_table_mentions
-    if supports_text_stream:
-        keyword_arguments["paper_text_stream"] = paper_text_stream
+    if supports_paper_document:
+        keyword_arguments["paper_document"] = paper_document
     if supports_positioned_document:
         keyword_arguments["paper_positioned_document"] = paper_positioned_document
     if supports_bibliography_entries:
@@ -401,7 +398,7 @@ def _build_table_geometry_artifacts(
     )
     table_regions = build_table_regions(
         extracted_tables,
-        paper_text_stream=paper_context.paper_text_stream,
+        paper_document=paper_context.paper_document,
         paper_page_furniture=paper_context.paper_page_furniture,
         cell_text_annotations=cell_text_annotations,
         table_boundary_proposals=table_boundary_proposals,
@@ -464,7 +461,7 @@ def _build_canonical_extraction_artifacts(
         paper_page_furniture=paper_context.paper_page_furniture,
         paper_positioned_document=paper_context.paper_positioned_document,
         paper_table_mentions=paper_context.paper_table_mentions,
-        paper_text_stream=paper_context.paper_text_stream,
+        paper_document=paper_context.paper_document,
         bibliography_entries=paper_context.bibliography_entries,
     )
     provisional = _build_table_geometry_artifacts(
@@ -507,244 +504,22 @@ def _build_paper_context_artifacts(pdf_path: str) -> PaperContextArtifacts:
         paper_id=paper_stem,
         paper_positioned_document=paper_positioned_document,
     )
-    paper_text_stream = build_paper_text_stream(
+    paper_document, bibliography_entries = build_paper_document(
         pdf_path,
         paper_page_furniture=paper_page_furniture,
         paper_positioned_document=paper_positioned_document,
         paper_id=paper_stem,
     )
-    bibliography_entries, bibliography_heading_line_ids = (
-        build_bibliography_entries_from_text_stream(paper_text_stream)
+    paper_sections = build_paper_sections_from_document(paper_document)
+    paper_table_mentions = build_paper_table_mentions(
+        list(iter_paper_document_lines(paper_document, paper_positioned_document))
     )
-    updated_lines = paper_text_stream.lines
-    if bibliography_heading_line_ids:
-        bibliography_heading_line_id_set = set(bibliography_heading_line_ids)
-        updated_lines = [
-            line.model_copy(
-                update={
-                    "role": "heading",
-                    "confidence": 0.98,
-                    "notes": [*line.notes, "confirmed_bibliography_heading"],
-                }
-            )
-            if line.line_id in bibliography_heading_line_id_set
-            else line
-            for line in paper_text_stream.lines
-        ]
-    updated_lines_by_id = {line.line_id: line for line in updated_lines}
-    updated_blocks = []
-    for block in paper_text_stream.blocks:
-        block_lines = [updated_lines_by_id[line_id] for line_id in block.line_ids]
-        block_segments = []
-        current_segment = []
-        for line in block_lines:
-            if (
-                current_segment
-                and line.role != current_segment[-1].role
-                and {line.role, current_segment[-1].role} == {"heading", "body"}
-            ):
-                block_segments.append(current_segment)
-                current_segment = []
-            current_segment.append(line)
-        if current_segment:
-            block_segments.append(current_segment)
-        for segment_index, segment_lines in enumerate(block_segments):
-            segment_roles = {line.role for line in segment_lines}
-            updated_blocks.append(
-                block.model_copy(
-                    update={
-                        "block_id": (
-                            block.block_id
-                            if len(block_segments) == 1
-                            else f"{block.block_id}:segment-{segment_index + 1}"
-                        ),
-                        "order": len(updated_blocks),
-                        "bbox": (
-                            min(line.bbox[0] for line in segment_lines),
-                            min(line.bbox[1] for line in segment_lines),
-                            max(line.bbox[2] for line in segment_lines),
-                            max(line.bbox[3] for line in segment_lines),
-                        ),
-                        "canonical_bbox": (
-                            min(line.canonical_bbox[0] for line in segment_lines if line.canonical_bbox is not None),
-                            min(line.canonical_bbox[1] for line in segment_lines if line.canonical_bbox is not None),
-                            max(line.canonical_bbox[2] for line in segment_lines if line.canonical_bbox is not None),
-                            max(line.canonical_bbox[3] for line in segment_lines if line.canonical_bbox is not None),
-                        ),
-                        "line_ids": [line.line_id for line in segment_lines],
-                        "role": (
-                            next(iter(segment_roles))
-                            if len(segment_roles) == 1
-                            else "mixed"
-                        ),
-                        "text": "\n".join(line.text for line in segment_lines),
-                    }
-                )
-            )
-    orientation_groups = {
-        group.group_id: group
-        for page in paper_text_stream.pages
-        for group in page.orientation_groups
-    }
-    block_layouts = {}
-    block_styles = {}
-    eligible_body_block_ids = set()
-    eligible_heading_block_ids = set()
-    sentence_block_ids = set()
-    body_style_character_counts = {}
-    for block in updated_blocks:
-        block_lines = [updated_lines_by_id[line_id] for line_id in block.line_ids]
-        line_indices = [line.line_index for line in block_lines]
-        group = orientation_groups.get(block.orientation_group_id)
-        spanning = bool(block_lines) and all(
-            "full_width_line" in line.notes for line in block_lines
-        )
-        structurally_eligible = (
-            block.orientation == "upright"
-            and group is not None
-            and (
-                spanning
-                or (
-                    block.column_index < len(group.column_bands)
-                    and group.column_bands[block.column_index][0]
-                    <= block.canonical_bbox[0]
-                    and block.canonical_bbox[2]
-                    <= group.column_bands[block.column_index][1]
-                )
-            )
-            and line_indices
-            and all(line_index is not None for line_index in line_indices)
-            and line_indices == list(range(line_indices[0], line_indices[0] + len(line_indices)))
-            and all(
-                line.page_num == block.page_num
-                and line.block_index == block.source_block_index
-                and line.orientation_group_id == block.orientation_group_id
-                and line.column_index == block.column_index
-                and line.column_count == block.column_count
-                for line in block_lines
-            )
-        )
-        if not structurally_eligible:
-            continue
-        block_layouts[block.block_id] = (
-            block.page_num,
-            block.orientation_group_id,
-            "spanning" if spanning else "column",
-            0 if spanning else block.column_index,
-        )
-        if block.role == "heading":
-            eligible_heading_block_ids.add(block.block_id)
-            continue
-        if block.role != "body" or any(
-            line.dominant_font is None or line.dominant_font_size is None
-            for line in block_lines
-        ):
-            continue
-        fonts = {line.dominant_font for line in block_lines}
-        font_sizes = [line.dominant_font_size for line in block_lines]
-        if len(fonts) != 1 or max(font_sizes) - min(font_sizes) >= 0.5:
-            continue
-        block_style = (next(iter(fonts)), max(font_sizes))
-        block_styles[block.block_id] = block_style
-        eligible_body_block_ids.add(block.block_id)
-        if re.search(r"[.!?](?:[\"'’”)]*)?(?=\s|$)", block.text):
-            sentence_block_ids.add(block.block_id)
-            body_style_character_counts[block_style] = (
-                body_style_character_counts.get(block_style, 0)
-                + sum(len(line.text) for line in block_lines)
-            )
-    body_style = (
-        max(body_style_character_counts, key=body_style_character_counts.__getitem__)
-        if body_style_character_counts
-        else None
-    )
-    paragraph_block_ids = set()
-    for block in updated_blocks:
-        if (
-            block.block_id in eligible_body_block_ids
-            and block_styles.get(block.block_id) == body_style
-            and block_layouts[block.block_id][2] != "spanning"
-            and any(
-                "\n" in block.text[match.end() :]
-                for match in re.finditer(
-                    r"(?:[!?]|(?<!\d)\.)(?:[\"'’”)]*)?(?=\s|$)", block.text
-                )
-            )
-        ):
-            paragraph_block_ids.add(block.block_id)
-    prose_block_ids = set(paragraph_block_ids)
-    for block_index, block in enumerate(updated_blocks[1:], start=1):
-        previous_block = updated_blocks[block_index - 1]
-        if (
-            previous_block.block_id in eligible_heading_block_ids
-            and block.block_id in sentence_block_ids
-            and block_styles.get(block.block_id) == body_style
-            and block_layouts[previous_block.block_id][:2]
-            == block_layouts[block.block_id][:2]
-        ):
-            prose_block_ids.add(block.block_id)
-        continuation_block = previous_block
-        crossed_spanning_residual = False
-        if (
-            previous_block.block_id not in prose_block_ids
-            and block_layouts.get(previous_block.block_id, (None, None, None, None))[2]
-            == "spanning"
-            and block_index > 1
-        ):
-            continuation_block = updated_blocks[block_index - 2]
-            crossed_spanning_residual = True
-        if (
-            continuation_block.block_id in prose_block_ids
-            and block.block_id in eligible_body_block_ids
-            and block_styles.get(block.block_id) == body_style
-            and block.block_id not in prose_block_ids
-            and re.search(
-                r"[.!?](?:[\"'’”)]*)\s*$", continuation_block.text
-            )
-            is None
-            and (
-                continuation_block.page_num != block.page_num
-                or block_layouts.get(continuation_block.block_id)
-                != block_layouts.get(block.block_id)
-                or crossed_spanning_residual
-            )
-        ):
-            prose_block_ids.add(block.block_id)
-    for block_index, block in enumerate(updated_blocks[:-1]):
-        next_block = updated_blocks[block_index + 1]
-        if (
-            block.block_id in eligible_heading_block_ids
-            and next_block.block_id in prose_block_ids
-            and block_layouts[block.block_id][:2]
-            == block_layouts[next_block.block_id][:2]
-        ):
-            prose_block_ids.add(block.block_id)
-    updated_blocks = [
-        block.model_copy(
-            update={
-                "prose_candidate": block.block_id in prose_block_ids,
-            }
-        )
-        for block in updated_blocks
-    ]
-    paper_text_stream = paper_text_stream.model_copy(
-        update={"lines": updated_lines, "blocks": updated_blocks}
-    )
-    paper_text_stream = paper_text_stream.model_copy(
-        update={"markdown": paper_text_stream_to_markdown(paper_text_stream.blocks)}
-    )
-    if not paper_text_stream.markdown.strip():
-        raise RuntimeError(
-            "PyMuPDF positioned text stream did not produce paper_markdown.md."
-        )
-    paper_sections = build_paper_sections_from_blocks(paper_text_stream.blocks)
-    paper_table_mentions = build_paper_table_mentions(paper_text_stream)
     if not bibliography_entries:
         bibliography_entries = build_bibliography_entries_from_sections(paper_sections)
     return PaperContextArtifacts(
         paper_positioned_document=paper_positioned_document,
         paper_page_furniture=paper_page_furniture,
-        paper_text_stream=paper_text_stream,
+        paper_document=paper_document,
         paper_sections=paper_sections,
         paper_table_mentions=paper_table_mentions,
         bibliography_entries=bibliography_entries,
@@ -981,8 +756,20 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     paper_context = _build_paper_context_artifacts(pdf_path)
     paper_positioned_document = paper_context.paper_positioned_document
     paper_page_furniture = paper_context.paper_page_furniture
-    paper_text_stream = paper_context.paper_text_stream
-    paper_markdown = paper_text_stream.markdown
+    paper_document = paper_context.paper_document
+    prose_segments = paper_document["prose"]["segments"]
+    blocks_by_id = {block["block_id"]: block for block in paper_document["blocks"]}
+    markdown_parts: list[str] = []
+    for segment in prose_segments:
+        for block_id in segment["heading_block_ids"]:
+            markdown_parts.append(
+                f"## {clean_text(str(blocks_by_id[block_id]['text']))}"
+            )
+        for paragraph in segment["paragraphs"]:
+            markdown_parts.append(paragraph["text"])
+    paper_markdown = "\n\n".join(markdown_parts).strip()
+    if paper_markdown:
+        paper_markdown += "\n"
     paper_sections = paper_context.paper_sections
     paper_table_mentions = paper_context.paper_table_mentions
     bibliography_entries = paper_context.bibliography_entries
@@ -1325,16 +1112,17 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         resolved_table_set=resolved_table_set,
     )
     paper_footnote_anchors_before_linking = list(paper_footnotes.anchors)
-    table_footer_text_stream_definition_lines = find_table_footer_definition_lines(
+    table_footer_document_definition_lines = find_table_footer_definition_lines(
         extracted_tables,
         resolved_table_set=resolved_table_set,
-        paper_text_stream=paper_text_stream,
+        paper_document=paper_document,
+        paper_positioned_document=paper_positioned_document,
         table_boundary_proposals=table_boundary_proposals,
         table_regions=table_regions,
     )
-    paper_footnote_definition_lines = table_footer_text_stream_definition_lines
-    table_footers = build_paper_footnote_footers_from_text_stream_lines(
-        table_footer_text_stream_definition_lines
+    paper_footnote_definition_lines = table_footer_document_definition_lines
+    table_footers = build_paper_footnote_footers_from_document_lines(
+        table_footer_document_definition_lines
     )
     paper_footnote_definitions = build_paper_footnote_definition_candidates(
         paper_footnote_definition_lines,
@@ -1351,17 +1139,18 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
                     "source_artifacts": sorted(
                         {
                             *paper_footnotes.metadata.get("source_artifacts", []),
-                            "paper_text_stream.json",
+                            "paper_document.json",
+                            "paper_positioned_document.json",
                             "paper_page_furniture.json",
                         }
                     ),
-                    "page_furniture_filter_stage": "before_paper_text_stream_footer_detection",
+                    "page_furniture_filter_stage": "before_paper_document_footer_detection",
                     "footer_count": len(table_footers),
                     "footer_count_from_extracted_tables": 0,
-                    "footer_count_from_text_stream": len(table_footers),
+                    "footer_count_from_document": len(table_footers),
                     "definition_line_count_from_extracted_tables": 0,
-                    "definition_line_count_from_text_stream": len(
-                        table_footer_text_stream_definition_lines
+                    "definition_line_count_from_document": len(
+                        table_footer_document_definition_lines
                     ),
                     "definition_line_count": len(paper_footnote_definition_lines),
                     "definition_count": len(paper_footnote_definitions),
@@ -1473,7 +1262,8 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         extracted_tables,
         table_definitions,
         paper_sections,
-        paper_text_stream=paper_text_stream,
+        paper_document=paper_document,
+        paper_positioned_document=paper_positioned_document,
     )
     paper_references = collect_paper_visual_references(
         paper_sections, paper_visual_inventory
@@ -1484,7 +1274,8 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     paper_style_profile = build_paper_style_profile(
         paper_id=paper_stem,
         source_pdf=pdf_path,
-        paper_text_stream=paper_text_stream,
+        paper_document=paper_document,
+        paper_positioned_document=paper_positioned_document,
         extracted_tables=extracted_tables,
         paper_footnotes=paper_footnotes,
         paper_bibliography=paper_bibliography,
@@ -1528,10 +1319,10 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         paper_bibliography=paper_bibliography,
         paper_page_furniture=paper_page_furniture,
         paper_positioned_document=paper_positioned_document,
+        paper_document=paper_document,
         paper_style_profile=paper_style_profile,
-        paper_text_stream=paper_text_stream,
         paper_markdown=paper_markdown,
-        paper_sections=paper_sections,
+        paper_sections=prose_segments,
         paper_table_mentions=paper_table_mentions,
         paper_visual_inventory=paper_visual_inventory,
         paper_references=paper_references,
@@ -1631,8 +1422,8 @@ def _write_parse_outputs(
     paper_bibliography_output_path = paper_dir / "paper_bibliography.json"
     paper_page_furniture_output_path = paper_dir / "paper_page_furniture.json"
     paper_positioned_document_output_path = paper_dir / "paper_positioned_document.json"
+    paper_document_output_path = paper_dir / "paper_document.json"
     paper_style_profile_output_path = paper_dir / "paper_style_profile.json"
-    paper_text_stream_output_path = paper_dir / "paper_text_stream.json"
     paper_markdown_output_path = paper_dir / "paper_markdown.md"
     paper_sections_output_path = paper_dir / "paper_sections.json"
     paper_table_mentions_output_path = paper_dir / "paper_table_mentions.json"
@@ -1843,6 +1634,10 @@ def _write_parse_outputs(
         + "\n",
         encoding="utf-8",
     )
+    paper_document_output_path.write_text(
+        json.dumps(artifacts.paper_document, indent=2) + "\n",
+        encoding="utf-8",
+    )
     paper_style_profile_output_path.write_text(
         json.dumps(
             paper_style_profile_to_payload(artifacts.paper_style_profile), indent=2
@@ -1850,15 +1645,9 @@ def _write_parse_outputs(
         + "\n",
         encoding="utf-8",
     )
-    paper_text_stream_output_path.write_text(
-        json.dumps(artifacts.paper_text_stream.model_dump(mode="json"), indent=2)
-        + "\n",
-        encoding="utf-8",
-    )
     paper_markdown_output_path.write_text(artifacts.paper_markdown, encoding="utf-8")
     paper_sections_output_path.write_text(
-        json.dumps(paper_sections_to_payload(artifacts.paper_sections), indent=2)
-        + "\n",
+        json.dumps(artifacts.paper_sections, indent=2) + "\n",
         encoding="utf-8",
     )
     paper_table_mentions_output_path.write_text(

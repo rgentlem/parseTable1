@@ -31,7 +31,7 @@ Current status: `table1-parser parse` builds this artifact before table
 extraction and writes it for every paper. R inspection helpers can load and
 display clusters and ignored regions. Extraction uses ignored regions to mask
 repeated page-furniture words, chars, and explicit-grid rows. Paper text,
-markdown, cell text annotation, and text-stream footer detection must consume
+document construction, cell text annotation, and document-linked footer detection must consume
 the same ignored regions before they build downstream artifacts.
 
 ## Top-Level Shape
@@ -180,7 +180,7 @@ positions on several consecutive pages.
 Extraction uses this artifact before candidate refinement. It records
 `page_furniture_overlap` metadata when a candidate bbox touches ignored regions
 and `page_furniture_mask` metadata when positioned words, chars, or explicit-grid
-rows are removed. Cell-text annotation and text-stream footer detection consume
+rows are removed. Cell-text annotation and document-linked footer detection consume
 the same regions before grouping annotations or footer line groups, so repeated
 page furniture is not reintroduced as small markers or definition lines.
 Recurrent edge-rule regions are applied only to candidate rule segments; they do

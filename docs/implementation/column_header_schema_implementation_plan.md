@@ -29,7 +29,7 @@ ExtractedTable -> NormalizedTable -> ColumnHeaderSchema -> TableDefinition -> Pa
 The main implementation seams are:
 
 - `table1_parser/schemas/__init__.py`
-  Export the new Pydantic models.
+  Export the new typed records.
 - `table1_parser/schemas/column_header_schema.py`
   New canonical schema models.
 - `table1_parser/column_header_schema.py`
@@ -59,7 +59,7 @@ from the design:
 
 Implementation details:
 
-- Use Pydantic models and explicit literal vocabularies.
+- Use the minimal typed records and explicit literal vocabularies.
 - Keep IDs as stable strings; do not rely on list position.
 - Keep rows and columns in normalized-table index space.
 - Include original row/column indices when known.
@@ -360,7 +360,7 @@ git diff --check
 The implementation is complete when:
 
 - `column_header_schemas.json` is written by `table1-parser parse`
-- schema payloads validate as Pydantic models
+- schema payloads validate against the canonical typed structure
 - raw text and coordinates are preserved when available
 - missing evidence is explicit in diagnostics
 - `TableDefinition` consumes the schema for column descriptors

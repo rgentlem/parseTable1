@@ -78,9 +78,9 @@ class TablePositionedEvidence(BaseModel):
 
 
 class TableCaptionRegion(BaseModel):
-    """One complete table caption assembled from the paper text stream."""
+    """One complete table caption assembled from canonical document blocks."""
 
-    source_artifact: Literal["paper_text_stream.json"] = "paper_text_stream.json"
+    source_artifact: Literal["paper_document.json"] = "paper_document.json"
     mention_id: str
     table_number: str
     mention_kind: Literal["caption_candidate", "continuation_label"]

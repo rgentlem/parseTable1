@@ -89,14 +89,14 @@ Preferred parser document-order API:
 
 Persisted document-context evidence API:
 - `paper_positioned_document.json`
-- `paper_text_stream.json`
+- `paper_document.json`
 - rendered `paper_markdown.md`
 
-The parser should derive `paper_text_stream.json` from positioned PyMuPDF text,
+The parser should derive `paper_document.json` from positioned PyMuPDF text,
 apply page-furniture filtering, detect page column bands, and order text as
 page, column, then vertical position. Markdown can still be useful for
 inspection, chunking, or embedding, but it should be rendered from the
-positioned stream rather than extracted through a second backend path.
+canonical document rather than extracted through a second backend path.
 
 ## Table extraction
 Use **structured JSON** as the default extracted artifact for tables.

@@ -439,7 +439,7 @@ What is not required:
 
 Checklist:
 
-- [x] Use Pydantic models for component record shape and controlled component
+- [x] Use explicit typed records for component shape and controlled component
   kinds.
 - [x] Preserve explicit source table, row, column, raw value, parse pattern,
   confidence, and notes on every parsed source-cell value.

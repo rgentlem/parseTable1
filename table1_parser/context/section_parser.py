@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from table1_parser.schemas import PaperSection, PaperTextBlock
+from typing import Any, cast
+
+from table1_parser.schemas import PaperSection
 from table1_parser.text_cleaning import clean_text
 
 
@@ -24,24 +26,27 @@ CONCLUSION_HINTS = ("conclusion", "conclusions", "summary")
 REFERENCES_HINTS = ("reference", "references", "bibliography", "works cited")
 
 
-def build_paper_sections_from_blocks(blocks: list[PaperTextBlock]) -> list[PaperSection]:
+def build_paper_sections_from_document(
+    paper_document: dict[str, object],
+) -> list[PaperSection]:
     """Build sections by assigning each body block to its preceding heading block."""
+    blocks = cast(list[dict[str, Any]], paper_document["blocks"])
     sections: list[PaperSection] = []
-    heading_block: PaperTextBlock | None = None
-    body_blocks: list[PaperTextBlock] = []
+    heading_block: dict[str, Any] | None = None
+    body_blocks: list[dict[str, Any]] = []
     for block in blocks:
-        if block.role != "heading":
+        if block["role"] != "heading":
             body_blocks.append(block)
             continue
         if heading_block is not None or body_blocks:
             sections.append(
                 _build_section(
                     len(sections),
-                    clean_text(heading_block.text) if heading_block is not None else None,
+                    clean_text(heading_block["text"]) if heading_block is not None else None,
                     2 if heading_block is not None else 0,
-                    [body_block.text for body_block in body_blocks],
-                    heading_block_id=(heading_block.block_id if heading_block is not None else None),
-                    body_block_ids=[body_block.block_id for body_block in body_blocks],
+                    [body_block["text"] for body_block in body_blocks],
+                    heading_block_id=(heading_block["block_id"] if heading_block is not None else None),
+                    body_block_ids=[body_block["block_id"] for body_block in body_blocks],
                 )
             )
         heading_block = block
@@ -50,11 +55,11 @@ def build_paper_sections_from_blocks(blocks: list[PaperTextBlock]) -> list[Paper
         sections.append(
             _build_section(
                 len(sections),
-                clean_text(heading_block.text) if heading_block is not None else None,
+                clean_text(heading_block["text"]) if heading_block is not None else None,
                 2 if heading_block is not None else 0,
-                [body_block.text for body_block in body_blocks],
-                heading_block_id=(heading_block.block_id if heading_block is not None else None),
-                body_block_ids=[body_block.block_id for body_block in body_blocks],
+                [body_block["text"] for body_block in body_blocks],
+                heading_block_id=(heading_block["block_id"] if heading_block is not None else None),
+                body_block_ids=[body_block["block_id"] for body_block in body_blocks],
             )
         )
     return sections or [PaperSection(section_id="section_0", order=0)]

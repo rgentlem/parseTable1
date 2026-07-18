@@ -6,6 +6,7 @@ import re
 from collections import Counter
 from collections.abc import Sequence
 
+from table1_parser.context.paper_document import iter_paper_document_lines
 from table1_parser.schemas import (
     BibliographyEntry,
     ExtractedTable,
@@ -15,8 +16,7 @@ from table1_parser.schemas import (
     PaperStyleDimension,
     PaperStyleEvidence,
     PaperStyleProfile,
-    PaperTextLine,
-    PaperTextStream,
+    PaperPositionedDocument,
     PaperVisual,
     PaperVisualReference,
 )
@@ -38,7 +38,8 @@ def build_paper_style_profile(
     *,
     paper_id: str,
     source_pdf: str,
-    paper_text_stream: PaperTextStream,
+    paper_document: dict[str, object],
+    paper_positioned_document: PaperPositionedDocument,
     extracted_tables: Sequence[ExtractedTable],
     paper_footnotes: PaperFootnotes,
     paper_bibliography: PaperBibliography,
@@ -46,10 +47,13 @@ def build_paper_style_profile(
     paper_references: Sequence[PaperVisualReference],
 ) -> PaperStyleProfile:
     """Build a deterministic style profile from existing paper-level artifacts."""
+    document_lines = list(
+        iter_paper_document_lines(paper_document, paper_positioned_document)
+    )
     footnote_marker_style = _footnote_marker_style(paper_footnotes)
     bibliography_reference_style = _bibliography_reference_style(paper_bibliography)
-    table_caption_placement = _table_caption_placement(extracted_tables, paper_text_stream)
-    figure_caption_evidence = _figure_caption_evidence(paper_visual_inventory, paper_text_stream)
+    table_caption_placement = _table_caption_placement(extracted_tables, document_lines)
+    figure_caption_evidence = _figure_caption_evidence(paper_visual_inventory, document_lines)
     visual_reference_style = _visual_reference_style(paper_references)
     return PaperStyleProfile(
         paper_id=paper_id,
@@ -71,7 +75,8 @@ def build_paper_style_profile(
         ),
         metadata={
             "source_artifacts": [
-                "paper_text_stream.json",
+                "paper_document.json",
+                "paper_positioned_document.json",
                 "extracted_tables.json",
                 "paper_footnotes.json",
                 "paper_bibliography.json",
@@ -233,14 +238,14 @@ def _bibliography_reference_style(paper_bibliography: PaperBibliography) -> Pape
 
 def _table_caption_placement(
     extracted_tables: Sequence[ExtractedTable],
-    paper_text_stream: PaperTextStream,
+    document_lines: Sequence[object],
 ) -> PaperStyleDimension:
     count_by_style: Counter[str] = Counter()
     count_by_source: Counter[str] = Counter()
     caption_source_counts: Counter[str] = Counter()
     evidence: list[PaperStyleEvidence] = []
-    lines_by_page: dict[int, list[PaperTextLine]] = {}
-    for line in paper_text_stream.lines:
+    lines_by_page: dict[int, list[object]] = {}
+    for line in document_lines:
         lines_by_page.setdefault(line.page_num, []).append(line)
 
     for table in extracted_tables:
@@ -250,7 +255,7 @@ def _table_caption_placement(
         spatial_placement, line = _spatial_table_caption_placement(table, lines_by_page.get(table.page_num, []))
         if spatial_placement != "unknown":
             placement = spatial_placement
-            count_by_source["paper_text_stream"] += 1
+            count_by_source["paper_document"] += 1
         else:
             count_by_source["extracted_table_metadata"] += 1
         count_by_style[placement] += 1
@@ -259,7 +264,7 @@ def _table_caption_placement(
                 PaperStyleEvidence(
                     evidence_id=f"table-caption:{table.table_id}",
                     style=placement,
-                    source_artifact="paper_text_stream.json" if line is not None else "extracted_tables.json",
+                    source_artifact="paper_document.json" if line is not None else "extracted_tables.json",
                     source_id=line.line_id if line is not None else table.table_id,
                     page_num=table.page_num,
                     table_id=table.table_id,
@@ -280,7 +285,7 @@ def _table_caption_placement(
 
 def _figure_caption_evidence(
     paper_visual_inventory: Sequence[PaperVisual],
-    paper_text_stream: PaperTextStream,
+    document_lines: Sequence[object],
 ) -> PaperStyleDimension:
     count_by_style: Counter[str] = Counter()
     count_by_source: Counter[str] = Counter()
@@ -308,18 +313,18 @@ def _figure_caption_evidence(
             )
 
     if not count_by_style:
-        for line in paper_text_stream.lines:
+        for line in document_lines:
             if not FIGURE_CAPTION_LINE_PATTERN.match(line.text):
                 continue
             count_by_style["caption_text_detected_geometry_unavailable"] += 1
-            count_by_source["paper_text_stream"] += 1
+            count_by_source["paper_document"] += 1
             label_format_counts[_figure_label_format(line.text)] += 1
             if len(evidence) < MAX_EVIDENCE_PER_DIMENSION:
                 evidence.append(
                     PaperStyleEvidence(
                         evidence_id=f"figure-caption-line:{line.line_id}",
                         style="caption_text_detected_geometry_unavailable",
-                        source_artifact="paper_text_stream.json",
+                        source_artifact="paper_document.json",
                         source_id=line.line_id,
                         page_num=line.page_num,
                         text=line.text,
@@ -627,8 +632,8 @@ def _caption_placement_from_metadata_source(caption_source: str) -> str:
 
 def _spatial_table_caption_placement(
     table: ExtractedTable,
-    page_lines: Sequence[PaperTextLine],
-) -> tuple[str, PaperTextLine | None]:
+    page_lines: Sequence[object],
+) -> tuple[str, object | None]:
     table_bbox = _table_bbox(table)
     if table_bbox is None:
         return "unknown", None
@@ -639,7 +644,7 @@ def _spatial_table_caption_placement(
         else TABLE_CAPTION_LINE_PATTERN
     )
     left, top, right, bottom = table_bbox
-    candidates: list[tuple[float, str, PaperTextLine]] = []
+    candidates: list[tuple[float, str, object]] = []
     for line in page_lines:
         if not label_pattern.match(line.text):
             continue

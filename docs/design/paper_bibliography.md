@@ -20,9 +20,10 @@ reference markers are found.
 ## Pipeline Position
 
 Bibliography entry extraction should run before table extraction because it
-depends on the whole-paper document stream, not on table grids. The primary
-source is `paper_text_stream.json`: positioned PyMuPDF lines filtered through
-`paper_page_furniture.json` and ordered by page, column, then vertical position.
+depends on the whole-paper document, not on table grids. The primary source is
+`paper_document.json` joined to `paper_positioned_document.json`: positioned
+PyMuPDF lines filtered through `paper_page_furniture.json` and ordered by page,
+column, then vertical position.
 There is no backend-markdown fallback for bibliography entry extraction. Later
 table-cell annotation and footnote processing can then link numeric table
 markers to already-known numbered bibliography entries. The same bibliography
@@ -39,9 +40,7 @@ The implemented flow is:
 PDF
 -> paper_positioned_document.json
 -> paper_page_furniture.json
--> paper_text_stream.json
--> paper_markdown.md
--> paper_sections.json
+-> paper_document.json
 -> bibliography entries from positioned text
 -> bibliography-owned line/entry evidence passed to table extraction when entries are found
 -> table extraction and cell text annotations
@@ -85,7 +84,7 @@ Important fields:
 - `raw_text`: extracted entry text
 - `clean_text`: lightly cleaned text for inspection and matching
 - `source_section_id`, `heading`, `role_hint`: section provenance
-- `source_artifact`: usually `paper_text_stream.json`, with
+- `source_artifact`: usually `paper_document.json`, with
   `paper_sections.json` used for fallback entries
 - `source_line_ids`: positioned text lines that contributed to the entry
 - `page_nums`: PDF pages spanned by the entry
@@ -94,7 +93,7 @@ Important fields:
 - `confidence`
 - `notes`
 
-Extraction uses the same layout stream for numbered and unnumbered lists:
+Extraction uses the same canonical document order for numbered and unnumbered lists:
 reference-list pages are read as page, column, then vertical position; a new
 entry begins at the column's left edge, either with a visible numeric label or
 with the first author/organization text in a hanging-indent list. Continuation

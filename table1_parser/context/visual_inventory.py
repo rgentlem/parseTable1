@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 
+from table1_parser.context.paper_document import iter_paper_document_lines
 from table1_parser.context.visual_references import (
     VISUAL_OBJECT_DOI_PATTERN,
     parse_visual_label,
@@ -12,7 +13,7 @@ from table1_parser.context.visual_references import (
 from table1_parser.schemas import (
     ExtractedTable,
     PaperSection,
-    PaperTextStream,
+    PaperPositionedDocument,
     PaperVisual,
     TableDefinition,
 )
@@ -142,7 +143,8 @@ def build_paper_visual_inventory(
     extracted_tables: list[ExtractedTable],
     table_definitions: list[TableDefinition],
     sections: list[PaperSection],
-    paper_text_stream: PaperTextStream | None = None,
+    paper_document: dict[str, object] | None = None,
+    paper_positioned_document: PaperPositionedDocument | None = None,
 ) -> list[PaperVisual]:
     """Build the paper-level inventory of actual table and figure visuals."""
     visuals_by_id: dict[str, PaperVisual] = {}
@@ -153,7 +155,11 @@ def build_paper_visual_inventory(
             visuals_by_id[visual.visual_id] = existing.model_copy(update={"notes": notes})
         else:
             visuals_by_id[visual.visual_id] = visual
-    text_lines = paper_text_stream.lines if paper_text_stream is not None else []
+    text_lines = (
+        list(iter_paper_document_lines(paper_document, paper_positioned_document))
+        if paper_document is not None and paper_positioned_document is not None
+        else []
+    )
     for line_index, line in enumerate(text_lines):
         match = VISUAL_OBJECT_DOI_PATTERN.fullmatch(clean_text(line.raw_text))
         if match is None:
@@ -190,7 +196,7 @@ def build_paper_visual_inventory(
                     caption=caption,
                     caption_source="pdf_caption",
                     page_num=line.page_num,
-                    source="paper_text_stream",
+                    source="paper_document",
                     confidence=0.95,
                     notes=[f"caption_source_line_id:{caption_line.line_id}"],
                 )

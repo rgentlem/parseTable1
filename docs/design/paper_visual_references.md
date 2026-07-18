@@ -14,7 +14,8 @@ Readers often need to answer questions such as:
 - what caption belongs to a figure, even before figure-image extraction exists?
 
 The current paper-context path persists `paper_positioned_document.json`,
-`paper_text_stream.json`, `paper_markdown.md`, `paper_sections.json`, and
+`paper_document.json`, `paper_markdown.md`,
+`paper_sections.json`, and
 per-table context bundles. The visual-reference capability should extend that
 path with explicit visual-object and visual-reference artifacts instead of
 embedding this logic inside the table parser.
@@ -25,9 +26,8 @@ The planned document-context flow is:
 
 ```text
 paper_positioned_document.json
-  -> paper_text_stream.json
-  -> paper_markdown.md
-  -> paper_sections.json
+  -> paper_document.json
+  -> paper_markdown.md + paper_sections.json
   -> paper_visual_inventory.json
   -> paper_references.json
   -> table_contexts/*.json
@@ -94,7 +94,7 @@ Optional visual-identity fields:
 A standalone DOI printed with a table or figure is part of that visual's
 caption metadata and persistent identity. It should be stored on the existing
 `PaperVisual` record, beside `caption`, for both tables and figures. The source
-line remains unchanged in `paper_text_stream.json`, and
+line remains unchanged in `paper_positioned_document.json` and its canonical block, and
 `doi_source_line_id` preserves the direct join to that positioned evidence.
 
 Store the canonical DOI value, for example
@@ -402,11 +402,13 @@ Embedding a compact copy in `table_contexts/*.json` is optional convenience beha
 
 ## Relationship To Existing Artifacts
 
-`paper_positioned_document.json` and `paper_text_stream.json` remain the
-structured document-context artifacts. `paper_markdown.md` is a rendered view of
-the filtered text stream.
+`paper_positioned_document.json` remains the raw positioned artifact and
+`paper_document.json` is the canonical ownership artifact.
+`paper_markdown.md` is a prose-only rendered view of `PaperDocument.prose`.
 
-`paper_sections.json` remains the structured section view.
+`paper_sections.json` is the exact structured prose-segment view. The current
+visual-reference scanner still uses the legacy in-memory sections until the
+later prose-consumer alignment; it does not consume the transitional stream.
 
 `paper_variable_inventory.json` remains the variable-search artifact.
 
@@ -424,7 +426,8 @@ They add:
 
 ### Phase 1: Design And Schemas
 
-- Add explicit Pydantic models for `PaperVisual` and `PaperVisualReference`.
+- Add only the explicit typed structures required for `PaperVisual` and
+  `PaperVisualReference`.
 - Add tests for schema serialization.
 - Document output paths and field intent.
 

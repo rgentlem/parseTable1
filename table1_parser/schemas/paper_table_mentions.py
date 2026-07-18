@@ -11,7 +11,7 @@ TableMentionKind = Literal["caption_candidate", "prose_reference", "continuation
 
 
 class PaperTableMention(BaseModel):
-    """One mention of an in-paper table observed in the layout-aware text stream."""
+    """One mention of an in-paper table observed in the canonical document."""
 
     mention_id: str
     table_number: str
@@ -34,5 +34,5 @@ class PaperTableMention(BaseModel):
     source_line_role: str = "body"
     source_line_notes: list[str] = Field(default_factory=list)
     confidence: float = Field(default=0.8, ge=0.0, le=1.0)
-    source_artifact: str = "paper_text_stream.json"
+    source_artifact: str = "paper_document.json"
     notes: list[str] = Field(default_factory=list)

@@ -91,16 +91,6 @@ from table1_parser.schemas.paper_positioned_document import (
     PaperPositionedSpan,
     PaperPositionedWord,
 )
-from table1_parser.schemas.paper_text_stream import (
-    PaperTextBlock,
-    PaperTextBlockRole,
-    PaperTextLine,
-    PaperTextLineRole,
-    PaperTextOrientation,
-    PaperTextOrientationGroup,
-    PaperTextPage,
-    PaperTextStream,
-)
 from table1_parser.schemas.paper_footnotes import (
     FootnoteAnchor,
     FootnoteDefinition,
@@ -245,14 +235,6 @@ __all__ = [
     "PaperTableInventory",
     "PaperTableRecord",
     "PaperTableMention",
-    "PaperTextBlock",
-    "PaperTextBlockRole",
-    "PaperTextLine",
-    "PaperTextLineRole",
-    "PaperTextOrientation",
-    "PaperTextOrientationGroup",
-    "PaperTextPage",
-    "PaperTextStream",
     "PaperVariableInventory",
     "PageFurnitureCluster",
     "PageFurnitureRecurrenceScope",

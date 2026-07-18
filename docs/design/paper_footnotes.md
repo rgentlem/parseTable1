@@ -38,8 +38,8 @@ The parser should write a valid empty artifact when no candidates are found.
 ## Footer Record
 
 A footer is a table-local footer region detected from extracted table geometry
-or from positioned `paper_text_stream.json` line groups that were classified as
-local table footers.
+or from retained `paper_document.json` blocks whose source line IDs identify
+positioned lines classified as local table footers.
 It is persisted so R review can validate the footer boundary before reviewing
 definition splitting or anchor links. Footer records preserve the unsplit raw
 region; definition records split marker meanings from that same region.
@@ -71,13 +71,15 @@ Each `rows` item records:
 Footer detection consumes established ownership rather than rediscovering it.
 Rows inside the extracted grid come only from the matching final
 `TableRegion.footer_note_rows`. If the visual footer is outside that grid,
-`paper_text_stream.json` supplies only the positioned lines named by the final
-`body_footer` candidate's `TableBoundaryProposal.following_text_line_ids`.
+`paper_document.json` supplies canonical block membership and order for the
+lines named by the final `body_footer` candidate's
+`TableBoundaryProposal.following_text_line_ids`; `paper_positioned_document.json`
+supplies their raw text, typography, spans, and original geometry.
 `TableRegion` has already accepted those adjacent final-rule lines using
 mandatory typography, positioned prose continuity, and preceding-data
 evidence; the footnote stage does not decide ownership again. They are
 persisted with
-`source_artifact = "paper_text_stream.json"` and
+`source_artifact = "paper_document.json"` and
 `detection_basis = "table_boundary_final_rule_following_lines"`. Source line
 IDs, bounding boxes, font evidence, and unsplit raw text remain available.
 
@@ -222,9 +224,9 @@ definition source lines are then built from the matching final
 a definition marker opens a table-note block, and adjacent following rows
 without a new marker are appended as continuation text until the next marker
 block.
-`paper_text_stream.json` provides page-furniture-filtered visual lines with
-line bbox, page/column order, dominant font name, dominant font size, minimal
-span records, and document-level font-style counts.
+`paper_document.json` provides page-furniture-filtered canonical blocks;
+their source line IDs join to `paper_positioned_document.json` for line bbox,
+page/column order, font, and span evidence.
 `find_table_footer_definition_lines()`
 consumes only the positioned lines already attached to the final retained rule
 through `TableBoundaryProposal.following_text_line_ids`. It uses exact raised
@@ -233,11 +235,11 @@ whether that one adjacent band is a footer. Same-font size variation of at most
 0.2 PDF points remains one band so harmless 8.0/7.9-point jitter cannot truncate
 a definition paragraph. The retained group is persisted in `footers` before it
 is split into definition records. This keeps review artifacts aligned when the
-extraction grid omits a visual table footer but the layout-aware text stream
+extraction grid omits a visual table footer but the canonical document
 captures it, without scanning arbitrary text below the table bbox.
 An exact standalone visual-object DOI ending in `.tNNN` or `.gNNN` terminates
 this adjacent group before the DOI line. The line remains unchanged in
-`paper_text_stream.json` and belongs to the matching caption-bearing
+`paper_positioned_document.json` and its canonical block, and belongs to the matching caption-bearing
 `PaperVisual`; it is not footer or definition text.
 A one-character definition marker qualifies as smaller and raised when its
 font is at most 86% of the line's dominant size and its vertical center is

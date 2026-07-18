@@ -25,6 +25,22 @@ from table1_parser.schemas import (
 from table1_parser.text_cleaning import clean_text
 
 
+def canonical_bbox_for_orientation(
+    bbox: object,
+    *,
+    orientation: str,
+    orientation_source_bbox: tuple[float, float, float, float],
+) -> tuple[float, float, float, float]:
+    """Express one source bbox in its orientation group's canonical frame."""
+    left, top, right, bottom = (float(value) for value in bbox)
+    source_left, source_top, source_right, source_bottom = orientation_source_bbox
+    if orientation == "vertical_text_up":
+        return (source_bottom - bottom, left - source_left, source_bottom - top, right - source_left)
+    if orientation == "vertical_text_down":
+        return (top - source_top, source_right - right, bottom - source_top, source_right - left)
+    return (left, top, right, bottom)
+
+
 def build_paper_positioned_document(
     pdf_path: str,
     *,

@@ -34,9 +34,9 @@ SUPPLEMENTARY_INFORMATION_HEADING_PATTERN = re.compile(
 )
 
 
-def build_paper_table_mentions(paper_text_stream: object) -> list[PaperTableMention]:
-    """Build pre-extraction table mention records from layout-aware paper text."""
-    lines = list(getattr(paper_text_stream, "lines", []) or [])
+def build_paper_table_mentions(lines: Sequence[object]) -> list[PaperTableMention]:
+    """Build pre-extraction table mention records from canonical document lines."""
+    lines = list(lines)
     mentions: list[PaperTableMention] = []
     active_heading = ""
     for line_index, line in enumerate(lines):

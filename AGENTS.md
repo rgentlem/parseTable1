@@ -34,6 +34,33 @@ docs/implementation/parser_todo.md
 
 Use this file as the persistent implementation ToDo list. When work resolves, changes, or creates an important parser priority, update the ToDo list in the same change so project context does not get lost. Keep detailed epidemiology-table reasoning and implementation planning there or in a linked implementation note, not in the high-level design docs unless the schema, artifact contract, or pipeline design actually changes.
 
+## Canonical Paper Document Contract
+
+Before changing positioned text streaming, prose reading order, sections,
+paper Markdown, caption/entity ownership, bibliography ownership,
+supplementary-material ownership, or residual-block handling, read:
+
+```text
+docs/design/paper_document_plan_and_contract.md
+```
+
+The approved destination is one canonical interpreted `PaperDocument` built
+from `PaperPositionedDocument`. It owns one page-geometry-bearing block
+registry and partitions every retained block exactly once among narrative
+prose, document entities, and explicit unassigned residual. Entities include
+tables, figures, boxes, bibliography, and supplementary material, with
+distinct heading/caption/content/footer components where applicable.
+
+Do not add a separate `PaperReadingOrder`, second full-paper text stream, or
+parallel ownership artifact. `PaperTextStream` must be replaced atomically
+when this contract is implemented. Prose-only sections and Markdown, entity
+inventories, and other human-readable or specialized outputs must be derived
+views over `PaperDocument` or linked canonical artifacts. Every block must
+retain its page identity, exact page-space bbox, canonical bbox, orientation,
+source order, and source line IDs so proximity can be validated before blocks
+are linked. This design direction does not bypass the parser-logic or numeric-
+tolerance approval gates below.
+
 ## Parser Logic Approval Gate
 
 Do not change parser logic without explicit user approval for the specific
@@ -454,9 +481,24 @@ Public functions must include type hints.
 
 ## Data models
 
-Structured data must use **Pydantic models**.
+Use the simplest typed structure that provides concrete value for the artifact
+or boundary in question. Pydantic is prohibited by default. Do not introduce it
+for convention, uniformity, serialization convenience, or because adjacent
+code uses it.
 
-Avoid unstructured dictionaries where possible.
+Pydantic may be used only when a concrete, testable benefit is demonstrated for
+that specific boundary, such as required external-input validation, settings
+loading, LLM response enforcement, or runtime contract validation, and a
+simpler typed structure cannot provide it. Record that evidence before adding
+the dependency or model. Before implementing any Pydantic use, explicitly tell
+the user that Pydantic is proposed, state the demonstrated benefit and the
+simpler alternatives considered, and wait for explicit approval. Existing
+Pydantic code is not precedent for new Pydantic code; its value is subject to
+the audit recorded in `docs/implementation/parser_todo.md`.
+
+Avoid unstructured dictionaries when a stable shape is genuinely required,
+but do not replace them automatically with a modeling framework or a hierarchy
+of wrapper objects.
 
 ## File organization
 

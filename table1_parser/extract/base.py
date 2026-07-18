@@ -12,7 +12,6 @@ from table1_parser.schemas import (
     PaperPageFurniture,
     PaperPositionedDocument,
     PaperTableMention,
-    PaperTextStream,
 )
 
 
@@ -27,7 +26,7 @@ class BaseExtractor(ABC):
         paper_page_furniture: PaperPageFurniture | None = None,
         paper_positioned_document: PaperPositionedDocument | None = None,
         paper_table_mentions: Sequence[PaperTableMention] | None = None,
-        paper_text_stream: PaperTextStream | None = None,
+        paper_document: dict[str, object] | None = None,
         bibliography_entries: Sequence[BibliographyEntry] | None = None,
     ) -> list[ProvisionalExtractedTable]:
         """Detect internal positioned-grid candidates from a PDF."""

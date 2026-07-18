@@ -142,7 +142,8 @@ Column diagnostics should be easy to scan because they are the main current blin
 
 ## Design Constraints
 
-- Keep the persisted shape as a direct Pydantic JSON dump.
+- Keep the persisted shape as a direct serialization of the canonical typed
+  structure.
 - Keep one report per normalized table.
 - Preserve `table_id` as the join key to `normalized_tables.json`, `table_definitions.json`, `parsed_tables.json`, and `table_processing_status.json`.
 - Use row and column indices from the normalized table coordinate system.

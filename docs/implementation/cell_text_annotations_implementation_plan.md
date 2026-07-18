@@ -15,7 +15,8 @@ Rotated-table follow-up: `docs/implementation/rotated_cell_text_annotations_impl
 ## Steps
 
 1. [x] Schema and payload
-   - Add `CellTextAnnotation` and `CellTextAnnotationTable` Pydantic models.
+   - Add only the typed records required for `CellTextAnnotation` and
+     `CellTextAnnotationTable`.
    - Export them from `table1_parser.schemas`.
    - Add a payload helper for JSON serialization.
 

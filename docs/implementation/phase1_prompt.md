@@ -28,7 +28,7 @@ Implement:
 
 1. Package scaffold
 2. Configuration module
-3. Pydantic schemas
+3. Typed schemas
 4. CLI scaffold
 5. Basic tests
 
@@ -65,7 +65,7 @@ tests/
 
 # Schemas to Implement
 
-Implement Pydantic models for:
+Implement typed records for:
 
 ### TableCell
 Fields:
@@ -225,7 +225,7 @@ llm_model
 max_table_candidates  
 heuristic_confidence_threshold
 
-Use a Pydantic settings class.
+Use a typed settings structure chosen for demonstrated value.
 
 ---
 
@@ -259,7 +259,7 @@ After Phase 1:
 The repository should contain:
 
 - working Python package
-- Pydantic schemas
+- typed schemas
 - CLI stub
 - config module
 - tests passing with pytest
@@ -273,7 +273,7 @@ The code should import correctly and install locally.
 Follow rules in AGENTS.md:
 
 - type hints everywhere
-- Pydantic models
+- typed records
 - modular structure
 - docstrings on public classes
 

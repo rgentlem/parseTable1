@@ -4,10 +4,10 @@ This document lists the implementation steps for the LLM semantic inference phas
 
 ## 1. Add document-context extraction
 
-- build the shared positioned paper text stream
-- write `paper_positioned_document.json`, `paper_text_stream.json`, and rendered
+- build the shared positioned paper evidence and canonical document
+- write `paper_positioned_document.json`, `paper_document.json`, and rendered
   `paper_markdown.md`
-- parse rendered stream headings into `paper_sections.json`
+- write `paper_sections.json` from canonical prose segments
 
 ## 2. Add table-focused retrieval
 

@@ -21,6 +21,11 @@ Then use the documents below as needed.
 - `docs/design/parsing_output_design.md`
   Current JSON artifact design, canonical models, and output-file intent.
 
+- `docs/design/paper_document_plan_and_contract.md`
+  Approved plan and durable contract for atomically replacing the full-paper
+  text stream with one canonical interpreted `PaperDocument` that owns the
+  block registry, narrative prose, document entities, and unresolved residual.
+
 - `docs/design/cell_text_annotations.md`
   Extraction-side sidecar artifact for superscripts, subscripts, and small marker symbols attached to table cells.
 
@@ -98,7 +103,7 @@ Then use the documents below as needed.
   Scope for the proposed intermediate `TableDefinition` stage between `NormalizedTable` and `ParsedTable`.
 
 - `docs/design/table_definition_schema.md`
-  Proposed Pydantic schema design for `TableDefinition` and related models.
+  Proposed typed schema design for `TableDefinition` and related records.
 
 - `docs/design/observed_tableone_component.md`
   Design for the downstream R-first, print-canonical semantic object built from parser JSON outputs.
@@ -141,10 +146,9 @@ Then use the documents below as needed.
 ## Supporting References
 
 - `docs/design/paper_markdown_spec.md`
-  Design intent for `paper_positioned_document.json`, layout-aware
-  `paper_text_stream.json`, and rendered `paper_markdown.md`, including
-  expected variation in section naming, heading structure, page-furniture
-  filtering, and multi-column paper order.
+  Contract for the prose-only `paper_markdown.md` and `paper_sections.json`
+  views over `PaperDocument.prose`, with raw text and geometry retained in the
+  positioned-document artifacts.
 
 - `docs/design/paper_visual_references.md`
   Planned paper-level visual-object and visual-reference artifacts for resolving table/figure mentions to actual in-paper tables and figures, preserving stable anchors for nearby text access, and later linking figure-image artifacts.
@@ -212,7 +216,10 @@ Then use the documents below as needed.
   Keep both documents aligned with the current implementation, not just the intended architecture.
 
 - If you are changing positioned text streaming, rendered markdown views, section parsing, table/figure reference collection, or table-context retrieval:
-  read `docs/design/paper_markdown_spec.md`, `docs/design/paper_visual_references.md`, `docs/design/paper_variable_inventory.md`, and `docs/design/llm_semantic_inference_phase.md`.
+  first read `docs/design/paper_document_plan_and_contract.md`, then read
+  `docs/design/paper_markdown_spec.md`, `docs/design/paper_visual_references.md`,
+  `docs/design/paper_variable_inventory.md`, and
+  `docs/design/llm_semantic_inference_phase.md`.
 
 - If you are changing paper-level variable search, section-priority logic, or cross-table semantic support:
   read `docs/design/paper_variable_inventory.md`, `docs/design/paper_markdown_spec.md`, and `docs/design/llm_semantic_inference_phase.md`.

@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from statistics import median
 
+from table1_parser.context.paper_document import iter_paper_document_lines
 from table1_parser.context.visual_references import (
     VISUAL_OBJECT_DOI_PATTERN,
     parse_visual_label,
@@ -26,7 +27,7 @@ from table1_parser.schemas import (
     FootnoteFooterRow,
     FootnoteLink,
     PaperFootnotes,
-    PaperTextStream,
+    PaperPositionedDocument,
     ResolvedTableSet,
     TableBoundaryProposal,
 )
@@ -257,20 +258,26 @@ def _has_extracted_footer_definition_start(row_text: str) -> bool:
 def find_table_footer_definition_lines(
     extracted_tables: Sequence[ExtractedTable],
     resolved_table_set: ResolvedTableSet | None = None,
-    paper_text_stream: PaperTextStream | None = None,
+    paper_document: dict[str, object] | None = None,
+    paper_positioned_document: PaperPositionedDocument | None = None,
     table_boundary_proposals: Sequence[TableBoundaryProposal] | None = None,
     table_regions: Sequence[TableRegion] | None = None,
 ) -> list[FootnoteDefinitionCandidateLine]:
     """Project positioned lines from the footer boundary accepted by TableRegion."""
-    if paper_text_stream is None:
+    if paper_document is None or paper_positioned_document is None:
         return []
+    document_lines = list(
+        iter_paper_document_lines(paper_document, paper_positioned_document)
+    )
     visual_id_by_table_id = _table_visual_ids(extracted_tables, resolved_table_set)
     proposal_by_table_id = {
         proposal.table_id: proposal for proposal in table_boundary_proposals or []
     }
     region_by_table_id = {region.table_id: region for region in table_regions or []}
-    lines_by_id = {line.line_id: line for line in paper_text_stream.lines}
-    page_heights = {page.page_num: page.page_height for page in paper_text_stream.pages}
+    lines_by_id = {line.line_id: line for line in document_lines}
+    page_heights = {
+        page["page_num"]: page["height"] for page in paper_document["pages"]
+    }
 
     footer_lines: list[FootnoteDefinitionCandidateLine] = []
     for table_position, table in enumerate(extracted_tables):
@@ -297,7 +304,7 @@ def find_table_footer_definition_lines(
             if footer_bounds and table_bbox is not None:
                 footer_line_ids = [
                     line.line_id
-                    for line in paper_text_stream.lines
+                    for line in document_lines
                     if line.page_num == table.page_num
                     and line.canonical_bbox is not None
                     and any(
@@ -464,7 +471,7 @@ def find_table_footer_definition_lines(
                 line_index=(
                     min(group_line_indices) if group_line_indices else table_position
                 ),
-                source_artifact="paper_text_stream.json",
+                source_artifact="paper_document.json",
                 confidence=0.9 if structured_marker else 0.82,
                 marker_evidence=marker_evidence,
                 notes=notes,
@@ -473,10 +480,10 @@ def find_table_footer_definition_lines(
     return footer_lines
 
 
-def build_paper_footnote_footers_from_text_stream_lines(
+def build_paper_footnote_footers_from_document_lines(
     footer_lines: Sequence[FootnoteDefinitionCandidateLine],
 ) -> list[FootnoteFooter]:
-    """Build reviewable table-footer regions from paper text-stream line groups."""
+    """Build reviewable table-footer regions from canonical document line groups."""
     existing_keys: set[tuple[str | None, str]] = set()
     footers: list[FootnoteFooter] = []
     for line_index, line in enumerate(footer_lines):
@@ -491,18 +498,18 @@ def build_paper_footnote_footers_from_text_stream_lines(
         row_idx = line.line_index if line.line_index is not None else line_index
         notes = [
             *line.notes,
-            "table_footer_lines_detected_from_text_stream_geometry",
+            "table_footer_lines_detected_from_document_geometry",
             f"source_line_id:{line.line_id}",
         ]
         if line.bbox is not None:
             notes.append("bbox:" + ",".join(f"{part:.3f}" for part in line.bbox))
         footers.append(
             FootnoteFooter(
-                footer_id=f"footer:text_stream:{line_index}",
+                footer_id=f"footer:document:{line_index}",
                 table_id=line.table_id,
                 visual_id=line.visual_id,
                 page_num=line.page_num,
-                source_artifact=line.source_artifact or "paper_text_stream.json",
+                source_artifact=line.source_artifact or "paper_document.json",
                 detection_basis="table_region_raw_positioned_footer_band",
                 start_row_idx=row_idx,
                 end_row_idx=row_idx,

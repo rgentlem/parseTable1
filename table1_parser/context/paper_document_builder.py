@@ -1,22 +1,21 @@
-"""Build a layout-aware paper text stream from positioned PDF text."""
+"""Build the canonical paper document from positioned PDF text."""
 
 from __future__ import annotations
 
 import re
 from collections import Counter
 from pathlib import Path
+from types import SimpleNamespace
 
+from table1_parser.context.paper_positioned_document import canonical_bbox_for_orientation
 from table1_parser.page_furniture_mask import page_furniture_cluster_ids_for_bbox
+from table1_parser.paper_bibliography import build_bibliography_entries_from_layout_lines
 from table1_parser.paper_page_furniture import normalize_page_furniture_text
 from table1_parser.schemas import (
+    BibliographyEntry,
     PaperPageFurniture,
     PaperPositionedDocument,
     PaperPositionedLine,
-    PaperTextBlock,
-    PaperTextLine,
-    PaperTextOrientationGroup,
-    PaperTextPage,
-    PaperTextStream,
 )
 from table1_parser.text_cleaning import clean_text
 
@@ -26,30 +25,31 @@ BODY_TEXT_STYLE_MAX_FONT_SIZE = 18.0
 TABLE_CAPTION_LINE_PATTERN = re.compile(r"^\s*table\s+[A-Za-z]?\d+[A-Za-z]?\b", re.IGNORECASE)
 
 
-def build_paper_text_stream(
+def build_paper_document(
     pdf_path: str,
     *,
     paper_page_furniture: PaperPageFurniture | None = None,
     paper_positioned_document: PaperPositionedDocument | None = None,
     paper_id: str | None = None,
-) -> PaperTextStream:
-    """Build full-paper text ordered by page, orientation, source block, and column."""
+) -> tuple[dict[str, object], list[BibliographyEntry]]:
+    """Build canonical block ownership from positioned layout evidence."""
     if paper_positioned_document is None:
         from table1_parser.context.paper_positioned_document import build_paper_positioned_document
 
         paper_positioned_document = build_paper_positioned_document(pdf_path, paper_id=paper_id)
     if paper_positioned_document.page_count <= 0:
-        return PaperTextStream(
-            paper_id=paper_id or Path(pdf_path).stem,
-            source_pdf=Path(pdf_path).name,
-            metadata={
-                "diagnostics": ["positioned_document_unavailable"],
-                "source_artifacts": ["paper_positioned_document.json"],
-            },
-        )
+        return {
+            "paper_id": paper_id or Path(pdf_path).stem,
+            "source_pdf": Path(pdf_path).name,
+            "pages": [],
+            "blocks": [],
+            "prose": {"segments": []},
+            "entities": [],
+            "unassigned_block_ids": [],
+        }, []
 
-    stream_lines: list[PaperTextLine] = []
-    stream_pages: list[PaperTextPage] = []
+    stream_lines: list[SimpleNamespace] = []
+    stream_pages: list[SimpleNamespace] = []
     font_style_counts: Counter[tuple[str, float]] = Counter()
     removed_furniture_line_count = 0
     furniture_text_keys, furniture_text_patterns = _page_furniture_text_matchers(paper_page_furniture)
@@ -82,7 +82,7 @@ def build_paper_text_stream(
             records_by_orientation[orientation].append(record)
 
         ordered_groups: list[tuple[tuple[float, float], list[dict[str, object]]]] = []
-        orientation_groups: list[PaperTextOrientationGroup] = []
+        orientation_groups: list[SimpleNamespace] = []
         diagnostics = list(page.diagnostics)
         upright_columns: tuple[int, list[float], list[tuple[float, float]]] | None = None
         for orientation in ("upright", "vertical_text_up", "vertical_text_down"):
@@ -104,7 +104,7 @@ def build_paper_text_stream(
                     {
                         **record,
                         "source_bbox": record_source_bbox,
-                        "bbox": _canonical_bbox(
+                        "bbox": canonical_bbox_for_orientation(
                             record_source_bbox,
                             orientation=orientation,
                             orientation_source_bbox=group_source_bbox,
@@ -121,7 +121,7 @@ def build_paper_text_stream(
                 record["group_column_count"] = group_column_count
             ordered_groups.append(((source_top, source_left), ordered_records))
             orientation_groups.append(
-                PaperTextOrientationGroup(
+                SimpleNamespace(
                     group_id=group_id,
                     orientation=orientation,
                     source_bbox=group_source_bbox,
@@ -171,7 +171,7 @@ def build_paper_text_stream(
                 ):
                     font_style_counts[(record_font, round(float(record_font_size), 1))] += record_character_count
             stream_lines.append(
-                PaperTextLine(
+                SimpleNamespace(
                     line_id=str(record["source_line_id"]),
                     page_num=page.page_num,
                     block_index=int(record["block_index"]) if isinstance(record.get("block_index"), int) else None,
@@ -195,7 +195,7 @@ def build_paper_text_stream(
             )
         removed_furniture_line_count += removed_on_page
         stream_pages.append(
-            PaperTextPage(
+            SimpleNamespace(
                 page_num=page.page_num,
                 page_width=page.page_width,
                 page_height=page.page_height,
@@ -225,7 +225,7 @@ def build_paper_text_stream(
         if isinstance(dominant_body_text_style, dict)
         else None
     )
-    classified_stream_lines: list[PaperTextLine] = []
+    classified_stream_lines: list[SimpleNamespace] = []
     for line in stream_lines:
         visible_spans = [
             span
@@ -271,8 +271,9 @@ def build_paper_text_stream(
                 is_heading = False
         if is_heading:
             classified_stream_lines.append(
-                line.model_copy(
-                    update={
+                SimpleNamespace(
+                    **{
+                        **vars(line),
                         "role": "heading",
                         "confidence": 0.86,
                         "notes": [*line.notes, "layout_section_heading"],
@@ -282,8 +283,8 @@ def build_paper_text_stream(
             continue
         classified_stream_lines.append(line)
 
-    text_blocks: list[PaperTextBlock] = []
-    current_block_lines: list[PaperTextLine] = []
+    text_blocks: list[SimpleNamespace] = []
+    current_block_lines: list[SimpleNamespace] = []
     for line in [*classified_stream_lines, None]:
         if current_block_lines and (
             line is None
@@ -293,7 +294,7 @@ def build_paper_text_stream(
         ):
             block_roles = {block_line.role for block_line in current_block_lines}
             text_blocks.append(
-                PaperTextBlock(
+                SimpleNamespace(
                     block_id=(
                         f"paper_text_block:page-{current_block_lines[0].page_num}:"
                         f"{current_block_lines[0].orientation}:"
@@ -327,40 +328,291 @@ def build_paper_text_stream(
         if line is not None:
             current_block_lines.append(line)
 
-    return PaperTextStream(
-        paper_id=paper_id or Path(pdf_path).stem,
-        source_pdf=Path(pdf_path).name,
-        lines=classified_stream_lines,
-        blocks=text_blocks,
-        pages=stream_pages,
-        metadata={
-            "source_artifacts": ["paper_positioned_document.json", "paper_page_furniture.json"],
-            "line_count": len(stream_lines),
-            "page_count": len(stream_pages),
-            "removed_page_furniture_line_count": removed_furniture_line_count,
-            "column_order": "page_then_orientation_group_then_source_block_column_then_block_top",
-            "font_style_character_counts": font_style_summary,
-            "dominant_body_text_style": dominant_body_text_style,
-        },
+    bibliography_entries, bibliography_heading_line_ids = (
+        build_bibliography_entries_from_layout_lines(classified_stream_lines)
     )
+    if bibliography_heading_line_ids:
+        heading_ids = set(bibliography_heading_line_ids)
+        classified_stream_lines = [
+            SimpleNamespace(
+                **{
+                    **vars(line),
+                    "role": "heading",
+                    "confidence": 0.98,
+                    "notes": [*line.notes, "confirmed_bibliography_heading"],
+                }
+            )
+            if line.line_id in heading_ids
+            else line
+            for line in classified_stream_lines
+        ]
+    lines_by_id = {line.line_id: line for line in classified_stream_lines}
+    blocks: list[SimpleNamespace] = []
+    for block in text_blocks:
+        block_lines = [lines_by_id[line_id] for line_id in block.line_ids]
+        segments: list[list[SimpleNamespace]] = []
+        segment: list[SimpleNamespace] = []
+        for line in block_lines:
+            if (
+                segment
+                and line.role != segment[-1].role
+                and {line.role, segment[-1].role} == {"heading", "body"}
+            ):
+                segments.append(segment)
+                segment = []
+            segment.append(line)
+        if segment:
+            segments.append(segment)
+        for segment_index, segment_lines in enumerate(segments):
+            roles = {line.role for line in segment_lines}
+            blocks.append(
+                SimpleNamespace(
+                    **{
+                        **vars(block),
+                        "block_id": (
+                            block.block_id
+                            if len(segments) == 1
+                            else f"{block.block_id}:segment-{segment_index + 1}"
+                        ),
+                        "order": len(blocks),
+                        "bbox": (
+                            min(line.bbox[0] for line in segment_lines),
+                            min(line.bbox[1] for line in segment_lines),
+                            max(line.bbox[2] for line in segment_lines),
+                            max(line.bbox[3] for line in segment_lines),
+                        ),
+                        "canonical_bbox": (
+                            min(line.canonical_bbox[0] for line in segment_lines),
+                            min(line.canonical_bbox[1] for line in segment_lines),
+                            max(line.canonical_bbox[2] for line in segment_lines),
+                            max(line.canonical_bbox[3] for line in segment_lines),
+                        ),
+                        "line_ids": [line.line_id for line in segment_lines],
+                        "role": next(iter(roles)) if len(roles) == 1 else "mixed",
+                        "text": "\n".join(line.text for line in segment_lines),
+                    }
+                )
+            )
 
-
-def paper_text_stream_to_markdown(blocks: list[PaperTextBlock]) -> str:
-    """Render ordered paper text blocks as lightweight markdown."""
-    markdown_lines: list[str] = []
-    previous_page_num: int | None = None
+    groups = {
+        group.group_id: group
+        for page in stream_pages
+        for group in page.orientation_groups
+    }
+    block_layouts: dict[str, tuple[int, str, str, int]] = {}
+    block_styles: dict[str, tuple[str, float]] = {}
+    eligible_body_ids: set[str] = set()
+    eligible_heading_ids: set[str] = set()
+    sentence_ids: set[str] = set()
+    body_style_counts: dict[tuple[str, float], int] = {}
     for block in blocks:
-        if previous_page_num is not None and block.page_num != previous_page_num:
-            markdown_lines.append("")
-        previous_page_num = block.page_num
-        if block.role == "heading":
-            if markdown_lines and markdown_lines[-1] != "":
-                markdown_lines.append("")
-            markdown_lines.append(f"## {clean_text(block.text)}")
-            markdown_lines.append("")
+        block_lines = [lines_by_id[line_id] for line_id in block.line_ids]
+        line_indices = [line.line_index for line in block_lines]
+        group = groups.get(block.orientation_group_id)
+        spanning = bool(block_lines) and all(
+            "full_width_line" in line.notes for line in block_lines
+        )
+        eligible = (
+            block.orientation == "upright"
+            and group is not None
+            and (
+                spanning
+                or (
+                    block.column_index < len(group.column_bands)
+                    and group.column_bands[block.column_index][0]
+                    <= block.canonical_bbox[0]
+                    and block.canonical_bbox[2]
+                    <= group.column_bands[block.column_index][1]
+                )
+            )
+            and line_indices
+            and all(line_index is not None for line_index in line_indices)
+            and line_indices
+            == list(range(line_indices[0], line_indices[0] + len(line_indices)))
+            and all(
+                line.page_num == block.page_num
+                and line.block_index == block.source_block_index
+                and line.orientation_group_id == block.orientation_group_id
+                and line.column_index == block.column_index
+                and line.column_count == block.column_count
+                for line in block_lines
+            )
+        )
+        if not eligible:
             continue
-        markdown_lines.append(block.text)
-    return "\n".join(markdown_lines).strip() + ("\n" if markdown_lines else "")
+        block_layouts[block.block_id] = (
+            block.page_num,
+            block.orientation_group_id,
+            "spanning" if spanning else "column",
+            0 if spanning else block.column_index,
+        )
+        if block.role == "heading":
+            eligible_heading_ids.add(block.block_id)
+            continue
+        if block.role != "body" or any(
+            line.dominant_font is None or line.dominant_font_size is None
+            for line in block_lines
+        ):
+            continue
+        fonts = {line.dominant_font for line in block_lines}
+        sizes = [line.dominant_font_size for line in block_lines]
+        if len(fonts) != 1 or max(sizes) - min(sizes) >= 0.5:
+            continue
+        style = (next(iter(fonts)), max(sizes))
+        block_styles[block.block_id] = style
+        eligible_body_ids.add(block.block_id)
+        if re.search(r"[.!?](?:[\"'’”)]*)?(?=\s|$)", block.text):
+            sentence_ids.add(block.block_id)
+            body_style_counts[style] = body_style_counts.get(style, 0) + sum(
+                len(line.text) for line in block_lines
+            )
+    body_style = (
+        max(body_style_counts, key=body_style_counts.__getitem__)
+        if body_style_counts
+        else None
+    )
+    paragraph_ids = {
+        block.block_id
+        for block in blocks
+        if (
+            block.block_id in eligible_body_ids
+            and block_styles.get(block.block_id) == body_style
+            and block_layouts[block.block_id][2] != "spanning"
+            and any(
+                "\n" in block.text[match.end() :]
+                for match in re.finditer(
+                    r"(?:[!?]|(?<!\d)\.)(?:[\"'’”)]*)?(?=\s|$)", block.text
+                )
+            )
+        )
+    }
+    prose_ids = set(paragraph_ids)
+    for block_index, block in enumerate(blocks[1:], start=1):
+        previous = blocks[block_index - 1]
+        if (
+            previous.block_id in eligible_heading_ids
+            and block.block_id in sentence_ids
+            and block_styles.get(block.block_id) == body_style
+            and block_layouts[previous.block_id][:2]
+            == block_layouts[block.block_id][:2]
+        ):
+            prose_ids.add(block.block_id)
+        continuation = previous
+        crossed_spanning_residual = False
+        if (
+            previous.block_id not in prose_ids
+            and block_layouts.get(previous.block_id, (None, None, None, None))[2]
+            == "spanning"
+            and block_index > 1
+        ):
+            continuation = blocks[block_index - 2]
+            crossed_spanning_residual = True
+        if (
+            continuation.block_id in prose_ids
+            and block.block_id in eligible_body_ids
+            and block_styles.get(block.block_id) == body_style
+            and block.block_id not in prose_ids
+            and re.search(r"[.!?](?:[\"'’”)]*)\s*$", continuation.text) is None
+            and (
+                continuation.page_num != block.page_num
+                or block_layouts.get(continuation.block_id)
+                != block_layouts.get(block.block_id)
+                or crossed_spanning_residual
+            )
+        ):
+            prose_ids.add(block.block_id)
+    for block_index, block in enumerate(blocks[:-1]):
+        next_block = blocks[block_index + 1]
+        if (
+            block.block_id in eligible_heading_ids
+            and next_block.block_id in prose_ids
+            and block_layouts[block.block_id][:2]
+            == block_layouts[next_block.block_id][:2]
+        ):
+            prose_ids.add(block.block_id)
+
+    prose_segments: list[dict[str, object]] = []
+    heading_block_ids: list[str] = []
+    paragraphs: list[dict[str, object]] = []
+    paragraph_count = 0
+    for block in blocks:
+        if block.block_id not in prose_ids:
+            continue
+        if block.role == "heading":
+            if paragraphs:
+                prose_segments.append(
+                    {
+                        "segment_id": f"paper-prose-segment-{len(prose_segments)}",
+                        "heading_block_ids": heading_block_ids,
+                        "paragraphs": paragraphs,
+                    }
+                )
+                heading_block_ids = []
+                paragraphs = []
+            heading_block_ids.append(block.block_id)
+            continue
+        paragraphs.append(
+            {
+                "paragraph_id": f"paper-paragraph-{paragraph_count}",
+                "block_ids": [block.block_id],
+                "text": block.text,
+            }
+        )
+        paragraph_count += 1
+    if heading_block_ids or paragraphs:
+        prose_segments.append(
+            {
+                "segment_id": f"paper-prose-segment-{len(prose_segments)}",
+                "heading_block_ids": heading_block_ids,
+                "paragraphs": paragraphs,
+            }
+        )
+    return {
+        "paper_id": paper_id or Path(pdf_path).stem,
+        "source_pdf": Path(pdf_path).name,
+        "pages": [
+            {
+                "page_num": page.page_num,
+                "width": page.page_width,
+                "height": page.page_height,
+                "orientation_groups": [
+                    {
+                        "group_id": group.group_id,
+                        "orientation": group.orientation,
+                        "source_bbox": group.source_bbox,
+                        "canonical_width": group.canonical_width,
+                        "canonical_height": group.canonical_height,
+                        "column_boundaries": group.column_boundaries,
+                        "column_bands": group.column_bands,
+                    }
+                    for group in page.orientation_groups
+                ],
+            }
+            for page in stream_pages
+        ],
+        "blocks": [
+            {
+                "block_id": block.block_id,
+                "page_num": block.page_num,
+                "source_block_index": block.source_block_index,
+                "role": block.role,
+                "bbox": block.bbox,
+                "canonical_bbox": block.canonical_bbox,
+                "orientation": block.orientation,
+                "orientation_group_id": block.orientation_group_id,
+                "column_index": block.column_index,
+                "column_count": block.column_count,
+                "line_ids": block.line_ids,
+                "text": block.text,
+            }
+            for block in blocks
+        ],
+        "prose": {"segments": prose_segments},
+        "entities": [],
+        "unassigned_block_ids": [
+            block.block_id for block in blocks if block.block_id not in prose_ids
+        ],
+    }, bibliography_entries
 
 
 def _line_record_from_positioned_line(line: PaperPositionedLine) -> dict[str, object]:
@@ -390,20 +642,6 @@ def _line_orientation(direction: object) -> str:
             return "vertical_text_up" if dy < 0.0 else "vertical_text_down"
     return "upright"
 
-
-def _canonical_bbox(
-    bbox: object,
-    *,
-    orientation: str,
-    orientation_source_bbox: tuple[float, float, float, float],
-) -> tuple[float, float, float, float]:
-    left, top, right, bottom = (float(value) for value in bbox)
-    source_left, source_top, source_right, source_bottom = orientation_source_bbox
-    if orientation == "vertical_text_up":
-        return (source_bottom - bottom, left - source_left, source_bottom - top, right - source_left)
-    if orientation == "vertical_text_down":
-        return (top - source_top, source_right - right, bottom - source_top, source_right - left)
-    return (left, top, right, bottom)
 
 def _page_furniture_text_matchers(
     paper_page_furniture: PaperPageFurniture | None,

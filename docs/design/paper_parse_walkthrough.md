@@ -53,7 +53,7 @@ Today that directory may contain:
 - `paper_style_profile.json`
 - `paper_page_furniture.json`
 - `paper_markdown.md`
-- `paper_text_stream.json`
+- `paper_document.json`
 - `paper_sections.json`
 - `paper_table_mentions.json`
 - `paper_visual_inventory.json`
@@ -136,13 +136,14 @@ text/font payloads, classify any boundary, or alter the extracted table grid.
 
 `paper_page_furniture.json` records repeated page text observations, recurrence
 clusters, and generic ignored regions. It is built from
-`paper_positioned_document.json` before layout-aware text streaming, section
+`paper_positioned_document.json` before layout-aware document construction, section
 parsing, bibliography extraction, and table extraction. Repeated page-furniture
-lines are removed from `paper_text_stream.json`, and `paper_markdown.md` is
-rendered from that filtered stream. Table extraction consumes the positioned
+lines are removed before `paper_document.json` is built; `paper_markdown.md`
+then renders only the document's accepted prose.
+Table extraction consumes the positioned
 document's words, chars, page text, and rule segments; cell text annotation
 consumes the same positioned characters. The page-furniture artifact is still
-passed into table extraction, cell text annotation, and text-stream footer
+passed into table extraction, cell text annotation, and document-linked footer
 detection as an early geometry mask. It is written even when no repeated page
 furniture is found.
 Standalone printed page numbers do not need to equal the PDF page index: they
@@ -167,11 +168,11 @@ when a raised marker begins the first populated footer cell; raw extracted
 strings that visually run the marker into the next word are preserved as
 provenance but do not define the marker.
 
-`paper_text_stream.json` is the filtered and layout-ordered view of
-`paper_positioned_document.json`. It preserves each source line ID and original
-page-space bbox. Lines are partitioned by writing direction; rotated groups are
-ordered through an upright group-local projection recorded as
-`canonical_bbox`, with direction, orientation, and orientation-group provenance.
+`paper_document.json` is the filtered, layout-ordered, and ownership-partitioned
+view of `paper_positioned_document.json`. Its blocks preserve source line IDs
+and original page-space bboxes. Lines are partitioned by writing direction;
+rotated groups are ordered through an upright group-local projection recorded
+as `canonical_bbox`, with orientation-group provenance.
 Context adjacency stops at page and orientation-group boundaries. It is also the
 positioned text source for footer candidates absent from the extracted grid.
 The stream preserves visual lines, page/column order, line bbox, dominant font
@@ -208,8 +209,9 @@ caption-decorating symbols are not promoted as definitions. The complete
 caption remains raw provenance.
 A standalone DOI ending in an exact visual-object suffix such as `.t001` or
 `.g002` terminates an adjacent external footer block before the DOI line. The
-line remains unchanged in `paper_text_stream.json` and is consumed as visual
-caption metadata by `paper_visual_inventory.json`, not as definition text.
+line remains unchanged in `paper_positioned_document.json` and its canonical
+block, and is consumed as visual caption metadata by
+`paper_visual_inventory.json`, not as definition text.
 An extracted candidate's existing `candidate_visual_object_barrier_bbox`
 similarly terminates the external scan at the image's top edge when that edge
 is structurally below the canonical table bbox. It limits footer ownership but
@@ -231,8 +233,8 @@ bibliographic resolution belongs in `paper_bibliography.json`.
 `paper_bibliography.json` records the paper's own bibliography entries,
 numbered or unnumbered, and observed numeric reference markers linked to
 numbered entries. Bibliography entries are extracted from layout-aware,
-page-furniture-filtered `paper_text_stream.json` before table extraction, with
-block-derived sections retained as fallback. The layout reader uses one
+page-furniture-filtered `PaperDocument` lines joined to positioned evidence
+before table extraction, with block-derived sections retained as fallback. The layout reader uses one
 entry-boundary workflow: read page, column, then vertical position; start a new
 entry when the row returns to the column's left edge, either at a numeric label
 or at the first author/organization text in a hanging-indent list; keep indented
@@ -249,7 +251,7 @@ reference-marker links are added later after cell text annotations are
 available.
 
 `paper_table_mentions.json` is built from the page-furniture-filtered
-layout-aware text stream before table extraction. It records each observed
+`PaperDocument` blocks joined to positioned lines before table extraction. It records each observed
 `Table N` mention as a caption candidate, continuation label, or prose
 reference, preserving line IDs, the source-line bbox, local context, and cue
 evidence such as a previous line ending in `shown in`. Continuation labels also
@@ -264,15 +266,15 @@ cannot turn a prose reference into the start of a table candidate.
 
 Raw and derived artifacts remain side by side through the R handoff:
 `paper_positioned_document.json` preserves shared source geometry,
-`paper_text_stream.json` adds orientation-aware reading order without replacing
-it. It orders positioned source blocks rather than independently sorting their
+while `paper_document.json` adds orientation-aware reading order and canonical
+ownership without replacing it. It orders positioned source blocks rather than independently sorting their
 lines: block-local lines retain source order, one-column blocks sort by top then
 left, and detected columns read top-to-bottom before proceeding left-to-right.
-Its typed `PaperTextBlock` records preserve the block order, source block index,
+Its block registry preserves the block order, source block index,
 orientation-group ID, exact page-space and canonical union bboxes, column index
 and count, ordered source line IDs, role, and text. Font and span evidence
 remains on those source lines rather than being copied into the block. The
-block's non-operative `prose_candidate` flag uses only upright source
+prose ownership decision uses only upright source
 continuity, exact observed column extent, one font name with a
 largest-minus-smallest line font-size span below 0.5, sentence evidence,
 confirmed headings, and unfinished prose crossing a page, column, or observed
@@ -298,7 +300,7 @@ they do not replace them.
 `paper_style_profile.json` summarizes the document's observed conventions for
 footnote markers, bibliography/reference-list style, table caption placement,
 figure caption evidence, and table/figure prose references. It is built from
-the existing text-stream, table, footnote, bibliography, visual-inventory, and
+the existing document, table, footnote, bibliography, visual-inventory, and
 visual-reference artifacts. It also records consistency checks, such as whether
 a predicted numbered bibliography actually has numbered entries. It is review
 evidence only; it does not rewrite footnote links or bibliography entries.
@@ -1197,9 +1199,9 @@ paper context parsing and table extraction.
 
 This paper-level artifact collects PyMuPDF page text lines, normalizes text only
 for matching, clusters repeated text in stable page-relative positions, and emits
-generic ignored regions. Paper text streaming, markdown filtering, table
-extraction, cell text annotation, and text-stream footer detection use those
-regions before downstream artifacts are built.
+generic ignored regions. Document construction, Markdown filtering, table
+extraction, cell text annotation, and document-linked footer detection use
+those regions before downstream artifacts are built.
 
 ## Step 13: Build Paper-Level Document Context
 
@@ -1210,59 +1212,57 @@ This is separate from table extraction.
 The current paper-context path is:
 
 ```text
-PDF -> paper_positioned_document.json -> paper_page_furniture.json -> paper_text_stream.json -> paper_sections.json + paper_markdown.md -> paper_table_mentions.json -> paper_bibliography.json -> paper_visual_inventory.json -> paper_references.json -> paper_style_profile.json -> paper_variable_inventory.json -> table_contexts/*.json
+PDF -> paper_positioned_document.json -> paper_page_furniture.json -> paper_document.json -> paper_sections.json + paper_markdown.md -> paper_table_mentions.json -> paper_bibliography.json -> paper_visual_inventory.json -> paper_references.json -> paper_style_profile.json -> paper_variable_inventory.json -> table_contexts/*.json
 ```
+
+`paper_document.json` is built directly from filtered positioned blocks and
+the established prose-candidate decisions.
+`paper_sections.json` and `paper_markdown.md` consume its prose segments. The
+non-prose paper consumers now use its canonical block text, role, and order and
+join block line IDs to `paper_positioned_document.json` only for raw typography
+and geometry. There is no separate full-paper text-stream artifact.
 
 ### `paper_markdown.md`
 
-This is the full-paper markdown view rendered from `paper_text_stream.json`.
+This is the prose-only Markdown view rendered from
+`PaperDocument.prose.segments`.
 
 It is not the canonical table grid.
 
-It is used for:
+It preserves:
 
-- table mention retrieval
-- variable-term retrieval
-- future semantic grounding
+- section and subsection headings owned by prose
+- sentence-bearing paragraphs in reading order
+- narrative references such as `Table 1 shows ...`
 
-The markdown file is not a separate extraction backend. If PyMuPDF positioned
-text cannot produce the stream, the parser fails closed instead of building
-document context from a second markdown path. This artifact is not meant to
-become the canonical paper-order model.
+It excludes entity and residual blocks. The Markdown file is not a separate
+extraction backend or an ownership model; `PaperDocument` is canonical.
 
-### `paper_text_stream.json`
+### `paper_document.json`
 
-This is the layout-aware full-paper text stream. It is built from positioned
-PyMuPDF lines, applies `paper_page_furniture.json`, partitions each page by
-writing direction, and orders each orientation group in a canonical upright
-frame before detecting group-local columns. Each line keeps its original source
-line ID and page-space `bbox` beside its derived `canonical_bbox`, direction,
-orientation, orientation-group ID, page, column, and role. Per-page records keep
-orientation-group source bounds, canonical dimensions, column diagnostics,
-`column_boundaries`, and `column_bands`. Minimal span records retain source text,
-bbox, font name, font size, and flags without reparsing the PDF. Each ordered
-block directly carries its orientation-group ID, page-space and canonical union
-bboxes, and column index and count; its ordered line IDs point to the existing
-line and span typography evidence. For ordinary detected columns,
-`column_boundaries` remain x-start routing divisions while `column_bands`
-preserve the exact observed x extent of the records assigned to each column.
+This is the initial prose/residual ownership projection over the existing
+filtered positioned blocks. Its single block registry preserves each block's
+page, source order, line IDs, orientation, columns, and exact geometry. Current
+prose-candidate headings open ordered prose segments, and accepted body blocks
+become their paragraphs. Entities are empty, and every other retained block is
+listed in `unassigned_block_ids` without inference. Its first consumers are the
+persisted section and Markdown views. Non-prose consumers now read its canonical
+block text, role, and order and join source IDs to positioned evidence without
+creating another stream.
 
 ### `paper_sections.json`
 
-The ordered text blocks are grouped into a linear list of sections. Each
-heading block starts a section, and following body blocks belong to that
-heading until the next heading block. `heading_block_id` and ordered
-`body_block_ids` preserve that ownership; section content is assembled directly
-from those body blocks. Simple role hints such as methods-like or results-like
-remain derived from the heading text.
-
-This gives the parser a document structure that is easier to retrieve from than raw markdown alone.
+This is the exact ordered `PaperDocument.prose.segments` list. Each segment
+stores its ordered `heading_block_ids` and paragraphs; each paragraph stores its
+`paragraph_id`, ordered `block_ids`, and text. It performs no separate ownership
+or section-role inference.
 
 ### `paper_table_mentions.json`
 
-The parser scans `paper_text_stream.json` for `Table N` mentions before table
-extraction. Each record keeps the table number, source line ID and bbox, local
-context line IDs, source-line text, cue, and whether the mention is a
+The parser scans `PaperDocument` blocks joined to raw positioned lines for
+`Table N` mentions before table extraction. Each record keeps the table number,
+source line ID and bbox, local context line IDs, source-line text, cue, and
+whether the mention is a
 `caption_candidate`, `continuation_label`, or `prose_reference`. A continuation
 record additionally carries `continuation_role` as `from_previous_page`,
 `to_next_page`, or `unspecified`; this controls which side of the label may
@@ -1275,7 +1275,7 @@ previous line can provide weaker continuation evidence, its last visible span
 and the current line's first visible span must retain the same font and bold
 state. A font or bold-state change ends that proposed continuation; this uses
 the positioned boundary spans and does not compare point sizes or line gaps.
-The text stream records `has_bold_text` when any source span is bold, but this
+The positioned line evidence records when any source span is bold, but this
 descriptive line-level fact does not assign a heading role or independently
 support a caption candidate. A heading requires complete-line bold evidence and
 a font strictly larger than the dominant body font; it is never assigned from a
@@ -1285,7 +1285,8 @@ candidate, but it does not by itself create a table. Line-initial
 classified as `prose_reference`, not `caption_candidate`, because they describe
 external supplementary material rather than an extractable in-paper table.
 
-Table extraction uses these caption candidates together with the text stream.
+Table extraction uses these caption candidates together with `PaperDocument`
+blocks and their joined positioned geometry.
 The provisional grid keeps every physical y-band after the caption-label band;
 it does not remove possible continuation text before header geometry is
 available. Complete caption binding then matches the label to a table in the
@@ -1522,7 +1523,7 @@ When a parse looks wrong, inspect the outputs in this order.
 17. `paper_page_furniture.json`
    If repeated page headers, footers, watermarks, or download notices may be contaminating extraction or note parsing, inspect this artifact for recurring clusters and ignored regions.
 
-18. `paper_positioned_document.json`, `paper_markdown.md`, `paper_text_stream.json`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and `table_contexts/*.json`
+18. `paper_positioned_document.json`, `paper_document.json`, `paper_markdown.md`, `paper_sections.json`, `paper_visual_inventory.json`, `paper_references.json`, `paper_variable_inventory.json`, and `table_contexts/*.json`
    If semantic context retrieval is weak, inspect these next.
 
 19. `table_variable_plausibility_llm.json`

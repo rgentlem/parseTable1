@@ -393,8 +393,9 @@ Rejected candidates should still be recorded in `resolved_tables.json`.
 
 ## Implementation Sequence
 
-1. Define Pydantic models for resolved table sets, source-table roles,
-   integration decisions, row provenance, and column alignment.
+1. Define the minimal typed structures needed for resolved table sets,
+   source-table roles, integration decisions, row provenance, and column
+   alignment.
 2. Replace the inspection-only continuation pair with, or add alongside it, a
    single `resolved_tables.json` artifact.
 3. Initially support explicit continuations only.

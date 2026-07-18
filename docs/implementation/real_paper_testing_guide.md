@@ -292,9 +292,9 @@ paper_footnotes:
   word-like subscript anchors suppressed before footnote linking: 0
   citation-like anchors suppressed before footnote linking: 0
   non-footnote symbol anchors suppressed before footnote linking: 2
-  text-stream line groups classified as table footers: 104
+  document line groups classified as table footers: 104
   extracted-table footer records: 10
-  page-furniture filter stage: before_paper_text_stream_footer_detection (27 papers)
+  page-furniture filter stage: before_paper_document_footer_detection (27 papers)
 extraction page-furniture mask:
   extracted tables with mask metadata: 76
   page words removed before extraction/refinement: 1134
@@ -735,8 +735,8 @@ contaminate table candidates now and can support later figure extraction.
     3. `table_boundary_proposals.json`: inspect canonical rule candidates,
        stub/value coverage, adjacent row edges, font changes, and any current
        `TableRegion` boundary reported as unsupported.
-    4. `paper_text_stream.json`: inspect positioned lines on the relevant page
-       around the table bbox. The expected order is caption/title, header,
+    4. `paper_document.json` joined to `paper_positioned_document.json`: inspect
+       canonical blocks and positioned lines on the relevant page around the table bbox. The expected order is caption/title, header,
        body, footer/note block, then surrounding prose or other document
        components. Column and rotation evidence should explain that order.
     5. `normalized_tables.json`: confirm `header_rows`, `body_rows`,

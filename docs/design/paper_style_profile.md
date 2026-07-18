@@ -9,7 +9,8 @@ The profile is built after the parser has already built the underlying evidence
 artifacts:
 
 ```text
-paper_text_stream.json
+paper_document.json
+paper_positioned_document.json
 extracted_tables.json
 paper_footnotes.json
 paper_bibliography.json
@@ -44,8 +45,9 @@ The artifact records five style dimensions:
 
 - `figure_caption_evidence`
   Records figure caption text observed through the current visual inventory or
-  text stream. Figure image geometry is not extracted yet, so figure caption
-  placement remains geometry-unavailable rather than inferred.
+  canonical document blocks joined to positioned lines. Figure image geometry
+  is not extracted yet, so figure caption placement remains
+  geometry-unavailable rather than inferred.
 
 - `visual_reference_style`
   Counts prose table/figure reference wording, such as `Table 1`, plural table

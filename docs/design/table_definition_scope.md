@@ -116,4 +116,6 @@ The intended relationship is:
 
 ## Next Step
 
-The next implementation step should be to define a Pydantic schema for `TableDefinition` and a small assembly layer that builds it from heuristic and optional LLM interpretation outputs.
+The next implementation step should be to define the minimal typed schema for
+`TableDefinition` and a small assembly layer that builds it from heuristic and
+optional LLM interpretation outputs.

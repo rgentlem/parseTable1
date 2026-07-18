@@ -70,7 +70,7 @@ Use two parallel views of the same paper:
 2. Document context view
 
 - `paper_positioned_document.json`
-- `paper_text_stream.json`
+- `paper_document.json`
 - rendered `paper_markdown.md`
 - section headings
 - paragraphs near table references
@@ -106,7 +106,7 @@ outputs/papers/<paper_stem>/
   normalized_tables.json
   table_definitions.json
   paper_positioned_document.json
-  paper_text_stream.json
+  paper_document.json
   paper_markdown.md
   paper_sections.json
   paper_variable_inventory.json

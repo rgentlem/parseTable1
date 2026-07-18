@@ -6,12 +6,86 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
 
 ## Current Priorities
 
+- [ ] Reevaluate every current or proposed use of Pydantic for concrete value.
+  Inventory the code and tools that depend on it, record the capability each
+  use actually requires, and compare it with the simplest typed alternative.
+  Retain Pydantic only where it supplies a demonstrated boundary function such
+  as external-input validation, settings loading, LLM response enforcement, or
+  runtime contract validation. Do not add Pydantic models for consistency or
+  convenience while this audit is pending, and do not remove existing uses
+  without a separately approved, behavior-preserving migration.
+
 Work iteratively and in this order: first stabilize prose reading order with
 general positioned-block rules; then identify captions from the preserved
 residual; then inspect what remains. Do not weaken a general stage or add a
 narrow recovery for isolated residual cases while that broader stage is still
 being established. Go deeper only after the applicable general rule and corpus
 evidence have failed.
+
+The prose-candidate checkpoint and atomic `PaperTextStream` to `PaperDocument`
+migration are complete. The next concrete change is to inspect every residual
+block using its preserved page-local evidence, first assembling captions and
+then resolving supported entity components while leaving uncertain material
+unassigned.
+
+The approved destination contract is
+`docs/design/paper_document_plan_and_contract.md`. `PaperDocument` will
+atomically replace `PaperTextStream` as the canonical interpreted paper
+artifact. Its single page-geometry-bearing block registry is partitioned
+exactly once among narrative prose, document entities, and explicit unassigned
+residual. Do not add `PaperReadingOrder`, a second full-paper stream, or a
+parallel ownership artifact.
+
+The first Step 3 checkpoint is complete in
+`outputs/paper_document_step3_bullet1_minimal_20260718`. The parser now writes a
+plain `paper_document.json` projection from the existing filtered blocks and
+prose-candidate flags: accepted blocks populate ordered prose segments,
+entities are empty, and every other block is residual. No model, helper,
+accessor, validator, Pydantic use, PDF pass, or classification rule was added.
+Focused checks passed for `Journal of Periodontology - 2015 - Eke - Update on
+Prevalence of Periodontitis in Adults in the United States  NHANES 2009.pdf`,
+`Role of Estimated Glucose Disposal Rate in Staging and Death Risk of
+Cardiovascular-Kidney-Metabolic Syndrome- Insights from NHANES 1999-2018.pdf`,
+`cardiovascular.pdf`, `cobaltpaper.pdf`, and `mdpi-The Relationship Between a
+Mediterranean Diet and Frailty in Older Adults- NHANES 2007–2017.pdf`,
+including rotated tables. All compared existing artifacts are unchanged apart
+from generated quality-report timestamps.
+
+The second Step 3 checkpoint is complete in
+`outputs/paper_document_step3_bullet2_prose_views_20260718`.
+`paper_sections.json` now exactly serializes `PaperDocument.prose.segments`, and
+`paper_markdown.md` renders only the headings and paragraphs in those segments.
+Across the same five focused papers, prose and residual remain disjoint and
+complete, no rotated block enters either view, and every other parser artifact
+is unchanged apart from quality-report timestamps.
+
+The third Step 3 checkpoint is complete in
+`outputs/paper_document_step3_bullet3_first_pass_20260718`. Accepted block role
+is now persisted in `PaperDocument`; table mentions and extraction geometry,
+table regions, table footers, visual inventory, and paper style profiling read
+canonical text and order from its block registry and join source line IDs to
+`PaperPositionedDocument` for raw typography and geometry. The same five-paper
+comparison preserves prose views, table grids and captions, table-mention
+decisions, and footnote/footer decisions. Only provenance labels, generated
+timestamps, the added block role, and three legacy `full_width_line` diagnostic
+notes differ. The final Step 3 checkpoint is complete in
+`outputs/testpapers_batch_paper_document_step3_bullet4_20260718`: all 28 PDFs
+parsed successfully, with 92 extracted and 81 final parsed tables. The
+`PaperTextStream` builder, model, renderer, persisted artifact, imports, and
+provenance labels are retired. Apart from generated timestamps, the intended
+provenance rename, and removal of `paper_text_stream.json`, corpus artifacts
+are substantively identical to the retained Bullet 3 baseline.
+
+The canonical correction contract is now explicit: `PaperPositionedDocument`
+preserves raw extractor evidence, while `PaperDocument` may correct source
+grouping, text, role, and ownership with traceable provenance. Migrated
+consumers must use canonical document text and structure, joining source line,
+span, or character evidence only for audit and geometry. Known operations are
+line-preserving block split, logical component assembly, ownership change, and
+evidence-backed text correction. Do not introduce a corrected positioned copy,
+a second stream, or a generic correction schema before reviewing the first real
+typographic cases. Table-cell corrections remain in the specialized table
+artifacts with raw values preserved.
 
 - [ ] Continue the prose-first paper partition from positioned source blocks;
   table, caption, and footer parsing must not decide which blocks are prose.
@@ -25,9 +99,8 @@ evidence have failed.
   approved within-block line-size span below 0.5, sentence evidence, confirmed
   headings, and unfinished prose crossing a page, column, or already-observed
   spanning-layout boundary. It does not promote arbitrary body blocks into
-  headings. Body candidates do not yet filter sections or Markdown; Step 3
-  must still verify the mixed-layout transition support before the later
-  prose freeze.
+  headings. These candidates now populate canonical `PaperDocument` prose and
+  its persisted section and Markdown views without another classification rule.
   Focused checks pass on PDF pages 3–5, printed Tables 1–5, of
   `cobaltpaper.pdf`: the three previously missed section/subsection headings
   and surrounding prose are accepted while table, caption, and note blocks
@@ -157,8 +230,8 @@ evidence have failed.
   ordering path. All 28 commands complete, and the candidate sets plus 196
   compared text-stream, section, Markdown, and table artifacts are
   byte-identical to the accepted font-span baseline. This unchanged output is
-  intentional; Step 3 will determine whether the support works when producing
-  the prose reading-order structure.
+  intentional; the `PaperDocument` migration will verify that the support is
+  preserved when prose ownership and its derived views are populated.
   Focused in-memory checks on PDF page 4, printed Table 1, of
   `Role of Estimated Glucose Disposal Rate in Staging and Death Risk of Cardiovascular-Kidney-Metabolic Syndrome- Insights from NHANES 1999-2018.pdf`
   and PDF page 10, printed Table 5, of

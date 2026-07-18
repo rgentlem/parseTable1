@@ -18,6 +18,7 @@ from table1_parser.extract.layout_fallback import (
 )
 from table1_parser.extract.provisional_table import ProvisionalExtractedTable
 from table1_parser.context.paper_positioned_document import build_paper_positioned_document
+from table1_parser.context.paper_document import iter_paper_document_lines
 from table1_parser.extract.table_detector import (
     DetectedTableCandidate,
 )
@@ -32,9 +33,6 @@ from table1_parser.schemas import (
     PaperPositionedDocument,
     PaperPositionedPage,
     PaperTableMention,
-    PaperTextLine,
-    PaperTextOrientationGroup,
-    PaperTextStream,
     PositionedSpanReference,
     TableCaptionBinding,
     TableCaptionRegion,
@@ -68,23 +66,33 @@ def _caption_label_assignments(
     *,
     page_num: int,
     candidate_metadata: Sequence[dict[str, Any]],
-    paper_text_stream: PaperTextStream | None,
+    paper_document: dict[str, object] | None,
+    paper_document_lines: Sequence[object],
     paper_table_mentions: Sequence[PaperTableMention] | None,
 ) -> dict[int, tuple[TableCaptionRegion, TableCaptionBinding]]:
     """Bind PyMuPDF caption-label lines to table regions in canonical geometry."""
-    if paper_text_stream is None or not paper_table_mentions:
+    if paper_document is None or not paper_table_mentions:
         return {}
-    page = next((item for item in paper_text_stream.pages if item.page_num == page_num), None)
+    page = next(
+        (
+            item
+            for item in paper_document["pages"]
+            if item["page_num"] == page_num
+        ),
+        None,
+    )
     if page is None:
         return {}
-    groups_by_id = {group.group_id: group for group in page.orientation_groups}
+    groups_by_id = {
+        group["group_id"]: group for group in page["orientation_groups"]
+    }
     lines_by_id = {
         line.line_id: line
-        for line in paper_text_stream.lines
+        for line in paper_document_lines
         if line.page_num == page_num
     }
     table_geometry: list[
-        tuple[int, PaperTextOrientationGroup, tuple[float, float, float, float]]
+        tuple[int, dict[str, object], tuple[float, float, float, float]]
     ] = []
     for table_index, metadata in enumerate(candidate_metadata):
         orientation_group_id = metadata.get("orientation_group_id")
@@ -95,7 +103,7 @@ def _caption_label_assignments(
         if group is not None:
             table_geometry.append((table_index, group, canonical_table_bbox))
 
-    caption_records: list[tuple[PaperTableMention, PaperTextLine, TableCaptionRegion]] = []
+    caption_records: list[tuple[PaperTableMention, object, TableCaptionRegion]] = []
     for mention in paper_table_mentions:
         if (
             mention.page_num != page_num
@@ -134,7 +142,7 @@ def _caption_label_assignments(
         if caption_bbox is None:
             continue
         for geometry_index, (table_index, group, table_bbox) in enumerate(table_geometry):
-            if line.orientation_group_id != group.group_id:
+            if line.orientation_group_id != group["group_id"]:
                 continue
             horizontal_overlap = min(table_bbox[2], caption_bbox[2]) - max(
                 table_bbox[0], caption_bbox[0]
@@ -192,13 +200,13 @@ def _complete_caption_region(
     region: TableCaptionRegion,
     binding: TableCaptionBinding,
     candidate_metadata: dict[str, Any],
-    paper_text_stream: PaperTextStream,
+    paper_document_lines: Sequence[object],
     caption_label_line_ids: set[str],
 ) -> tuple[TableCaptionRegion, TableCaptionBinding]:
     """Extend one bound caption label through adjacent single-run text bands."""
     group_lines = [
         line
-        for line in paper_text_stream.lines
+        for line in paper_document_lines
         if line.page_num == region.page_num
         and line.orientation_group_id == region.orientation_group_id
         and line.column_index == region.column_index
@@ -231,7 +239,7 @@ def _complete_caption_region(
             boundary_y = binding.table_canonical_bbox[1]
 
     selected_lines = [group_lines[label_index]]
-    following_lines: list[PaperTextLine] = []
+    following_lines: list[object] = []
     for line in group_lines[label_index + 1 :]:
         if line.line_id in caption_label_line_ids:
             break
@@ -247,7 +255,7 @@ def _complete_caption_region(
             continue
         following_lines.append(line)
 
-    line_bands: list[list[PaperTextLine]] = []
+    line_bands: list[list[object]] = []
     for line in sorted(
         following_lines,
         key=lambda item: (
@@ -345,11 +353,12 @@ def _complete_caption_region(
 def _apply_complete_caption_bindings(
     candidates: Sequence[DetectedTableCandidate],
     *,
-    paper_text_stream: PaperTextStream | None,
+    paper_document: dict[str, object] | None,
+    paper_document_lines: Sequence[object],
     paper_table_mentions: Sequence[PaperTableMention] | None,
 ) -> list[DetectedTableCandidate]:
     """Replace provisional captions with complete PyMuPDF caption regions."""
-    if paper_text_stream is None or not paper_table_mentions:
+    if paper_document is None or not paper_table_mentions:
         return [
             candidate.model_copy(
                 update={
@@ -379,7 +388,8 @@ def _apply_complete_caption_bindings(
         assignments = _caption_label_assignments(
             page_num=page_num,
             candidate_metadata=[candidate.metadata for candidate in page_candidates],
-            paper_text_stream=paper_text_stream,
+            paper_document=paper_document,
+            paper_document_lines=paper_document_lines,
             paper_table_mentions=paper_table_mentions,
         )
         for page_candidate_index, candidate in enumerate(page_candidates):
@@ -403,7 +413,7 @@ def _apply_complete_caption_bindings(
                 region=assignment[0],
                 binding=assignment[1],
                 candidate_metadata=candidate.metadata,
-                paper_text_stream=paper_text_stream,
+                paper_document_lines=paper_document_lines,
                 caption_label_line_ids=caption_label_line_ids,
             )
             numeric_table_number = (
@@ -428,10 +438,10 @@ def _apply_complete_caption_bindings(
                     "caption": region.text,
                     "metadata": {
                         **candidate.metadata,
-                        "caption_source": "paper_text_stream_geometry",
+                        "caption_source": "paper_document_geometry",
                         "caption_region": region.model_dump(mode="json"),
                         "caption_binding": binding.model_dump(mode="json"),
-                        "caption_detection_space": "paper_text_orientation_group",
+                        "caption_detection_space": "paper_document_orientation_group",
                         "table_number": numeric_table_number,
                         "is_continuation": region.mention_kind == "continuation_label",
                         "continuation_of_table_number": (
@@ -448,14 +458,14 @@ def _apply_complete_caption_bindings(
 
 def _bibliography_evidence_masks_by_page(
     bibliography_entries: Sequence[BibliographyEntry] | None,
-    paper_text_stream: PaperTextStream | None,
+    paper_document_lines: Sequence[object],
 ) -> dict[int, BibliographyEvidenceMask]:
     """Build page-local masks from bibliography-owned source lines and entry bboxes."""
     if not bibliography_entries:
         return {}
     line_by_id = {
         line.line_id: line
-        for line in (paper_text_stream.lines if paper_text_stream is not None else [])
+        for line in paper_document_lines
     }
     source_line_ids_by_page: dict[int, set[str]] = {}
     source_line_keys_by_page: dict[int, set[tuple[int, int]]] = {}
@@ -605,18 +615,24 @@ class PyMuPDFExtractor(BaseExtractor):
         paper_page_furniture: PaperPageFurniture | None = None,
         paper_positioned_document: PaperPositionedDocument | None = None,
         paper_table_mentions: Sequence[PaperTableMention] | None = None,
-        paper_text_stream: PaperTextStream | None = None,
+        paper_document: dict[str, object] | None = None,
         bibliography_entries: Sequence[BibliographyEntry] | None = None,
     ) -> list[ProvisionalExtractedTable]:
         """Extract and rank raw table candidates from a PDF."""
         try:
             positioned_document = paper_positioned_document or build_paper_positioned_document(pdf_path)
+            document_lines = (
+                list(iter_paper_document_lines(paper_document, positioned_document))
+                if paper_document is not None
+                else []
+            )
             candidates = self._detect_table_candidates(
                 pdf_path,
                 paper_page_furniture=paper_page_furniture,
                 paper_positioned_document=positioned_document,
                 paper_table_mentions=paper_table_mentions,
-                paper_text_stream=paper_text_stream,
+                paper_document=paper_document,
+                paper_document_lines=document_lines,
                 bibliography_entries=bibliography_entries,
             )
         except Exception:
@@ -634,14 +650,15 @@ class PyMuPDFExtractor(BaseExtractor):
             return []
         selected_candidates = _apply_complete_caption_bindings(
             selected_candidates,
-            paper_text_stream=paper_text_stream,
+            paper_document=paper_document,
+            paper_document_lines=document_lines,
             paper_table_mentions=paper_table_mentions,
         )
 
         pages_by_num = {page.page_num: page for page in positioned_document.pages}
         bibliography_masks_by_page = _bibliography_evidence_masks_by_page(
             bibliography_entries,
-            paper_text_stream,
+            document_lines,
         )
         filtered_items_by_page: dict[int, tuple[list[dict[str, object]], list[dict[str, object]]]] = {}
         for page_num in {candidate.page_num for candidate in selected_candidates}:
@@ -671,14 +688,14 @@ class PyMuPDFExtractor(BaseExtractor):
             )
             filtered_items_by_page[page_num] = (page_words, page_chars)
 
-        text_pages_by_num = {
-            page.page_num: page
-            for page in (paper_text_stream.pages if paper_text_stream is not None else [])
+        document_pages_by_num = {
+            page["page_num"]: page
+            for page in (paper_document["pages"] if paper_document is not None else [])
         }
         candidates_with_positioned_evidence: list[DetectedTableCandidate] = []
         for candidate in selected_candidates:
             positioned_page = pages_by_num.get(candidate.page_num)
-            text_page = text_pages_by_num.get(candidate.page_num)
+            document_page = document_pages_by_num.get(candidate.page_num)
             caption_region = candidate.metadata.get("caption_region")
             caption_region_values = caption_region if isinstance(caption_region, dict) else {}
             caption_bbox = _as_bbox(caption_region_values.get("bbox"))
@@ -686,13 +703,13 @@ class PyMuPDFExtractor(BaseExtractor):
                 candidate.metadata.get("orientation_group_id") or ""
             ) or None
             orientation_group = None
-            if text_page is not None:
+            if document_page is not None:
                 orientation_group = next(
                     (
                         group
-                        for group in text_page.orientation_groups
+                        for group in document_page["orientation_groups"]
                         if orientation_group_id is not None
-                        and group.group_id == orientation_group_id
+                        and group["group_id"] == orientation_group_id
                     ),
                     None,
                 )
@@ -701,15 +718,15 @@ class PyMuPDFExtractor(BaseExtractor):
                 if candidate.metadata.get("strong_ruled_geometry") is True
                 and candidate.bbox is not None
                 else (
-                    orientation_group.source_bbox
+                    orientation_group["source_bbox"]
                     if orientation_group is not None
                     else candidate.bbox
                 )
             )
             canonical_transform_source_bbox = (
-                orientation_group.source_bbox
+                orientation_group["source_bbox"]
                 if orientation_group is not None
-                and orientation_group.orientation != "upright"
+                and orientation_group["orientation"] != "upright"
                 else (
                     (0.0, 0.0, positioned_page.page_width, positioned_page.page_height)
                     if positioned_page is not None
@@ -717,7 +734,7 @@ class PyMuPDFExtractor(BaseExtractor):
                 )
             )
             rotation_direction = (
-                orientation_group.orientation
+                orientation_group["orientation"]
                 if orientation_group is not None
                 else "upright"
             )
@@ -799,7 +816,8 @@ class PyMuPDFExtractor(BaseExtractor):
         paper_page_furniture: PaperPageFurniture | None = None,
         paper_positioned_document: PaperPositionedDocument | None = None,
         paper_table_mentions: Sequence[PaperTableMention] | None = None,
-        paper_text_stream: PaperTextStream | None = None,
+        paper_document: dict[str, object] | None = None,
+        paper_document_lines: Sequence[object] = (),
         bibliography_entries: Sequence[BibliographyEntry] | None = None,
     ) -> list[DetectedTableCandidate]:
         positioned_document = paper_positioned_document or build_paper_positioned_document(pdf_path)
@@ -807,18 +825,18 @@ class PyMuPDFExtractor(BaseExtractor):
             page.page_num: page
             for page in positioned_document.pages
         }
-        text_pages_by_num = {
-            page.page_num: page
-            for page in (paper_text_stream.pages if paper_text_stream is not None else [])
+        document_pages_by_num = {
+            page["page_num"]: page
+            for page in (paper_document["pages"] if paper_document is not None else [])
         }
-        text_lines_by_page: dict[int, list[PaperTextLine]] = {}
-        for line in paper_text_stream.lines if paper_text_stream is not None else []:
+        text_lines_by_page: dict[int, list[object]] = {}
+        for line in paper_document_lines:
             text_lines_by_page.setdefault(line.page_num, []).append(line)
         candidates: list[DetectedTableCandidate] = []
         try:
             bibliography_masks_by_page = _bibliography_evidence_masks_by_page(
                 bibliography_entries,
-                paper_text_stream,
+                paper_document_lines,
             )
             abstract_intervals = _abstract_intervals_by_page(positioned_document)
             for page_num in sorted(positioned_pages_by_num):
@@ -879,32 +897,36 @@ class PyMuPDFExtractor(BaseExtractor):
                         removed_rule_segments += 1
                         removed_rule_cluster_ids.add(matched_region.rule_cluster_id)
                     page_rule_segments = kept_rule_segments
-                text_page = text_pages_by_num.get(page_num)
-                orientation_groups = list(text_page.orientation_groups) if text_page is not None else []
+                document_page = document_pages_by_num.get(page_num)
+                orientation_groups = (
+                    list(document_page["orientation_groups"])
+                    if document_page is not None
+                    else []
+                )
                 if not orientation_groups:
                     orientation_groups = [
-                        PaperTextOrientationGroup(
-                            group_id=f"page-{page_num}-orientation-upright",
-                            orientation="upright",
-                            source_bbox=(
+                        {
+                            "group_id": f"page-{page_num}-orientation-upright",
+                            "orientation": "upright",
+                            "source_bbox": (
                                 0.0,
                                 0.0,
                                 positioned_page.page_width,
                                 positioned_page.page_height,
                             ),
-                            canonical_width=positioned_page.page_width,
-                            canonical_height=positioned_page.page_height,
-                            line_count=max(1, len(positioned_page.lines)),
-                            column_count=1,
-                            column_bands=[(0.0, positioned_page.page_width)],
-                        )
+                            "canonical_width": positioned_page.page_width,
+                            "canonical_height": positioned_page.page_height,
+                            "column_bands": [(0.0, positioned_page.page_width)],
+                        }
                     ]
                 page_candidates: list[DetectedTableCandidate] = []
                 page_lines = text_lines_by_page.get(page_num, [])
                 line_by_id = {line.line_id: line for line in page_lines}
                 for group in orientation_groups:
                     group_lines = [
-                        line for line in page_lines if line.orientation_group_id == group.group_id
+                        line
+                        for line in page_lines
+                        if line.orientation_group_id == group["group_id"]
                     ]
                     group_line_keys = {
                         (line.block_index, line.line_index)
@@ -930,21 +952,21 @@ class PyMuPDFExtractor(BaseExtractor):
                             words=group_words,
                             chars=group_chars,
                             rule_segments=page_rule_segments,
-                            bbox=group.source_bbox,
-                            rotation_direction=group.orientation,
+                            bbox=group["source_bbox"],
+                            rotation_direction=group["orientation"],
                         )
                     )
                     transformed_image_bboxes = [
                         normalize_bbox_for_rotation(
                             image_bbox,
-                            source_bbox=group.source_bbox,
-                            rotation_direction=group.orientation,
+                            source_bbox=group["source_bbox"],
+                            rotation_direction=group["orientation"],
                         )
                         for image_bbox in positioned_page.image_bboxes
-                        if min(image_bbox[2], group.source_bbox[2])
-                        > max(image_bbox[0], group.source_bbox[0])
-                        and min(image_bbox[3], group.source_bbox[3])
-                        > max(image_bbox[1], group.source_bbox[1])
+                        if min(image_bbox[2], group["source_bbox"][2])
+                        > max(image_bbox[0], group["source_bbox"][0])
+                        and min(image_bbox[3], group["source_bbox"][3])
+                        > max(image_bbox[1], group["source_bbox"][1])
                     ]
                     group_line_ids = {line.line_id for line in group_lines}
                     transformed_mentions = [
@@ -968,7 +990,7 @@ class PyMuPDFExtractor(BaseExtractor):
                         image_bboxes=transformed_image_bboxes,
                         paper_table_mentions=transformed_mentions,
                     )
-                    if group.orientation == "upright":
+                    if group["orientation"] == "upright":
                         continuation_candidates = (
                             _build_cross_page_continuation_candidates(
                                 page_num=page_num,
@@ -1010,16 +1032,16 @@ class PyMuPDFExtractor(BaseExtractor):
                             paper_page_furniture=None,
                             paper_table_mentions=transformed_mentions,
                             allow_uncaptioned_orientation_group=(
-                                group.orientation != "upright"
+                                group["orientation"] != "upright"
                             ),
                         )
                     for candidate in text_layout_candidates:
                         canonical_candidate_bbox = candidate.bbox
                         source_candidate_bbox = canonical_candidate_bbox
-                        if candidate.bbox is not None and group.orientation != "upright":
+                        if candidate.bbox is not None and group["orientation"] != "upright":
                             canonical_left, canonical_top, canonical_right, canonical_bottom = candidate.bbox
-                            source_left, source_top, source_right, source_bottom = group.source_bbox
-                            if group.orientation == "vertical_text_up":
+                            source_left, source_top, source_right, source_bottom = group["source_bbox"]
+                            if group["orientation"] == "vertical_text_up":
                                 source_candidate_bbox = (
                                     source_left + canonical_top,
                                     source_bottom - canonical_right,
@@ -1039,10 +1061,10 @@ class PyMuPDFExtractor(BaseExtractor):
                                     "bbox": source_candidate_bbox,
                                     "metadata": {
                                         **candidate.metadata,
-                                        "geometry_coordinate_frame": "paper_text_orientation_group",
+                                        "geometry_coordinate_frame": "paper_document_orientation_group",
                                         "canonical_candidate_bbox": canonical_candidate_bbox,
                                         "source_candidate_bbox": source_candidate_bbox,
-                                        "orientation_group_id": group.group_id,
+                                        "orientation_group_id": group["group_id"],
                                     },
                                 }
                             )

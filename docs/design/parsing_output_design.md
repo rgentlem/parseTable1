@@ -33,8 +33,11 @@ Those files define the main development criteria:
 
 There are two related but different concepts in this repository:
 
-1. Canonical typed models
-   These are the Pydantic models in `table1_parser/schemas/` and `table1_parser/llm/variable_plausibility_schemas.py`.
+1. Canonical typed structures
+   These are currently implemented largely with models in
+   `table1_parser/schemas/` and
+   `table1_parser/llm/variable_plausibility_schemas.py`. Their use of Pydantic
+   is an implementation choice under review, not part of the artifact contract.
 
 2. Persisted JSON files
    These are CLI outputs or trace/debug artifacts written to disk.
@@ -89,7 +92,7 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Table definition | `TableDefinition` | Written now as `table_definitions.json` by `parse` | Persist value-free row-variable, level, and column semantics |
 | Continued variable integration | `TableDefinition` | Written now as `continued_variable_integrations.json` by `parse` | Persist a source-fragment review view for compatible continued Table 1 fragments; this is not consumed by canonical semantic parsing now that `resolved_tables.json` feeds `TableDefinition` and `ParsedTable` |
 | Parsed source-cell values | `ParsedCellValue` | Written now as `parsed_cell_values.json` by `parse` | Persist source-grid or candidate-derived value components keyed by table and row/column indices before semantic row/column value joins |
-| Paper context | `PaperPositionedDocument`, `PaperTextStream`, `PaperSection`, `PaperTableMention`, `PaperVisual`, `PaperVisualReference`, `TableContext` | Written now as `paper_positioned_document.json`, `paper_markdown.md`, `paper_text_stream.json`, `paper_sections.json`, `paper_table_mentions.json`, `paper_visual_inventory.json`, `paper_references.json`, and `table_contexts/*.json` by `parse` | Persist one shared positioned-text pass, including source text whose bbox crosses the declared page box, the filtered layout-aware text stream and markdown view derived from it, sections, pre-extraction table mention classification, actual in-paper visual objects, anchored table/figure references, and per-table retrieval bundles |
+| Paper context | `PaperPositionedDocument`, `PaperDocument`, `PaperSection`, `PaperTableMention`, `PaperVisual`, `PaperVisualReference`, `TableContext` | Written now as `paper_positioned_document.json`, `paper_document.json`, `paper_markdown.md`, `paper_sections.json`, `paper_table_mentions.json`, `paper_visual_inventory.json`, `paper_references.json`, and `table_contexts/*.json` by `parse` | Persist one shared positioned-text pass, canonical prose/residual block ownership, prose-only section and Markdown views, document-owned non-prose context joined to raw positioned evidence, pre-extraction table mention classification, actual in-paper visual objects, anchored table/figure references, and per-table retrieval bundles |
 | Paper bibliography | `PaperBibliography`, `BibliographyEntry`, `BibliographyReferenceMention` | Written now as `paper_bibliography.json` by `parse` | Persist the paper's own bibliography entries, numbered or unnumbered, and link observed numeric reference markers through their stable cell-annotation IDs to numbered entries without creating a cross-paper citation-management layer |
 | Paper style profile | `PaperStyleProfile`, `PaperStyleDimension`, `PaperStyleCheck`, `PaperStyleEvidence` | Written now as `paper_style_profile.json` by `parse` | Persist document-level counts, examples, and consistency checks for footnote-marker, bibliography, caption-placement, and visual-reference conventions without changing extraction or link decisions |
 | Paper variable inventory | `PaperVariableInventory`, `VariableMention`, `VariableCandidate` | Written now as `paper_variable_inventory.json` by `parse` | Persist the paper-level candidate variable reference list with explicit text/table provenance |
@@ -100,7 +103,7 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Table processing status | `TableProcessingStatus`, `TableProcessingAttempt` | Written now as `table_processing_status.json` by `parse` | Persist resolved-table rescue attempts, source fragment IDs and diagnostics, terminal failure stage, and failure reason without overloading semantic artifacts |
 | Parse quality diagnostics | `ParseQualityReport` | Written now as `parse_quality_reports.json` by `parse` | Persist deterministic row, column, and value-pattern diagnostics without changing parse behavior |
 | Paper footnotes | `PaperFootnotes` | Written now as `paper_footnotes.json` by `parse` | Persist table-local footer regions owned by final `TableRegion.footer_note_rows` or the final rule's `TableBoundaryProposal.following_text_line_ids`, footnote anchors keyed by their source `CellTextAnnotation.annotation_id` with annotation type preserved, separate positioned definition-marker evidence, and explicit glyph-key links whose cross-fragment scope comes only from accepted final `ResolvedTableSet` membership, without rewriting table text or parsed values |
-| Paper page furniture | `PaperPageFurniture` | Written now as `paper_page_furniture.json` by `parse` | Persist repeated page text observations, clusters, and ignored regions used near the front of document processing to mask whole-paper markdown/context parsing, extraction, cell annotations, and text-stream footer detection before downstream artifacts are built |
+| Paper page furniture | `PaperPageFurniture` | Written now as `paper_page_furniture.json` by `parse` | Persist repeated page text observations, clusters, and ignored regions used near the front of document processing to mask document construction, extraction, cell annotations, and document-linked footer detection before downstream artifacts are built |
 
 Design note for future multitable support:
 
@@ -225,7 +228,7 @@ an identity transform. This record does not classify rows, columns, or rules
 and does not change the extracted grid.
 
 `metadata.caption_region` records the complete caption assembled from
-`paper_text_stream.json`: its source mention, ordered source line IDs, preserved
+`paper_document.json` joined to positioned lines: its source mention, ordered source line IDs, preserved
 line text, page-space union bbox, canonical orientation-group bbox, orientation,
 and column. `metadata.caption_binding` records the above/below assignment,
 distance, mention and orientation-group IDs, and canonical table/caption bboxes.
@@ -768,7 +771,7 @@ outputs/papers/<paper_stem>/merged_table1_tables.json
 outputs/papers/<paper_stem>/continued_variable_integrations.json
 ```
 
-Canonical models:
+Canonical structures:
 
 - `Table1ContinuationGroup`
 - child model: `Table1ContinuationMember`
@@ -934,8 +937,8 @@ Current CLI paths:
 
 ```text
 outputs/papers/<paper_stem>/paper_positioned_document.json
+outputs/papers/<paper_stem>/paper_document.json
 outputs/papers/<paper_stem>/paper_markdown.md
-outputs/papers/<paper_stem>/paper_text_stream.json
 outputs/papers/<paper_stem>/paper_sections.json
 outputs/papers/<paper_stem>/paper_table_mentions.json
 outputs/papers/<paper_stem>/paper_bibliography.json
@@ -946,13 +949,13 @@ outputs/papers/<paper_stem>/paper_variable_inventory.json
 outputs/papers/<paper_stem>/table_contexts/table_<n>_context.json
 ```
 
-Canonical models:
+Canonical structures:
 
 - `PaperPositionedDocument`
 - child models: `PaperPositionedPage`, `PaperPositionedLine`, `PaperPositionedSpan`
+- `PaperDocument` declarative artifact shape; its initial implementation is a
+  plain projection rather than a new model hierarchy
 - `PaperSection`
-- `PaperTextStream`
-- child models: `PaperTextBlock`, `PaperTextLine`, `PaperTextPage`
 - `PaperTableMention`
 - `PaperBibliography`
 - child models: `BibliographyEntry`, `BibliographyReferenceMention`
@@ -977,19 +980,12 @@ Design components:
   paper-context, extraction, and annotation stages should consume this artifact
   or a typed projection of it instead of reopening the PDF for another
   positioned-geometry pass.
-- `paper_markdown.md`
-  markdown view rendered from `paper_text_stream.json`; there is no
-  `pymupdf4llm.to_markdown()` fallback
-- `paper_text_stream.json`
-  layout-aware full-paper text projected from `paper_positioned_document.json`,
-  with repeated page-furniture lines removed, page-level
-  `column_boundaries`/`column_bands`, orientation-group metadata, original
-  source line IDs and page-space bboxes, canonical upright bboxes for rotated
-  groups, line-level role/style fields, minimal span records, and ordered typed
-  source blocks carrying their orientation-group ID, exact page-space and
-  canonical union bboxes, column index and count, and ordered line IDs. Block
-  typography remains available through those source lines and spans. Blocks
-  also carry a non-operative `prose_candidate` flag derived only from upright
+- `paper_document.json`
+  canonical ownership projection over the existing filtered block registry. It
+  preserves block geometry and source identity, orders current prose candidates
+  as segments and paragraphs, leaves entities empty, and assigns all other
+  blocks to `unassigned_block_ids`. Its prose segments now directly supply the
+  persisted section and Markdown views. Prose ownership is derived only from upright
   source continuity, observed column extent, one font name with a
   largest-minus-smallest line font-size span below 0.5, sentence evidence,
   confirmed headings, and unfinished prose crossing a page, column, or observed
@@ -1008,12 +1004,17 @@ Design components:
   orientation group, column,
   then block top; their lines retain source order. Contextual adjacency cannot
   cross page or orientation-group boundaries.
+- `paper_markdown.md`
+  prose-only Markdown view rendered from the headings and paragraphs in
+  `PaperDocument.prose.segments`; there is no second inference path or
+  `pymupdf4llm.to_markdown()` fallback
 - `paper_sections.json`
-  sections derived directly from ordered text blocks, with heading block ID,
-  ordered body block IDs, content assembled from those body blocks, heading
-  level, and simple role hints
+  exact JSON view of `PaperDocument.prose.segments`, preserving ordered heading
+  block IDs and paragraph IDs, block IDs, and text without separate role
+  inference
 - `paper_table_mentions.json`
-  pre-extraction table mention records derived from the layout-aware text stream,
+  pre-extraction table mention records derived from `PaperDocument` blocks
+  joined to positioned lines,
   including whether each `Table N` line is likely a caption candidate,
   continuation label, or prose reference, with the source line ID and bbox.
   Extraction consumes this artifact and rejects proposed caption lines by bbox
@@ -1079,8 +1080,8 @@ Design intent:
 - support future LLM semantic interpretation with compact retrieved evidence
 - help readers distinguish references to actual in-paper tables and figures from unresolved or bibliographic mentions
 - avoid tying retrieval to exact section names like `Methods`
-- preserve `paper_markdown.md` as a paper-level markdown view over the
-  positioned text stream, and move derived structure into `paper_sections.json`
+- preserve `paper_markdown.md` and `paper_sections.json` as exact prose views
+  over `PaperDocument.prose`
 - preserve a JSON-first, inspectable context path alongside the table path
 
 Variation note:
@@ -1425,7 +1426,8 @@ Design rules:
   when `ColumnHeaderSchema` is available
 - keep ambiguous shapes such as `x (y)` conservative until later semantic
   context can distinguish `mean` plus `sd` from `estimate` plus `se`
-- rely on the Pydantic schema for field shape and controlled component kinds;
+- rely on the canonical typed schema for field shape and controlled component
+  kinds;
   do not introduce a separate validation-report artifact until known failure
   modes justify it
 
@@ -1689,7 +1691,7 @@ Current status:
 - canonical paper-level page-furniture schema exists now
 - written by the `parse` CLI command as `paper_page_furniture.json`
 - built before paper context parsing, table extraction, cell text annotation,
-  and text-stream footer detection
+  and document-linked footer detection
 - passed to positioned-text consumers as page-coordinate ignored regions before
   they group, classify, or persist downstream artifacts
 

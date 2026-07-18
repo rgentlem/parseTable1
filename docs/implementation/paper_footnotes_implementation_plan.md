@@ -25,7 +25,8 @@ Non-scope:
    - Design note: `docs/design/paper_footnotes.md`.
 
 2. [x] Add Python schemas
-   - Add Pydantic models for `FootnoteAnchor`, `FootnoteDefinition`, `FootnoteLink`, and `PaperFootnotes`.
+   - Add only the typed records required for `FootnoteAnchor`,
+     `FootnoteDefinition`, `FootnoteLink`, and `PaperFootnotes`.
    - Keep geometry fields optional but typed.
    - Preserve source IDs back to table IDs, page numbers, row/column indices, and text blocks.
 
@@ -36,7 +37,7 @@ Non-scope:
 
 4. [x] Extract definition candidates
    - Detect table-local note/footer lines from extracted table geometry and
-     positioned `paper_text_stream.json` line groups near table bounds.
+   `paper_document.json` blocks joined to positioned lines near table bounds.
    - Detect caption-attached notes.
    - Do not promote generic page-bottom or body-text blocks into this
      table-local artifact.
@@ -132,7 +133,8 @@ Non-scope:
      fuller table-local definition ambiguous.
 
 16. [x] Add a table-footer line-group finder for positioned text geometry
-   - Consume page-furniture-filtered `paper_text_stream.json` lines rather than
+   - Consume page-furniture-filtered `PaperDocument` lines joined to
+     `PaperPositionedDocument` rather than
      running a separate PDF block parse.
    - Start only from the positioned lines attached to the final retained rule
      by `TableBoundaryProposal.following_text_line_ids`; do not scan arbitrary

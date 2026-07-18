@@ -92,7 +92,7 @@ canonical working table set consumed by semantic parsing, while preserving
 
 - [x] **G1.1** Confirm that the new working stage is
   `NormalizedTable + ColumnHeaderSchema -> ResolvedTableSet -> TableProfile/TableDefinition -> ParsedTable`.
-- [x] **G1.2** Define a Pydantic `ResolvedTableSet` schema with explicit records for
+- [x] **G1.2** Define a typed `ResolvedTableSet` schema with explicit records for
   resolved tables, source-table participation, integration boundaries,
   resolution decisions, column-compatibility decisions, and row provenance.
 - [x] **G1.3** Decide the persisted artifact name and shape, expected to be

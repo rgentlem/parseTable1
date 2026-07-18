@@ -20,7 +20,7 @@ These should not be forced into one representation.
 # Primary Design Decision
 
 ## Narrative document text
-Primary representation: **ordered `PaperTextStream` blocks**
+Primary representation: **ordered `PaperDocument.prose` blocks**
 
 Use block-owned `PaperSection` records for:
 - titles
@@ -31,9 +31,10 @@ Use block-owned `PaperSection` records for:
 - RAG
 
 Reason:
-Ordered blocks preserve positioned reading order and explicit heading/body
-ownership. Markdown remains a derived human-readable view of those blocks; it
-does not define section structure.
+`PaperDocument` preserves canonical block order and explicit prose, entity, or
+residual ownership while retaining source line IDs into positioned evidence.
+Markdown remains a derived human-readable view of prose ownership; it does not
+define section structure.
 
 ## Tables
 Primary representation: **JSON / structured table objects**
@@ -80,11 +81,11 @@ PyMuPDF4LLM supports:
 The current parser does not use PyMuPDF4LLM markdown for paper context.
 `paper_positioned_document.json` is the shared PyMuPDF positioned-geometry pass
 for lines, spans, words, characters, page text, and horizontal rule segments.
-`paper_text_stream.json` is the page-furniture-filtered, layout-aware text
-projection used for section parsing, bibliography extraction, visual-reference
-scanning, variable inventory, and table-context retrieval. Table extraction and
-cell text annotations consume the same positioned document for words, chars,
-and rules. `paper_markdown.md` is rendered from that stream for inspection.
+`paper_document.json` is the canonical block and ownership representation.
+Table extraction and other non-prose consumers read its text, role, and order,
+joining source IDs to the positioned document for raw lines, spans, characters,
+and rules. `paper_markdown.md` and `paper_sections.json` are prose-only views
+over it. There is no separate full-paper text-stream artifact.
 
 ---
 
@@ -95,21 +96,21 @@ Persisted positioned-text evidence:
 
 PDF
 → `paper_positioned_document.json`
-→ `paper_text_stream.json`
-→ `paper_markdown.md`
+→ `paper_document.json`
+→ `paper_sections.json` + `paper_markdown.md`
 
 Parser document-context path:
 
 PDF
 → positioned PyMuPDF text lines
-→ `paper_text_stream.json`
+→ `paper_document.json`
 → `paper_sections.json`
 → bibliography, visual-reference, variable-inventory, and table-context
 artifacts
 
-The positioned stream is the source of truth for parser document order. It
-records page-level column boundaries/bands and orders text as page, column, then
-vertical position for any detected column count.
+`PaperDocument` is the source of truth for canonical document order and
+ownership; `PaperPositionedDocument` is the source of truth for raw PDF text and
+geometry.
 
 ## 2. Table extraction
 Preferred path:
@@ -236,8 +237,8 @@ Add or maintain tests that confirm:
 
 1. PyMuPDF4LLM remains the default table extraction backend
 2. positioned PyMuPDF text produces layout-aware document order
-3. `paper_markdown.md` remains a rendered view of `paper_text_stream.json`, not
-   a separate backend extraction path
+3. `paper_markdown.md` remains a rendered prose view of `paper_document.json`,
+   not a separate backend extraction path
 4. table extraction preserves JSON / structured output
 5. figure extraction produces image artifacts when applicable
 6. diagnostics record extractor choice and output type
