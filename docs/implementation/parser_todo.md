@@ -6,11 +6,157 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
 
 ## Current Priorities
 
-- [ ] After the current caption/footer regression is resolved and checkpointed,
-  repair mixed-layout page reading order using
+Work iteratively and in this order: first stabilize prose reading order with
+general positioned-block rules; then identify captions from the preserved
+residual; then inspect what remains. Do not weaken a general stage or add a
+narrow recovery for isolated residual cases while that broader stage is still
+being established. Go deeper only after the applicable general rule and corpus
+evidence have failed.
+
+- [ ] Continue the prose-first paper partition from positioned source blocks;
+  table, caption, and footer parsing must not decide which blocks are prose.
+  Step 1 is complete: `PaperTextBlock` now carries its orientation-group ID,
+  page-space and canonical union bboxes, column index and count, ordered line
+  IDs, and source-block identity. Typography remains on the referenced source
+  lines and spans, and orientation-group column bands remain the layout frame;
+  no duplicate evidence object, accessor, alternate stream, or fallback was
+  added. The current Step 2 pass marks upright `prose_candidate` blocks from
+  exact source-line continuity, observed column extents, one font name with an
+  approved within-block line-size span below 0.5, sentence evidence, confirmed
+  headings, and unfinished prose crossing a page or column boundary. It does
+  not promote arbitrary body blocks into headings. Body candidates do not yet
+  filter sections or Markdown; mixed-layout transitions and the later freeze
+  remain pending.
+  Focused checks pass on PDF pages 3–5, printed Tables 1–5, of
+  `cobaltpaper.pdf`: the three previously missed section/subsection headings
+  and surrounding prose are accepted while table, caption, and note blocks
+  remain residual. PDF page 4, printed Table 1, of
+  `Role of Estimated Glucose Disposal Rate in Staging and Death Risk of Cardiovascular-Kidney-Metabolic Syndrome- Insights from NHANES 1999-2018.pdf`
+  retains only source blocks 3 and 4 as prose around the table. On PDF page 10,
+  printed Table 5, of
+  `Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009.pdf`, real prose ending
+  `years old.` remains accepted and all 51 rotated blocks in the paper remain
+  residual.
+  The full 28-PDF comparison in
+  `outputs/testpapers_batch_prose_candidates_step2_20260718` rejects this first
+  pass. All commands completed with the same 92 physical tables and the known
+  failed Helicobacter continuation, but 86 new headings appeared across 20
+  papers; at least 43 are plainly figure captions, table notes/data, author
+  text, DOI text, or page furniture. Those false headings stopped footer
+  collection for eight tables in seven papers, including loss of same-table
+  footnote definitions and resolved links. The genuine `Performance of models`
+  prose block on PDF page 5, printed Table 2, of `cardiovascular.pdf` also
+  remains unaccepted because one source block contains a heading-style first
+  line followed by body-style sentences. Do not proceed to mixed-layout
+  transitions or freeze this classifier until the positive evidence is revised
+  and explicitly approved.
+  The subsequently approved connected-flow correction removes the residual
+  body-to-heading promotion and accepts sentence-bearing body-style runs only
+  when they contain connected paragraph blocks or follow a confirmed heading;
+  it permits an otherwise unaccepted continuation only across an explicit
+  page or column transition. The focused run
+  `outputs/prose_flow_first_pass_20260718` failed, so no second correction or
+  corpus run was attempted. All tested `NutritionEx.pdf` figure captions are
+  residual, and the Eke PDF-page-10/printed-Table-5 prose plus both parts of the
+  `fld.pdf` PDF-page-6/printed-Table-2 prose continuation remain accepted.
+  However, the caption for printed Table 2 on PDF page 5 of
+  `Asthma prevalence among United States population insights from NHANES data analysis.pdf`
+  joins the following same-layout prose block, while the caption for printed
+  Table 3 on PDF page 6 joins article prose on PDF page 7 through the page
+  transition. The tested `cobaltpaper.pdf` section prose becomes residual
+  because tables and the now-unconfirmed headings isolate its paragraph
+  blocks. `cardiovascular.pdf`, PDF page 5, printed Table 2, remains residual
+  because its source block mixes heading and body typography. This establishes
+  that source-order adjacency, including a page boundary, is not independent
+  positive evidence of prose flow.
+  A narrower approved rerun in
+  `outputs/prose_flow_geometry_first_pass_20260718` requires same-layout blocks
+  to have identical horizontal block-union bounds and permits page/column
+  connection only after unfinished text. It also failed, and no further parser
+  correction was attempted. All three tested asthma table captions are now
+  residual, but the real article prose following printed Table 2 on PDF page 5
+  and printed Table 3 on PDF page 7 is residual too. The Eke
+  PDF-page-10/printed-Table-5 prose also becomes residual: its consecutive
+  column-local blocks have the same exact left edge but slightly different
+  right edges because block-union width follows line content rather than the
+  column's flow geometry. Both `fld.pdf` continuation blocks remain accepted;
+  the tested `cobaltpaper.pdf` and `cardiovascular.pdf` prose remains residual.
+  Therefore exact block-union bboxes must not be treated as the identity of a
+  prose flow, while the page/column labels alone remain too coarse.
+  The corrected focused pass in
+  `outputs/prose_page_column_continuation_first_pass_20260718` removes exact
+  bbox comparison entirely. Blocks establish paragraph evidence internally;
+  only unfinished accepted prose can add a following block across a page or
+  column change. The three tested asthma table captions are residual while the
+  article prose following them is accepted, both `fld.pdf` continuation blocks
+  are accepted, and the tested `cobaltpaper.pdf` article paragraphs are
+  accepted. The `cobaltpaper.pdf` headings remain residual, and the mixed-style
+  `Performance of models` block in `cardiovascular.pdf`, PDF page 5, printed
+  Table 2, remains unaccepted in that focused pass. A rendered review
+  of Eke PDF page 10 (printed page 620) confirms that the prose below printed
+  Table 5 is upright: `page-10-line-19`, `years old.`, has direction
+  `[1.0, 0.0]`. The page's sole rotated block is the far-right DOI/license strip
+  with direction `[0.0, 1.0]`, which remains residual. Do not treat the Eke
+  prose as rotated in subsequent validation.
+  The user accepts this pass as the conservative corpus candidate. Keep the
+  unconfirmed `cobaltpaper.pdf` headings and the mixed-style
+  `Performance of models` source block preserved as residual for a later
+  residual audit; do not weaken prose classification to recover them before
+  the corpus comparison.
+  The 28-PDF corpus run
+  `outputs/testpapers_batch_prose_page_column_20260718` completes all commands
+  with 4,674 blocks, 729 prose candidates, zero accepted rotated blocks among
+  486 rotated blocks, 92 extracted tables, 313 existing sections, and the same
+  known Helicobacter table-definition failure. The non-operative classifier is
+  not acceptable yet. The MDPI Mediterranean-diet paper accepts only its
+  abbreviation list because real `URWPalladioL-Roma` prose contains reported
+  line sizes 9.9, 10.0, and 10.1 in the same source blocks. The exposome atlas
+  accepts only 13 of 496 blocks because its `HardingText-Regular` prose varies
+  across reported sizes 8.1-8.4, while uniform 8.0-point reference text wins as
+  the body style. Creative Commons license and supplemental-object blocks also
+  remain false prose candidates. This is a general failure of exact per-line
+  font-size uniformity, not a paper-specific residual case. Do not add a
+  numeric font-size tolerance without `APPROVE_LAYOUT_TOLERANCE`; the next
+  proposal should use typed font-family/style transitions or another exact
+  structural body-flow signal. No corrective parser edit or second corpus run
+  was attempted.
+  The user subsequently supplied `APPROVE_LAYOUT_TOLERANCE` and approved the
+  narrow rule `largest line font size - smallest line font size < 0.5` within
+  an otherwise single-font body block. The accepted 28-PDF comparison is
+  `outputs/testpapers_batch_prose_font_span_20260718`: all commands complete,
+  all 4,674 blocks are preserved, prose candidates increase from 729 to 774,
+  and all 486 rotated blocks remain residual. Only the two intended papers
+  change. `mdpi-The Relationship Between a Mediterranean Diet and Frailty in
+  Older Adults- NHANES 2007–2017.pdf` increases from 1 to 17 accepted blocks;
+  `An atlas of exposome–phenome associations in health and disease risk.pdf`
+  increases from 13 to 42. Across the two papers, 59 prose continuations or
+  section headings/content are added and 14 former non-prose candidates are
+  dropped, for a net increase of 45; none of the additions is caption-leading
+  or known page furniture. The other 26 papers are unchanged. Extracted and
+  normalized tables, table definitions, parsed tables, existing sections, and
+  existing Markdown are byte-identical to the exact-font baseline. The run
+  retains 92 extracted tables, 313 existing sections, and the same single
+  known Helicobacter table-definition failure. Known false candidates remain:
+  the Open Access license on PDF page 10 of `Asthma prevalence among United
+  States population insights from NHANES data analysis.pdf`; two supplemental
+  object descriptions on PDF page 9 of `An environment-wide association study
+  (EWAS) on type 2 diabetes mellitus.pdf`; and the mixed Figure 4 caption/prose
+  source block on PDF page 4 of `Uses of NHANES Biomarker Data for Chemical
+  Risk Assessment- Trends, Challenges, and Opportunities.pdf`. Keep these and
+  isolated residual prose for the next applicable general stage rather than
+  broadening this font correction.
+  Focused in-memory checks on PDF page 4, printed Table 1, of
+  `Role of Estimated Glucose Disposal Rate in Staging and Death Risk of Cardiovascular-Kidney-Metabolic Syndrome- Insights from NHANES 1999-2018.pdf`
+  and PDF page 10, printed Table 5, of
+  `Journal of Periodontology - 2015 - Eke - Update on Prevalence of Periodontitis in Adults in the United States  NHANES 2009.pdf`
+  confirm that every block field agrees with its source lines. After excluding
+  the four new block fields, the text stream, sections, and Markdown are
+  identical to `outputs/testpapers_batch_connected_rule_span_20260718`; the
+  second check includes 51 rotated-orientation blocks.
+  The earlier mixed-layout repair is recorded in
   `docs/implementation/paper_text_reading_order_repair.md`. The existing
-  `PaperPositionedDocument` block and line evidence must feed the existing
-  `PaperTextStream`; do not add another text stream or extraction pass.
+  `PaperPositionedDocument` block and line evidence must continue to feed the
+  existing `PaperTextStream`; do not add another text stream or extraction pass.
   The first approved step now keeps each positioned source block contiguous
   and retains its block-local line order in `PaperTextStream`. The focused run
   is `outputs/task1_step2_block_order_20260717`; PDF page 4 of

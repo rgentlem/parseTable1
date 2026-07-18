@@ -44,9 +44,14 @@ class PaperTextBlock(BaseModel):
     page_num: int = Field(ge=1)
     source_block_index: int | None = Field(default=None, ge=0)
     orientation: PaperTextOrientation = "upright"
+    orientation_group_id: str
     bbox: tuple[float, float, float, float]
+    canonical_bbox: tuple[float, float, float, float]
+    column_index: int = Field(ge=0)
+    column_count: int = Field(ge=1)
     line_ids: list[str] = Field(min_length=1)
     role: PaperTextBlockRole = "body"
+    prose_candidate: bool = False
     text: str = ""
 
 

@@ -986,7 +986,15 @@ Design components:
   `column_boundaries`/`column_bands`, orientation-group metadata, original
   source line IDs and page-space bboxes, canonical upright bboxes for rotated
   groups, line-level role/style fields, minimal span records, and ordered typed
-  source blocks carrying their exact union bbox and ordered line IDs. The
+  source blocks carrying their orientation-group ID, exact page-space and
+  canonical union bboxes, column index and count, and ordered line IDs. Block
+  typography remains available through those source lines and spans. Blocks
+  also carry a non-operative `prose_candidate` flag derived only from upright
+  source continuity, observed column extent, one font name with a
+  largest-minus-smallest line font-size span below 0.5, sentence evidence,
+  confirmed headings, and unfinished prose crossing a page or column boundary.
+  Arbitrary body blocks are not promoted into headings, and opaque font names
+  are not interpreted. The
   descriptive `has_bold_text` note never assigns a heading role or qualifies a
   caption candidate. A heading requires every visible line span to be bold and
   a font strictly larger than the dominant paper body font. Entirely bold source

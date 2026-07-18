@@ -101,9 +101,23 @@ evidence.
 records orientation groups, group-local column boundaries and bands, original
 source line IDs/page-space bboxes, canonical bboxes, per-line geometry/style,
 minimal source span records, and typed `PaperTextBlock` records. Each block
-stores its document order, page, source block index, orientation, exact union
-bbox, ordered line IDs, role, and text. The raw positioned document remains
-unchanged; the canonical orientation is a derived reading-order projection.
+stores its document order, page, source block index, orientation-group ID,
+orientation, exact page-space and canonical union bboxes, column index and
+count, ordered line IDs, role, and text. Typography remains on the block's
+source lines and spans rather than being duplicated. The raw positioned
+document remains unchanged; the canonical orientation is a derived
+reading-order projection.
+
+Each block also records a non-operative `prose_candidate` decision. Positive
+body evidence requires upright orientation, consecutive block-local source
+lines, exact containment in the observed column extent, one font name, and a
+within-block largest-minus-smallest line font-size span below 0.5. Independent
+paragraph evidence requires the selected body style and a completed sentence
+before a later source line. Confirmed headings may open that prose flow. An
+unfinished accepted paragraph may continue into a body-style block only across
+a page or column change. Arbitrary body blocks are not promoted into headings,
+and opaque font names are not interpreted. Body candidates do not yet filter
+sections or Markdown.
 
 The extraction caption path consumes this stream directly. Caption labels are
 recognized from line/span evidence, bound to table candidates in the canonical

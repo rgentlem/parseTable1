@@ -303,12 +303,21 @@ def build_paper_text_stream(
                     page_num=current_block_lines[0].page_num,
                     source_block_index=current_block_lines[0].block_index,
                     orientation=current_block_lines[0].orientation,
+                    orientation_group_id=current_block_lines[0].orientation_group_id,
                     bbox=(
                         min(block_line.bbox[0] for block_line in current_block_lines),
                         min(block_line.bbox[1] for block_line in current_block_lines),
                         max(block_line.bbox[2] for block_line in current_block_lines),
                         max(block_line.bbox[3] for block_line in current_block_lines),
                     ),
+                    canonical_bbox=(
+                        min(block_line.canonical_bbox[0] for block_line in current_block_lines if block_line.canonical_bbox is not None),
+                        min(block_line.canonical_bbox[1] for block_line in current_block_lines if block_line.canonical_bbox is not None),
+                        max(block_line.canonical_bbox[2] for block_line in current_block_lines if block_line.canonical_bbox is not None),
+                        max(block_line.canonical_bbox[3] for block_line in current_block_lines if block_line.canonical_bbox is not None),
+                    ),
+                    column_index=current_block_lines[0].column_index,
+                    column_count=current_block_lines[0].column_count,
                     line_ids=[block_line.line_id for block_line in current_block_lines],
                     role=next(iter(block_roles)) if len(block_roles) == 1 else "mixed",
                     text="\n".join(block_line.text for block_line in current_block_lines),
@@ -469,12 +478,13 @@ def _detect_page_columns(
     if any(len(group) < 4 for group in column_groups):
         return 1, [], [(0.0, page_width)], []
 
-    column_bands: list[tuple[float, float]] = []
-    band_left = 0.0
-    for boundary in column_boundaries:
-        column_bands.append((band_left, boundary))
-        band_left = boundary
-    column_bands.append((band_left, page_width))
+    column_bands = [
+        (
+            min(float(record["bbox"][0]) for record in group),
+            max(float(record["bbox"][2]) for record in group),
+        )
+        for group in column_groups
+    ]
 
     column_count = len(column_bands)
     diagnostics = [f"{column_count}_column_layout_detected"]

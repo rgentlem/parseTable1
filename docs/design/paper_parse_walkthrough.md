@@ -269,7 +269,15 @@ it. It orders positioned source blocks rather than independently sorting their
 lines: block-local lines retain source order, one-column blocks sort by top then
 left, and detected columns read top-to-bottom before proceeding left-to-right.
 Its typed `PaperTextBlock` records preserve the block order, source block index,
-exact union bbox, ordered source line IDs, role, and text.
+orientation-group ID, exact page-space and canonical union bboxes, column index
+and count, ordered source line IDs, role, and text. Font and span evidence
+remains on those source lines rather than being copied into the block. The
+block's non-operative `prose_candidate` flag uses only upright source
+continuity, exact observed column extent, one font name with a
+largest-minus-smallest line font-size span below 0.5, sentence evidence,
+confirmed headings, and unfinished prose crossing a page or column boundary.
+Arbitrary body blocks are not promoted into headings, and opaque font names are
+not interpreted.
 After the dominant body font profile is available, a line receives the heading
 role only when all of its visible spans are bold and its font is strictly larger
 than the dominant body font. Table-caption lines and entirely bold source blocks
@@ -1229,7 +1237,12 @@ line ID and page-space `bbox` beside its derived `canonical_bbox`, direction,
 orientation, orientation-group ID, page, column, and role. Per-page records keep
 orientation-group source bounds, canonical dimensions, column diagnostics,
 `column_boundaries`, and `column_bands`. Minimal span records retain source text,
-bbox, font name, font size, and flags without reparsing the PDF.
+bbox, font name, font size, and flags without reparsing the PDF. Each ordered
+block directly carries its orientation-group ID, page-space and canonical union
+bboxes, and column index and count; its ordered line IDs point to the existing
+line and span typography evidence. For ordinary detected columns,
+`column_boundaries` remain x-start routing divisions while `column_bands`
+preserve the exact observed x extent of the records assigned to each column.
 
 ### `paper_sections.json`
 

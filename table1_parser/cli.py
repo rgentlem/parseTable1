@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import inspect
 import json
+import re
 import sys
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -564,6 +565,12 @@ def _build_paper_context_artifacts(pdf_path: str) -> PaperContextArtifacts:
                             max(line.bbox[2] for line in segment_lines),
                             max(line.bbox[3] for line in segment_lines),
                         ),
+                        "canonical_bbox": (
+                            min(line.canonical_bbox[0] for line in segment_lines if line.canonical_bbox is not None),
+                            min(line.canonical_bbox[1] for line in segment_lines if line.canonical_bbox is not None),
+                            max(line.canonical_bbox[2] for line in segment_lines if line.canonical_bbox is not None),
+                            max(line.canonical_bbox[3] for line in segment_lines if line.canonical_bbox is not None),
+                        ),
                         "line_ids": [line.line_id for line in segment_lines],
                         "role": (
                             next(iter(segment_roles))
@@ -574,6 +581,133 @@ def _build_paper_context_artifacts(pdf_path: str) -> PaperContextArtifacts:
                     }
                 )
             )
+    orientation_groups = {
+        group.group_id: group
+        for page in paper_text_stream.pages
+        for group in page.orientation_groups
+    }
+    block_layouts = {}
+    block_styles = {}
+    eligible_body_block_ids = set()
+    eligible_heading_block_ids = set()
+    sentence_block_ids = set()
+    body_style_character_counts = {}
+    for block in updated_blocks:
+        block_lines = [updated_lines_by_id[line_id] for line_id in block.line_ids]
+        line_indices = [line.line_index for line in block_lines]
+        group = orientation_groups.get(block.orientation_group_id)
+        structurally_eligible = (
+            block.orientation == "upright"
+            and group is not None
+            and block.column_index < len(group.column_bands)
+            and group.column_bands[block.column_index][0] <= block.canonical_bbox[0]
+            and block.canonical_bbox[2] <= group.column_bands[block.column_index][1]
+            and line_indices
+            and all(line_index is not None for line_index in line_indices)
+            and line_indices == list(range(line_indices[0], line_indices[0] + len(line_indices)))
+            and all(
+                line.page_num == block.page_num
+                and line.block_index == block.source_block_index
+                and line.orientation_group_id == block.orientation_group_id
+                and line.column_index == block.column_index
+                and line.column_count == block.column_count
+                for line in block_lines
+            )
+        )
+        if not structurally_eligible:
+            continue
+        block_layouts[block.block_id] = (
+            block.page_num,
+            block.orientation_group_id,
+            block.column_index,
+            block.column_count,
+        )
+        if block.role == "heading":
+            eligible_heading_block_ids.add(block.block_id)
+            continue
+        if block.role != "body" or any(
+            line.dominant_font is None or line.dominant_font_size is None
+            for line in block_lines
+        ):
+            continue
+        fonts = {line.dominant_font for line in block_lines}
+        font_sizes = [line.dominant_font_size for line in block_lines]
+        if len(fonts) != 1 or max(font_sizes) - min(font_sizes) >= 0.5:
+            continue
+        block_style = (next(iter(fonts)), max(font_sizes))
+        block_styles[block.block_id] = block_style
+        eligible_body_block_ids.add(block.block_id)
+        if re.search(r"[.!?](?:[\"'’”)]*)?(?=\s|$)", block.text):
+            sentence_block_ids.add(block.block_id)
+            body_style_character_counts[block_style] = (
+                body_style_character_counts.get(block_style, 0)
+                + sum(len(line.text) for line in block_lines)
+            )
+    body_style = (
+        max(body_style_character_counts, key=body_style_character_counts.__getitem__)
+        if body_style_character_counts
+        else None
+    )
+    paragraph_block_ids = set()
+    for block in updated_blocks:
+        if (
+            block.block_id in eligible_body_block_ids
+            and block_styles.get(block.block_id) == body_style
+            and any(
+                "\n" in block.text[match.end() :]
+                for match in re.finditer(
+                    r"(?:[!?]|(?<!\d)\.)(?:[\"'’”)]*)?(?=\s|$)", block.text
+                )
+            )
+        ):
+            paragraph_block_ids.add(block.block_id)
+    prose_block_ids = set(paragraph_block_ids)
+    for block_index, block in enumerate(updated_blocks[1:], start=1):
+        previous_block = updated_blocks[block_index - 1]
+        if (
+            previous_block.block_id in eligible_heading_block_ids
+            and block.block_id in sentence_block_ids
+            and block_styles.get(block.block_id) == body_style
+            and block_layouts.get(previous_block.block_id)
+            == block_layouts.get(block.block_id)
+        ):
+            prose_block_ids.add(block.block_id)
+        if (
+            previous_block.block_id in prose_block_ids
+            and block.block_id in eligible_body_block_ids
+            and block_styles.get(block.block_id) == body_style
+            and block.block_id not in prose_block_ids
+            and re.search(
+                r"[.!?](?:[\"'’”)]*)\s*$", previous_block.text
+            )
+            is None
+            and (
+                previous_block.page_num != block.page_num
+                or (
+                    previous_block.orientation_group_id
+                    == block.orientation_group_id
+                    and previous_block.column_count == block.column_count
+                    and previous_block.column_index != block.column_index
+                )
+            )
+        ):
+            prose_block_ids.add(block.block_id)
+    for block_index, block in enumerate(updated_blocks[:-1]):
+        next_block = updated_blocks[block_index + 1]
+        if (
+            block.block_id in eligible_heading_block_ids
+            and next_block.block_id in prose_block_ids
+            and block_layouts[block.block_id] == block_layouts[next_block.block_id]
+        ):
+            prose_block_ids.add(block.block_id)
+    updated_blocks = [
+        block.model_copy(
+            update={
+                "prose_candidate": block.block_id in prose_block_ids,
+            }
+        )
+        for block in updated_blocks
+    ]
     paper_text_stream = paper_text_stream.model_copy(
         update={"lines": updated_lines, "blocks": updated_blocks}
     )
