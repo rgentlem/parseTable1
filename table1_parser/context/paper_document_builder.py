@@ -112,11 +112,63 @@ def build_paper_document(
                         "orientation_group_id": group_id,
                     }
                 )
+            source_block_records: dict[int, list[dict[str, object]]] = {}
+            source_block_orders: dict[int, int] = {}
+            for record_order, record in enumerate(oriented_records):
+                block_index = record.get("block_index")
+                source_block_key = (
+                    int(block_index)
+                    if isinstance(block_index, int)
+                    else -(record_order + 1)
+                )
+                source_block_records.setdefault(source_block_key, []).append(record)
+                source_block_orders.setdefault(source_block_key, record_order)
+            source_blocks: list[dict[str, object]] = []
+            for source_block_key, block_records in source_block_records.items():
+                source_ordered_records = sorted(
+                    block_records,
+                    key=lambda record: (
+                        int(record["line_index"])
+                        if isinstance(record.get("line_index"), int)
+                        else 10**9
+                    ),
+                )
+                source_blocks.append(
+                    {
+                        "block_index": source_block_key,
+                        "source_block_index": source_ordered_records[0].get("block_index"),
+                        "source_order": source_block_orders[source_block_key],
+                        "page_num": page.page_num,
+                        "orientation": orientation,
+                        "orientation_group_id": group_id,
+                        "source_bbox": (
+                            min(float(record["source_bbox"][0]) for record in source_ordered_records),
+                            min(float(record["source_bbox"][1]) for record in source_ordered_records),
+                            max(float(record["source_bbox"][2]) for record in source_ordered_records),
+                            max(float(record["source_bbox"][3]) for record in source_ordered_records),
+                        ),
+                        "bbox": (
+                            min(float(record["bbox"][0]) for record in source_ordered_records),
+                            min(float(record["bbox"][1]) for record in source_ordered_records),
+                            max(float(record["bbox"][2]) for record in source_ordered_records),
+                            max(float(record["bbox"][3]) for record in source_ordered_records),
+                        ),
+                        "line_ids": [
+                            str(record["source_line_id"])
+                            for record in source_ordered_records
+                        ],
+                        "text": "\n".join(
+                            str(record["text"])
+                            for record in source_ordered_records
+                        ),
+                        "records": source_ordered_records,
+                    }
+                )
             group_column_count, group_boundaries, group_bands, group_diagnostics = _detect_page_columns(
                 oriented_records,
                 canonical_width,
             )
-            ordered_records = _order_page_blocks(oriented_records, group_boundaries, canonical_width)
+            ordered_records = _order_page_blocks(source_blocks, group_boundaries, canonical_width)
             for record in ordered_records:
                 record["group_column_count"] = group_column_count
             ordered_groups.append(((source_top, source_left), ordered_records))
@@ -394,6 +446,22 @@ def build_paper_document(
                 )
             )
 
+    for page in stream_pages:
+        for group in page.orientation_groups:
+            group_blocks = [
+                block
+                for block in blocks
+                if block.orientation_group_id == group.group_id
+            ]
+            (
+                group.layout_kind,
+                group.layout_regions,
+                group.layout_diagnostics,
+            ) = _build_block_layout_candidates(
+                group.group_id,
+                group_blocks,
+            )
+
     groups = {
         group.group_id: group
         for page in stream_pages
@@ -584,6 +652,9 @@ def build_paper_document(
                         "canonical_height": group.canonical_height,
                         "column_boundaries": group.column_boundaries,
                         "column_bands": group.column_bands,
+                        "layout_kind": group.layout_kind,
+                        "layout_regions": group.layout_regions,
+                        "layout_diagnostics": group.layout_diagnostics,
                     }
                     for group in page.orientation_groups
                 ],
@@ -613,6 +684,297 @@ def build_paper_document(
             block.block_id for block in blocks if block.block_id not in prose_ids
         ],
     }, bibliography_entries
+
+
+def _build_block_layout_candidates(
+    group_id: str,
+    group_blocks: list[SimpleNamespace],
+) -> tuple[str, list[dict[str, object]], list[str]]:
+    """Build non-operative gutter tracks and block placements from exact topology."""
+    if not group_blocks:
+        raise ValueError(f"Block layout candidate has no blocks for orientation group {group_id}.")
+
+    source_ordered_blocks = sorted(
+        group_blocks,
+        key=lambda block: (
+            block.source_block_index is None,
+            block.source_block_index or 0,
+            block.order,
+            block.block_id,
+        ),
+    )
+    source_positions = {
+        block.block_id: source_position
+        for source_position, block in enumerate(source_ordered_blocks)
+    }
+
+    vertical_edges = sorted(
+        {
+            edge
+            for block in group_blocks
+            for edge in (block.canonical_bbox[1], block.canonical_bbox[3])
+        }
+    )
+    region_candidates: list[
+        tuple[list[SimpleNamespace], list[tuple[float, float]]]
+    ] = []
+    current_region_blocks: dict[str, SimpleNamespace] = {}
+    current_gutters: list[tuple[float, float]] = []
+    for interval_top, interval_bottom in zip(vertical_edges, vertical_edges[1:]):
+        if interval_top >= interval_bottom:
+            continue
+        active_blocks = [
+            block
+            for block in group_blocks
+            if (
+                block.canonical_bbox[1] < interval_bottom
+                and block.canonical_bbox[3] > interval_top
+            )
+        ]
+        if not active_blocks:
+            continue
+
+        occupied_intervals: list[tuple[float, float]] = []
+        for block in sorted(
+            active_blocks,
+            key=lambda candidate: (
+                candidate.canonical_bbox[0],
+                candidate.canonical_bbox[2],
+                source_positions[candidate.block_id],
+            ),
+        ):
+            block_left = block.canonical_bbox[0]
+            block_right = block.canonical_bbox[2]
+            if not occupied_intervals or occupied_intervals[-1][1] < block_left:
+                occupied_intervals.append((block_left, block_right))
+            else:
+                occupied_intervals[-1] = (
+                    occupied_intervals[-1][0],
+                    max(occupied_intervals[-1][1], block_right),
+                )
+        interval_gutters = [
+            (left_interval[1], right_interval[0])
+            for left_interval, right_interval in zip(
+                occupied_intervals,
+                occupied_intervals[1:],
+            )
+            if left_interval[1] < right_interval[0]
+        ]
+
+        matched_gutter_indexes: set[int] = set()
+        continued_gutters: dict[int, tuple[float, float]] = {}
+        closed_gutter_indexes: set[int] = set()
+        for gutter_index, gutter in enumerate(current_gutters):
+            for interval_gutter_index, interval_gutter in enumerate(interval_gutters):
+                if interval_gutter_index in matched_gutter_indexes:
+                    continue
+                intersection = (
+                    max(gutter[0], interval_gutter[0]),
+                    min(gutter[1], interval_gutter[1]),
+                )
+                if intersection[0] < intersection[1]:
+                    continued_gutters[gutter_index] = intersection
+                    matched_gutter_indexes.add(interval_gutter_index)
+                    break
+            if gutter_index in continued_gutters:
+                continue
+            crosses_gutter = any(
+                block.canonical_bbox[0] < gutter[1]
+                and block.canonical_bbox[2] > gutter[0]
+                for block in active_blocks
+            )
+            occupies_left = any(
+                block.canonical_bbox[2] <= gutter[0] for block in active_blocks
+            )
+            occupies_right = any(
+                block.canonical_bbox[0] >= gutter[1] for block in active_blocks
+            )
+            if not crosses_gutter and occupies_left != occupies_right:
+                continue
+            closed_gutter_indexes.add(gutter_index)
+
+        boundary_would_cut_block = any(
+            block.canonical_bbox[1] < interval_top < block.canonical_bbox[3]
+            for block in active_blocks
+        )
+        close_all_existing_gutters = bool(current_gutters) and len(
+            closed_gutter_indexes
+        ) == len(current_gutters)
+        prior_phase_crosses_new_gutters = (
+            not current_gutters
+            and bool(current_region_blocks)
+            and bool(interval_gutters)
+            and all(
+                any(
+                    block.canonical_bbox[0] < gutter[1]
+                    and block.canonical_bbox[2] > gutter[0]
+                    for block in current_region_blocks.values()
+                )
+                for gutter in interval_gutters
+            )
+        )
+        starts_new_region = (
+            (close_all_existing_gutters or prior_phase_crosses_new_gutters)
+            and not boundary_would_cut_block
+        )
+        if starts_new_region:
+            region_candidates.append(
+                (list(current_region_blocks.values()), current_gutters)
+            )
+            current_region_blocks = {
+                block.block_id: block for block in active_blocks
+            }
+            current_gutters = interval_gutters
+            continue
+
+        current_region_blocks.update(
+            {block.block_id: block for block in active_blocks}
+        )
+        if not current_gutters:
+            current_gutters = interval_gutters
+            continue
+        current_gutters = [
+            continued_gutters.get(gutter_index, gutter)
+            for gutter_index, gutter in enumerate(current_gutters)
+        ]
+        current_gutters.extend(
+            gutter
+            for gutter_index, gutter in enumerate(interval_gutters)
+            if gutter_index not in matched_gutter_indexes
+        )
+        current_gutters.sort()
+
+    if current_region_blocks:
+        region_candidates.append(
+            (list(current_region_blocks.values()), current_gutters)
+        )
+
+    layout_regions: list[dict[str, object]] = []
+    candidate_block_ids: list[str] = []
+    spanning_placement_count = 0
+    for region_index, (region_blocks, candidate_gutters) in enumerate(
+        region_candidates
+    ):
+        candidate_gutters = sorted(candidate_gutters)
+        region_bbox = (
+            min(block.canonical_bbox[0] for block in region_blocks),
+            min(block.canonical_bbox[1] for block in region_blocks),
+            max(block.canonical_bbox[2] for block in region_blocks),
+            max(block.canonical_bbox[3] for block in region_blocks),
+        )
+        region_id = f"{group_id}-region-{region_index}"
+        for left_gutter, right_gutter in zip(
+            candidate_gutters,
+            candidate_gutters[1:],
+        ):
+            if left_gutter[1] >= right_gutter[0]:
+                raise ValueError(
+                    f"Block layout candidate has overlapping gutter tracks in {region_id}."
+                )
+
+        columns: list[dict[str, object]] = []
+        column_count = len(candidate_gutters) + 1
+        for column_index in range(column_count):
+            column_left = (
+                region_bbox[0]
+                if column_index == 0
+                else candidate_gutters[column_index - 1][1]
+            )
+            column_right = (
+                region_bbox[2]
+                if column_index == len(candidate_gutters)
+                else candidate_gutters[column_index][0]
+            )
+            if column_left >= column_right:
+                raise ValueError(
+                    f"Block layout candidate has a non-positive column in {region_id}."
+                )
+            columns.append(
+                {
+                    "column_id": f"{region_id}-column-{column_index}",
+                    "bbox": (
+                        column_left,
+                        region_bbox[1],
+                        column_right,
+                        region_bbox[3],
+                    ),
+                }
+            )
+
+        region_blocks_by_id = {block.block_id: block for block in region_blocks}
+        block_placements: list[dict[str, object]] = []
+        for block in region_blocks:
+            start_column = sum(
+                gutter[1] <= block.canonical_bbox[0]
+                for gutter in candidate_gutters
+            )
+            end_column_exclusive = 1 + sum(
+                gutter[0] < block.canonical_bbox[2]
+                for gutter in candidate_gutters
+            )
+            if not (
+                0 <= start_column < end_column_exclusive <= column_count
+            ):
+                raise ValueError(
+                    f"Block layout candidate has an invalid placement for {block.block_id}."
+                )
+            if end_column_exclusive - start_column > 1:
+                spanning_placement_count += 1
+            block_placements.append(
+                {
+                    "block_id": block.block_id,
+                    "start_column": start_column,
+                    "end_column_exclusive": end_column_exclusive,
+                }
+            )
+        block_placements.sort(
+            key=lambda placement: (
+                placement["start_column"],
+                region_blocks_by_id[str(placement["block_id"])].canonical_bbox[1],
+                source_positions[str(placement["block_id"])],
+            )
+        )
+        candidate_block_ids.extend(
+            str(placement["block_id"]) for placement in block_placements
+        )
+        layout_regions.append(
+            {
+                "region_id": region_id,
+                "bbox": region_bbox,
+                "candidate_gutters": candidate_gutters,
+                "columns": columns,
+                "block_placements": block_placements,
+            }
+        )
+
+    expected_block_ids = {block.block_id for block in group_blocks}
+    if (
+        len(candidate_block_ids) != len(set(candidate_block_ids))
+        or set(candidate_block_ids) != expected_block_ids
+    ):
+        raise ValueError(
+            f"Block layout candidate does not cover orientation group {group_id} exactly once."
+        )
+
+    if len(layout_regions) > 1:
+        layout_kind = "mixed"
+    elif len(layout_regions[0]["columns"]) > 1:
+        layout_kind = "multicolumn"
+    else:
+        layout_kind = "single"
+    column_count = sum(len(region["columns"]) for region in layout_regions)
+    gutter_count = sum(len(region["candidate_gutters"]) for region in layout_regions)
+    return (
+        layout_kind,
+        layout_regions,
+        [
+            "nonoperative_region_column_layout_candidate",
+            f"candidate_region_count:{len(layout_regions)}",
+            f"candidate_column_count:{column_count}",
+            f"candidate_gutter_count:{gutter_count}",
+            f"candidate_spanning_placement_count:{spanning_placement_count}",
+        ],
+    )
 
 
 def _line_record_from_positioned_line(line: PaperPositionedLine) -> dict[str, object]:
@@ -777,39 +1139,11 @@ def _detect_caption_aligned_columns(
 
 
 def _order_page_blocks(
-    line_records: list[dict[str, object]],
+    source_blocks: list[dict[str, object]],
     column_boundaries: list[float],
     page_width: float,
 ) -> list[dict[str, object]]:
-    source_blocks: dict[int, list[dict[str, object]]] = {}
-    for record_order, record in enumerate(line_records):
-        block_index = record.get("block_index")
-        source_blocks.setdefault(
-            int(block_index) if isinstance(block_index, int) else -(record_order + 1),
-            [],
-        ).append(record)
-    ordered_blocks: list[dict[str, object]] = []
-    for block_index, block_records in source_blocks.items():
-        source_ordered_records = sorted(
-            block_records,
-            key=lambda record: (
-                int(record["line_index"])
-                if isinstance(record.get("line_index"), int)
-                else 10**9
-            ),
-        )
-        ordered_blocks.append(
-            {
-                "block_index": block_index,
-                "bbox": (
-                    min(float(record["bbox"][0]) for record in source_ordered_records),
-                    min(float(record["bbox"][1]) for record in source_ordered_records),
-                    max(float(record["bbox"][2]) for record in source_ordered_records),
-                    max(float(record["bbox"][3]) for record in source_ordered_records),
-                ),
-                "records": source_ordered_records,
-            }
-        )
+    ordered_blocks = list(source_blocks)
 
     column_count = len(column_boundaries) + 1
     if column_count <= 1:

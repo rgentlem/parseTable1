@@ -984,7 +984,22 @@ Design components:
   canonical ownership projection over the existing filtered block registry. It
   preserves block geometry and source identity, orders current prose candidates
   as segments and paragraphs, leaves entities empty, and assigns all other
-  blocks to `unassigned_block_ids`. Its prose segments now directly supply the
+  blocks to `unassigned_block_ids`. Each populated orientation group also
+  carries a non-operative block-layout candidate: `layout_kind`, ordered
+  `layout_regions`, exact positive `candidate_gutters`, leaf-column track bboxes,
+  region-level `block_placements`, and `layout_diagnostics`. Exact block top
+  and bottom events establish atomic vertical intervals. Gutters persist by
+  positive x-intersection, become dormant under one-sided occupancy, and may
+  refine one lane without ending a region when another track persists. A block
+  crossing a gutter receives a spanning placement instead of suppressing that
+  gutter globally. Every placement records one block ID plus its inclusive
+  start and exclusive end column, and placements are ordered by start column,
+  canonical top, and source order. A region transition occurs only when all
+  established tracks close, and it never cuts a block. `layout_kind` follows
+  the actual region/column shape mechanically. No consumer uses this candidate. The
+  legacy page-wide column metadata remains operative. This accepted checkpoint
+  does not authorize activating the candidate or removing that path. Its
+  prose segments now directly supply the
   persisted section and Markdown views. Prose ownership is derived only from upright
   source continuity, observed column extent, one font name with a
   largest-minus-smallest line font-size span below 0.5, sentence evidence,

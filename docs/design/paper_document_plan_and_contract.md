@@ -94,10 +94,58 @@ PaperDocumentPage
   orientation_groups
 ```
 
-Orientation groups retain their canonical dimensions, column bands, and column
-boundaries. Canonical coordinates are comparable only within their declared
-orientation group. Page-space coordinates remain authoritative for proximity
-to visual objects, rules, captions, and other blocks.
+Orientation groups currently retain their canonical dimensions and the frozen
+operative `column_bands` and `column_boundaries`. They also expose the first
+non-operative block-layout candidate:
+
+```text
+PaperDocumentOrientationGroup
+  layout_kind
+  layout_regions
+    region_id
+    bbox
+    candidate_gutters
+    columns
+      column_id
+      bbox
+    block_placements
+      block_id
+      start_column
+      end_column_exclusive
+  layout_diagnostics
+```
+
+At the current Step 4.1 candidate checkpoint, every exact canonical block top
+and bottom edge defines a vertical event. Each non-empty atomic interval
+records the exact positive x-gutters between its occupied block components.
+An established gutter continues while its prior and observed empty intervals
+have a positive intersection. One-sided occupancy is absence rather than
+closure, and a block crossing a gutter closes it only while that block is
+active. A new gutter may refine one existing lane while another gutter
+persists. A new region is created only when a non-empty interval closes every
+established gutter, or when a preceding no-gutter phase crosses every gutter
+that first appears below it. Region boundaries never cut blocks.
+
+The resulting disjoint gutter tracks define leaf columns from left to right
+without a maximum count. A column bbox is the exact canonical track rectangle
+bounded vertically by the region bbox and horizontally by its neighboring
+gutter edges; it is not a second block owner. Each region instead stores every
+block exactly once in `block_placements`. `start_column` and
+`end_column_exclusive` allow one block to span adjacent leaf columns, while
+placement order remains start column, canonical top, then source-block order.
+Every referenced block retains its source-ordered lines. Region bboxes remain
+exact canonical-coordinate block unions.
+
+`layout_kind` describes the materialized candidate mechanically: `mixed`
+records more than one region, `multicolumn` records one region with more than
+one column, and `single` records one region with one column. No consumer uses
+this candidate for ordering or ownership; the existing page-wide layout
+remains operative. This accepted checkpoint does not authorize activating the
+candidate or removing the page-wide path.
+
+Canonical coordinates are comparable only within their declared orientation
+group. Page-space coordinates remain authoritative for proximity to visual
+objects, rules, captions, and other blocks.
 
 ### Blocks
 

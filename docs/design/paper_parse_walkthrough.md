@@ -267,9 +267,25 @@ cannot turn a prose reference into the start of a table candidate.
 Raw and derived artifacts remain side by side through the R handoff:
 `paper_positioned_document.json` preserves shared source geometry,
 while `paper_document.json` adds orientation-aware reading order and canonical
-ownership without replacing it. It orders positioned source blocks rather than independently sorting their
+ownership without replacing it. After page-furniture filtering, document
+construction first assembles complete provisional source-block records with
+their block-local lines, text, source and canonical union bboxes, orientation,
+source order, and source-block provenance. Only then does the current frozen
+page-wide layout path order those blocks. It does not independently sort their
 lines: block-local lines retain source order, one-column blocks sort by top then
 left, and detected columns read top-to-bottom before proceeding left-to-right.
+Each populated orientation group also records a non-operative block-layout
+candidate from exact canonical block top and bottom events. Each non-empty
+atomic interval contributes exact positive x-gutters. Tracks continue by
+positive x-intersection, remain dormant under one-sided occupancy, and may
+refine an existing lane without ending the region when another track persists.
+A block crossing only part of the leaf structure spans those columns rather
+than removing the gutter globally. Regions materialize left-to-right leaf
+column track bboxes plus one ordered `block_placements` list; every block occurs
+once with `start_column` and `end_column_exclusive`, ordered by start column,
+canonical top, and source order. A region transition occurs only when all
+established tracks close and never cuts a block. Block-local line order remains
+unchanged, and no consumer yet uses this candidate for order or ownership.
 Its block registry preserves the block order, source block index,
 orientation-group ID, exact page-space and canonical union bboxes, column index
 and count, ordered source line IDs, role, and text. Font and span evidence

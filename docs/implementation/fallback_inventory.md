@@ -330,7 +330,13 @@ diagnostic.
 
 - Bibliography column/indent handling
   - Code: `table1_parser/paper_bibliography.py`.
-  - Status: keep. This is document-structure extraction, not table-grid repair.
+  - Status: temporary and frozen during the block-first `PaperDocument` layout
+    migration. Do not extend or add a parallel bibliography path. Retirement
+    criterion: after canonical block layout passes focused and 28-PDF review,
+    migrate bibliography parsing to ordered layout-region block IDs, block
+    text, and extracted block bboxes, then remove line-column clustering,
+    visual-row reconstruction, line-gap/indent layout thresholds, and the
+    section-derived fallback in the same bibliography migration.
 
 ## First Removal Sequence
 

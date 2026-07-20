@@ -1,5 +1,11 @@
 # Parser ToDo
 
+> **Accepted checkpoint — 2026-07-20:** Steps 0–5 of the block-first physical
+> layout plan are complete. The resulting layout is non-operative and changes
+> no document order, ownership, bibliography parsing, or downstream table
+> behavior. No Step 6 activation or bibliography migration is included in this
+> checkpoint.
+
 This is the persistent implementation ToDo list for parser work. Agents should check it before changing extraction, normalization, row/column semantics, table routing, value parsing, diagnostics, or R inspection helpers. Update it when a task is completed, reprioritized, split, or superseded.
 
 Keep detailed implementation notes and epidemiology-table reasoning here or in linked implementation documents. Keep high-level design docs focused on stable pipeline shape, schemas, persisted artifact contracts, and durable architecture decisions.
@@ -22,11 +28,87 @@ narrow recovery for isolated residual cases while that broader stage is still
 being established. Go deeper only after the applicable general rule and corpus
 evidence have failed.
 
+The current document-processing checkpoint is the block-first physical layout
+candidate in
+`docs/implementation/paper_document_block_layout_implementation_plan.md`.
+It constructs retained document blocks before layout and records
+orientation-local regions, leaf lanes, and block placements as non-operative
+evidence. The page-wide document layout and current bibliography parser remain
+operative and unchanged.
+
+Step 1 of the block-first layout plan is complete in
+`outputs/testpapers_batch_block_first_step1_20260719`. Page-furniture-filtered
+positioned lines are now assembled into complete provisional source-block
+records, including block-local lines, text, source and canonical bboxes,
+orientation, source order, and source-block provenance, before the frozen
+page-wide layout calculation. `_order_page_blocks()` now only orders those
+prebuilt blocks and no longer reconstructs blocks from individual lines. All
+28 PDFs completed against the accepted Step 3 baseline. All substantive JSON
+and Markdown artifacts are byte-for-byte unchanged; only generated
+`report_timestamp` values differ. The run retains 4,674 blocks, 774 prose
+blocks, 3,900 residual blocks, 486 rotated blocks, 1,350 bibliography entries,
+92 extracted tables, and 81 parsed tables.
+
+Step 2 of the block-first layout plan is complete in
+`outputs/testpapers_batch_block_layout_candidate_step2_20260719`. All 351
+populated orientation groups now carry one conservative non-operative region
+and one column with stable IDs, exact canonical bbox unions, source-ordered
+retained block IDs, and the
+`nonoperative_single_region_source_order_candidate` diagnostic. The candidate
+columns reference all 4,674 blocks exactly once. All 28 PDFs completed. After
+removing the three candidate fields, every `paper_document.json` is identical
+to Step 1; all other substantive JSON and Markdown artifacts are byte-for-byte
+unchanged, with only generated `report_timestamp` differences. Geometry-union,
+source-order, uniqueness, and coverage checks passed for every group. Step 3
+is complete in
+`outputs/testpapers_batch_block_region_topology_step3_20260719`. Exact
+canonical block topology now establishes 602 non-operative regions and 496
+candidate gutters across all 351 populated orientation groups. All 4,674
+retained blocks occur exactly once, every region bbox is the exact union of its
+blocks, every gutter is positive and uncrossed, and all 27 rotated orientation
+groups remain separate. All 28 PDFs completed; the Step 3 layout is unchanged
+by the subsequent implementation simplification, and every non-layout
+artifact remains substantively identical to Step 2. Step 4 is complete in
+`outputs/testpapers_batch_block_columns_step4_20260719`. The accepted 602
+regions now contain 1,105 left-to-right columns separated by 503 exact positive
+gutters. Columns have exact block-union bboxes and store blocks by canonical
+top then source order; all 4,674 blocks remain covered exactly once. Region
+membership is unchanged from Step 3. Region-level gutter recomputation adds
+seven valid partitions across four regions, including the source-supported
+20-column figure-label region on PDF page 4 of
+`An atlas of exposome–phenome associations in health and disease risk.pdf`.
+All 28 PDFs and 1,061 artifact comparisons passed, with no substantive
+non-layout or downstream change. Step 4.1 is complete in
+`outputs/testpapers_batch_block_gutter_tracks_step4_1_20260719`. Exact
+vertical-event gutter tracking replaces the region-global suppression and
+recomputation path, and each region now records leaf-column track bboxes plus
+one unique `block_placements` entry per block with an explicit column span.
+Across 351 populated orientation groups, the accepted candidate has 500
+regions, 967 columns, 467 gutters, 4,674 placements, and 533 spanning
+placements; all 27 rotated groups remain isolated. All 28 parses completed,
+all candidate invariants passed, and 1,061 comparisons found no unexpected
+non-layout difference. The intended PDF-page-1 abstract layout in
+`Uses of NHANES Biomarker Data for Chemical Risk Assessment- Trends,
+Challenges, and Opportunities.pdf` now has three leaf columns, with the
+abstract spanning the first two. Internal table-block column grouping is not a
+document-layout acceptance criterion and no specialized table artifact
+changed. Step 5 focused validation is complete against the same retained corpus
+without another parser run. All five named page requirements passed, including
+the newly explicit PDF-page-1 three-leaf requirement in the biomarker-risk
+paper; PDF page 4 of `periodontis2.pdf` remains genuinely single-column, and
+the same biomarker-risk page supplies the reviewed full-width heading case.
+Across all 351 orientation groups, 257 candidate traversals match frozen
+registry order and 94 differ on 92 PDF pages in 27 papers. Every one of the
+4,032 reordered block pairs is accounted for by exact region order,
+left-to-right start column, top-to-bottom position, or the retained source-order
+tie-breaker; none is unsupported. The new layout remains non-operative. Any
+activation or removal of the legacy page-wide layout requires a separate
+proposal and explicit approval.
+
 The prose-candidate checkpoint and atomic `PaperTextStream` to `PaperDocument`
-migration are complete. The next concrete change is to inspect every residual
-block using its preserved page-local evidence, first assembling captions and
-then resolving supported entity components while leaving uncertain material
-unassigned.
+migration are complete. This checkpoint does not select or authorize the next
+document-processing change; layout activation, bibliography migration, and
+residual entity assignment each require a separate proposal and approval.
 
 The approved destination contract is
 `docs/design/paper_document_plan_and_contract.md`. `PaperDocument` will

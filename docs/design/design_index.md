@@ -26,6 +26,11 @@ Then use the documents below as needed.
   text stream with one canonical interpreted `PaperDocument` that owns the
   block registry, narrative prose, document entities, and unresolved residual.
 
+- `docs/implementation/paper_document_block_layout_implementation_plan.md`
+  Accepted Steps 0–5 record for the non-operative block-first layout candidate:
+  orientation-local regions, leaf lanes, spanning placements, and focused plus
+  corpus validation without changing operative document order or ownership.
+
 - `docs/design/cell_text_annotations.md`
   Extraction-side sidecar artifact for superscripts, subscripts, and small marker symbols attached to table cells.
 
