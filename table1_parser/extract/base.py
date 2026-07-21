@@ -8,7 +8,6 @@ from collections.abc import Sequence
 
 from table1_parser.extract.provisional_table import ProvisionalExtractedTable
 from table1_parser.schemas import (
-    BibliographyEntry,
     PaperPageFurniture,
     PaperPositionedDocument,
     PaperTableMention,
@@ -27,6 +26,5 @@ class BaseExtractor(ABC):
         paper_positioned_document: PaperPositionedDocument | None = None,
         paper_table_mentions: Sequence[PaperTableMention] | None = None,
         paper_document: dict[str, object] | None = None,
-        bibliography_entries: Sequence[BibliographyEntry] | None = None,
     ) -> list[ProvisionalExtractedTable]:
         """Detect internal positioned-grid candidates from a PDF."""

@@ -232,9 +232,11 @@ bibliographic resolution belongs in `paper_bibliography.json`.
 
 `paper_bibliography.json` records the paper's own bibliography entries,
 numbered or unnumbered, and observed numeric reference markers linked to
-numbered entries. Bibliography entries are extracted from layout-aware,
-page-furniture-filtered `PaperDocument` lines joined to positioned evidence
-before table extraction, with block-derived sections retained as fallback. The layout reader uses one
+numbered entries. At the B0 checkpoint, the temporary legacy parser consumes
+page-furniture-filtered positioned lines only after canonical blocks, block
+layout, and provisional prose have been built. Its heading output cannot
+relabel or split blocks or change prose ownership. Block-derived sections remain
+a temporary fallback. The layout reader uses one
 entry-boundary workflow: read page, column, then vertical position; start a new
 entry when the row returns to the column's left edge, either at a numeric label
 or at the first author/organization text in a hanging-indent list; keep indented
@@ -286,6 +288,21 @@ once with `start_column` and `end_column_exclusive`, ordered by start column,
 canonical top, and source order. A region transition occurs only when all
 established tracks close and never cuts a block. Block-local line order remains
 unchanged, and no consumer yet uses this candidate for order or ownership.
+`paper_document.json` also records non-operative bibliography-region candidates.
+An explicit heading line must begin its canonical block. The candidate begins
+at that block in the page's block-layout order, then records same-orientation
+blocks on larger PDF page numbers. Existing prose overlaps are reported as
+conflicts; blocks, prose, residual ownership, and extraction masks are unchanged.
+It also records the B3 whole-block candidate. Current bibliography source-line
+IDs locate canonical blocks, every touched block is retained whole, and any
+touched block before the earliest heading page is retained and flagged. This
+candidate changes no entries, ownership, or extraction mask.
+The B4 candidate records whole blocks spanned by each contiguous numbered
+sequence; unnumbered lists reuse current entry lines. It remains non-operative.
+The B5 candidate instead walks forward independently from each reference
+heading, records the line evidence supporting every retained block, and stops
+at the first unsupported block. Separate headings remain separate even when
+their item numbering continues.
 Its block registry preserves the block order, source block index,
 orientation-group ID, exact page-space and canonical union bboxes, column index
 and count, ordered source line IDs, role, and text. Font and span evidence
@@ -303,12 +320,10 @@ After the dominant body font profile is available, a line receives the heading
 role only when all of its visible spans are bold and its font is strictly larger
 than the dominant body font. Table-caption lines and entirely bold source blocks
 containing completed sentence prose are excluded. No heading-name list is used.
-Exact whole-line bibliography labels are the narrow exception: the existing
-bibliography parser confirms them from the immediately following reference list,
-then the confirmed source lines receive the heading role before Markdown and
-section generation. Once these final roles are available, source blocks are
-split at heading/body transitions. Consecutive heading lines stay together, and
-each logical block preserves its source block index and ordered line provenance.
+The legacy bibliography parser does not supply heading roles or trigger block
+splits. Source blocks are split only at heading/body transitions established
+before bibliography parsing. Consecutive heading lines stay together, and each
+logical block preserves its source block index and ordered line provenance.
 `extracted_tables.json` preserves the selected physical table grid.
 Later normalized and continuation-resolved artifacts reference these records;
 they do not replace them.
@@ -355,9 +370,9 @@ The current implemented flow for `parse` is:
 PDF
   -> paper positioned document
   -> page-furniture detection and masking
-  -> filtered text stream / markdown
-  -> sections
-  -> bibliography parsing and ownership
+  -> canonical blocks, block layout, and provisional prose
+  -> legacy bibliography parsing without block ownership
+  -> sections and prose-only markdown
   -> extracted tables
   -> cell text annotations
   -> table boundary proposals
@@ -429,8 +444,10 @@ Why this is separate:
 ## Step 2: Table Extraction
 
 Before table extraction, the parser builds repeated page-furniture regions from
-positioned page text, then builds paper sections, table mentions, and
-bibliography entries from the page-furniture-filtered document stream. The
+positioned page text, then builds canonical paper blocks and provisional prose.
+The temporary legacy bibliography parser runs afterward without changing that
+document, and paper sections and table mentions are derived from the canonical
+document. The
 extraction layer receives page-furniture regions, caption/prose table-mention
 evidence, and, when a bibliography was found, bibliography-owned source-line and
 entry-bbox evidence. It is responsible for finding likely tables in the
@@ -1232,7 +1249,9 @@ PDF -> paper_positioned_document.json -> paper_page_furniture.json -> paper_docu
 ```
 
 `paper_document.json` is built directly from filtered positioned blocks and
-the established prose-candidate decisions.
+the established prose-candidate decisions before the temporary legacy
+bibliography parser runs. Legacy bibliography heading output does not change
+its blocks, roles, layout, or prose ownership.
 `paper_sections.json` and `paper_markdown.md` consume its prose segments. The
 non-prose paper consumers now use its canonical block text, role, and order and
 join block line IDs to `paper_positioned_document.json` only for raw typography
@@ -1264,7 +1283,8 @@ become their paragraphs. Entities are empty, and every other retained block is
 listed in `unassigned_block_ids` without inference. Its first consumers are the
 persisted section and Markdown views. Non-prose consumers now read its canonical
 block text, role, and order and join source IDs to positioned evidence without
-creating another stream.
+creating another stream. Its B2 region, B3 whole-block, and B4 bibitem-block
+candidates are non-operative and do not alter that partition.
 
 ### `paper_sections.json`
 
@@ -1320,8 +1340,10 @@ not yet establish body/footer row bands.
 
 ### `paper_bibliography.json`
 
-The parser extracts the paper's bibliography entries from the positioned text
-stream before table extraction begins. Reference-list
+The temporary legacy parser extracts the paper's bibliography entries from the
+filtered positioned lines after canonical document construction and before
+table extraction begins. It does not own or modify `PaperDocument` blocks.
+Reference-list
 pages are read as page, column, then vertical position; entries remain open
 across column and page breaks until the next left-edge entry start is found.
 For numbered lists that start may be a bracketed, dotted, or bare numeric label;

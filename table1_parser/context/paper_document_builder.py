@@ -9,8 +9,17 @@ from types import SimpleNamespace
 
 from table1_parser.context.paper_positioned_document import canonical_bbox_for_orientation
 from table1_parser.page_furniture_mask import page_furniture_cluster_ids_for_bbox
-from table1_parser.paper_bibliography import build_bibliography_entries_from_layout_lines
+from table1_parser.paper_bibliography import (
+    bibliography_item_evidence_for_block,
+    build_numbered_bibliography_entries_from_region,
+    build_unnumbered_bibliography_entries_from_layout_lines,
+)
 from table1_parser.paper_page_furniture import normalize_page_furniture_text
+from table1_parser.reference_sections import (
+    INLINE_REFERENCE_START_PATTERN,
+    REFERENCE_HEADING_LINE_PATTERN,
+    reference_start_text,
+)
 from table1_parser.schemas import (
     BibliographyEntry,
     PaperPageFurniture,
@@ -46,6 +55,7 @@ def build_paper_document(
             "prose": {"segments": []},
             "entities": [],
             "unassigned_block_ids": [],
+            "bibliography_region_candidates": [],
         }, []
 
     stream_lines: list[SimpleNamespace] = []
@@ -55,9 +65,28 @@ def build_paper_document(
     furniture_text_keys, furniture_text_patterns = _page_furniture_text_matchers(paper_page_furniture)
     for page in paper_positioned_document.pages:
         page_line_records: list[dict[str, object]] = []
+        leading_digit_bboxes_by_line: dict[
+            tuple[int, int], tuple[float, float, float, float]
+        ] = {}
+        for char in sorted(page.chars, key=lambda value: value.char_index):
+            if (
+                char.block_index is not None
+                and char.line_index is not None
+                and char.text.isdigit()
+            ):
+                leading_digit_bboxes_by_line.setdefault(
+                    (char.block_index, char.line_index),
+                    (char.x0, char.top, char.x1, char.bottom),
+                )
         removed_on_page = 0
         for positioned_line in page.lines:
             line_record = _line_record_from_positioned_line(positioned_line)
+            line_record["leading_digit_bbox"] = leading_digit_bboxes_by_line.get(
+                (positioned_line.block_index, positioned_line.line_index)
+                if positioned_line.block_index is not None
+                and positioned_line.line_index is not None
+                else (-1, -1)
+            )
             if _is_page_furniture_text(line_record["text"], furniture_text_keys, furniture_text_patterns):
                 removed_on_page += 1
                 continue
@@ -100,6 +129,16 @@ def build_paper_document(
             oriented_records: list[dict[str, object]] = []
             for record in source_records:
                 record_source_bbox = record["bbox"]
+                leading_digit_bbox = record.get("leading_digit_bbox")
+                canonical_leading_digit_bbox = (
+                    canonical_bbox_for_orientation(
+                        leading_digit_bbox,
+                        orientation=orientation,
+                        orientation_source_bbox=group_source_bbox,
+                    )
+                    if isinstance(leading_digit_bbox, tuple)
+                    else None
+                )
                 oriented_records.append(
                     {
                         **record,
@@ -108,6 +147,12 @@ def build_paper_document(
                             record_source_bbox,
                             orientation=orientation,
                             orientation_source_bbox=group_source_bbox,
+                        ),
+                        "leading_digit_width": (
+                            canonical_leading_digit_bbox[2]
+                            - canonical_leading_digit_bbox[0]
+                            if canonical_leading_digit_bbox is not None
+                            else None
                         ),
                         "orientation_group_id": group_id,
                     }
@@ -241,6 +286,11 @@ def build_paper_document(
                     confidence=0.78,
                     dominant_font=str(record["dominant_font"]) if isinstance(record.get("dominant_font"), str) else None,
                     dominant_font_size=float(record["dominant_font_size"]) if isinstance(record.get("dominant_font_size"), (int, float)) else None,
+                    leading_digit_width=(
+                        float(record["leading_digit_width"])
+                        if isinstance(record.get("leading_digit_width"), (int, float))
+                        else None
+                    ),
                     spans=list(record.get("spans", [])) if isinstance(record.get("spans"), list) else [],
                     notes=line_notes,
                 )
@@ -380,24 +430,6 @@ def build_paper_document(
         if line is not None:
             current_block_lines.append(line)
 
-    bibliography_entries, bibliography_heading_line_ids = (
-        build_bibliography_entries_from_layout_lines(classified_stream_lines)
-    )
-    if bibliography_heading_line_ids:
-        heading_ids = set(bibliography_heading_line_ids)
-        classified_stream_lines = [
-            SimpleNamespace(
-                **{
-                    **vars(line),
-                    "role": "heading",
-                    "confidence": 0.98,
-                    "notes": [*line.notes, "confirmed_bibliography_heading"],
-                }
-            )
-            if line.line_id in heading_ids
-            else line
-            for line in classified_stream_lines
-        ]
     lines_by_id = {line.line_id: line for line in classified_stream_lines}
     blocks: list[SimpleNamespace] = []
     for block in text_blocks:
@@ -635,6 +667,331 @@ def build_paper_document(
                 "paragraphs": paragraphs,
             }
         )
+
+    blocks_by_line_id: dict[str, SimpleNamespace] = {
+        line_id: block for block in blocks for line_id in block.line_ids
+    }
+    blocks_by_id = {block.block_id: block for block in blocks}
+    layout_block_ids_by_group: dict[str, list[str]] = {
+        group.group_id: [
+            str(placement["block_id"])
+            for region in group.layout_regions
+            for placement in region["block_placements"]
+        ]
+        for page in stream_pages
+        for group in page.orientation_groups
+    }
+    bibliography_region_candidates: list[dict[str, object]] = []
+    for line in classified_stream_lines:
+        heading_text = reference_start_text(line.text)
+        heading_match = REFERENCE_HEADING_LINE_PATTERN.match(heading_text)
+        inline_match = INLINE_REFERENCE_START_PATTERN.match(heading_text)
+        if heading_match is None and inline_match is None:
+            continue
+        heading_block = blocks_by_line_id.get(line.line_id)
+        if heading_block is None:
+            raise ValueError(
+                f"Bibliography heading line {line.line_id} has no canonical block."
+            )
+        if not heading_block.line_ids or heading_block.line_ids[0] != line.line_id:
+            continue
+        heading_group_block_ids = layout_block_ids_by_group.get(
+            heading_block.orientation_group_id,
+            [],
+        )
+        if heading_block.block_id not in heading_group_block_ids:
+            raise ValueError(
+                f"Bibliography heading block {heading_block.block_id} has no layout placement."
+            )
+        candidate_block_ids = heading_group_block_ids[
+            heading_group_block_ids.index(heading_block.block_id) :
+        ]
+        for page in stream_pages:
+            if page.page_num <= heading_block.page_num:
+                continue
+            for group in page.orientation_groups:
+                if group.orientation != heading_block.orientation:
+                    continue
+                candidate_block_ids.extend(
+                    layout_block_ids_by_group.get(group.group_id, [])
+                )
+        bibliography_region_candidates.append(
+            {
+                "candidate_id": (
+                    f"bibliography-region-candidate-"
+                    f"{len(bibliography_region_candidates)}"
+                ),
+                "heading_line_id": line.line_id,
+                "heading_block_id": heading_block.block_id,
+                "block_ids": candidate_block_ids,
+                "prose_conflict_block_ids": [
+                    block_id
+                    for block_id in candidate_block_ids
+                    if block_id in prose_ids
+                ],
+                "structural_evidence": [
+                    (
+                        "explicit_inline_bibliography_heading"
+                        if inline_match is not None
+                        else "explicit_bibliography_heading_line"
+                    ),
+                    "forward_block_layout_order_from_heading",
+                    "larger_pdf_pages_same_orientation",
+                    "nonoperative_candidate",
+                ],
+            }
+        )
+    unnumbered_bibliography_entries = build_unnumbered_bibliography_entries_from_layout_lines(
+        classified_stream_lines
+    )
+    item_region_candidates: list[dict[str, object]] = []
+    unnumbered_line_ids = {
+        line_id
+        for entry in unnumbered_bibliography_entries
+        for line_id in entry.source_line_ids
+    }
+    reference_heading_block_ids = {
+        str(candidate["heading_block_id"])
+        for candidate in bibliography_region_candidates
+    }
+    previous_heading_order: int | None = None
+    previous_last_reference_number: int | None = None
+    for region_candidate in bibliography_region_candidates:
+        candidate_block_ids = [str(value) for value in region_candidate["block_ids"]]
+        heading_block_id = str(region_candidate["heading_block_id"])
+        heading_order = blocks_by_id[heading_block_id].order
+        intervening_prose_block_ids = (
+            [
+                block.block_id
+                for block in blocks
+                if previous_heading_order < block.order < heading_order
+                and block.block_id in prose_ids
+            ]
+            if previous_heading_order is not None
+            else []
+        )
+        region_block_ids: list[str] = []
+        region_numbered_starts: dict[str, int] = {}
+        region_unnumbered_line_ids: list[str] = []
+        region_continuation_line_ids: list[str] = []
+        stop_block_id: str | None = None
+        stop_reason: str | None = None
+        expected_number: int | None = None
+        first_reference_number: int | None = None
+        continuation_start_x0: float | None = None
+        numbering_style: str | None = None
+        if previous_heading_order is not None and not intervening_prose_block_ids:
+            stop_block_id = heading_block_id
+            stop_reason = "no_intervening_prose"
+        else:
+            for block_id in candidate_block_ids:
+                if block_id != heading_block_id and block_id in reference_heading_block_ids:
+                    stop_block_id = block_id
+                    stop_reason = "next_reference_heading"
+                    break
+                starts, unnumbered, continuation = bibliography_item_evidence_for_block(
+                    blocks_by_id[block_id],
+                    lines_by_id,
+                    unnumbered_line_ids=unnumbered_line_ids,
+                    continuation_start_x0=continuation_start_x0,
+                )
+                accepted_starts: list[tuple[int, str]] = []
+                if numbering_style != "unnumbered" and starts:
+                    remaining_start_index = 0
+                    if expected_number is None:
+                        seed_index = next(
+                            (
+                                index
+                                for index, (number, _line_id) in enumerate(starts)
+                                if previous_last_reference_number is not None
+                                and number == previous_last_reference_number + 1
+                            ),
+                            0,
+                        )
+                        accepted_starts.append(starts[seed_index])
+                        expected_number = starts[seed_index][0] + 1
+                        first_reference_number = starts[seed_index][0]
+                        remaining_start_index = seed_index + 1
+                    for start in starts[remaining_start_index:]:
+                        if start[0] == expected_number:
+                            accepted_starts.append(start)
+                            expected_number += 1
+                if accepted_starts:
+                    numbering_style = "numbered"
+                    unnumbered = []
+                    continuation_start_x0 = float(
+                        lines_by_id[accepted_starts[-1][1]].canonical_bbox[0]
+                    )
+                elif numbering_style in (None, "unnumbered") and unnumbered:
+                    numbering_style = "unnumbered"
+                    continuation = []
+                elif numbering_style != "numbered":
+                    continuation = []
+                if block_id == heading_block_id and not (
+                    accepted_starts or unnumbered or continuation
+                ):
+                    continue
+                if not (accepted_starts or unnumbered or continuation):
+                    stop_block_id = block_id
+                    stop_reason = "no_bibliography_item_evidence"
+                    break
+                region_block_ids.append(block_id)
+                for number, line_id in accepted_starts:
+                    region_numbered_starts[line_id] = number
+                region_unnumbered_line_ids.extend(unnumbered)
+                region_continuation_line_ids.extend(continuation)
+        item_region_candidates.append(
+            {
+                "heading_line_id": region_candidate["heading_line_id"],
+                "block_ids": region_block_ids,
+                "numbered_item_starts": region_numbered_starts,
+                "unnumbered_item_line_ids": region_unnumbered_line_ids,
+                "continuation_line_ids": region_continuation_line_ids,
+                "intervening_prose_block_ids": intervening_prose_block_ids,
+                "previous_last_reference_number": previous_last_reference_number,
+                "first_reference_number": first_reference_number,
+                "stop_block_id": stop_block_id,
+                "stop_reason": stop_reason,
+            }
+        )
+        if region_block_ids:
+            previous_heading_order = heading_order
+            previous_last_reference_number = (
+                max(region_numbered_starts.values())
+                if region_numbered_starts
+                else None
+            )
+    bibliography_entries: list[BibliographyEntry] = []
+    bibliography_entities: list[dict[str, object]] = []
+    bibliography_owned_block_ids: set[str] = set()
+    seen_entry_ids: set[str] = set()
+    for region_index, region in enumerate(item_region_candidates):
+        region_block_ids = [str(value) for value in region["block_ids"]]
+        if not region_block_ids:
+            continue
+        heading_line_id = str(region["heading_line_id"])
+        heading_block_id = blocks_by_line_id[heading_line_id].block_id
+        region_line_ids = [
+            line_id
+            for block_id in region_block_ids
+            for line_id in blocks_by_id[block_id].line_ids
+        ]
+        region_numbered_starts = {
+            str(line_id): int(number)
+            for line_id, number in dict(region["numbered_item_starts"]).items()
+        }
+        if region_numbered_starts:
+            region_entries = build_numbered_bibliography_entries_from_region(
+                heading=lines_by_id[heading_line_id].text,
+                line_ids=region_line_ids,
+                item_starts=region_numbered_starts,
+                lines_by_id=lines_by_id,
+                seen_entry_ids=seen_entry_ids,
+            )
+            numbering_style = "numbered"
+        else:
+            accepted_line_ids = set(region_line_ids)
+            region_entries = [
+                entry
+                for entry in unnumbered_bibliography_entries
+                if any(line_id in accepted_line_ids for line_id in entry.source_line_ids)
+            ]
+            seen_entry_ids.update(entry.entry_id for entry in region_entries)
+            numbering_style = "unnumbered"
+        bibliography_entries.extend(region_entries)
+        heading_component_block_ids = (
+            [] if heading_block_id in region_block_ids else [heading_block_id]
+        )
+        components = [
+            {
+                "role": "content",
+                "block_ids": region_block_ids,
+                "content_refs": [
+                    {
+                        "artifact_kind": "paper_bibliography",
+                        "artifact_id": entry.entry_id,
+                    }
+                    for entry in region_entries
+                ],
+            }
+        ]
+        if heading_component_block_ids:
+            components.insert(
+                0,
+                {
+                    "role": "heading",
+                    "block_ids": heading_component_block_ids,
+                    "content_refs": [],
+                },
+            )
+        bibliography_owned_block_ids.update(heading_component_block_ids)
+        bibliography_owned_block_ids.update(region_block_ids)
+        bibliography_entities.append(
+            {
+                "entity_id": f"paper-bibliography-{region_index}",
+                "kind": "bibliography",
+                "scope": "main",
+                "components": components,
+                "evidence": {
+                    "heading_line_id": heading_line_id,
+                    "numbering_style": numbering_style,
+                    "numbered_item_starts": region_numbered_starts,
+                    "unnumbered_item_line_ids": region["unnumbered_item_line_ids"],
+                    "continuation_line_ids": region["continuation_line_ids"],
+                    "intervening_prose_block_ids": region["intervening_prose_block_ids"],
+                    "previous_last_reference_number": region["previous_last_reference_number"],
+                    "first_reference_number": region["first_reference_number"],
+                    "stop_block_id": region["stop_block_id"],
+                    "stop_reason": region["stop_reason"],
+                },
+            }
+        )
+    owned_prose_segments: list[dict[str, object]] = []
+    for segment in prose_segments:
+        heading_block_ids = [
+            block_id
+            for block_id in segment["heading_block_ids"]
+            if block_id not in bibliography_owned_block_ids
+        ]
+        paragraphs = []
+        for paragraph in segment["paragraphs"]:
+            paragraph_block_ids = [
+                block_id
+                for block_id in paragraph["block_ids"]
+                if block_id not in bibliography_owned_block_ids
+            ]
+            if paragraph_block_ids:
+                paragraphs.append(
+                    {
+                        **paragraph,
+                        "block_ids": paragraph_block_ids,
+                        "text": "\n".join(
+                            blocks_by_id[block_id].text
+                            for block_id in paragraph_block_ids
+                        ),
+                    }
+                )
+        if heading_block_ids or paragraphs:
+            owned_prose_segments.append(
+                {
+                    **segment,
+                    "heading_block_ids": heading_block_ids,
+                    "paragraphs": paragraphs,
+                }
+            )
+    prose_segments = owned_prose_segments
+    prose_ids = {
+        block_id
+        for segment in prose_segments
+        for block_id in [
+            *segment["heading_block_ids"],
+            *[
+                value
+                for paragraph in segment["paragraphs"]
+                for value in paragraph["block_ids"]
+            ],
+        ]
+    }
     return {
         "paper_id": paper_id or Path(pdf_path).stem,
         "source_pdf": Path(pdf_path).name,
@@ -679,10 +1036,14 @@ def build_paper_document(
             for block in blocks
         ],
         "prose": {"segments": prose_segments},
-        "entities": [],
+        "entities": bibliography_entities,
         "unassigned_block_ids": [
-            block.block_id for block in blocks if block.block_id not in prose_ids
+            block.block_id
+            for block in blocks
+            if block.block_id not in prose_ids
+            and block.block_id not in bibliography_owned_block_ids
         ],
+        "bibliography_region_candidates": bibliography_region_candidates,
     }, bibliography_entries
 
 

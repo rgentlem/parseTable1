@@ -21,14 +21,92 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
   convenience while this audit is pending, and do not remove existing uses
   without a separately approved, behavior-preserving migration.
 
-Work iteratively and in this order: first stabilize prose reading order with
-general positioned-block rules; then identify captions from the preserved
-residual; then inspect what remains. Do not weaken a general stage or add a
-narrow recovery for isolated residual cases while that broader stage is still
-being established. Go deeper only after the applicable general rule and corpus
-evidence have failed.
+The next document-processing plan is
+`docs/implementation/paper_document_prose_flow_and_block_bibliography_plan.md`.
+It begins with the B0 audit and dependency cut, then replaces bibliography line
+reconstruction with block parsing. Prose-flow refinement is not a prerequisite.
+The plan is not approval to change parser logic.
 
-The current document-processing checkpoint is the block-first physical layout
+The B0 dependency-cut candidate is implemented in
+`outputs/testpapers_batch_b0_dependency_cut_20260720`. Canonical blocks, block
+layout, and provisional prose are now built before the temporary legacy
+bibliography parser; its heading output can no longer relabel or split blocks
+or change prose ownership. All 28 PDFs completed with 1,350 unchanged
+bibliography entries, 92 unchanged extracted and normalized tables, and 81
+unchanged parsed tables. The cut changes 22 source groups in 21 PDFs and prose
+line ownership in two PDFs. Derived document consumers also change, so this is
+the review checkpoint before B2 rather than approval to begin B2.
+
+The B2 region candidate is implemented in
+`outputs/testpapers_batch_b2_region_candidate_20260720`. An explicit
+bibliography-heading line must begin its canonical block. The non-operative
+candidate records that block and all same-orientation blocks downstream in
+block-layout order, including larger PDF page numbers, plus any existing prose
+conflicts. All 28 PDFs completed with 29 candidates: one per PDF and a second
+candidate for PDF page 14 of
+`An atlas of exposome–phenome associations in health and disease risk.pdf`.
+There is no PDF-page-1 candidate in
+`Uses of NHANES Biomarker Data for Chemical Risk Assessment- Trends,
+Challenges, and Opportunities.pdf`. Removing the candidate field reproduces B0
+exactly, and all other substantive artifacts are unchanged.
+
+The non-operative B3 whole-block candidate is implemented and has been checked
+only on the four approved focused PDFs in
+`outputs/b3_whole_block_focused_20260720`. All four completed, every legacy
+source line mapped, and no block before the earliest B2 heading page was found.
+`An atlas of exposome–phenome associations in health and disease risk.pdf` has
+no touched block under its PDF-page-14 heading. In
+`Science-Advanaced-Planetary Health Diet and risk of mortality and chronic
+diseases- Results from US NHANES, UK Biobank, and a meta-analysis.pdf`, the
+locator misses the PDF-page-10 reference 47–50 block and its final PDF-page-10
+touched block contains 12 known acknowledgements/ancillary lines. No corrective
+logic was added. B4 is now the independent entry candidate: numbered lists use
+ordered block lines to locate one contiguous numbered sequence and retains the
+whole blocks from its first start through its last. If no numbered sequence is
+found, current unnumbered entries locate the blocks. B4 uses no geometry and
+changes no entries, ownership, or masks. The focused B4 run completed all four
+PDFs. It finds the full numbered ranges for the atlas, Lead exposure, and
+Science Advances; GOLD BioAge follows the unnumbered route. The atlas span also
+claims 35 intervening blocks on PDF pages 10–14. Lead exposure omits the
+PDF-page-10 continuation-only block after reference 35; Science adds the
+PDF-page-10 reference 47–50 block, omits the continuation-only block after
+reference 58, and excludes the acknowledgements block. No other substantive
+artifact changes. The corpus was not run; B5 remains pending.
+
+B5 is now implemented as a non-operative per-heading walk and checked on the
+same four focused PDFs in `outputs/b5_per_heading_bibitem_focused_20260720`.
+The atlas produces separate PDF-page-9-10 references 1-42 and PDF-page-14
+references 43-54, with no PDF-page-11-13 candidate blocks. Lead exposure and
+Science Advances retain their final continuation-only blocks using exact
+indentation evidence; Science still stops before acknowledgements. GOLD BioAge
+retains the same four unnumbered blocks. The Science heading line is also
+reported as current unnumbered evidence because the unchanged legacy output
+contains it as `bib:unnum:1`; numbered starts in that same block establish the
+numbered region. All four parses completed and no substantive artifact outside
+the B5 candidate changed. The corpus was not run; B6 remains pending.
+
+The B6 cutover candidate rerun in
+`outputs/b6_atomic_cutover_corpus_furniture_fix_20260720` completes all 28 PDFs
+after the page-counter furniture fix, but is not accepted. Final-page counters
+no longer reach `PaperDocument`, and the MDPI frailty paper now reaches
+reference 40. The anthropometric-index paper still stops at 29,
+`NutritionEx.pdf` at 27, and `fld.pdf` at 26. The environment-wide association
+paper still assigns seven PDF-page-9 supplementary, acknowledgements, and
+author-contribution blocks to bibliography content and its extraction mask.
+At that point B6 required correction and another corpus run before commit
+review.
+
+B5.1 replaces the rejected exact-coordinate numbered-start rule with one
+block-local leading-digit-width indentation decision. The approved corpus run
+in `outputs/b5_1_numbered_start_corpus_20260720` completes 28/28 PDFs with
+1,346 entries. The anthropometric-index paper reaches reference 43, all
+thirteen exact-coordinate regressions recover their prior bibliography output,
+and normalized downstream table artifacts are unchanged. The B6 endpoint is
+accepted with three separate follow-ups: `NutritionEx.pdf` stops at 27,
+`fld.pdf` stops at 26, and the environment-wide-association paper assigns seven
+PDF-page-9 non-reference blocks to bibliography content and its mask.
+
+The accepted document-processing checkpoint is the block-first physical layout
 candidate in
 `docs/implementation/paper_document_block_layout_implementation_plan.md`.
 It constructs retained document blocks before layout and records

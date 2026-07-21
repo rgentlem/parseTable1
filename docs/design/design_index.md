@@ -31,6 +31,11 @@ Then use the documents below as needed.
   orientation-local regions, leaf lanes, spanning placements, and focused plus
   corpus validation without changing operative document order or ownership.
 
+- `docs/implementation/paper_document_prose_flow_and_block_bibliography_plan.md`
+  Active bibliography implementation plan: remove the block-construction
+  dependency on line parsing, detect numbered bibitem blocks, retain the current
+  unnumbered route, then cut ownership over atomically.
+
 - `docs/design/cell_text_annotations.md`
   Extraction-side sidecar artifact for superscripts, subscripts, and small marker symbols attached to table cells.
 

@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import inspect
 import json
-import re
 import sys
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -101,7 +100,6 @@ from table1_parser.paper_footnotes import (
     paper_footnotes_to_payload,
 )
 from table1_parser.paper_bibliography import (
-    build_bibliography_entries_from_sections,
     build_paper_bibliography,
     paper_bibliography_to_payload,
 )
@@ -331,7 +329,6 @@ def _extract_tables_with_context(
     paper_positioned_document: PaperPositionedDocument | None = None,
     paper_table_mentions: list[PaperTableMention] | None = None,
     paper_document: dict[str, object] | None = None,
-    bibliography_entries: Sequence[BibliographyEntry] | None = None,
 ) -> list[ProvisionalExtractedTable]:
     """Run extraction while passing optional paper-level context when supported."""
     extract = getattr(extractor, "extract")
@@ -354,13 +351,6 @@ def _extract_tables_with_context(
             for parameter in signature.parameters.values()
         )
     )
-    supports_bibliography_entries = (
-        "bibliography_entries" in signature.parameters
-        or any(
-            parameter.kind == inspect.Parameter.VAR_KEYWORD
-            for parameter in signature.parameters.values()
-        )
-    )
     keyword_arguments: dict[str, object] = {
         "paper_page_furniture": paper_page_furniture,
     }
@@ -370,8 +360,6 @@ def _extract_tables_with_context(
         keyword_arguments["paper_document"] = paper_document
     if supports_positioned_document:
         keyword_arguments["paper_positioned_document"] = paper_positioned_document
-    if supports_bibliography_entries:
-        keyword_arguments["bibliography_entries"] = bibliography_entries
     return extract(pdf_path, **keyword_arguments)
 
 
@@ -462,7 +450,6 @@ def _build_canonical_extraction_artifacts(
         paper_positioned_document=paper_context.paper_positioned_document,
         paper_table_mentions=paper_context.paper_table_mentions,
         paper_document=paper_context.paper_document,
-        bibliography_entries=paper_context.bibliography_entries,
     )
     provisional = _build_table_geometry_artifacts(
         pdf_path,
@@ -514,8 +501,6 @@ def _build_paper_context_artifacts(pdf_path: str) -> PaperContextArtifacts:
     paper_table_mentions = build_paper_table_mentions(
         list(iter_paper_document_lines(paper_document, paper_positioned_document))
     )
-    if not bibliography_entries:
-        bibliography_entries = build_bibliography_entries_from_sections(paper_sections)
     return PaperContextArtifacts(
         paper_positioned_document=paper_positioned_document,
         paper_page_furniture=paper_page_furniture,
@@ -1253,7 +1238,6 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     paper_bibliography = build_paper_bibliography(
         paper_id=paper_stem,
         source_pdf=pdf_path,
-        paper_sections=paper_sections,
         footnote_anchors=paper_footnote_anchors_before_linking,
         footnote_definitions=paper_footnote_definitions,
         bibliography_entries=bibliography_entries,

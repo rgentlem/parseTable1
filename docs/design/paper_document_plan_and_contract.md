@@ -79,6 +79,9 @@ PaperDocument
   prose
   entities
   unassigned_block_ids
+  bibliography_region_candidates
+  bibliography_block_candidate
+  bibliography_item_block_candidate
 ```
 
 ### Pages
@@ -146,6 +149,59 @@ candidate or removing the page-wide path.
 Canonical coordinates are comparable only within their declared orientation
 group. Page-space coordinates remain authoritative for proximity to visual
 objects, rules, captions, and other blocks.
+
+### Non-operative bibliography region candidates
+
+The B2 checkpoint records forward search candidates without assigning blocks:
+
+```text
+PaperBibliographyRegionCandidate
+  candidate_id
+  heading_line_id
+  heading_block_id
+  block_ids
+  prose_conflict_block_ids
+  structural_evidence
+```
+
+An explicit bibliography-heading line must begin its canonical block. On that
+page, `block_ids` starts with the heading block and follows its block-layout
+order. Larger PDF page numbers contribute blocks from the same orientation in
+block-layout order. Existing ownership does not exclude a block;
+`prose_conflict_block_ids` reports overlaps without changing them. The candidate
+does not segment entries, assign ownership, or mask extraction, and unresolved
+blocks remain available for later review.
+
+### Non-operative bibliography block candidate
+
+The B3 checkpoint uses current bibliography-entry line IDs only to locate
+canonical blocks:
+
+```text
+PaperBibliographyBlockCandidate
+  block_ids
+  upstream_false_positive_block_ids
+```
+
+Every touched block is retained whole and in canonical registry order. A
+touched block before the earliest B2 heading page is retained and separately
+flagged. The candidate does not split blocks, rebuild entries, assign
+ownership, or change extraction masks.
+
+### Non-operative bibitem block candidate
+
+B4 records whole blocks from the first through last start in each contiguous
+numbered sequence, plus a line-ID-to-number map. Blocks are scanned
+by ordered line text only. If no numbered sequence exists, current unnumbered
+entry lines locate the blocks. The candidate changes no entries, ownership, or
+mask.
+
+B5 records independent per-heading regions. Each whole retained block has
+numbered-start, current unnumbered-entry, or exact indentation-continuation
+line evidence. A region stops at its first unsupported block or the next
+reference heading. Later headings require intervening prose and local item
+evidence; continued numbering records a relationship without filling the gap.
+B5 remains non-operative.
 
 ### Blocks
 
@@ -339,9 +395,10 @@ The heading is structural ownership, not a prose paragraph. Paragraph block IDs
 define reading order; stored paragraph text must be a deterministic assembly of
 those blocks and must validate against them exactly.
 
-Each accepted prose block belongs to exactly one heading or paragraph. Later
-table, figure, footer, bibliography, or supplementary processing may not remove
-or reclaim it.
+Each accepted prose block belongs to exactly one heading or paragraph.
+Non-operative entity candidates may not reclaim it. An approved atomic entity
+cutover may reassign a directly confirmed entity block from provisional prose,
+provided every prose-derived view changes in the same cutover.
 
 ## Entity Contract
 
@@ -500,7 +557,8 @@ The bibliography is an entity, not prose. Its heading and entry blocks are
 owned by bibliography components, and its content references the structured
 bibliography artifact. Bibliography detection may continue early enough to
 protect table extraction, but its final block ownership lives in
-`PaperDocument`.
+`PaperDocument`. B2 region candidates are non-operative search evidence and do
+not establish that ownership.
 
 ### Footnotes and Entity Footers
 
@@ -571,5 +629,6 @@ partitioned.
   duplicated.
 - Consolidated paragraphs, headings, and entity components retain their ordered
   constituent block IDs and page-local geometry.
-- Later entity owners cannot reclaim frozen prose.
+- Non-operative entity candidates cannot reclaim prose; an approved atomic
+  cutover may correct provisional prose ownership.
 - Unresolved material remains inspectable without guessing.

@@ -28,7 +28,6 @@ from table1_parser.page_furniture_mask import (
     filter_positioned_items_for_page_furniture,
 )
 from table1_parser.schemas import (
-    BibliographyEntry,
     PaperPageFurniture,
     PaperPositionedDocument,
     PaperPositionedPage,
@@ -457,41 +456,50 @@ def _apply_complete_caption_bindings(
 
 
 def _bibliography_evidence_masks_by_page(
-    bibliography_entries: Sequence[BibliographyEntry] | None,
+    paper_document: dict[str, object] | None,
     paper_document_lines: Sequence[object],
 ) -> dict[int, BibliographyEvidenceMask]:
-    """Build page-local masks from bibliography-owned source lines and entry bboxes."""
-    if not bibliography_entries:
+    """Build page-local masks from bibliography-owned canonical blocks."""
+    if paper_document is None:
         return {}
     line_by_id = {
         line.line_id: line
         for line in paper_document_lines
     }
+    bibliography_block_ids = {
+        str(block_id)
+        for entity in paper_document["entities"]
+        if entity["kind"] == "bibliography"
+        for component in entity["components"]
+        for block_id in component["block_ids"]
+    }
+    blocks_by_id = {
+        str(block["block_id"]): block for block in paper_document["blocks"]
+    }
+    bibliography_line_ids = {
+        str(line_id)
+        for block_id in bibliography_block_ids
+        for line_id in blocks_by_id[block_id]["line_ids"]
+    }
     source_line_ids_by_page: dict[int, set[str]] = {}
     source_line_keys_by_page: dict[int, set[tuple[int, int]]] = {}
     line_regions_by_page: dict[int, list[tuple[float, float, float, float]]] = {}
-    entry_regions_by_page: dict[int, list[tuple[float, float, float, float]]] = {}
-    for entry in bibliography_entries:
-        entry_pages = [int(page_num) for page_num in entry.page_nums if page_num is not None]
-        entry_bbox = _as_bbox(entry.bbox)
-        for source_line_id in entry.source_line_ids:
-            line = line_by_id.get(source_line_id)
-            if line is None:
-                continue
-            page_num = int(line.page_num)
-            source_line_ids_by_page.setdefault(page_num, set()).add(source_line_id)
-            line_regions_by_page.setdefault(page_num, []).append(line.bbox)
-            if line.block_index is not None and line.line_index is not None:
-                source_line_keys_by_page.setdefault(page_num, set()).add((line.block_index, line.line_index))
-        if entry_bbox is not None:
-            for page_num in entry_pages:
-                entry_regions_by_page.setdefault(page_num, []).append(entry_bbox)
+    for source_line_id in bibliography_line_ids:
+        line = line_by_id.get(source_line_id)
+        if line is None:
+            continue
+        page_num = int(line.page_num)
+        source_line_ids_by_page.setdefault(page_num, set()).add(source_line_id)
+        line_regions_by_page.setdefault(page_num, []).append(line.bbox)
+        if line.block_index is not None and line.line_index is not None:
+            source_line_keys_by_page.setdefault(page_num, set()).add(
+                (line.block_index, line.line_index)
+            )
 
     page_nums = (
         set(source_line_ids_by_page)
         | set(source_line_keys_by_page)
         | set(line_regions_by_page)
-        | set(entry_regions_by_page)
     )
     masks: dict[int, BibliographyEvidenceMask] = {}
     for page_num in sorted(page_nums):
@@ -500,7 +508,7 @@ def _bibliography_evidence_masks_by_page(
             source_line_ids=source_line_ids_by_page.get(page_num, set()),
             source_line_keys=source_line_keys_by_page.get(page_num, set()),
             line_regions=line_regions_by_page.get(page_num, []),
-            entry_regions=entry_regions_by_page.get(page_num, []),
+            entry_regions=[],
         )
     return masks
 
@@ -545,7 +553,7 @@ def _filter_positioned_items_for_bibliography(
     if removed_count == 0:
         return items, None
     return filtered_items, {
-        "source_artifact": "paper_bibliography.json",
+        "source_artifact": "paper_document.json",
         "page_num": bibliography_mask.page_num,
         "removed_count": removed_count,
         "kept_count": len(filtered_items),
@@ -616,7 +624,6 @@ class PyMuPDFExtractor(BaseExtractor):
         paper_positioned_document: PaperPositionedDocument | None = None,
         paper_table_mentions: Sequence[PaperTableMention] | None = None,
         paper_document: dict[str, object] | None = None,
-        bibliography_entries: Sequence[BibliographyEntry] | None = None,
     ) -> list[ProvisionalExtractedTable]:
         """Extract and rank raw table candidates from a PDF."""
         try:
@@ -633,7 +640,6 @@ class PyMuPDFExtractor(BaseExtractor):
                 paper_table_mentions=paper_table_mentions,
                 paper_document=paper_document,
                 paper_document_lines=document_lines,
-                bibliography_entries=bibliography_entries,
             )
         except Exception:
             return []
@@ -657,7 +663,7 @@ class PyMuPDFExtractor(BaseExtractor):
 
         pages_by_num = {page.page_num: page for page in positioned_document.pages}
         bibliography_masks_by_page = _bibliography_evidence_masks_by_page(
-            bibliography_entries,
+            paper_document,
             document_lines,
         )
         filtered_items_by_page: dict[int, tuple[list[dict[str, object]], list[dict[str, object]]]] = {}
@@ -818,7 +824,6 @@ class PyMuPDFExtractor(BaseExtractor):
         paper_table_mentions: Sequence[PaperTableMention] | None = None,
         paper_document: dict[str, object] | None = None,
         paper_document_lines: Sequence[object] = (),
-        bibliography_entries: Sequence[BibliographyEntry] | None = None,
     ) -> list[DetectedTableCandidate]:
         positioned_document = paper_positioned_document or build_paper_positioned_document(pdf_path)
         positioned_pages_by_num = {
@@ -835,7 +840,7 @@ class PyMuPDFExtractor(BaseExtractor):
         candidates: list[DetectedTableCandidate] = []
         try:
             bibliography_masks_by_page = _bibliography_evidence_masks_by_page(
-                bibliography_entries,
+                paper_document,
                 paper_document_lines,
             )
             abstract_intervals = _abstract_intervals_by_page(positioned_document)

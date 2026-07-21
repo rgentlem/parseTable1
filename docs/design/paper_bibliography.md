@@ -20,10 +20,26 @@ reference markers are found.
 ## Pipeline Position
 
 Bibliography entry extraction should run before table extraction because it
-depends on the whole-paper document, not on table grids. The primary source is
-`paper_document.json` joined to `paper_positioned_document.json`: positioned
-PyMuPDF lines filtered through `paper_page_furniture.json` and ordered by page,
-column, then vertical position.
+depends on whole-paper positioned evidence, not on table grids. At the B0
+checkpoint, canonical `PaperDocument` blocks, block layout, and provisional
+prose are built first. The temporary legacy bibliography parser then consumes
+the page-furniture-filtered positioned lines and cannot relabel or split blocks
+or change prose ownership.
+`paper_document.json` also carries the B2 forward bibliography-region candidate,
+but the temporary legacy entry parser and extraction mask do not consume it.
+Its B3 whole-block candidate maps current entry source-line IDs to complete
+canonical blocks and flags any mapped block before the earliest B2 heading
+page. It remains non-operative and changes no entry, ownership, or mask.
+Its B4 candidate finds contiguous numbered starts from block-line text. B5
+replaces B4's range fill with independent forward walks from each reference
+heading. Each retained block records numbered, current unnumbered, or exact
+indentation-continuation line evidence; the walk stops at the first unsupported
+block. Continued numbering may relate separate regions but cannot join them.
+Within one canonical block, the first valid numbered candidate establishes the
+number indentation. A later numeric-looking line at least one observed leading
+digit width farther right remains current-item text instead of becoming a new
+item start. The digit width comes from the existing positioned characters; no
+additional PDF pass or document-wide coordinate model is used.
 There is no backend-markdown fallback for bibliography entry extraction. Later
 table-cell annotation and footnote processing can then link numeric table
 markers to already-known numbered bibliography entries. The same bibliography
@@ -41,7 +57,7 @@ PDF
 -> paper_positioned_document.json
 -> paper_page_furniture.json
 -> paper_document.json
--> bibliography entries from positioned text
+-> temporary bibliography entries from positioned text without block ownership
 -> bibliography-owned line/entry evidence passed to table extraction when entries are found
 -> table extraction and cell text annotations
 -> bibliography reference-marker links

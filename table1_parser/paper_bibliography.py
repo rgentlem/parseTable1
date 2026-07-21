@@ -15,7 +15,6 @@ from table1_parser.schemas import (
     FootnoteAnchor,
     FootnoteDefinition,
     PaperBibliography,
-    PaperSection,
 )
 from table1_parser.reference_sections import (
     INLINE_REFERENCE_START_PATTERN,
@@ -37,20 +36,10 @@ HANGING_INDENT_ENTRY_START_X_TOLERANCE = 4.0
 HANGING_INDENT_CONTINUATION_MIN_INDENT = 7.0
 HANGING_INDENT_MIN_ENTRY_COUNT = 3
 INVISIBLE_TEXT_CHARS_PATTERN = re.compile(r"[\u200b\u200c\u200d\ufeff]")
-REFERENCE_HEADING_PATTERN = re.compile(r"\b(?:references?|bibliography|works cited)\b", re.IGNORECASE)
-REFERENCE_LIST_CUE_PATTERN = re.compile(
-    r"\b(?:references?|bibliography|works cited)\b\s+(?=(?:\[\s*)?\d{1,3}(?:\s*\])?[.)]?\s+[A-Z])",
-    re.IGNORECASE,
-)
 BIBLIOGRAPHY_CONTENT_CUE_PATTERN = re.compile(
     r"\b(?:18|19|20)\d{2}\b|\bdoi\b|\bpmid\b|\bpubmed\b|https?://",
     re.IGNORECASE,
 )
-REFERENCE_ENTRY_START_PATTERN = re.compile(
-    r"(?P<prefix>^|\s+-\s+|\s+)\s*(?:\[\s*)?(?P<label>\d{1,3})(?:\s*\])?[.)]?\s+(?=[A-Za-z])"
-)
-REFERENCE_TABLE_ROW_SPLIT_PATTERN = re.compile(r"\s+(?=\|(?:\d{1,3}|---|\|))")
-REFERENCE_TABLE_START_PATTERN = re.compile(r"\s+\|\d{1,3}\|")
 REFERENCE_ROW_START_PATTERN = re.compile(
     r"^(?:\[\s*(?P<bracket_label>\d{1,3})\s*\]|(?P<label>\d{1,3})(?:[.)])?)\s+(?P<body>\S.*)$"
 )
@@ -124,20 +113,150 @@ class _ActiveBibliographyEntry:
     rows: list[_BibliographyVisualRow]
 
 
+def bibliography_item_evidence_for_block(
+    block: SimpleNamespace,
+    lines_by_id: dict[str, SimpleNamespace],
+    *,
+    unnumbered_line_ids: set[str],
+    continuation_start_x0: float | None,
+) -> tuple[list[tuple[int, str]], list[str], list[str]]:
+    """Return numbered, unnumbered, and continuation evidence for one block."""
+    starts: list[tuple[int, str]] = []
+    number_indent_x0: float | None = None
+    number_indent_character_width: float | None = None
+    for line_id in block.line_ids:
+        line = lines_by_id[line_id]
+        line_text = _normalized_reference_text(line.text)
+        inline_match = INLINE_REFERENCE_START_PATTERN.match(
+            reference_start_text(line_text)
+        )
+        if inline_match is not None:
+            line_text = _normalized_reference_text(inline_match.group("body"))
+        match = REFERENCE_ROW_START_PATTERN.match(line_text)
+        if match is None:
+            match = REFERENCE_LABEL_ONLY_PATTERN.match(line_text)
+        if match is None:
+            continue
+        reference_number = int(_reference_label_match_value(match))
+        if 0 < reference_number <= MAX_REFERENCE_NUMBER:
+            line_x0 = float(line.canonical_bbox[0])
+            if number_indent_x0 is None:
+                leading_digit_width = line.leading_digit_width
+                if (
+                    isinstance(leading_digit_width, (int, float))
+                    and float(leading_digit_width) > 0.0
+                ):
+                    number_indent_x0 = line_x0
+                    number_indent_character_width = float(leading_digit_width)
+            elif (
+                number_indent_character_width is not None
+                and line_x0 - number_indent_x0 >= number_indent_character_width
+            ):
+                continue
+            starts.append((reference_number, line_id))
+    unnumbered = [line_id for line_id in block.line_ids if line_id in unnumbered_line_ids]
+    continuation: list[str] = []
+    content_line_ids = [
+        line_id
+        for line_id in block.line_ids
+        if _normalized_reference_text(lines_by_id[line_id].text)
+    ]
+    if (
+        not starts
+        and not unnumbered
+        and continuation_start_x0 is not None
+        and content_line_ids
+        and all(
+            float(lines_by_id[line_id].canonical_bbox[0]) > continuation_start_x0
+            for line_id in content_line_ids
+        )
+    ):
+        continuation = content_line_ids
+    return starts, unnumbered, continuation
+
+
+def build_numbered_bibliography_entries_from_region(
+    *,
+    heading: str,
+    line_ids: Sequence[str],
+    item_starts: dict[str, int],
+    lines_by_id: dict[str, SimpleNamespace],
+    seen_entry_ids: set[str],
+) -> list[BibliographyEntry]:
+    """Build numbered entries from one accepted block-owned region."""
+    ordered_starts = [
+        (line_ids.index(line_id), line_id, number)
+        for line_id, number in item_starts.items()
+        if line_id in line_ids
+    ]
+    ordered_starts.sort()
+    entries: list[BibliographyEntry] = []
+    for start_index, (line_index, line_id, number) in enumerate(ordered_starts):
+        next_line_index = (
+            ordered_starts[start_index + 1][0]
+            if start_index + 1 < len(ordered_starts)
+            else len(line_ids)
+        )
+        source_line_ids = line_ids[line_index:next_line_index]
+        first_text = _normalized_reference_text(lines_by_id[line_id].text)
+        inline_match = INLINE_REFERENCE_START_PATTERN.match(
+            reference_start_text(first_text)
+        )
+        if inline_match is not None:
+            first_text = _normalized_reference_text(inline_match.group("body"))
+        row_match = REFERENCE_ROW_START_PATTERN.match(first_text)
+        parts = [
+            clean_text(row_match.group("body"))
+            if row_match is not None
+            else "",
+            *[lines_by_id[value].text for value in source_line_ids[1:]],
+        ]
+        entry_text = clean_text(" ".join(part for part in parts if part))
+        if not entry_text:
+            continue
+        base_entry_id = f"bib:{number}"
+        entry_id = base_entry_id
+        duplicate_index = 1
+        while entry_id in seen_entry_ids:
+            duplicate_index += 1
+            entry_id = f"{base_entry_id}:{duplicate_index}"
+        seen_entry_ids.add(entry_id)
+        page_nums = sorted({int(lines_by_id[value].page_num) for value in source_line_ids})
+        entries.append(
+            BibliographyEntry(
+                entry_id=entry_id,
+                label_raw=str(number),
+                label_key=bibliography_label_key(str(number)),
+                reference_number=number,
+                raw_text=entry_text,
+                clean_text=entry_text,
+                heading=clean_text(heading),
+                role_hint="references_like",
+                source_artifact="paper_document.json",
+                source_line_ids=source_line_ids,
+                page_nums=page_nums,
+                bbox=(
+                    _union_bboxes([lines_by_id[value].bbox for value in source_line_ids])
+                    if len(page_nums) == 1
+                    else None
+                ),
+                visual_line_count=len(source_line_ids),
+                confidence=0.92,
+                notes=["paper_document_block_entries", "numbered_bibliography_entries"],
+            )
+        )
+    return entries
+
+
 def build_paper_bibliography(
     paper_id: str,
     source_pdf: str,
-    paper_sections: Sequence[PaperSection],
     footnote_anchors: Sequence[FootnoteAnchor],
     footnote_definitions: Sequence[FootnoteDefinition],
-    bibliography_entries: Sequence[BibliographyEntry] | None = None,
+    bibliography_entries: Sequence[BibliographyEntry],
 ) -> PaperBibliography:
     """Build a paper-level bibliography artifact with linked table reference markers."""
-    entries = (
-        list(bibliography_entries)
-        if bibliography_entries is not None
-        else build_bibliography_entries_from_sections(paper_sections)
-    )
+    entries = list(bibliography_entries)
     reference_mentions = build_bibliography_reference_mentions_from_footnote_anchors(
         footnote_anchors,
         footnote_definitions,
@@ -151,7 +270,6 @@ def build_paper_bibliography(
         reference_mentions=reference_mentions,
         metadata={
             "source_artifacts": [
-                "paper_sections.json",
                 "paper_document.json",
                 "paper_positioned_document.json",
                 "paper_page_furniture.json",
@@ -174,14 +292,14 @@ def build_paper_bibliography(
     )
 
 
-def build_bibliography_entries_from_layout_lines(
+def build_unnumbered_bibliography_entries_from_layout_lines(
     lines: Sequence[Any],
-) -> tuple[list[BibliographyEntry], list[str]]:
-    """Parse bibliography entries and return confirmed heading line IDs."""
+) -> list[BibliographyEntry]:
+    """Parse explicitly unnumbered bibliography entries from positioned lines."""
     if not lines:
-        return [], []
+        return []
 
-    candidate_entry_sets: list[tuple[list[BibliographyEntry], str | None]] = []
+    candidate_entry_sets: list[list[BibliographyEntry]] = []
     for line_index, line in enumerate(lines):
         start_text = reference_start_text(line.text)
         heading_match = REFERENCE_HEADING_LINE_PATTERN.match(start_text)
@@ -189,7 +307,7 @@ def build_bibliography_entries_from_layout_lines(
         if inline_match is None and heading_match is None:
             continue
         inline_body = inline_match.group("body") if inline_match is not None else None
-        entries = _build_bibliography_entries_from_layout_region(
+        entries = _build_unnumbered_bibliography_entries_from_layout_region(
             lines,
             start_line_index=line_index,
             inline_body=inline_body,
@@ -209,136 +327,28 @@ def build_bibliography_entries_from_layout_lines(
             and bibliography_follows_heading
             and _bibliography_entries_have_reference_list_shape(entries)
         ):
-            candidate_entry_sets.append(
-                (entries, line.line_id if heading_match is not None else None)
-            )
+            candidate_entry_sets.append(entries)
 
     if not candidate_entry_sets:
-        return [], []
-    selected_entries, _selected_heading_line_id = max(
+        return []
+    return max(
         candidate_entry_sets,
-        key=lambda candidate: (
-            len(candidate[0]),
-            sum(entry.reference_number is not None for entry in candidate[0]),
-            max((entry.reference_number or 0 for entry in candidate[0]), default=0),
-            -sum(len(entry.clean_text) for entry in candidate[0]),
+        key=lambda entries: (
+            len(entries),
+            -sum(len(entry.clean_text) for entry in entries),
         ),
     )
-    return selected_entries, [
-        heading_line_id
-        for _entries, heading_line_id in candidate_entry_sets
-        if heading_line_id is not None
-    ]
 
 
 def _bibliography_entries_have_reference_list_shape(entries: Sequence[BibliographyEntry]) -> bool:
     """Return whether extracted candidate entries look like a bibliography."""
     if not entries:
         return False
-    numbered_entries = [entry for entry in entries if entry.reference_number is not None]
-    if numbered_entries:
-        reference_numbers = sorted(
-            entry.reference_number
-            for entry in numbered_entries
-            if entry.reference_number is not None
-        )
-        return len(numbered_entries) >= 2 and reference_numbers[0] == 1
     cue_count = sum(
         bool(BIBLIOGRAPHY_CONTENT_CUE_PATTERN.search(entry.clean_text))
         for entry in entries
     )
     return len(entries) >= LOW_BIBLIOGRAPHY_ENTRY_COUNT_THRESHOLD and cue_count >= 3
-
-
-def build_bibliography_entries_from_sections(
-    paper_sections: Sequence[PaperSection],
-) -> list[BibliographyEntry]:
-    """Parse numbered bibliography entries from paper sections."""
-    entries: list[BibliographyEntry] = []
-    seen_entry_ids: set[str] = set()
-    for section in paper_sections:
-        section_text = clean_text(section.content)
-        if not section_text:
-            continue
-        reference_region = section_text
-        confidence = 0.72
-        notes: list[str] = []
-        heading = clean_text(section.heading or "")
-        if section.role_hint == "references_like" or REFERENCE_HEADING_PATTERN.search(heading):
-            confidence = 0.9
-            notes.append("section_heading_reference_like")
-        else:
-            cue_match = REFERENCE_LIST_CUE_PATTERN.search(section_text)
-            if cue_match is None:
-                continue
-            reference_region = section_text[cue_match.end():]
-            notes.append("inline_reference_list_cue")
-        table_entries = _build_bibliography_entries_from_reference_table_region(
-            reference_region,
-            section=section,
-            confidence=confidence,
-        )
-        entry_matches = []
-        next_expected_label: int | None = None
-        for match in REFERENCE_ENTRY_START_PATTERN.finditer(reference_region):
-            label_value = int(match.group("label"))
-            if next_expected_label is None or label_value == next_expected_label:
-                entry_matches.append(match)
-                next_expected_label = label_value + 1
-        if not entry_matches:
-            for table_entry in table_entries:
-                if table_entry.entry_id not in seen_entry_ids:
-                    seen_entry_ids.add(table_entry.entry_id)
-                    entries.append(table_entry)
-            continue
-        if len(entry_matches) < 2 or int(entry_matches[0].group("label")) != 1:
-            for table_entry in table_entries:
-                if table_entry.entry_id not in seen_entry_ids:
-                    seen_entry_ids.add(table_entry.entry_id)
-                    entries.append(table_entry)
-            continue
-        for entry_index, match in enumerate(entry_matches):
-            table_match = REFERENCE_TABLE_START_PATTERN.search(reference_region, match.end())
-            next_match_start = (
-                entry_matches[entry_index + 1].start()
-                if entry_index + 1 < len(entry_matches)
-                else len(reference_region)
-            )
-            if table_match is not None and table_match.start() < next_match_start:
-                next_match_start = table_match.start()
-            label_raw = match.group("label")
-            raw_text = reference_region[match.end():next_match_start].strip(" -\n\t")
-            clean_entry_text = clean_text(raw_text)
-            if not clean_entry_text:
-                continue
-            base_entry_id = f"bib:{int(label_raw)}"
-            entry_id = base_entry_id
-            duplicate_index = 1
-            while entry_id in seen_entry_ids:
-                duplicate_index += 1
-                entry_id = f"{base_entry_id}:{duplicate_index}"
-            seen_entry_ids.add(entry_id)
-            entries.append(
-                BibliographyEntry(
-                    entry_id=entry_id,
-                    label_raw=label_raw,
-                    label_key=bibliography_label_key(label_raw),
-                    reference_number=int(label_raw),
-                    raw_text=raw_text,
-                    clean_text=clean_entry_text,
-                    source_section_id=section.section_id,
-                    heading=section.heading,
-                    role_hint=section.role_hint,
-                    confidence=confidence,
-                    notes=notes,
-                )
-            )
-        for table_entry in table_entries:
-            if table_entry.entry_id not in seen_entry_ids:
-                seen_entry_ids.add(table_entry.entry_id)
-                entries.append(table_entry)
-    entries.sort(key=lambda entry: (entry.reference_number is None, entry.reference_number or 0, entry.entry_id))
-    return entries
 
 
 def build_bibliography_reference_mentions_from_footnote_anchors(
@@ -493,7 +503,7 @@ def bibliography_extraction_metadata(
     }
 
 
-def _build_bibliography_entries_from_layout_region(
+def _build_unnumbered_bibliography_entries_from_layout_region(
     lines: Sequence[Any],
     *,
     start_line_index: int,
@@ -547,21 +557,17 @@ def _build_bibliography_entries_from_layout_region(
     entries: list[BibliographyEntry] = []
     seen_entry_ids: set[str] = set()
     active_entry: _ActiveBibliographyEntry | None = None
-    expected_reference_number: int | None = None
 
     for row in visual_rows:
         row_text = _normalized_reference_text(row.text)
-        row_start = _row_starts_bibliography_entry(row)
-        is_unnumbered_start = (
-            expected_reference_number is None
-            and _hanging_indent_row_starts_entry(row, left_edges_by_column)
+        is_unnumbered_start = _hanging_indent_row_starts_entry(
+            row, left_edges_by_column
         )
         if active_entry is not None and TERMINAL_NON_REFERENCE_PATTERN.match(row_text):
             break
         if (
             active_entry is not None
             and BIBLIOGRAPHY_SECTION_STOP_HEADING_PATTERN.match(row_text)
-            and row_start is None
             and not is_unnumbered_start
         ):
             break
@@ -570,61 +576,12 @@ def _build_bibliography_entries_from_layout_region(
             and active_entry.rows
             and row.page_num != active_entry.rows[-1].page_num
             and row.role == "heading"
-            and row_start is None
             and not is_unnumbered_start
         ):
             break
-        midrow_start = _expected_reference_start_within_row(row, expected_reference_number)
-        if (
-            active_entry is not None
-            and active_entry.reference_number is not None
-            and midrow_start is not None
-        ):
-            prefix_text = clean_text(row.text[: midrow_start.start_index])
-            if prefix_text:
-                active_entry.parts.append(prefix_text)
-            active_entry.rows.append(row)
-            entry = _bibliography_entry_from_active_layout_entry(
-                active_entry,
-                seen_entry_ids,
-                heading=heading,
-            )
-            if entry is not None:
-                entries.append(entry)
-            body_text, stop_after_entry_start = _strip_trailing_section_text(midrow_start.body_text)
-            active_entry = _ActiveBibliographyEntry(
-                label_raw=midrow_start.label_raw,
-                reference_number=midrow_start.reference_number,
-                parts=[body_text] if body_text else [],
-                rows=[row],
-            )
-            expected_reference_number = midrow_start.reference_number + 1
-            if stop_after_entry_start:
-                break
-            continue
-        if row_start is not None and _is_expected_layout_reference_start(row_start, expected_reference_number):
-            if active_entry is not None:
-                entry = _bibliography_entry_from_active_layout_entry(
-                    active_entry,
-                    seen_entry_ids,
-                    heading=heading,
-                )
-                if entry is not None:
-                    entries.append(entry)
-            body_text, stop_after_entry_start = _strip_trailing_section_text(row_start.body_text)
-            active_entry = _ActiveBibliographyEntry(
-                label_raw=row_start.label_raw,
-                reference_number=row_start.reference_number,
-                parts=[body_text] if body_text else [],
-                rows=[row],
-            )
-            expected_reference_number = row_start.reference_number + 1
-            if stop_after_entry_start:
-                break
-            continue
         if is_unnumbered_start:
             if active_entry is not None:
-                entry = _bibliography_entry_from_active_layout_entry(
+                entry = _unnumbered_bibliography_entry_from_active_layout_entry(
                     active_entry,
                     seen_entry_ids,
                     heading=heading,
@@ -638,7 +595,6 @@ def _build_bibliography_entries_from_layout_region(
                 parts=[body_text] if body_text else [],
                 rows=[row],
             )
-            expected_reference_number = None
             if stop_after_entry_start:
                 break
             continue
@@ -656,7 +612,7 @@ def _build_bibliography_entries_from_layout_region(
             active_entry.parts.append(row.text)
 
     if active_entry is not None:
-        entry = _bibliography_entry_from_active_layout_entry(
+        entry = _unnumbered_bibliography_entry_from_active_layout_entry(
             active_entry,
             seen_entry_ids,
             heading=heading,
@@ -664,11 +620,7 @@ def _build_bibliography_entries_from_layout_region(
         if entry is not None:
             entries.append(entry)
 
-    if (
-        entries
-        and not any(entry.reference_number is not None for entry in entries)
-        and len(entries) < HANGING_INDENT_MIN_ENTRY_COUNT
-    ):
+    if entries and len(entries) < HANGING_INDENT_MIN_ENTRY_COUNT:
         return []
     return entries
 
@@ -887,43 +839,6 @@ def _split_embedded_reference_label_rows(
     return split_rows
 
 
-@dataclass(frozen=True)
-class _ReferenceMidrowStart:
-    """Expected bibliography label found after previous-column continuation text."""
-
-    label_raw: str
-    reference_number: int
-    body_text: str
-    start_index: int
-
-
-def _expected_reference_start_within_row(
-    row: _BibliographyVisualRow,
-    expected_reference_number: int | None,
-) -> _ReferenceMidrowStart | None:
-    if expected_reference_number is None or expected_reference_number > MAX_REFERENCE_NUMBER:
-        return None
-    row_text = _normalized_reference_text(row.text)
-    if _strip_reference_leading_artifacts(row_text) != row_text:
-        return None
-    label_raw = str(expected_reference_number)
-    pattern = re.compile(
-        rf"(?<![\d.])(?P<label>{re.escape(label_raw)})(?:\s*\])?[.)]\s+(?P<body>[A-Z][^\n]*)"
-    )
-    match = pattern.search(row_text)
-    if match is None or match.start() == 0:
-        return None
-    prefix_text = clean_text(row_text[: match.start()])
-    if not prefix_text:
-        return None
-    return _ReferenceMidrowStart(
-        label_raw=label_raw,
-        reference_number=expected_reference_number,
-        body_text=clean_text(match.group("body")),
-        start_index=match.start(),
-    )
-
-
 def _row_starts_bibliography_entry(row: _BibliographyVisualRow) -> _ReferenceRowStart | None:
     if row.relative_x0 > REFERENCE_LABEL_RELATIVE_X_TOLERANCE:
         return None
@@ -945,15 +860,6 @@ def _row_starts_bibliography_entry(row: _BibliographyVisualRow) -> _ReferenceRow
     if reference_number > MAX_REFERENCE_NUMBER:
         return None
     return _ReferenceRowStart(label_raw, reference_number, clean_text(match.group("body")))
-
-
-def _is_expected_layout_reference_start(
-    row_start: _ReferenceRowStart,
-    expected_reference_number: int | None,
-) -> bool:
-    if expected_reference_number is None:
-        return row_start.reference_number == 1
-    return row_start.reference_number == expected_reference_number
 
 
 def _has_large_same_column_continuation_gap(
@@ -1045,7 +951,7 @@ def _strip_trailing_section_text(text: str) -> tuple[str, bool]:
     return clean_text(text[: trailing_section_match.start()]), True
 
 
-def _bibliography_entry_from_active_layout_entry(
+def _unnumbered_bibliography_entry_from_active_layout_entry(
     active_entry: _ActiveBibliographyEntry,
     seen_entry_ids: set[str],
     *,
@@ -1054,17 +960,8 @@ def _bibliography_entry_from_active_layout_entry(
     clean_entry_text = clean_text(" ".join(part for part in active_entry.parts if part))
     if not clean_entry_text:
         return None
-    if active_entry.reference_number is None:
-        unnumbered_index = sum(entry_id.startswith("bib:unnum:") for entry_id in seen_entry_ids) + 1
-        base_entry_id = f"bib:unnum:{unnumbered_index}"
-        label_key = f"unnumbered:{unnumbered_index}"
-        notes = ["layout_text_stream_entries", "hanging_indent_entries", "unnumbered_bibliography_entries"]
-        confidence = 0.88
-    else:
-        base_entry_id = f"bib:{active_entry.reference_number}"
-        label_key = bibliography_label_key(active_entry.label_raw)
-        notes = ["layout_text_stream_entries"]
-        confidence = 0.92
+    unnumbered_index = sum(entry_id.startswith("bib:unnum:") for entry_id in seen_entry_ids) + 1
+    base_entry_id = f"bib:unnum:{unnumbered_index}"
     entry_id = base_entry_id
     duplicate_index = 1
     while entry_id in seen_entry_ids:
@@ -1075,9 +972,9 @@ def _bibliography_entry_from_active_layout_entry(
     bbox = _union_bboxes([row.bbox for row in active_entry.rows]) if len(page_nums) == 1 else None
     return BibliographyEntry(
         entry_id=entry_id,
-        label_raw=active_entry.label_raw,
-        label_key=label_key,
-        reference_number=active_entry.reference_number,
+        label_raw="",
+        label_key=f"unnumbered:{unnumbered_index}",
+        reference_number=None,
         raw_text=clean_entry_text,
         clean_text=clean_entry_text,
         heading=clean_text(heading),
@@ -1091,74 +988,9 @@ def _bibliography_entry_from_active_layout_entry(
         page_nums=page_nums,
         bbox=bbox,
         visual_line_count=len(active_entry.rows),
-        confidence=confidence,
-        notes=notes,
+        confidence=0.88,
+        notes=["layout_text_stream_entries", "hanging_indent_entries", "unnumbered_bibliography_entries"],
     )
-
-
-def _build_bibliography_entries_from_reference_table_region(
-    reference_region: str,
-    *,
-    section: PaperSection,
-    confidence: float,
-) -> list[BibliographyEntry]:
-    """Parse markdown-table bibliography rows into separate entries."""
-    chunks = REFERENCE_TABLE_ROW_SPLIT_PATTERN.split(reference_region)
-    active_labels_by_side: dict[int, str] = {}
-    entry_parts_by_label: dict[str, list[str]] = {}
-    entry_order: list[str] = []
-    for chunk in chunks:
-        row_text = chunk.strip()
-        if not row_text.startswith("|"):
-            continue
-        row_inner = row_text
-        if row_inner.startswith("|"):
-            row_inner = row_inner[1:]
-        if row_inner.endswith("|"):
-            row_inner = row_inner[:-1]
-        cells = [
-            clean_text(cell.replace("<br>", " "))
-            for cell in row_inner.split("|")
-        ]
-        if not cells or all(not cell or set(cell) <= {"-"} for cell in cells):
-            continue
-        for side, label_idx in enumerate(range(0, len(cells), 2)):
-            text_idx = label_idx + 1
-            if text_idx >= len(cells):
-                continue
-            label_text = cells[label_idx].strip() if label_idx < len(cells) else ""
-            body_text = cells[text_idx].strip()
-            if label_text.isdigit():
-                active_labels_by_side[side] = label_text
-                if label_text not in entry_parts_by_label:
-                    entry_parts_by_label[label_text] = []
-                    entry_order.append(label_text)
-                if body_text:
-                    entry_parts_by_label[label_text].append(body_text)
-                continue
-            if body_text and side in active_labels_by_side:
-                entry_parts_by_label[active_labels_by_side[side]].append(body_text)
-    entries: list[BibliographyEntry] = []
-    for label_raw in entry_order:
-        clean_entry_text = clean_text(" ".join(entry_parts_by_label[label_raw]))
-        if not clean_entry_text:
-            continue
-        entries.append(
-            BibliographyEntry(
-                entry_id=f"bib:{int(label_raw)}",
-                label_raw=label_raw,
-                label_key=bibliography_label_key(label_raw),
-                reference_number=int(label_raw),
-                raw_text=clean_entry_text,
-                clean_text=clean_entry_text,
-                source_section_id=section.section_id,
-                heading=section.heading,
-                role_hint=section.role_hint,
-                confidence=min(confidence, 0.78),
-                notes=["reference_table_rows"],
-            )
-        )
-    return entries
 
 
 def _has_local_footnote_definition(

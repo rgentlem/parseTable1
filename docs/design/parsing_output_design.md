@@ -996,7 +996,20 @@ Design components:
   start and exclusive end column, and placements are ordered by start column,
   canonical top, and source order. A region transition occurs only when all
   established tracks close, and it never cuts a block. `layout_kind` follows
-  the actual region/column shape mechanically. No consumer uses this candidate. The
+  the actual region/column shape mechanically. No consumer uses this candidate.
+  `bibliography_region_candidates` is another non-operative view over the same
+  registry. Each candidate stores an explicit heading line/block, the ordered
+  block IDs downstream from that heading in block-layout order, prose-conflict
+  block IDs, and structural evidence. It changes no ownership or extraction
+  mask. `bibliography_block_candidate` is the non-operative B3 view: current
+  bibliography source-line IDs locate canonical blocks, each touched block is
+  retained whole in registry order, and blocks before the earliest B2 heading
+  page are retained and flagged. `bibliography_item_block_candidate` is the B4
+  line-number-based whole-block comparison plus the B5 per-heading walk. B5
+  records numbered, current unnumbered, and exact indentation-continuation
+  line evidence for each region, then stops at the first unsupported block;
+  unnumbered lists reuse current entry lines. It changes no entries, ownership,
+  or mask. The
   legacy page-wide column metadata remains operative. This accepted checkpoint
   does not authorize activating the candidate or removing that path. Its
   prose segments now directly supply the
@@ -1014,8 +1027,7 @@ Design components:
   a font strictly larger than the dominant paper body font. Entirely bold source
   blocks containing completed sentence prose are excluded, and no heading-name
   vocabulary participates in general heading detection. Exact whole-line
-  bibliography labels are promoted only after the bibliography parser confirms
-  an immediately following reference list. Blocks are ordered by page,
+  bibliography parser does not promote heading roles or split blocks. Blocks are ordered by page,
   orientation group, column,
   then block top; their lines retain source order. Contextual adjacency cannot
   cross page or orientation-group boundaries.

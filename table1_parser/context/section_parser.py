@@ -29,37 +29,30 @@ REFERENCES_HINTS = ("reference", "references", "bibliography", "works cited")
 def build_paper_sections_from_document(
     paper_document: dict[str, object],
 ) -> list[PaperSection]:
-    """Build sections by assigning each body block to its preceding heading block."""
+    """Build sections from canonical prose ownership."""
     blocks = cast(list[dict[str, Any]], paper_document["blocks"])
+    prose = cast(dict[str, Any], paper_document["prose"])
+    blocks_by_id = {str(block["block_id"]): block for block in blocks}
     sections: list[PaperSection] = []
-    heading_block: dict[str, Any] | None = None
-    body_blocks: list[dict[str, Any]] = []
-    for block in blocks:
-        if block["role"] != "heading":
-            body_blocks.append(block)
-            continue
-        if heading_block is not None or body_blocks:
-            sections.append(
-                _build_section(
-                    len(sections),
-                    clean_text(heading_block["text"]) if heading_block is not None else None,
-                    2 if heading_block is not None else 0,
-                    [body_block["text"] for body_block in body_blocks],
-                    heading_block_id=(heading_block["block_id"] if heading_block is not None else None),
-                    body_block_ids=[body_block["block_id"] for body_block in body_blocks],
-                )
-            )
-        heading_block = block
-        body_blocks = []
-    if heading_block is not None or body_blocks:
+    for segment in prose["segments"]:
+        heading_block_ids = [str(value) for value in segment["heading_block_ids"]]
+        body_block_ids = [
+            str(block_id)
+            for paragraph in segment["paragraphs"]
+            for block_id in paragraph["block_ids"]
+        ]
         sections.append(
             _build_section(
                 len(sections),
-                clean_text(heading_block["text"]) if heading_block is not None else None,
-                2 if heading_block is not None else 0,
-                [body_block["text"] for body_block in body_blocks],
-                heading_block_id=(heading_block["block_id"] if heading_block is not None else None),
-                body_block_ids=[body_block["block_id"] for body_block in body_blocks],
+                clean_text(
+                    " ".join(str(blocks_by_id[block_id]["text"]) for block_id in heading_block_ids)
+                )
+                if heading_block_ids
+                else None,
+                2 if heading_block_ids else 0,
+                [str(paragraph["text"]) for paragraph in segment["paragraphs"]],
+                heading_block_id=heading_block_ids[0] if heading_block_ids else None,
+                body_block_ids=body_block_ids,
             )
         )
     return sections or [PaperSection(section_id="section_0", order=0)]
