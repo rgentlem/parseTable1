@@ -27,14 +27,15 @@ Then use the documents below as needed.
   block registry, narrative prose, document entities, and unresolved residual.
 
 - `docs/implementation/paper_document_block_layout_implementation_plan.md`
-  Accepted Steps 0–5 record for the non-operative block-first layout candidate:
-  orientation-local regions, leaf lanes, spanning placements, and focused plus
-  corpus validation without changing operative document order or ownership.
+  Accepted Steps 0–5 record for the block-first layout candidate and its later
+  activation: orientation-local regions, leaf lanes, spanning placements,
+  figure-blob gutter participation, and focused plus corpus validation.
 
 - `docs/implementation/paper_document_prose_flow_and_block_bibliography_plan.md`
-  Active bibliography implementation plan: remove the block-construction
-  dependency on line parsing, detect numbered bibitem blocks, retain the current
-  unnumbered route, then cut ownership over atomically.
+  Completed bibliography implementation plan and current follow-up record:
+  block-first item detection, retained unnumbered handling, atomic ownership,
+  and the remaining PDF-page-9 over-ownership case in `An environment-wide
+  association study (EWAS) on type 2 diabetes mellitus.pdf`.
 
 - `docs/design/cell_text_annotations.md`
   Extraction-side sidecar artifact for superscripts, subscripts, and small marker symbols attached to table cells.

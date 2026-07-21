@@ -22,33 +22,30 @@ reference markers are found.
 Bibliography entry extraction should run before table extraction because it
 depends on whole-paper positioned evidence, not on table grids. At the B0
 checkpoint, canonical `PaperDocument` blocks, block layout, and provisional
-prose are built first. The temporary legacy bibliography parser then consumes
-the page-furniture-filtered positioned lines and cannot relabel or split blocks
-or change prose ownership.
-`paper_document.json` also carries the B2 forward bibliography-region candidate,
-but the temporary legacy entry parser and extraction mask do not consume it.
-Its B3 whole-block candidate maps current entry source-line IDs to complete
-canonical blocks and flags any mapped block before the earliest B2 heading
-page. It remains non-operative and changes no entry, ownership, or mask.
-Its B4 candidate finds contiguous numbered starts from block-line text. B5
-replaces B4's range fill with independent forward walks from each reference
-heading. Each retained block records numbered, current unnumbered, or exact
-indentation-continuation line evidence; the walk stops at the first unsupported
-block. Continued numbering may relate separate regions but cannot join them.
+prose are built first. Accepted figures participate in layout as one opaque
+unit; their member blocks do not enter bibliography detection. The flattened
+ordinary-block layout order then supplies bibliography headings and item walks.
+`paper_document.json` retains the B2 forward bibliography-region candidate as
+non-operative search evidence. The operative implementation uses independent
+forward item walks from explicit reference headings. Each retained whole block
+records numbered-start, current unnumbered-entry, or accepted indentation-
+continuation line evidence; the walk stops at the first unsupported block.
+Continued numbering may relate separate regions but cannot join them.
 Within one canonical block, the first valid numbered candidate establishes the
 number indentation. A later numeric-looking line at least one observed leading
 digit width farther right remains current-item text instead of becoming a new
 item start. The digit width comes from the existing positioned characters; no
 additional PDF pass or document-wide coordinate model is used.
-There is no backend-markdown fallback for bibliography entry extraction. Later
-table-cell annotation and footnote processing can then link numeric table
-markers to already-known numbered bibliography entries. The same bibliography
-pass is the only source of the reference-region evidence used by table
-extraction: when entries are found,
-table extraction receives bibliography-owned source-line IDs and entry bboxes
-and removes positioned bibliography words/chars before candidate construction;
-when entries are not found, no bibliography-derived suppression is applied. The
-extractor must not run a separate raw-text `References` scan.
+Accepted heading/content blocks become bibliography entity components in
+`PaperDocument`; numbered and retained unnumbered entries preserve their source
+line IDs, and extraction masks derive from that ownership. There is no backend-
+Markdown fallback, global classified-line order, registry-block order, B3/B4
+comparison path, or separate raw-text `References` scan. Later table-cell
+annotation and footnote processing can link numeric table markers to the
+already-known entries. When entries are found, table extraction receives the
+bibliography-owned source-line IDs and entry bboxes and removes positioned
+bibliography words/chars before candidate construction; when entries are not
+found, no bibliography-derived suppression is applied.
 
 The implemented flow is:
 
@@ -56,20 +53,20 @@ The implemented flow is:
 PDF
 -> paper_positioned_document.json
 -> paper_page_furniture.json
--> paper_document.json
--> temporary bibliography entries from positioned text without block ownership
+-> figure-aware PaperDocument block layout
+-> first-pass prose and per-heading bibliography item walks in layout order
+-> bibliography block ownership and paper_document.json
 -> bibliography-owned line/entry evidence passed to table extraction when entries are found
 -> table extraction and cell text annotations
 -> bibliography reference-marker links
 -> paper_bibliography.json
 ```
 
-The reference-list reader is column-count agnostic. For each reference-list
-page, it identifies local reference columns from aligned entry starts and
-fallback x-start bands, reads column 1 top-to-bottom, then column 2
-top-to-bottom, and continues for however many columns are present. Entries stay
-open across column and page boundaries until the next left-edge entry start is
-seen, so a reference split across pages remains one entry.
+The reference-list reader is column-count agnostic because it consumes the
+canonical block layout: regions and columns are already ordered left-to-right,
+with blocks top-to-bottom inside each column. Entries stay open across block,
+column, and page boundaries until the next accepted item start, so a reference
+split across pages remains one entry.
 
 ## Top-Level Shape
 

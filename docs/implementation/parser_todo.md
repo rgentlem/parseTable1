@@ -1,10 +1,10 @@
 # Parser ToDo
 
-> **Accepted checkpoint — 2026-07-20:** Steps 0–5 of the block-first physical
-> layout plan are complete. The resulting layout is non-operative and changes
-> no document order, ownership, bibliography parsing, or downstream table
-> behavior. No Step 6 activation or bibliography migration is included in this
-> checkpoint.
+> **Current checkpoint — 2026-07-21:** Figure-aware block layout is operative
+> for `PaperDocument.structure`, first-pass prose, and bibliography traversal.
+> The final 28-PDF run is
+> `outputs/testpapers_batch_figure_blob_step5_20260721`; detailed differences
+> are recorded in `tmp/figure_blob_step6_corpus_comparison_20260721.md`.
 
 This is the persistent implementation ToDo list for parser work. Agents should check it before changing extraction, normalization, row/column semantics, table routing, value parsing, diagnostics, or R inspection helpers. Update it when a task is completed, reprioritized, split, or superseded.
 
@@ -101,8 +101,135 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
   fields are retired. All artifacts other than `paper_document.json` match the
   Step 6 run; `NutritionEx.pdf` differs only because this invocation records
   `inst/extdata/NutritionEx.pdf` instead of its absolute path, plus report
-  timestamps. Its table data and geometry are unchanged. Gutter and block-
-  layout participation remain unimplemented.
+  timestamps. Its table data and geometry are unchanged. At that checkpoint,
+  gutter and block-layout participation remained unimplemented.
+  The narrow figure-blob Step 1 checkpoint is complete in
+  `outputs/testpapers_batch_figure_blob_step1_20260721`. Accepted figure
+  entities are now materialized immediately after figure-scope validation and
+  before the existing all-block gutter calculation; figure-member blocks,
+  orientation groups, and the operative layout input remain unchanged pending
+  Step 2. All 28 PDFs completed with 92 extracted and normalized tables and 81
+  parsed tables. The run retains the same 63 accepted figures, 533 owned
+  member blocks, and 32 rejected scopes as the Step 7 baseline. Every block
+  registry, accepted figure entity, rejected scope, and canonical structure is
+  identical to that baseline. The worktree's separate gutter-track refinement
+  produces expected `paper_document.json` layout differences and improves the
+  bibliography to reference 41 in `NutritionEx.pdf` and reference 39 in
+  `fld.pdf`; `periodontitis.pdf` retains reference 19 on PDF page 12. Those
+  layout and bibliography differences are not decisions introduced by the
+  Step 1 entity-materialization move.
+  Figure-blob Step 2 is complete in
+  `outputs/testpapers_batch_figure_blob_step2_20260721`. The unchanged gutter
+  builder now receives every non-figure block plus one opaque composite-bbox
+  unit for each accepted figure; all 533 figure-member blocks remain in the
+  registry but no longer participate independently in layout. The figure box
+  is placed once in its caption block's orientation group, and eight secondary
+  orientation groups containing only hidden member blocks now emit empty text
+  layouts. All 28 PDFs completed. The layout covers 4,173 structural units
+  exactly once, including all 63 accepted figures and no exposed member block,
+  across 515 regions, 898 columns, and 383 positive gutters; no coverage,
+  uniqueness, or gutter invariant failed. Relative to Step 1, only
+  `paper_document.json` changes in the 21 papers containing accepted figures.
+  After the three orientation-group layout fields are removed, all 28
+  documents are identical, and all 1,033 other paper, bibliography,
+  extraction, normalization, semantic, and parsed-table artifacts are
+  unchanged. `NutritionEx.pdf`, PDF page 11, still reaches reference 41;
+  `fld.pdf`, PDF page 12, still reaches reference 39; and
+  `periodontitis.pdf`, PDF page 12, retains reference 19.
+  Figure-blob Step 3 is complete in
+  `outputs/testpapers_batch_figure_blob_step3_20260721`.
+  `PaperDocument.structure` now exactly flattens the accepted page layout in
+  existing orientation-group, region, start-column, canonical-top, and source
+  tie-break order. The former registry-order plus first-member-substitution
+  path is removed. All 28 PDFs completed, and all 336 page structures match
+  their layout placements exactly. The traversal covers the same 4,173 units
+  once, emits all 63 figures once, and emits none of their 533 member blocks.
+  Seventy-nine PDF pages change structure order across 26 papers. After
+  replacing only `structure` with the Step 3 value, every
+  `paper_document.json` matches Step 2; all other 1,033 artifacts are unchanged.
+  Figure-blob Step 4 is complete in
+  `outputs/testpapers_batch_figure_blob_step4_20260721`. The established prose
+  candidate rules now consume ordinary blocks in the flattened layout order;
+  accepted figure units are skipped without opening any of their 533 member
+  blocks. All 28 PDFs completed, all 336 structures still match their layout
+  placements, and the 4,173 structural units and prose/entity/residual ownership
+  partitions pass exact coverage and uniqueness checks. Prose changes in 12
+  papers across 19 PDF pages: six papers change order only, while six gain seven
+  blocks through the unchanged existing continuation and heading-adjacency
+  rules; no prose block is removed. The current classifier consequently promotes
+  the author-list block on PDF page 1 of `Asthma prevalence among United States
+  population insights from NHANES data analysis.pdf`; this known limitation is
+  accepted for the narrow traversal cutover and will be handled by later prose
+  classification refinement. `paper_bibliography.json`, bibliography regions
+  and ownership, and all extraction, normalization, semantic, and parsed-table
+  artifacts remain unchanged apart from existing report timestamps.
+  Figure-blob Step 5 and the final corpus review are complete in
+  `outputs/testpapers_batch_figure_blob_step5_20260721`. Bibliography heading
+  discovery, numbered starts, continuation evidence, and the existing
+  unnumbered route now consume the same flattened ordinary-block traversal as
+  prose; figure units are skipped, and the global classified-line and registry-
+  block ordering inputs are removed. No item, ownership, mask, rescue, or
+  fallback rule changed. Relative to Step 4, all 1,061 persisted files are
+  substantively identical after generated report timestamps are removed. The
+  final output contains 1,373 entries in 29 bibliography entities owning 579
+  blocks: 26 papers use numbered entries and two use the retained unnumbered
+  route. Against the pre-blob Step 7 baseline, the improved gutters add
+  references 28–41 on PDF page 11 of `NutritionEx.pdf`, references 27–39 on PDF
+  page 12 of `fld.pdf`, and the continuation lines for reference 19 on PDF page
+  12 of `periodontitis.pdf`. Those changes add 27 entries, extend three prior
+  terminal entries, add 32 owned blocks, and expand masks on only those three
+  pages; no ownership or mask line is removed. All 28 PDFs complete, every one
+  of the 4,173 structural units is placed once, all 63 figures remain opaque,
+  all 533 member blocks and 828 visual references remain explicitly inspectable,
+  and all 383 gutters and 898 columns are positive and non-overlapping with no
+  region boundary cutting a unit. After normalizing the invocation-path-only
+  `source_pdf` difference for `NutritionEx.pdf`, extraction, normalization,
+  semantic, and parsed-table artifacts are unchanged. The exact page, prose,
+  region, entry, ownership, and mask comparison is recorded in
+  `tmp/figure_blob_step6_corpus_comparison_20260721.md`.
+
+## Next Bibliography Work
+
+- [ ] Correct the confirmed bibliography over-ownership in
+  `An environment-wide association study (EWAS) on type 2 diabetes mellitus.pdf`,
+  PDF page 9. After reference 13, the current item walk treats seven intervening
+  non-reference blocks as continuation content before reference 14:
+  `paper_text_block:page-9:upright:5` through
+  `paper_text_block:page-9:upright:11`. These blocks contain supplementary Table
+  S3/S4 descriptions, Acknowledgments, and Author Contributions. They are
+  incorrectly owned by the bibliography entity, appended to reference 13, and
+  included in the extraction mask. Determine the earliest structural decision
+  that should keep them outside the bibliography while preserving the later
+  references 14–59; add no vocabulary rescue, downstream repair, or competing
+  traversal.
+
+- [ ] Review the eight current `long_bibliography_entry_possible_collapse`
+  diagnostics and distinguish genuine entry collapse from legitimately long
+  references before changing any rule:
+  - `An environment-wide association study (EWAS) on type 2 diabetes mellitus.pdf`,
+    PDF page 9, reference 13. This is part of the confirmed ownership failure
+    above: 55 source lines and 1,828 cleaned characters.
+  - `Ethnic Differences in the Relationship Between Insulin Sensitivity and
+    Insulin Response.pdf`, PDF page 8, reference 23: 12 source lines.
+  - `Helicobacter pylori infection in the United States beyond NHANES- a scoping
+    review of seroprevalence estimates by racial and ethnic groups.pdf`, PDF page
+    12, reference 34, and PDF page 13, references 45, 54, and 62: 12–14 source
+    lines each.
+  - `Role of Estimated Glucose Disposal Rate in Staging and Death Risk of
+    Cardiovascular-Kidney-Metabolic Syndrome- Insights from NHANES 1999-2018.pdf`,
+    PDF page 10, reference 31: 12 source lines.
+  - `Systemic inflammation markers and the prevalence of hypertension- A NHANES
+    cross-sectional study.pdf`, PDF page 11, reference 33: 12 source lines.
+  Preserve a diagnostic when the printed entry is genuinely long; change entry
+  segmentation only when source block/line evidence shows a missed start or an
+  incorrect continuation.
+
+- [ ] Use the repaired gutter cases as mandatory bibliography regressions for
+  the next change: `NutritionEx.pdf`, PDF page 11, must reach reference 41;
+  `fld.pdf`, PDF page 12, must reach reference 39; and `periodontitis.pdf`, PDF
+  page 12, must retain all four source lines of reference 19. Bibliography masks
+  must continue to derive only from accepted owned blocks, and table extraction,
+  normalization, semantics, and parsed values must remain unchanged.
 
 - [ ] Reevaluate every current or proposed use of Pydantic for concrete value.
   Inventory the code and tools that depend on it, record the capability each

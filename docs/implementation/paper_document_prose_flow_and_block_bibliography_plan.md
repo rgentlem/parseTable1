@@ -277,6 +277,14 @@ The candidate is not accepted and was not refined after this run.
 The B5.1 corpus run supersedes that result. The B6 cutover endpoint is accepted
 with the three B5.1 follow-ups recorded above for separate repair.
 
+The figure-aware block-layout activation completed on 2026-07-21 supersedes
+those follow-up results. In
+`outputs/testpapers_batch_figure_blob_step5_20260721`, `NutritionEx.pdf`
+reaches reference 41 and `fld.pdf` reaches reference 39. The remaining
+bibliography follow-up is the PDF-page-9 over-ownership in `An environment-wide
+association study (EWAS) on type 2 diabetes mellitus.pdf`; its exact affected
+blocks and regression checks are recorded in `docs/implementation/parser_todo.md`.
+
 ## Acceptance and Commit
 
 Accept only when blocks no longer depend on bibliography output, every accepted
@@ -285,8 +293,9 @@ masks derive from ownership, old competing paths are absent, the retained
 unnumbered route remains exclusive, B1 expectations pass, and all 28 PDFs
 complete with every substantive difference explained.
 
-For this endpoint, the three recorded B5.1 follow-ups are explicit acceptance
-exceptions to the otherwise unchanged B1 and mask requirements.
+For this endpoint, the recorded PDF-page-9 over-ownership in `An environment-
+wide association study (EWAS) on type 2 diabetes mellitus.pdf` is the explicit
+acceptance exception to the otherwise unchanged B1 and mask requirements.
 
 Use actual `table1-parser parse` runs; do not use pytest. Keep only the current
 ignored output and never stage `outputs/`. Commit implementation only after B6;

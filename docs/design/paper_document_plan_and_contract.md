@@ -82,8 +82,6 @@ PaperDocument
   unassigned_block_ids
   figure_scope_rejections
   bibliography_region_candidates
-  bibliography_block_candidate
-  bibliography_item_block_candidate
 ```
 
 ### Pages
@@ -110,11 +108,14 @@ PaperDocumentStructurePage
 Each ID resolves to either a retained block or a canonical entity. A figure
 entity occurs once in this traversal; its caption and content blocks remain in
 the block registry for provenance and ownership but do not occur independently
-in the traversal.
+in the traversal. The ordered IDs are the flattened layout placements in page,
+existing orientation-group, region, start-column, canonical-top, and retained
+source tie-break order. Every structural layout unit occurs exactly once.
 
-Orientation groups currently retain their canonical dimensions and the frozen
-operative `column_bands` and `column_boundaries`. They also expose the first
-non-operative block-layout candidate:
+Orientation groups retain their canonical dimensions and the legacy
+`column_bands` and `column_boundaries` as classification evidence. Their
+`layout_regions` and placements define the canonical structural traversal used
+by first-pass prose and bibliography processing:
 
 ```text
 PaperDocumentOrientationGroup
@@ -133,33 +134,44 @@ PaperDocumentOrientationGroup
   layout_diagnostics
 ```
 
-At the current Step 4.1 candidate checkpoint, every exact canonical block top
-and bottom edge defines a vertical event. Each non-empty atomic interval
-records the exact positive x-gutters between its occupied block components.
-An established gutter continues while its prior and observed empty intervals
-have a positive intersection. One-sided occupancy is absence rather than
-closure, and a block crossing a gutter closes it only while that block is
-active. A new gutter may refine one existing lane while another gutter
-persists. A new region is created only when a non-empty interval closes every
-established gutter, or when a preceding no-gutter phase crosses every gutter
-that first appears below it. Region boundaries never cut blocks.
+At the current figure-blob Step 5 checkpoint, layout input contains every
+ordinary block plus one opaque structural unit for each accepted figure. A
+figure unit uses the entity ID and the composite bbox transformed into the
+caption block's orientation group; its caption and internal blocks do not
+participate independently. Every exact canonical structural-unit top and
+bottom edge defines a vertical event. Each non-empty atomic interval records
+the exact positive x-gutters between its occupied components. An established
+gutter continues while its prior and observed empty intervals have a positive
+intersection. One-sided occupancy is absence rather than closure, and a
+structural unit crossing a gutter closes it only while that unit is active. A
+new gutter may refine one existing lane while another gutter persists. A new
+region is created only when a non-empty interval closes every established
+gutter, or when a preceding no-gutter phase crosses every gutter that first
+appears below it. Region boundaries never cut structural units.
 
 The resulting disjoint gutter tracks define leaf columns from left to right
 without a maximum count. A column bbox is the exact canonical track rectangle
 bounded vertically by the region bbox and horizontally by its neighboring
-gutter edges; it is not a second block owner. Each region instead stores every
-block exactly once in `block_placements`. `start_column` and
-`end_column_exclusive` allow one block to span adjacent leaf columns, while
-placement order remains start column, canonical top, then source-block order.
-Every referenced block retains its source-ordered lines. Region bboxes remain
-exact canonical-coordinate block unions.
+gutter edges; it is not a second owner. Each region instead stores every
+ordinary block or figure entity exactly once in `block_placements`; the
+legacy-named `block_id` field resolves to either kind. `start_column` and
+`end_column_exclusive` allow one structural unit to span adjacent leaf columns,
+while placement order remains start column, canonical top, then source-block
+order. Every referenced ordinary block retains its source-ordered lines.
+Region bboxes remain exact canonical-coordinate structural-unit unions.
 
 `layout_kind` describes the materialized candidate mechanically: `mixed`
 records more than one region, `multicolumn` records one region with more than
-one column, and `single` records one region with one column. No consumer uses
-this candidate for ordering or ownership; the existing page-wide layout
-remains operative. This accepted checkpoint does not authorize activating the
-candidate or removing the page-wide path.
+one column, `single` records one region with one column, and `empty` records an
+orientation group whose retained text blocks are all owned inside a figure
+placed in another group. The flattened placements now provide the ordinary-block
+order used by first-pass prose identification. Figure units are skipped without
+opening their components, and the existing prose-classification evidence and
+decisions are unchanged. Bibliography heading discovery, numbered starts,
+continuation evidence, and the retained unnumbered route consume the same
+ordered ordinary blocks. Figure units are also skipped by bibliography without
+inspecting their components; existing item, ownership, and mask rules are
+unchanged.
 
 Canonical coordinates are comparable only within their declared orientation
 group. Page-space coordinates remain authoritative for proximity to visual
@@ -187,36 +199,17 @@ block-layout order. Existing ownership does not exclude a block;
 does not segment entries, assign ownership, or mask extraction, and unresolved
 blocks remain available for later review.
 
-### Non-operative bibliography block candidate
+### Bibliography item walk and ownership
 
-The B3 checkpoint uses current bibliography-entry line IDs only to locate
-canonical blocks:
-
-```text
-PaperBibliographyBlockCandidate
-  block_ids
-  upstream_false_positive_block_ids
-```
-
-Every touched block is retained whole and in canonical registry order. A
-touched block before the earliest B2 heading page is retained and separately
-flagged. The candidate does not split blocks, rebuild entries, assign
-ownership, or change extraction masks.
-
-### Non-operative bibitem block candidate
-
-B4 records whole blocks from the first through last start in each contiguous
-numbered sequence, plus a line-ID-to-number map. Blocks are scanned
-by ordered line text only. If no numbered sequence exists, current unnumbered
-entry lines locate the blocks. The candidate changes no entries, ownership, or
-mask.
-
-B5 records independent per-heading regions. Each whole retained block has
-numbered-start, current unnumbered-entry, or exact indentation-continuation
-line evidence. A region stops at its first unsupported block or the next
-reference heading. Later headings require intervening prose and local item
-evidence; continued numbering records a relationship without filling the gap.
-B5 remains non-operative.
+The operative item walk consumes the ordered ordinary blocks from each explicit
+bibliography heading. Each retained whole block has numbered-start, current
+unnumbered-entry, or accepted indentation-continuation line evidence. A region
+stops at its first unsupported block or the next reference heading. Later
+headings require intervening prose and local item evidence; continued numbering
+relates regions without filling the gap. Accepted heading and content blocks
+belong to the bibliography entity, entry assembly preserves their source line
+IDs, and extraction masks derive only from that ownership. The retired B3 and
+B4 comparison fields are not part of `PaperDocument`.
 
 ### Blocks
 

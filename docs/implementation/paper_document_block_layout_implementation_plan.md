@@ -5,6 +5,13 @@
 > order, ownership, bibliography parsing, or downstream table behavior. This
 > checkpoint does not approve Step 6 activation or any later parser change.
 
+> **Superseding checkpoint — 2026-07-21:** A separately approved narrow cutover
+> now uses figure-aware layout placements for `PaperDocument.structure`,
+> first-pass prose, and bibliography traversal. The historical Steps 0–5 below
+> remain the evidence record for the earlier non-operative candidate. Current
+> corpus evidence is in
+> `tmp/figure_blob_step6_corpus_comparison_20260721.md`.
+
 ## Status and Scope
 
 This document is the step-by-step implementation plan for replacing the
@@ -21,10 +28,10 @@ logic. Each operative checkpoint still requires explicit approval for its
 specific logic change. No step may add or alter a numeric layout tolerance
 without the exact `APPROVE_LAYOUT_TOLERANCE` keyword.
 
-The accepted scope currently ends after Step 5 validation of the non-operative
-candidate. The current page-wide layout and bibliography implementations remain
-operative and unchanged. Steps 6–10 below are unapproved follow-up proposals,
-not part of the accepted checkpoint or its commit candidate.
+At the accepted 2026-07-20 checkpoint, scope ended after Step 5 validation of
+the non-operative candidate. The page-wide layout and bibliography
+implementations then remained operative and unchanged. Steps 6–10 below were
+unapproved follow-up proposals and were not part of that checkpoint.
 
 ## Goal
 
@@ -629,3 +636,7 @@ removal, consumer cutover, or bibliography migration was approved or
 implemented under this plan.
 
 Any later use of the candidate requires a separate plan and explicit approval.
+
+That separate approval and cutover have now occurred. The final implementation
+keeps accepted figures opaque during layout, preserves their member blocks for
+entity inspection, and removes competing prose and bibliography input orders.

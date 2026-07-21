@@ -202,8 +202,14 @@ one page number and ordered structural-unit list for every page. It exposes the
 figure entity exactly once and omits that figure's caption and internal blocks.
 Those blocks remain in the source-backed registry and are owned by the entity's
 separate caption and content components; positioned visual and rule evidence
-remains unchanged. Rejected detections remain non-owning diagnostics. Existing
-gutter and block-layout candidates do not consume the figure entities.
+remains unchanged. Rejected detections remain non-owning diagnostics. Gutter
+and block-layout construction consumes each accepted figure once as its opaque
+composite bbox and omits its caption and internal blocks from layout input.
+The resulting region placements are flattened in page and existing
+orientation-group order and persisted as that page's canonical
+`structural_unit_ids`. First-pass prose identification now runs its established
+rules over the ordinary blocks in this order and skips figure units without
+opening their components.
 Context adjacency stops at page and orientation-group boundaries. It is also the
 positioned text source for footer candidates absent from the extracted grid.
 The stream preserves visual lines, page/column order, line bbox, dominant font
@@ -263,19 +269,16 @@ bibliographic resolution belongs in `paper_bibliography.json`.
 
 `paper_bibliography.json` records the paper's own bibliography entries,
 numbered or unnumbered, and observed numeric reference markers linked to
-numbered entries. At the B0 checkpoint, the temporary legacy parser consumes
-page-furniture-filtered positioned lines only after canonical blocks, block
-layout, and provisional prose have been built. Its heading output cannot
-relabel or split blocks or change prose ownership. Block-derived sections remain
-a temporary fallback. The layout reader uses one
-entry-boundary workflow: read page, column, then vertical position; start a new
-entry when the row returns to the column's left edge, either at a numeric label
-or at the first author/organization text in a hanging-indent list; keep indented
-rows as continuations across column and page boundaries. The reference region
-uses only lines with the same writing orientation as its reference heading, so
-an upright bibliography cannot claim a rotated table or other rotated visual
-object on a later page. When this
-purpose-built pass finds a bibliography, table extraction receives
+numbered entries. `PaperDocument` builds page-furniture-filtered canonical
+blocks, the figure-aware block layout, and provisional prose first. Explicit
+reference headings and the operative per-heading item walk then consume the
+same flattened ordinary-block order; figure units are skipped. Numbered and
+retained unnumbered entries preserve their source lines, accepted heading and
+content blocks become bibliography entity components, and extraction masks
+derive from that ownership. The reference walk uses only blocks with the same
+writing orientation as its heading, so an upright bibliography cannot claim a
+rotated table or other rotated visual object on a later page. When this
+purpose-built walk finds a bibliography, table extraction receives
 bibliography-owned source-line IDs and entry bboxes so positioned bibliography
 words/chars can be removed before table candidates are built. If this pass does
 not find a bibliography, table extraction receives no reference-section evidence
@@ -303,12 +306,9 @@ while `paper_document.json` adds orientation-aware reading order and canonical
 ownership without replacing it. After page-furniture filtering, document
 construction first assembles complete provisional source-block records with
 their block-local lines, text, source and canonical union bboxes, orientation,
-source order, and source-block provenance. Only then does the current frozen
-page-wide layout path order those blocks. It does not independently sort their
-lines: block-local lines retain source order, one-column blocks sort by top then
-left, and detected columns read top-to-bottom before proceeding left-to-right.
-Each populated orientation group also records a non-operative block-layout
-candidate from exact canonical block top and bottom events. Each non-empty
+source order, and source-block provenance. Each populated orientation group then
+builds the operative block layout from exact canonical block top and bottom
+events. Each non-empty
 atomic interval contributes exact positive x-gutters. Tracks continue by
 positive x-intersection, remain dormant under one-sided occupancy, and may
 refine an existing lane without ending the region when another track persists.
@@ -317,23 +317,23 @@ than removing the gutter globally. Regions materialize left-to-right leaf
 column track bboxes plus one ordered `block_placements` list; every block occurs
 once with `start_column` and `end_column_exclusive`, ordered by start column,
 canonical top, and source order. A region transition occurs only when all
-established tracks close and never cuts a block. Block-local line order remains
-unchanged, and no consumer yet uses this candidate for order or ownership.
+established tracks close and never cuts a structural unit. Accepted figures
+participate as one opaque composite-bbox unit and their member blocks remain
+available only through entity inspection. Flattened placements define
+`PaperDocument.structure` and the ordinary-block order consumed by first-pass
+prose and bibliography processing. Block-local line order remains unchanged;
+legacy page-wide column metadata remains classification evidence only.
 `paper_document.json` also records non-operative bibliography-region candidates.
 An explicit heading line must begin its canonical block. The candidate begins
 at that block in the page's block-layout order, then records same-orientation
 blocks on larger PDF page numbers. Existing prose overlaps are reported as
-conflicts; blocks, prose, residual ownership, and extraction masks are unchanged.
-It also records the B3 whole-block candidate. Current bibliography source-line
-IDs locate canonical blocks, every touched block is retained whole, and any
-touched block before the earliest heading page is retained and flagged. This
-candidate changes no entries, ownership, or extraction mask.
-The B4 candidate records whole blocks spanned by each contiguous numbered
-sequence; unnumbered lists reuse current entry lines. It remains non-operative.
-The B5 candidate instead walks forward independently from each reference
-heading, records the line evidence supporting every retained block, and stops
-at the first unsupported block. Separate headings remain separate even when
-their item numbering continues.
+conflicts without assigning ownership. The operative item walk consumes the
+same ordered ordinary blocks, records numbered-start, retained unnumbered, and
+accepted continuation evidence, and stops at the first unsupported block.
+Separate headings remain separate even when their item numbering continues.
+Accepted heading/content blocks become bibliography entity components, and
+extraction masks derive from that ownership. Retired B3/B4 comparison fields
+are no longer persisted.
 Its block registry preserves the block order, source block index,
 orientation-group ID, exact page-space and canonical union bboxes, column index
 and count, ordered source line IDs, role, and text. Font and span evidence
@@ -475,9 +475,9 @@ Why this is separate:
 ## Step 2: Table Extraction
 
 Before table extraction, the parser builds repeated page-furniture regions from
-positioned page text, then builds canonical paper blocks and provisional prose.
-The temporary legacy bibliography parser runs afterward without changing that
-document, and paper sections and table mentions are derived from the canonical
+positioned page text, then builds canonical paper blocks, figure-aware physical
+layout, provisional prose, and bibliography entities in their shared layout
+order. Paper sections and table mentions are derived from that canonical
 document. The
 extraction layer receives page-furniture regions, caption/prose table-mention
 evidence, and, when a bibliography was found, bibliography-owned source-line and
@@ -1280,9 +1280,11 @@ PDF -> paper_positioned_document.json -> paper_page_furniture.json -> paper_docu
 ```
 
 `paper_document.json` is built directly from filtered positioned blocks and
-the established prose-candidate decisions before the temporary legacy
-bibliography parser runs. Legacy bibliography heading output does not change
-its blocks, roles, layout, or prose ownership.
+the established prose-candidate decisions over the flattened layout traversal.
+Figure units remain opaque and are skipped during prose identification and
+bibliography detection. Bibliography heading discovery, numbered starts,
+continuation evidence, and the retained unnumbered route consume the same
+ordered ordinary blocks; their accepted item and ownership rules are unchanged.
 `paper_sections.json` and `paper_markdown.md` consume its prose segments. The
 non-prose paper consumers now use its canonical block text, role, and order and
 join block line IDs to `paper_positioned_document.json` only for raw typography
@@ -1306,16 +1308,17 @@ extraction backend or an ownership model; `PaperDocument` is canonical.
 
 ### `paper_document.json`
 
-This is the initial prose/residual ownership projection over the existing
+This is the canonical prose/entity/residual ownership projection over the
 filtered positioned blocks. Its single block registry preserves each block's
 page, source order, line IDs, orientation, columns, and exact geometry. Current
 prose-candidate headings open ordered prose segments, and accepted body blocks
-become their paragraphs. Entities are empty, and every other retained block is
-listed in `unassigned_block_ids` without inference. Its first consumers are the
-persisted section and Markdown views. Non-prose consumers now read its canonical
-block text, role, and order and join source IDs to positioned evidence without
-creating another stream. Its B2 region, B3 whole-block, and B4 bibitem-block
-candidates are non-operative and do not alter that partition.
+become their paragraphs. The established prose rules consume ordinary blocks in
+flattened layout-placement order and do not inspect accepted figure members.
+Accepted figure and bibliography entities own their component blocks, and every
+other retained block is listed in `unassigned_block_ids` without additional
+inference. The persisted section and Markdown views consume prose ownership.
+Non-prose consumers read canonical block text, role, and order and join source
+IDs to positioned evidence without creating another stream.
 
 ### `paper_sections.json`
 
@@ -1371,18 +1374,18 @@ not yet establish body/footer row bands.
 
 ### `paper_bibliography.json`
 
-The temporary legacy parser extracts the paper's bibliography entries from the
-filtered positioned lines after canonical document construction and before
-table extraction begins. It does not own or modify `PaperDocument` blocks.
-Reference-list
-pages are read as page, column, then vertical position; entries remain open
-across column and page breaks until the next left-edge entry start is found.
-For numbered lists that start may be a bracketed, dotted, or bare numeric label;
-for author-year lists it may be the first author/organization line with
-following hanging-indent continuations. This artifact is per-paper only: it
-keeps labels and raw/clean entry text as separate entities without DOI lookup,
-author normalization, cross-paper deduplication, or any corpus-level reference
-store.
+The canonical document builder extracts bibliography entries after physical
+layout and provisional prose and before table extraction begins. Independent
+item walks start at explicit reference headings and consume whole blocks in
+layout order. For numbered lists, an entry start may be a bracketed, dotted, or
+bare numeric label; the retained author-year route uses first-author or
+organization lines with hanging-indent continuations. Entries may remain open
+across block, column, and page breaks until the next accepted start. Accepted
+heading and content blocks belong to bibliography entities in `PaperDocument`,
+and each entry preserves its contributing source line IDs. The artifact is
+per-paper only: it keeps labels and raw/clean entry text as separate entities
+without DOI lookup, author normalization, cross-paper deduplication, or any
+corpus-level reference store.
 
 The bibliography pass is also the only stage that discovers reference-list
 evidence for table extraction. If it finds entries, the parse flow passes

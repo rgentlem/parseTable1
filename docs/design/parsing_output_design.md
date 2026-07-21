@@ -994,18 +994,25 @@ Design components:
   as segments and paragraphs, owns established bibliography and figure blocks
   through entities, and assigns all other blocks to `unassigned_block_ids`.
   Each populated orientation group also
-  carries a non-operative block-layout candidate: `layout_kind`, ordered
+  carries block-layout evidence: `layout_kind`, ordered
   `layout_regions`, exact positive `candidate_gutters`, leaf-column track bboxes,
   region-level `block_placements`, and `layout_diagnostics`. Exact block top
   and bottom events establish atomic vertical intervals. Gutters persist by
   positive x-intersection, become dormant under one-sided occupancy, and may
   refine one lane without ending a region when another track persists. A block
   crossing a gutter receives a spanning placement instead of suppressing that
-  gutter globally. Every placement records one block ID plus its inclusive
-  start and exclusive end column, and placements are ordered by start column,
-  canonical top, and source order. A region transition occurs only when all
-  established tracks close, and it never cuts a block. `layout_kind` follows
-  the actual region/column shape mechanically. No consumer uses this candidate.
+  gutter globally. Layout input contains every ordinary block plus one opaque
+  composite-bbox unit for each accepted figure; figure-member blocks remain in
+  the registry but do not participate independently. Every placement records
+  one ordinary block or figure entity ID plus its inclusive start and exclusive
+  end column, and placements are ordered by start column, canonical top, and
+  source order. A region transition occurs only when all established tracks
+  close, and it never cuts a structural unit. `layout_kind` follows the actual
+  region/column shape mechanically; `empty` identifies an orientation group
+  whose retained text blocks are all hidden members of a figure placed in
+  another group. The flattened placements define the ordinary-block order
+  presented to first-pass prose identification; figure units are skipped
+  without inspecting their components.
   Accepted figure scopes are canonical `figure` entities. Each records the
   explicit figure label, ordered caption block IDs, bound above-caption
   raster/vector component references, assigned internal block IDs, exact
@@ -1015,27 +1022,28 @@ Design components:
   component/caption envelope; no drawing sequence, extraction order, page-width
   threshold, or overlap percentage participates. `structure` contains one
   two-field record for every page: its page number and ordered structural-unit
-  IDs. It exposes each figure entity exactly once and does not expose its
-  caption or internal blocks independently. The source block and positioned-
-  evidence registries remain unchanged. Rejected detections alone remain in
-  `figure_scope_rejections`. Existing gutter and block-layout candidates do not
-  consume the figure entities.
+  IDs. Those IDs exactly flatten the page's existing orientation-group order,
+  layout-region order, and ordered placements. It exposes each figure entity
+  exactly once and does not expose its caption or internal blocks independently.
+  The source block and positioned-evidence registries remain unchanged.
+  Rejected detections alone remain in
+  `figure_scope_rejections`. Gutter and block-layout evidence consumes each
+  accepted figure as one opaque entity bbox.
   `bibliography_region_candidates` is another non-operative view over the same
   registry. Each candidate stores an explicit heading line/block, the ordered
   block IDs downstream from that heading in block-layout order, prose-conflict
   block IDs, and structural evidence. It changes no ownership or extraction
-  mask. `bibliography_block_candidate` is the non-operative B3 view: current
-  bibliography source-line IDs locate canonical blocks, each touched block is
-  retained whole in registry order, and blocks before the earliest B2 heading
-  page are retained and flagged. `bibliography_item_block_candidate` is the B4
-  line-number-based whole-block comparison plus the B5 per-heading walk. B5
-  records numbered, current unnumbered, and exact indentation-continuation
-  line evidence for each region, then stops at the first unsupported block;
-  unnumbered lists reuse current entry lines. It changes no entries, ownership,
-  or mask. The
-  legacy page-wide column metadata remains operative. This accepted checkpoint
-  does not authorize activating the candidate or removing that path. Its
-  prose segments now directly supply the
+  mask. The operative per-heading item walk consumes those ordered ordinary
+  blocks, records numbered, current unnumbered, and accepted indentation-
+  continuation line evidence, and stops at the first unsupported block.
+  Accepted blocks become bibliography entity components, and masks derive from
+  that ownership. Retired B3/B4 comparison fields are not persisted. The
+  legacy page-wide column metadata remains classification evidence. Steps 4–5
+  present the same ordered ordinary blocks to the established prose and
+  bibliography rules. Bibliography heading discovery, numbered starts,
+  continuation evidence, and the retained unnumbered route skip figure units
+  and no longer receive a competing global line or registry-block order. Item,
+  ownership, and extraction-mask rules are unchanged. Its prose segments directly supply the
   persisted section and Markdown views. Prose ownership is derived only from upright
   source continuity, observed column extent, one font name with a
   largest-minus-smallest line font-size span below 0.5, sentence evidence,
@@ -1050,10 +1058,11 @@ Design components:
   a font strictly larger than the dominant paper body font. Entirely bold source
   blocks containing completed sentence prose are excluded, and no heading-name
   vocabulary participates in general heading detection. Exact whole-line
-  bibliography parser does not promote heading roles or split blocks. Blocks are ordered by page,
-  orientation group, column,
-  then block top; their lines retain source order. Contextual adjacency cannot
-  cross page or orientation-group boundaries.
+  bibliography parser does not promote heading roles or split blocks. Ordinary
+  prose input blocks are ordered by page, orientation group, layout region,
+  start column, canonical top, and retained source order; their lines retain
+  source order. Contextual adjacency cannot cross page or orientation-group
+  boundaries.
 - `paper_markdown.md`
   prose-only Markdown view rendered from the headings and paragraphs in
   `PaperDocument.prose.segments`; there is no second inference path or

@@ -730,34 +730,134 @@ def build_paper_document(
                 for block_id in unclaimed_block_ids
             ]
 
+    groups = {
+        group.group_id: group
+        for page in stream_pages
+        for group in page.orientation_groups
+    }
+    figure_entities: list[dict[str, object]] = []
+    figure_owned_block_ids: set[str] = set()
+    figure_layout_units_by_group: dict[str, list[SimpleNamespace]] = {}
+    for candidate in figure_scope_candidates:
+        if candidate["concerns"]:
+            continue
+        member_block_ids = [
+            *candidate["caption_block_ids"],
+            *candidate["internal_block_ids"],
+        ]
+        first_member_block_id = min(
+            member_block_ids,
+            key=lambda block_id: blocks_by_id[block_id].order,
+        )
+        caption_block = blocks_by_id[str(candidate["caption_block_ids"][0])]
+        caption_group = groups[caption_block.orientation_group_id]
+        entity_id = f"figure-composite:{candidate['candidate_id']}"
+        figure_entities.append(
+            {
+                "entity_id": entity_id,
+                "kind": "figure",
+                "scope": "main",
+                "page_num": candidate["page_num"],
+                "bbox": candidate["composite_bbox"],
+                "components": [
+                    {
+                        "role": "caption",
+                        "block_ids": candidate["caption_block_ids"],
+                        "content_refs": [],
+                    },
+                    {
+                        "role": "content",
+                        "block_ids": candidate["internal_block_ids"],
+                        "content_refs": [
+                            {
+                                "artifact_kind": "paper_positioned_visual_component",
+                                "artifact_id": component_id,
+                            }
+                            for component_id in candidate["visual_component_ids"]
+                        ],
+                    },
+                ],
+                "evidence": {
+                    "figure_scope_candidate_id": candidate["candidate_id"],
+                    "figure_label": candidate["figure_label"],
+                    "content_bbox": candidate["content_bbox"],
+                    "structural_evidence": candidate["structural_evidence"],
+                },
+            }
+        )
+        figure_owned_block_ids.update(member_block_ids)
+        figure_layout_units_by_group.setdefault(
+            caption_block.orientation_group_id, []
+        ).append(
+            SimpleNamespace(
+                block_id=entity_id,
+                page_num=candidate["page_num"],
+                source_block_index=caption_block.source_block_index,
+                order=blocks_by_id[first_member_block_id].order,
+                bbox=candidate["composite_bbox"],
+                canonical_bbox=canonical_bbox_for_orientation(
+                    candidate["composite_bbox"],
+                    orientation=caption_block.orientation,
+                    orientation_source_bbox=caption_group.source_bbox,
+                ),
+                orientation=caption_block.orientation,
+                orientation_group_id=caption_block.orientation_group_id,
+            )
+        )
+
     for page in stream_pages:
         for group in page.orientation_groups:
-            group_blocks = [
+            group_layout_units = [
                 block
                 for block in blocks
                 if block.orientation_group_id == group.group_id
+                and block.block_id not in figure_owned_block_ids
             ]
+            group_layout_units.extend(
+                figure_layout_units_by_group.get(group.group_id, [])
+            )
+            if not group_layout_units:
+                group.layout_kind = "empty"
+                group.layout_regions = []
+                group.layout_diagnostics = [
+                    "figure_member_only_orientation_group"
+                ]
+                continue
             (
                 group.layout_kind,
                 group.layout_regions,
                 group.layout_diagnostics,
             ) = _build_block_layout_candidates(
                 group.group_id,
-                group_blocks,
+                group_layout_units,
             )
 
-    groups = {
-        group.group_id: group
+    layout_ordered_blocks = [
+        blocks_by_id[str(placement["block_id"])]
         for page in stream_pages
         for group in page.orientation_groups
-    }
+        for region in group.layout_regions
+        for placement in region["block_placements"]
+        if str(placement["block_id"]) in blocks_by_id
+    ]
+    expected_layout_block_ids = set(blocks_by_id) - figure_owned_block_ids
+    if (
+        len(layout_ordered_blocks)
+        != len({block.block_id for block in layout_ordered_blocks})
+        or {block.block_id for block in layout_ordered_blocks}
+        != expected_layout_block_ids
+    ):
+        raise ValueError(
+            "Prose layout traversal does not cover ordinary blocks exactly once."
+        )
+
     block_layouts: dict[str, tuple[int, str, str, int]] = {}
     block_styles: dict[str, tuple[str, float]] = {}
     eligible_body_ids: set[str] = set()
     eligible_heading_ids: set[str] = set()
     sentence_ids: set[str] = set()
     body_style_counts: dict[tuple[str, float], int] = {}
-    for block in blocks:
+    for block in layout_ordered_blocks:
         block_lines = [lines_by_id[line_id] for line_id in block.line_ids]
         line_indices = [line.line_index for line in block_lines]
         group = groups.get(block.orientation_group_id)
@@ -825,7 +925,7 @@ def build_paper_document(
     )
     paragraph_ids = {
         block.block_id
-        for block in blocks
+        for block in layout_ordered_blocks
         if (
             block.block_id in eligible_body_ids
             and block_styles.get(block.block_id) == body_style
@@ -839,8 +939,8 @@ def build_paper_document(
         )
     }
     prose_ids = set(paragraph_ids)
-    for block_index, block in enumerate(blocks[1:], start=1):
-        previous = blocks[block_index - 1]
+    for block_index, block in enumerate(layout_ordered_blocks[1:], start=1):
+        previous = layout_ordered_blocks[block_index - 1]
         if (
             previous.block_id in eligible_heading_ids
             and block.block_id in sentence_ids
@@ -857,7 +957,7 @@ def build_paper_document(
             == "spanning"
             and block_index > 1
         ):
-            continuation = blocks[block_index - 2]
+            continuation = layout_ordered_blocks[block_index - 2]
             crossed_spanning_residual = True
         if (
             continuation.block_id in prose_ids
@@ -873,8 +973,8 @@ def build_paper_document(
             )
         ):
             prose_ids.add(block.block_id)
-    for block_index, block in enumerate(blocks[:-1]):
-        next_block = blocks[block_index + 1]
+    for block_index, block in enumerate(layout_ordered_blocks[:-1]):
+        next_block = layout_ordered_blocks[block_index + 1]
         if (
             block.block_id in eligible_heading_ids
             and next_block.block_id in prose_ids
@@ -887,7 +987,7 @@ def build_paper_document(
     heading_block_ids: list[str] = []
     paragraphs: list[dict[str, object]] = []
     paragraph_count = 0
-    for block in blocks:
+    for block in layout_ordered_blocks:
         if block.block_id not in prose_ids:
             continue
         if block.role == "heading":
@@ -921,51 +1021,34 @@ def build_paper_document(
         )
 
     blocks_by_line_id: dict[str, SimpleNamespace] = {
-        line_id: block for block in blocks for line_id in block.line_ids
+        line_id: block
+        for block in layout_ordered_blocks
+        for line_id in block.line_ids
     }
-    layout_block_ids_by_group: dict[str, list[str]] = {
-        group.group_id: [
-            str(placement["block_id"])
-            for region in group.layout_regions
-            for placement in region["block_placements"]
-        ]
-        for page in stream_pages
-        for group in page.orientation_groups
+    layout_ordered_lines = [
+        lines_by_id[line_id]
+        for block in layout_ordered_blocks
+        for line_id in block.line_ids
+    ]
+    layout_order_by_block_id = {
+        block.block_id: block_index
+        for block_index, block in enumerate(layout_ordered_blocks)
     }
     bibliography_region_candidates: list[dict[str, object]] = []
-    for line in classified_stream_lines:
+    for heading_layout_index, heading_block in enumerate(layout_ordered_blocks):
+        if not heading_block.line_ids:
+            continue
+        line = lines_by_id[heading_block.line_ids[0]]
         heading_text = reference_start_text(line.text)
         heading_match = REFERENCE_HEADING_LINE_PATTERN.match(heading_text)
         inline_match = INLINE_REFERENCE_START_PATTERN.match(heading_text)
         if heading_match is None and inline_match is None:
             continue
-        heading_block = blocks_by_line_id.get(line.line_id)
-        if heading_block is None:
-            raise ValueError(
-                f"Bibliography heading line {line.line_id} has no canonical block."
-            )
-        if not heading_block.line_ids or heading_block.line_ids[0] != line.line_id:
-            continue
-        heading_group_block_ids = layout_block_ids_by_group.get(
-            heading_block.orientation_group_id,
-            [],
-        )
-        if heading_block.block_id not in heading_group_block_ids:
-            raise ValueError(
-                f"Bibliography heading block {heading_block.block_id} has no layout placement."
-            )
-        candidate_block_ids = heading_group_block_ids[
-            heading_group_block_ids.index(heading_block.block_id) :
+        candidate_block_ids = [
+            block.block_id
+            for block in layout_ordered_blocks[heading_layout_index:]
+            if block.orientation == heading_block.orientation
         ]
-        for page in stream_pages:
-            if page.page_num <= heading_block.page_num:
-                continue
-            for group in page.orientation_groups:
-                if group.orientation != heading_block.orientation:
-                    continue
-                candidate_block_ids.extend(
-                    layout_block_ids_by_group.get(group.group_id, [])
-                )
         bibliography_region_candidates.append(
             {
                 "candidate_id": (
@@ -993,7 +1076,7 @@ def build_paper_document(
             }
         )
     unnumbered_bibliography_entries = build_unnumbered_bibliography_entries_from_layout_lines(
-        classified_stream_lines
+        layout_ordered_lines
     )
     item_region_candidates: list[dict[str, object]] = []
     unnumbered_line_ids = {
@@ -1005,20 +1088,21 @@ def build_paper_document(
         str(candidate["heading_block_id"])
         for candidate in bibliography_region_candidates
     }
-    previous_heading_order: int | None = None
+    previous_heading_layout_index: int | None = None
     previous_last_reference_number: int | None = None
     for region_candidate in bibliography_region_candidates:
         candidate_block_ids = [str(value) for value in region_candidate["block_ids"]]
         heading_block_id = str(region_candidate["heading_block_id"])
-        heading_order = blocks_by_id[heading_block_id].order
+        heading_layout_index = layout_order_by_block_id[heading_block_id]
         intervening_prose_block_ids = (
             [
                 block.block_id
-                for block in blocks
-                if previous_heading_order < block.order < heading_order
-                and block.block_id in prose_ids
+                for block in layout_ordered_blocks[
+                    previous_heading_layout_index + 1 : heading_layout_index
+                ]
+                if block.block_id in prose_ids
             ]
-            if previous_heading_order is not None
+            if previous_heading_layout_index is not None
             else []
         )
         region_block_ids: list[str] = []
@@ -1031,7 +1115,7 @@ def build_paper_document(
         first_reference_number: int | None = None
         continuation_start_x0: float | None = None
         numbering_style: str | None = None
-        if previous_heading_order is not None and not intervening_prose_block_ids:
+        if previous_heading_layout_index is not None and not intervening_prose_block_ids:
             stop_block_id = heading_block_id
             stop_reason = "no_intervening_prose"
         else:
@@ -1106,7 +1190,7 @@ def build_paper_document(
             }
         )
         if region_block_ids:
-            previous_heading_order = heading_order
+            previous_heading_layout_index = heading_layout_index
             previous_last_reference_number = (
                 max(region_numbered_starts.values())
                 if region_numbered_starts
@@ -1197,79 +1281,53 @@ def build_paper_document(
                 },
             }
         )
-    figure_entities: list[dict[str, object]] = []
-    figure_owned_block_ids: set[str] = set()
-    first_member_replacements: dict[str, str] = {}
-    for candidate in figure_scope_candidates:
-        if candidate["concerns"]:
-            continue
-        member_block_ids = [
-            *candidate["caption_block_ids"],
-            *candidate["internal_block_ids"],
+    entity_owned_block_ids = bibliography_owned_block_ids | figure_owned_block_ids
+    figure_entities_by_id = {
+        str(entity["entity_id"]): entity for entity in figure_entities
+    }
+    structure: list[dict[str, object]] = []
+    placed_structural_unit_ids: list[str] = []
+    for page in stream_pages:
+        structural_unit_ids = [
+            str(placement["block_id"])
+            for group in page.orientation_groups
+            for region in group.layout_regions
+            for placement in region["block_placements"]
         ]
-        ownership_conflicts = bibliography_owned_block_ids.intersection(
-            member_block_ids
-        )
-        if ownership_conflicts:
-            candidate["concerns"] = [
-                f"competing_bibliography_ownership:{block_id}"
-                for block_id in sorted(ownership_conflicts)
-            ]
-            continue
-        entity_id = f"figure-composite:{candidate['candidate_id']}"
-        figure_entities.append(
+        for structural_unit_id in structural_unit_ids:
+            block = blocks_by_id.get(structural_unit_id)
+            if block is not None:
+                if block.page_num != page.page_num:
+                    raise ValueError(
+                        f"Structural block {structural_unit_id} is placed on the wrong page."
+                    )
+                continue
+            entity = figure_entities_by_id.get(structural_unit_id)
+            if entity is None:
+                raise ValueError(
+                    f"Unknown structural unit in layout: {structural_unit_id}."
+                )
+            if entity["page_num"] != page.page_num:
+                raise ValueError(
+                    f"Structural figure {structural_unit_id} is placed on the wrong page."
+                )
+        structure.append(
             {
-                "entity_id": entity_id,
-                "kind": "figure",
-                "scope": "main",
-                "page_num": candidate["page_num"],
-                "bbox": candidate["composite_bbox"],
-                "components": [
-                    {
-                        "role": "caption",
-                        "block_ids": candidate["caption_block_ids"],
-                        "content_refs": [],
-                    },
-                    {
-                        "role": "content",
-                        "block_ids": candidate["internal_block_ids"],
-                        "content_refs": [
-                            {
-                                "artifact_kind": "paper_positioned_visual_component",
-                                "artifact_id": component_id,
-                            }
-                            for component_id in candidate["visual_component_ids"]
-                        ],
-                    },
-                ],
-                "evidence": {
-                    "figure_scope_candidate_id": candidate["candidate_id"],
-                    "figure_label": candidate["figure_label"],
-                    "content_bbox": candidate["content_bbox"],
-                    "structural_evidence": candidate["structural_evidence"],
-                },
+                "page_num": page.page_num,
+                "structural_unit_ids": structural_unit_ids,
             }
         )
-        first_member_replacements[
-            min(member_block_ids, key=lambda block_id: blocks_by_id[block_id].order)
-        ] = entity_id
-        figure_owned_block_ids.update(member_block_ids)
-    entity_owned_block_ids = bibliography_owned_block_ids | figure_owned_block_ids
-    structure = [
-        {
-            "page_num": page.page_num,
-            "structural_unit_ids": [
-                first_member_replacements.get(block.block_id, block.block_id)
-                for block in blocks
-                if block.page_num == page.page_num
-                and (
-                    block.block_id not in figure_owned_block_ids
-                    or block.block_id in first_member_replacements
-                )
-            ],
-        }
-        for page in stream_pages
-    ]
+        placed_structural_unit_ids.extend(structural_unit_ids)
+    expected_structural_unit_ids = (
+        set(blocks_by_id) - figure_owned_block_ids
+    ) | set(figure_entities_by_id)
+    if (
+        len(placed_structural_unit_ids) != len(set(placed_structural_unit_ids))
+        or set(placed_structural_unit_ids) != expected_structural_unit_ids
+    ):
+        raise ValueError(
+            "PaperDocument.structure does not cover structural layout units exactly once."
+        )
     owned_prose_segments: list[dict[str, object]] = []
     for segment in prose_segments:
         heading_block_ids = [
@@ -1467,20 +1525,52 @@ def _build_block_layout_candidates(
                     break
             if gutter_index in continued_gutters:
                 continue
-            crosses_gutter = any(
-                block.canonical_bbox[0] < gutter[1]
-                and block.canonical_bbox[2] > gutter[0]
+            spans_gutter = any(
+                block.canonical_bbox[0] < gutter[0]
+                and block.canonical_bbox[2] > gutter[1]
                 for block in active_blocks
             )
-            occupies_left = any(
-                block.canonical_bbox[2] <= gutter[0] for block in active_blocks
-            )
-            occupies_right = any(
-                block.canonical_bbox[0] >= gutter[1] for block in active_blocks
-            )
-            if not crosses_gutter and occupies_left != occupies_right:
-                continue
-            closed_gutter_indexes.add(gutter_index)
+            if spans_gutter:
+                closed_gutter_indexes.add(gutter_index)
+
+        if not current_gutters and current_region_blocks and interval_gutters:
+            spanning_prior_blocks = [
+                block
+                for block in current_region_blocks.values()
+                if all(
+                    block.canonical_bbox[0] < gutter[0]
+                    and block.canonical_bbox[2] > gutter[1]
+                    for gutter in interval_gutters
+                )
+            ]
+            if spanning_prior_blocks:
+                barrier_bottom = max(
+                    block.canonical_bbox[3] for block in spanning_prior_blocks
+                )
+                boundary_would_cut_block = any(
+                    block.canonical_bbox[1]
+                    < barrier_bottom
+                    < block.canonical_bbox[3]
+                    for block in current_region_blocks.values()
+                )
+                if not boundary_would_cut_block:
+                    preceding_blocks = [
+                        block
+                        for block in current_region_blocks.values()
+                        if block.canonical_bbox[3] <= barrier_bottom
+                    ]
+                    following_blocks = [
+                        block
+                        for block in current_region_blocks.values()
+                        if block.canonical_bbox[1] >= barrier_bottom
+                    ]
+                    region_candidates.append((preceding_blocks, []))
+                    current_region_blocks = {
+                        block.block_id: block
+                        for block in [*following_blocks, *active_blocks]
+                    }
+                    current_gutters = interval_gutters
+                    continue
 
         boundary_would_cut_block = any(
             block.canonical_bbox[1] < interval_top < block.canonical_bbox[3]
@@ -1489,22 +1579,8 @@ def _build_block_layout_candidates(
         close_all_existing_gutters = bool(current_gutters) and len(
             closed_gutter_indexes
         ) == len(current_gutters)
-        prior_phase_crosses_new_gutters = (
-            not current_gutters
-            and bool(current_region_blocks)
-            and bool(interval_gutters)
-            and all(
-                any(
-                    block.canonical_bbox[0] < gutter[1]
-                    and block.canonical_bbox[2] > gutter[0]
-                    for block in current_region_blocks.values()
-                )
-                for gutter in interval_gutters
-            )
-        )
         starts_new_region = (
-            (close_all_existing_gutters or prior_phase_crosses_new_gutters)
-            and not boundary_would_cut_block
+            close_all_existing_gutters and not boundary_would_cut_block
         )
         if starts_new_region:
             region_candidates.append(
