@@ -19,13 +19,29 @@ _NUMERIC_LINE_RE = re.compile(r"\d+")
 _PAGE_NUMBER_TOKEN_RE = re.compile(r"(?<![A-Za-z0-9.])\d+(?![A-Za-z0-9.])")
 
 
-def normalize_page_furniture_text(raw_text: str, *, page_num: int | None = None) -> str:
+def normalize_page_furniture_text(
+    raw_text: str,
+    *,
+    page_num: int | None = None,
+) -> str:
     """Normalize page text only for page-furniture matching."""
     normalized_text = " ".join(raw_text.split())
     if not normalized_text:
         return normalized_text
     if _NUMERIC_LINE_RE.fullmatch(normalized_text):
         return "<page_num>"
+    numeric_tokens = list(_PAGE_NUMBER_TOKEN_RE.finditer(normalized_text))
+    if (
+        page_num is not None
+        and len(numeric_tokens) >= 2
+        and int(numeric_tokens[0].group(0)) == page_num
+    ):
+        first_token = numeric_tokens[0]
+        return (
+            normalized_text[: first_token.start()]
+            + "<page_num>"
+            + normalized_text[first_token.end() :]
+        )
     if page_num is None:
         return normalized_text
     return _PAGE_NUMBER_TOKEN_RE.sub(
@@ -49,7 +65,10 @@ def collect_page_furniture_text_observations(
         if page.page_width <= 0.0 or page.page_height <= 0.0:
             continue
         for line in page.lines:
-            normalized_text = normalize_page_furniture_text(line.raw_text, page_num=page.page_num)
+            normalized_text = normalize_page_furniture_text(
+                line.raw_text,
+                page_num=page.page_num,
+            )
             if not normalized_text:
                 continue
             observations.append(

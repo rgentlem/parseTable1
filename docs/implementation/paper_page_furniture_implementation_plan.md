@@ -35,6 +35,11 @@ Non-scope:
    - Collapse whitespace and remove volatile page numbers only as matching features.
    - Map standalone numeric lines to one matching key independently of the PDF
      page index while retaining the observed number in `raw_text`.
+   - Recognize structural page counters without matching counter vocabulary:
+     when a line has at least two standalone integers and the first equals the
+     current PDF page, normalize only that position to `<page_num>`. Preserve
+     the rest of the line so exact recurrence establishes the stable counter
+     total even when it differs from the physical PDF page count.
    - Keep raw text unchanged in the artifact.
    - Avoid vocabulary-specific cleanup.
    - Implementation: `normalize_page_furniture_text()` writes the matching key used in observations.
@@ -71,6 +76,14 @@ Non-scope:
      all 91 previously extracted tables retain identical dimensions, cell text,
      and cell coordinates. The Systemic inflammation paper gains one expected
      collapsed page-5 candidate for the separate rule-region investigation.
+   - Current structural page-counter checkpoint:
+     `outputs/testpapers_batch_page_counter_final_20260720`. All 28 PDFs parse
+     successfully. Fifteen papers contain a recurrent edge line whose first
+     standalone integer equals the current PDF page; each established cluster
+     gains its final counter region and the corresponding complete final-page
+     block is removed. No table artifact changes. Bibliography changes remove
+     leaked counter text and recover ten genuine final-page references that a
+     counter block had interrupted.
 
 8. [x] Integrate into footnote finding
    - Pass page-furniture regions into cell text annotation and text-stream footer detection before those artifacts are built.

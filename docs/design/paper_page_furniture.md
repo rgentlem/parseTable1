@@ -83,8 +83,15 @@ across pages with slightly different sizes.
 
 `normalized_text` is only a matching key. It collapses whitespace and maps a
 standalone numeric line to `<page_num>` without requiring the printed number to
-equal the PDF page index. Existing embedded PDF-index masking remains available
-for repeated mixed-text lines. `raw_text` preserves the observed text.
+equal the PDF page index. A line with at least two standalone integer tokens is
+treated as a structural page counter when its first integer equals the current
+PDF page number. Only that first token position becomes `<page_num>`; the
+remaining text, punctuation, and numeric tokens stay unchanged and must recur
+exactly before clustering can classify the line as page furniture. This
+recognizes counter forms without requiring wording such as `Page N of M` or
+assuming that the counter total equals the physical PDF page count. Existing
+embedded PDF-index masking remains available for other repeated mixed-text
+lines. `raw_text` preserves the observed text.
 
 The top-level metadata `page_count` should come from the PDF document page
 count, not from the highest page number with extractable text observations.

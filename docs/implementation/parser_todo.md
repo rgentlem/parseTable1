@@ -980,6 +980,21 @@ cross-sectional study.pdf`, PDF page 5, now supplies a caption candidate and a
 new 1-row, 5-column failed table candidate, isolating the still-unfixed
 caption/rule-region truncation from page-furniture ownership.
 
+The structural page-counter follow-up is complete at
+`outputs/testpapers_batch_page_counter_final_20260720`. For a line with at
+least two standalone integers, matching normalization replaces only the first
+integer when it equals the current PDF page; the unchanged remainder must still
+recur at stable page-edge geometry before the complete line is ignored. This
+adds no counter vocabulary, helper, artifact, fallback, PDF pass, or numeric
+tolerance. All 28 PDFs completed. Fifteen established counter clusters each
+gain their final page, exactly 15 final counter blocks leave `PaperDocument`,
+and no counter source line remains downstream. Every table artifact is
+byte-identical to the B6 baseline. Twelve bibliography artifacts improve: 11
+drop leaked counter text, while PDF page 13 of
+`mdpi-The Relationship Between a Mediterranean Diet and Frailty in Older
+Adults- NHANES 2007–2017.pdf` also recovers genuine references 31–40 after the
+`13 of 13` block no longer interrupts bibliography ownership.
+
 Caption/rule-region follow-up: when caption and matching horizontal-rule spans
 establish a candidate region, that region must remain operative in positioned
 grid construction. Do not replace its bottom rule with the last text baseline
