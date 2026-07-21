@@ -12,6 +12,98 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
 
 ## Current Priorities
 
+- [x] Record compact, non-operative raster-image and vector clip/group evidence
+  on each `PaperPositionedPage` for later caption-bound figure-scope work. The
+  artifact has one six-field component shape and no parallel render-entry list.
+  Focused checks preserved lines, words, characters, image bboxes, and rule
+  segments exactly on PDF pages 4 and 5 of
+  `An atlas of exposome–phenome associations in health and disease risk.pdf`,
+  PDF page 5 of
+  `An environment-wide association study (EWAS) on type 2 diabetes mellitus.pdf`,
+  and PDF page 4 of
+  `Role of Estimated Glucose Disposal Rate in Staging and Death Risk of Cardiovascular-Kidney-Metabolic Syndrome- Insights from NHANES 1999-2018.pdf`.
+  The following retained-block checkpoint required no parser change: the
+  existing builder already filters page furniture before block construction
+  and preserves block source lines, geometry, orientation, text, provenance,
+  and ownership. The next non-operative checkpoint now records block-leading
+  figure-caption assemblies before gutter construction. Focused results are
+  two-block assemblies for printed Figures 2 and 3 on PDF pages 4 and 5 of the
+  atlas paper, one caption block for printed Figure 2 on PDF page 5 of the EWAS
+  paper, and no figure candidate on PDF page 4 containing printed Table 1 of
+  the eGDR paper. Removing the new candidate field reproduces the exact
+  pre-checkpoint paper-document hashes; bibliography hashes are also unchanged.
+  Exact above-caption binding is now implemented non-operatively: PDF page 4
+  printed Figure 2 of the atlas binds 25 vector components, PDF page 5 printed
+  Figure 3 binds 29, and PDF page 5 printed Figure 2 of the EWAS paper binds
+  one raster component. The second EWAS raster lies below the caption and is
+  excluded. The eGDR printed Table 1 page still produces no figure candidate.
+  Extraction order, edge alignment, and distance thresholds are not used.
+  Exact-envelope internal-block assignment is also complete and non-operative.
+  Atlas PDF page 4 printed Figure 2 assigns 133 blocks and includes panel
+  letters a, b, and c; Atlas PDF page 5 printed Figure 3 assigns 114 blocks and
+  includes panel letters a, b, c, and d. Neither page assigns a lower prose
+  block. EWAS PDF page 5 printed Figure 2 assigns no internal blocks because its
+  internal text is embedded in the raster image. No block has competing figure
+  claims; exact content/composite unions pass; and removing the candidate field
+  still reproduces the pre-checkpoint document and bibliography hashes.
+  Figure-component page-furniture filtering is complete at
+  `outputs/testpapers_batch_drawing_scaffold_rule_filter_20260721`.
+  Raw components remain in `PaperPositionedDocument`; figure binding excludes
+  an exact component-kind-and-bbox signature only when it occurs on every page
+  in the matched furniture cluster and overlaps that cluster's page-specific
+  ignored region. On PDF page 5, printed Figure 1, of
+  `Role of Estimated Glucose Disposal Rate in Staging and Death Risk of Cardiovascular-Kidney-Metabolic Syndrome- Insights from NHANES 1999-2018.pdf`,
+  the two recurrent printed-page-number clips are excluded, the raster and its
+  matching clip remain, no prose block is assigned, and the composite bbox is
+  `(58.68, 334.02, 555.33, 733.88)`. The 28-PDF corpus completed without a
+  command failure. The filter changes component proposals for five figure
+  candidates on PDF pages 5–7 of that paper and no candidate in another paper;
+  the established atlas and EWAS figure checks are unchanged. The first
+  rule-evidence correction excluded typed `group` and `clip` scaffolding while
+  retaining it in `visual_components`. On PDF page 5, printed Table 1, of
+  `fld.pdf`, that restored the 39 ordinary rule segments and the 41 x 5 table.
+  All seven canonical table artifacts were also restored exactly for PDF pages
+  10–18, printed Tables 1–5, of `periodontis2.pdf`. The accepted 28-PDF run is
+  `outputs/testpapers_batch_drawing_scaffold_rule_filter_20260721`: all commands
+  completed, 92 extracted and normalized tables and 81 parsed tables were
+  produced, and all 196 compared canonical table artifacts are byte-identical
+  to the retained gutter baseline. Raw visual components and the corrected eGDR
+  figure candidates remain unchanged. A subsequent focused correction now uses
+  the extended drawing hierarchy only for visual components and restores the
+  ordinary `get_drawings()` input for both rule projections. The five affected
+  papers were rerun in
+  `outputs/figure_scope_step1_rule_isolation_focused_20260721`: every
+  `rule_segments` and `stroked_rule_segments` list exactly matches the retained
+  pre-visual baseline, all other artifacts match after excluding intended
+  figure fields and report timestamps, and visual components, figure scopes,
+  and composites are unchanged from the preceding Step 6 run. Revised Step 6
+  is complete in
+  `outputs/testpapers_batch_figure_scope_step6_atomic_20260721`. It persists one
+  four-field composite per accepted scope and one two-field page traversal that
+  substitutes each composite exactly once for its caption and internal blocks.
+  All 28 PDFs completed: 95 scopes yielded 63 accepted figures, 32 rejected
+  scopes, 63 composites, and 63 atomic page traversals. There were no new
+  unclaimed-intersection rejections, duplicate claims, bbox-union failures,
+  exposed member blocks, or composite IDs in existing layout candidates. After
+  the three figure-candidate fields, visual components, and report timestamps
+  are removed, every persisted artifact matches the retained gutter baseline.
+  The focused run in
+  `outputs/figure_scope_step6_atomic_focused_20260721` also preserves the 41 x 5
+  printed Table 1 on PDF page 5 of `fld.pdf` and accepts the expected atlas,
+  EWAS, and eGDR figures. Step 7 canonical ownership is complete in
+  `outputs/testpapers_batch_figure_scope_step7_cutover_20260721`. All 28 PDFs
+  completed. The 63 accepted scopes now resolve to 63 canonical figure entities
+  owning 533 blocks; 32 rejected scopes remain diagnostics. The canonical
+  traversal covers all 336 PDF pages, emits every figure entity once, and emits
+  none of its caption or internal blocks. Block, visual, rule, and layout
+  evidence is unchanged, and the prose/entity/residual ownership partition is
+  complete and pairwise disjoint. The Step 6 candidate composite and traversal
+  fields are retired. All artifacts other than `paper_document.json` match the
+  Step 6 run; `NutritionEx.pdf` differs only because this invocation records
+  `inst/extdata/NutritionEx.pdf` instead of its absolute path, plus report
+  timestamps. Its table data and geometry are unchanged. Gutter and block-
+  layout participation remain unimplemented.
+
 - [ ] Reevaluate every current or proposed use of Pydantic for concrete value.
   Inventory the code and tools that depend on it, record the capability each
   use actually requires, and compare it with the simplest typed alternative.

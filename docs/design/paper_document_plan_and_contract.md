@@ -6,9 +6,9 @@ This document records the approved destination for partitioning a paper into
 its narrative content and other document entities. It is a schema and artifact
 contract, not blanket approval to change parser logic.
 
-Step 3 now writes `paper_document.json`
-directly from the existing filtered blocks and established prose-candidate
-decisions, leave entities empty, and assign every other block to residual.
+Step 3 writes `paper_document.json` directly from the existing filtered blocks
+and established prose-candidate decisions. Established bibliography and figure
+entities now own their confirmed blocks; every other block remains residual.
 `paper_sections.json` is the prose segment list and `paper_markdown.md` renders
 only those segments. Existing non-prose consumers now take canonical text,
 block role and order from `PaperDocument`, joining referenced positioned lines
@@ -76,9 +76,11 @@ PaperDocument
   source_pdf
   pages
   blocks
+  structure
   prose
   entities
   unassigned_block_ids
+  figure_scope_rejections
   bibliography_region_candidates
   bibliography_block_candidate
   bibliography_item_block_candidate
@@ -96,6 +98,19 @@ PaperDocumentPage
   height
   orientation_groups
 ```
+
+`PaperDocument.structure` is the canonical page traversal:
+
+```text
+PaperDocumentStructurePage
+  page_num
+  structural_unit_ids
+```
+
+Each ID resolves to either a retained block or a canonical entity. A figure
+entity occurs once in this traversal; its caption and content blocks remain in
+the block registry for provenance and ownership but do not occur independently
+in the traversal.
 
 Orientation groups currently retain their canonical dimensions and the frozen
 operative `column_bands` and `column_boundaries`. They also expose the first
@@ -449,8 +464,11 @@ content
 footer
 ```
 
-Components own ordered block IDs. Their page and geometry come from the block
-registry rather than being copied into a second source of truth.
+Components own ordered block IDs. Their text-block geometry comes from the
+block registry rather than being copied into a second source of truth. A figure
+entity additionally carries `page_num` and its exact composite `bbox`, because
+its raster or vector extent is not itself a text block. Its content references
+identify the bound `PaperPositionedVisualComponent` records.
 
 Structured content remains canonical in its specialized artifact:
 
@@ -513,6 +531,11 @@ This contract does not itself authorize a new numeric layout tolerance.
 Page-furniture filtering occurs before `PaperDocument` blocks and ownership are
 built. Repeated headers, footers, watermarks, and similar ignored regions must
 not be removed later from prose or entities by string cleanup.
+`PaperPositionedDocument` retains raw raster and vector components, but figure
+candidate construction must exclude an exact component-kind-and-bbox signature
+when it recurs on every page in an established furniture cluster and overlaps
+that cluster's page-specific ignored region. The recurrent component remains
+raw evidence; it does not become figure content.
 
 ### Retired `PaperTextStream`
 
@@ -549,7 +572,12 @@ not establish a competing caption or footer owner.
 Figure and box entities require direct positioned, rule, image, or visual-bound
 evidence. Existing visual-inventory outputs become derived views or are
 atomically aligned with `PaperDocument.entities`; they do not remain a second
-ownership system.
+ownership system. Each accepted figure is now one canonical entity whose ID
+occurs once in `PaperDocument.structure`. Its caption and internal blocks are
+owned by separate entity components and cannot also belong to prose or
+residual. Raw blocks remain in `PaperDocument.blocks`, and raw visual and rule
+evidence remains in `PaperPositionedDocument`. Rejected detections alone are
+retained in `figure_scope_rejections` as non-owning diagnostics.
 
 ### Bibliography
 

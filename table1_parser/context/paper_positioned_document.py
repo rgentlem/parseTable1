@@ -20,6 +20,7 @@ from table1_parser.schemas import (
     PaperPositionedLine,
     PaperPositionedPage,
     PaperPositionedSpan,
+    PaperPositionedVisualComponent,
     PaperPositionedWord,
 )
 from table1_parser.text_cleaning import clean_text
@@ -88,8 +89,28 @@ def build_paper_positioned_document(
                 continue
 
             page_width, page_height = page_size_from_pymupdf_page(page)
+            page_bbox = bbox_from_pymupdf_value(page.rect) or (
+                0.0,
+                0.0,
+                page_width,
+                page_height,
+            )
+            try:
+                page_drawings = [
+                    drawing
+                    for drawing in (page.get_drawings(extended=True) or [])
+                    if isinstance(drawing, dict)
+                ]
+            except Exception:  # noqa: BLE001
+                page_drawings = []
+            try:
+                page_rule_drawings = page.get_drawings() or []
+            except Exception:  # noqa: BLE001
+                page_rule_drawings = []
+
             page_lines: list[PaperPositionedLine] = []
             page_image_bboxes: list[tuple[float, float, float, float]] = []
+            page_visual_components: list[PaperPositionedVisualComponent] = []
             page_line_index = 0
             for block_index, block in enumerate(page_dict.get("blocks", [])):
                 if not isinstance(block, dict):
@@ -98,6 +119,14 @@ def build_paper_positioned_document(
                     image_bbox = bbox_from_pymupdf_value(block.get("bbox"))
                     if image_bbox is not None:
                         page_image_bboxes.append(image_bbox)
+                        page_visual_components.append(
+                            PaperPositionedVisualComponent(
+                                component_id=f"page-{page_num}-visual-raster-{block_index}",
+                                component_kind="raster_image",
+                                bbox=image_bbox,
+                                source_index=block_index,
+                            )
+                        )
                 for block_line_index, line in enumerate(block.get("lines", [])):
                     if not isinstance(line, dict):
                         continue
@@ -113,6 +142,54 @@ def build_paper_positioned_document(
                         continue
                     page_lines.append(positioned_line)
                     span_count += len(positioned_line.spans)
+            for drawing_index, drawing in enumerate(page_drawings):
+                drawing_type = drawing.get("type")
+                if drawing_type not in {"clip", "group"}:
+                    continue
+                component_bbox = bbox_from_pymupdf_value(
+                    drawing.get("scissor")
+                    if drawing_type == "clip"
+                    else drawing.get("rect")
+                )
+                if component_bbox is None:
+                    continue
+                if drawing_type == "clip" and component_bbox == page_bbox:
+                    continue
+                nesting_level = drawing.get("level")
+                contained_sequences: list[int] = []
+                if isinstance(nesting_level, int):
+                    for following in page_drawings[drawing_index + 1 :]:
+                        following_level = following.get("level")
+                        if (
+                            isinstance(following_level, int)
+                            and following_level <= nesting_level
+                        ):
+                            break
+                        following_sequence = following.get("seqno")
+                        if isinstance(following_sequence, int):
+                            contained_sequences.append(following_sequence)
+                page_visual_components.append(
+                    PaperPositionedVisualComponent(
+                        component_id=f"page-{page_num}-visual-{drawing_type}-{drawing_index}",
+                        component_kind=(
+                            "vector_clip"
+                            if drawing_type == "clip"
+                            else "vector_group"
+                        ),
+                        bbox=component_bbox,
+                        source_index=drawing_index,
+                        nesting_level=(
+                            int(nesting_level)
+                            if isinstance(nesting_level, int)
+                            else None
+                        ),
+                        drawing_sequence_range=(
+                            (min(contained_sequences), max(contained_sequences))
+                            if contained_sequences
+                            else None
+                        ),
+                    )
+                )
             page_chars = [PaperPositionedChar(**char) for char in extract_page_chars(page, page_num=page_num)]
             page_words = [
                 PaperPositionedWord(**word)
@@ -121,8 +198,15 @@ def build_paper_positioned_document(
                     page_chars=[char.model_dump(mode="json", exclude_none=True) for char in page_chars],
                 )
             ]
-            page_rule_segments = extract_page_rule_segments(page)
-            page_stroked_rule_segments = extract_page_rule_segments(page, include_filled=False)
+            page_rule_segments = extract_page_rule_segments(
+                page,
+                drawings=page_rule_drawings,
+            )
+            page_stroked_rule_segments = extract_page_rule_segments(
+                page,
+                include_filled=False,
+                drawings=page_rule_drawings,
+            )
             line_count += len(page_lines)
             word_count += len(page_words)
             char_count += len(page_chars)
@@ -138,6 +222,7 @@ def build_paper_positioned_document(
                     words=page_words,
                     chars=page_chars,
                     image_bboxes=page_image_bboxes,
+                    visual_components=page_visual_components,
                     rule_segments=page_rule_segments,
                     stroked_rule_segments=page_stroked_rule_segments,
                 )

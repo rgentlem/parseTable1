@@ -233,14 +233,20 @@ def extract_page_rule_segments(
     page: Any,
     *,
     include_filled: bool = True,
+    drawings: Sequence[Mapping[str, object]] | None = None,
 ) -> list[tuple[float, float, float, float]]:
     """Extract candidate horizontal drawing segments from a PyMuPDF page."""
-    try:
-        drawings = page.get_drawings() or []
-    except Exception:
-        return []
+    if drawings is None:
+        try:
+            drawing_records = page.get_drawings() or []
+        except Exception:
+            return []
+    else:
+        drawing_records = drawings
     segments: list[tuple[float, float, float, float]] = []
-    for drawing in drawings:
+    for drawing in drawing_records:
+        if drawing.get("type") in {"clip", "group"}:
+            continue
         rect_value = drawing.get("rect")
         if rect_value is None:
             rect = None

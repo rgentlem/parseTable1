@@ -89,6 +89,7 @@ from table1_parser.schemas.paper_positioned_document import (
     PaperPositionedLine,
     PaperPositionedPage,
     PaperPositionedSpan,
+    PaperPositionedVisualComponent,
     PaperPositionedWord,
 )
 from table1_parser.schemas.paper_footnotes import (
@@ -227,6 +228,7 @@ __all__ = [
     "PaperPositionedLine",
     "PaperPositionedPage",
     "PaperPositionedSpan",
+    "PaperPositionedVisualComponent",
     "PaperPositionedWord",
     "PaperStyleCheck",
     "PaperStyleDimension",

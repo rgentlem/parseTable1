@@ -952,7 +952,8 @@ outputs/papers/<paper_stem>/table_contexts/table_<n>_context.json
 Canonical structures:
 
 - `PaperPositionedDocument`
-- child models: `PaperPositionedPage`, `PaperPositionedLine`, `PaperPositionedSpan`
+- child models: `PaperPositionedPage`, `PaperPositionedLine`,
+  `PaperPositionedSpan`, `PaperPositionedVisualComponent`
 - `PaperDocument` declarative artifact shape; its initial implementation is a
   plain projection rather than a new model hierarchy
 - `PaperSection`
@@ -973,7 +974,14 @@ Design components:
 - `paper_positioned_document.json`
   shared whole-paper PyMuPDF positioned text pass with page sizes, visual lines,
   span text, bboxes, font names, font sizes, flags, line direction/orientation,
-  words, characters, horizontal rule segments, and raw/cleaned text. A line's
+  words, characters, horizontal rule segments, compact raster/vector visual
+  components, and raw/cleaned text. Visual components preserve only stable ID,
+  kind, page-space bbox, source index, optional nesting level, and optional
+  drawing-sequence range; they do not classify figures. The extended drawing
+  hierarchy supplies visual-component evidence only. `rule_segments` and
+  `stroked_rule_segments` continue to consume the ordinary `get_drawings()`
+  records; extended clip, group, and separately exposed nested records do not
+  enter either rule projection. A line's
   `has_bold` field records only that at least one source span is bold; it is not
   a line-wide style classification and does not make the line a heading or a
   table caption. Downstream
@@ -983,8 +991,9 @@ Design components:
 - `paper_document.json`
   canonical ownership projection over the existing filtered block registry. It
   preserves block geometry and source identity, orders current prose candidates
-  as segments and paragraphs, leaves entities empty, and assigns all other
-  blocks to `unassigned_block_ids`. Each populated orientation group also
+  as segments and paragraphs, owns established bibliography and figure blocks
+  through entities, and assigns all other blocks to `unassigned_block_ids`.
+  Each populated orientation group also
   carries a non-operative block-layout candidate: `layout_kind`, ordered
   `layout_regions`, exact positive `candidate_gutters`, leaf-column track bboxes,
   region-level `block_placements`, and `layout_diagnostics`. Exact block top
@@ -997,6 +1006,20 @@ Design components:
   canonical top, and source order. A region transition occurs only when all
   established tracks close, and it never cuts a block. `layout_kind` follows
   the actual region/column shape mechanically. No consumer uses this candidate.
+  Accepted figure scopes are canonical `figure` entities. Each records the
+  explicit figure label, ordered caption block IDs, bound above-caption
+  raster/vector component references, assigned internal block IDs, exact
+  component-union bbox, and exact figure-plus-caption composite bbox.
+  Binding requires positive horizontal overlap and no competing caption claim.
+  Internal blocks require positive page-space intersection with the exact
+  component/caption envelope; no drawing sequence, extraction order, page-width
+  threshold, or overlap percentage participates. `structure` contains one
+  two-field record for every page: its page number and ordered structural-unit
+  IDs. It exposes each figure entity exactly once and does not expose its
+  caption or internal blocks independently. The source block and positioned-
+  evidence registries remain unchanged. Rejected detections alone remain in
+  `figure_scope_rejections`. Existing gutter and block-layout candidates do not
+  consume the figure entities.
   `bibliography_region_candidates` is another non-operative view over the same
   registry. Each candidate stores an explicit heading line/block, the ordered
   block IDs downstream from that heading in block-layout order, prose-conflict

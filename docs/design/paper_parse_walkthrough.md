@@ -114,6 +114,17 @@ afterward for inspection.
 `paper_positioned_document.json` records the shared PyMuPDF positioned text pass
 for the whole paper: pages, visual lines, span text, bboxes, font names, font
 sizes, flags, line directions, words, characters, and horizontal rule segments.
+Each page also records one compact `visual_components` collection. Raster
+components reuse displayed image-block bboxes and source block indices; vector
+clip and group components come from the page's single extended-drawing pass and
+retain their exact bbox, source index, nesting level, and available drawing
+sequence range. Full-page default clips are omitted. These records are
+non-operative component evidence, not figure classifications. Clip and group
+records describe drawing scopes rather than painted rules, so the extended
+drawing hierarchy supplies only `visual_components`. Both horizontal-rule
+projections continue to use the ordinary `get_drawings()` records; extended
+clip, group, and separately exposed nested records never enter table-rule
+geometry.
 Text extraction is not clipped to the declared page box: source text outside or
 crossing that display boundary is retained with its original bbox. This lets the
 ordinary geometry path recover malformed pages whose content stream places part
@@ -173,6 +184,26 @@ view of `paper_positioned_document.json`. Its blocks preserve source line IDs
 and original page-space bboxes. Lines are partitioned by writing direction;
 rotated groups are ordered through an upright group-local projection recorded
 as `canonical_bbox`, with orientation-group provenance.
+It now owns accepted figure scopes as canonical `figure` entities. These
+contain explicit block-leading figure labels, ordered caption block IDs, and
+bound raster/vector component references. Same-page source-consecutive
+caption continuations require exact positive vertical overlap with the anchor
+caption band. A visual component binds only when it is entirely above the
+caption assembly, has exact positive horizontal overlap with it, and is not
+claimed by another caption. `content_bbox` is the exact component union and
+`composite_bbox` is its exact union with the caption blocks. The component and
+caption union also defines an exact envelope from the highest component top to
+the caption top. Unchanged non-caption blocks with positive page-space
+intersection with that envelope are listed in `internal_block_ids`, after
+which both bboxes are recomputed as exact unions. Drawing sequence, text
+extraction order, page-width thresholds, overlap percentages, edge alignment,
+and distance thresholds do not participate. `PaperDocument.structure` contains
+one page number and ordered structural-unit list for every page. It exposes the
+figure entity exactly once and omits that figure's caption and internal blocks.
+Those blocks remain in the source-backed registry and are owned by the entity's
+separate caption and content components; positioned visual and rule evidence
+remains unchanged. Rejected detections remain non-owning diagnostics. Existing
+gutter and block-layout candidates do not consume the figure entities.
 Context adjacency stops at page and orientation-group boundaries. It is also the
 positioned text source for footer candidates absent from the extracted grid.
 The stream preserves visual lines, page/column order, line bbox, dominant font

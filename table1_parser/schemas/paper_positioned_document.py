@@ -2,9 +2,22 @@
 
 from __future__ import annotations
 
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
+
+
+@dataclass(frozen=True, slots=True)
+class PaperPositionedVisualComponent:
+    """One compact raster or vector visual component in page coordinates."""
+
+    component_id: str
+    component_kind: Literal["raster_image", "vector_clip", "vector_group"]
+    bbox: tuple[float, float, float, float]
+    source_index: int
+    nesting_level: int | None = None
+    drawing_sequence_range: tuple[int, int] | None = None
 
 
 class PaperPositionedSpan(BaseModel):
@@ -84,6 +97,9 @@ class PaperPositionedPage(BaseModel):
     words: list[PaperPositionedWord] = Field(default_factory=list)
     chars: list[PaperPositionedChar] = Field(default_factory=list)
     image_bboxes: list[tuple[float, float, float, float]] = Field(
+        default_factory=list
+    )
+    visual_components: list[PaperPositionedVisualComponent] = Field(
         default_factory=list
     )
     rule_segments: list[tuple[float, float, float, float]] = Field(default_factory=list)

@@ -25,6 +25,7 @@ from table1_parser.schemas import (
     PaperPageFurniture,
     PaperPositionedDocument,
     PaperPositionedLine,
+    PaperPositionedVisualComponent,
 )
 from table1_parser.text_cleaning import clean_text
 
@@ -32,6 +33,10 @@ from table1_parser.text_cleaning import clean_text
 BODY_TEXT_STYLE_MIN_FONT_SIZE = 5.0
 BODY_TEXT_STYLE_MAX_FONT_SIZE = 18.0
 TABLE_CAPTION_LINE_PATTERN = re.compile(r"^\s*table\s+[A-Za-z]?\d+[A-Za-z]?\b", re.IGNORECASE)
+FIGURE_CAPTION_BLOCK_PATTERN = re.compile(
+    r"^\s*(?P<label>(?:Fig\.|Figure)\s*[A-Za-z]?\d+[A-Za-z]?)\b",
+    re.IGNORECASE,
+)
 
 
 def build_paper_document(
@@ -52,10 +57,12 @@ def build_paper_document(
             "source_pdf": Path(pdf_path).name,
             "pages": [],
             "blocks": [],
+            "structure": [],
             "prose": {"segments": []},
             "entities": [],
             "unassigned_block_ids": [],
             "bibliography_region_candidates": [],
+            "figure_scope_rejections": [],
         }, []
 
     stream_lines: list[SimpleNamespace] = []
@@ -478,6 +485,251 @@ def build_paper_document(
                 )
             )
 
+    figure_scope_candidates: list[dict[str, object]] = []
+    source_ordered_blocks = sorted(
+        blocks,
+        key=lambda block: (
+            block.page_num,
+            block.source_block_index is None,
+            block.source_block_index or 0,
+            block.order,
+        ),
+    )
+    for anchor_index, anchor in enumerate(source_ordered_blocks):
+        caption_match = FIGURE_CAPTION_BLOCK_PATTERN.match(anchor.text)
+        if caption_match is None:
+            continue
+        following_blocks: list[SimpleNamespace] = []
+        for block in source_ordered_blocks[anchor_index + 1 :]:
+            if (
+                block.page_num != anchor.page_num
+                or block.bbox[1] >= anchor.bbox[3]
+                or block.bbox[3] <= anchor.bbox[1]
+                or FIGURE_CAPTION_BLOCK_PATTERN.match(block.text)
+            ):
+                break
+            following_blocks.append(block)
+        ambiguous = len(following_blocks) > 1
+        caption_blocks = [anchor] if ambiguous else [anchor, *following_blocks]
+        figure_scope_candidates.append(
+            {
+                "candidate_id": f"figure-scope:{anchor.block_id}",
+                "page_num": anchor.page_num,
+                "figure_label": caption_match.group("label"),
+                "caption_block_ids": [block.block_id for block in caption_blocks],
+                "visual_component_ids": [],
+                "internal_block_ids": [],
+                "content_bbox": None,
+                "composite_bbox": None,
+                "structural_evidence": [
+                    "block_leading_figure_label",
+                    *(
+                        ["consecutive_source_order", "positive_vertical_overlap"]
+                        if len(caption_blocks) > 1
+                        else []
+                    ),
+                ],
+                "concerns": ["ambiguous_caption_assembly"] if ambiguous else [],
+            }
+        )
+
+    blocks_by_id = {block.block_id: block for block in blocks}
+    positioned_pages = {
+        page.page_num: page for page in paper_positioned_document.pages
+    }
+    component_pages_by_signature: dict[
+        tuple[str, tuple[float, float, float, float]], set[int]
+    ] = {}
+    for page_num, page in positioned_pages.items():
+        for component in page.visual_components:
+            component_pages_by_signature.setdefault(
+                (component.component_kind, component.bbox), set()
+            ).add(page_num)
+    page_furniture_cluster_pages = (
+        {
+            cluster.cluster_id: set(cluster.page_nums)
+            for cluster in paper_page_furniture.clusters
+        }
+        if paper_page_furniture is not None
+        else {}
+    )
+    figure_eligible_components_by_page: dict[
+        int, list[PaperPositionedVisualComponent]
+    ] = {}
+    for page_num, page in positioned_pages.items():
+        page_furniture_regions = (
+            [
+                region
+                for region in paper_page_furniture.ignored_regions
+                if region.page_num == page_num
+            ]
+            if paper_page_furniture is not None
+            else []
+        )
+        eligible_components: list[PaperPositionedVisualComponent] = []
+        for component in page.visual_components:
+            component_page_nums = component_pages_by_signature[
+                (component.component_kind, component.bbox)
+            ]
+            represents_page_furniture = False
+            for region in page_furniture_regions:
+                cluster_page_nums = page_furniture_cluster_pages.get(
+                    region.cluster_id, set()
+                )
+                recurs_with_cluster = bool(cluster_page_nums) and (
+                    cluster_page_nums <= component_page_nums
+                )
+                overlaps_region = (
+                    component.bbox[0] < region.bbox[2]
+                    and component.bbox[2] > region.bbox[0]
+                    and component.bbox[1] < region.bbox[3]
+                    and component.bbox[3] > region.bbox[1]
+                )
+                if recurs_with_cluster and overlaps_region:
+                    represents_page_furniture = True
+                    break
+            if not represents_page_furniture:
+                eligible_components.append(component)
+        figure_eligible_components_by_page[page_num] = eligible_components
+    component_proposals: dict[str, list[PaperPositionedVisualComponent]] = {}
+    caption_bboxes: dict[str, tuple[float, float, float, float]] = {}
+    for candidate in figure_scope_candidates:
+        caption_blocks = [
+            blocks_by_id[block_id] for block_id in candidate["caption_block_ids"]
+        ]
+        caption_bbox = (
+            min(block.bbox[0] for block in caption_blocks),
+            min(block.bbox[1] for block in caption_blocks),
+            max(block.bbox[2] for block in caption_blocks),
+            max(block.bbox[3] for block in caption_blocks),
+        )
+        candidate_id = str(candidate["candidate_id"])
+        caption_bboxes[candidate_id] = caption_bbox
+        component_proposals[candidate_id] = (
+            []
+            if candidate["concerns"]
+            else [
+                component
+                for component in figure_eligible_components_by_page[
+                    int(candidate["page_num"])
+                ]
+                if component.bbox[3] <= caption_bbox[1]
+                and component.bbox[0] < caption_bbox[2]
+                and component.bbox[2] > caption_bbox[0]
+            ]
+        )
+    component_claims = Counter(
+        component.component_id
+        for components in component_proposals.values()
+        for component in components
+    )
+    for candidate in figure_scope_candidates:
+        if candidate["concerns"]:
+            continue
+        candidate_id = str(candidate["candidate_id"])
+        components = component_proposals[candidate_id]
+        if not components:
+            candidate["concerns"] = ["no_above_overlapping_visual_components"]
+            continue
+        if any(component_claims[component.component_id] > 1 for component in components):
+            candidate["concerns"] = ["competing_caption_claim"]
+            continue
+        content_bbox = (
+            min(component.bbox[0] for component in components),
+            min(component.bbox[1] for component in components),
+            max(component.bbox[2] for component in components),
+            max(component.bbox[3] for component in components),
+        )
+        caption_bbox = caption_bboxes[candidate_id]
+        candidate["visual_component_ids"] = [
+            component.component_id for component in components
+        ]
+        candidate["content_bbox"] = content_bbox
+        candidate["composite_bbox"] = (
+            min(content_bbox[0], caption_bbox[0]),
+            min(content_bbox[1], caption_bbox[1]),
+            max(content_bbox[2], caption_bbox[2]),
+            max(content_bbox[3], caption_bbox[3]),
+        )
+        candidate["structural_evidence"].extend(
+            ["above_caption", "positive_horizontal_overlap"]
+        )
+
+    internal_block_proposals: dict[str, list[SimpleNamespace]] = {}
+    for candidate in figure_scope_candidates:
+        candidate_id = str(candidate["candidate_id"])
+        if candidate["concerns"]:
+            internal_block_proposals[candidate_id] = []
+            continue
+        caption_bbox = caption_bboxes[candidate_id]
+        content_bbox = candidate["content_bbox"]
+        composite_bbox = candidate["composite_bbox"]
+        internal_block_proposals[candidate_id] = [
+            block
+            for block in blocks
+            if block.page_num == candidate["page_num"]
+            and block.block_id not in candidate["caption_block_ids"]
+            and block.bbox[0] < composite_bbox[2]
+            and block.bbox[2] > composite_bbox[0]
+            and block.bbox[1] < caption_bbox[1]
+            and block.bbox[3] > content_bbox[1]
+        ]
+    internal_block_claims = Counter(
+        block.block_id
+        for proposed_blocks in internal_block_proposals.values()
+        for block in proposed_blocks
+    )
+    for candidate in figure_scope_candidates:
+        if candidate["concerns"]:
+            continue
+        candidate_id = str(candidate["candidate_id"])
+        internal_blocks = internal_block_proposals[candidate_id]
+        if any(internal_block_claims[block.block_id] > 1 for block in internal_blocks):
+            candidate["concerns"] = ["competing_internal_block_claim"]
+            continue
+        candidate["internal_block_ids"] = [block.block_id for block in internal_blocks]
+        if internal_blocks:
+            content_bbox = candidate["content_bbox"]
+            candidate["content_bbox"] = (
+                min(content_bbox[0], *(block.bbox[0] for block in internal_blocks)),
+                min(content_bbox[1], *(block.bbox[1] for block in internal_blocks)),
+                max(content_bbox[2], *(block.bbox[2] for block in internal_blocks)),
+                max(content_bbox[3], *(block.bbox[3] for block in internal_blocks)),
+            )
+            caption_bbox = caption_bboxes[candidate_id]
+            content_bbox = candidate["content_bbox"]
+            candidate["composite_bbox"] = (
+                min(content_bbox[0], caption_bbox[0]),
+                min(content_bbox[1], caption_bbox[1]),
+                max(content_bbox[2], caption_bbox[2]),
+                max(content_bbox[3], caption_bbox[3]),
+            )
+            candidate["structural_evidence"].append("figure_envelope_overlap")
+
+    for candidate in figure_scope_candidates:
+        if candidate["concerns"]:
+            continue
+        member_block_ids = [
+            *candidate["caption_block_ids"],
+            *candidate["internal_block_ids"],
+        ]
+        composite_bbox = candidate["composite_bbox"]
+        unclaimed_block_ids = [
+            block.block_id
+            for block in blocks
+            if block.page_num == candidate["page_num"]
+            and block.block_id not in member_block_ids
+            and block.bbox[0] < composite_bbox[2]
+            and block.bbox[2] > composite_bbox[0]
+            and block.bbox[1] < composite_bbox[3]
+            and block.bbox[3] > composite_bbox[1]
+        ]
+        if unclaimed_block_ids:
+            candidate["concerns"] = [
+                f"unclaimed_intersecting_block:{block_id}"
+                for block_id in unclaimed_block_ids
+            ]
+
     for page in stream_pages:
         for group in page.orientation_groups:
             group_blocks = [
@@ -671,7 +923,6 @@ def build_paper_document(
     blocks_by_line_id: dict[str, SimpleNamespace] = {
         line_id: block for block in blocks for line_id in block.line_ids
     }
-    blocks_by_id = {block.block_id: block for block in blocks}
     layout_block_ids_by_group: dict[str, list[str]] = {
         group.group_id: [
             str(placement["block_id"])
@@ -946,19 +1197,92 @@ def build_paper_document(
                 },
             }
         )
+    figure_entities: list[dict[str, object]] = []
+    figure_owned_block_ids: set[str] = set()
+    first_member_replacements: dict[str, str] = {}
+    for candidate in figure_scope_candidates:
+        if candidate["concerns"]:
+            continue
+        member_block_ids = [
+            *candidate["caption_block_ids"],
+            *candidate["internal_block_ids"],
+        ]
+        ownership_conflicts = bibliography_owned_block_ids.intersection(
+            member_block_ids
+        )
+        if ownership_conflicts:
+            candidate["concerns"] = [
+                f"competing_bibliography_ownership:{block_id}"
+                for block_id in sorted(ownership_conflicts)
+            ]
+            continue
+        entity_id = f"figure-composite:{candidate['candidate_id']}"
+        figure_entities.append(
+            {
+                "entity_id": entity_id,
+                "kind": "figure",
+                "scope": "main",
+                "page_num": candidate["page_num"],
+                "bbox": candidate["composite_bbox"],
+                "components": [
+                    {
+                        "role": "caption",
+                        "block_ids": candidate["caption_block_ids"],
+                        "content_refs": [],
+                    },
+                    {
+                        "role": "content",
+                        "block_ids": candidate["internal_block_ids"],
+                        "content_refs": [
+                            {
+                                "artifact_kind": "paper_positioned_visual_component",
+                                "artifact_id": component_id,
+                            }
+                            for component_id in candidate["visual_component_ids"]
+                        ],
+                    },
+                ],
+                "evidence": {
+                    "figure_scope_candidate_id": candidate["candidate_id"],
+                    "figure_label": candidate["figure_label"],
+                    "content_bbox": candidate["content_bbox"],
+                    "structural_evidence": candidate["structural_evidence"],
+                },
+            }
+        )
+        first_member_replacements[
+            min(member_block_ids, key=lambda block_id: blocks_by_id[block_id].order)
+        ] = entity_id
+        figure_owned_block_ids.update(member_block_ids)
+    entity_owned_block_ids = bibliography_owned_block_ids | figure_owned_block_ids
+    structure = [
+        {
+            "page_num": page.page_num,
+            "structural_unit_ids": [
+                first_member_replacements.get(block.block_id, block.block_id)
+                for block in blocks
+                if block.page_num == page.page_num
+                and (
+                    block.block_id not in figure_owned_block_ids
+                    or block.block_id in first_member_replacements
+                )
+            ],
+        }
+        for page in stream_pages
+    ]
     owned_prose_segments: list[dict[str, object]] = []
     for segment in prose_segments:
         heading_block_ids = [
             block_id
             for block_id in segment["heading_block_ids"]
-            if block_id not in bibliography_owned_block_ids
+            if block_id not in entity_owned_block_ids
         ]
         paragraphs = []
         for paragraph in segment["paragraphs"]:
             paragraph_block_ids = [
                 block_id
                 for block_id in paragraph["block_ids"]
-                if block_id not in bibliography_owned_block_ids
+                if block_id not in entity_owned_block_ids
             ]
             if paragraph_block_ids:
                 paragraphs.append(
@@ -1035,15 +1359,19 @@ def build_paper_document(
             }
             for block in blocks
         ],
+        "structure": structure,
         "prose": {"segments": prose_segments},
-        "entities": bibliography_entities,
+        "entities": [*figure_entities, *bibliography_entities],
         "unassigned_block_ids": [
             block.block_id
             for block in blocks
             if block.block_id not in prose_ids
-            and block.block_id not in bibliography_owned_block_ids
+            and block.block_id not in entity_owned_block_ids
         ],
         "bibliography_region_candidates": bibliography_region_candidates,
+        "figure_scope_rejections": [
+            candidate for candidate in figure_scope_candidates if candidate["concerns"]
+        ],
     }, bibliography_entries
 
 

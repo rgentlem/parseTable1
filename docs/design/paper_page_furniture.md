@@ -192,3 +192,11 @@ the same regions before grouping annotations or footer line groups, so repeated
 page furniture is not reintroduced as small markers or definition lines.
 Recurrent edge-rule regions are applied only to candidate rule segments; they do
 not remove text, cells, or the raw positioned rule evidence.
+
+Raw raster and vector components remain in `PaperPositionedDocument`. Before
+figure-caption binding consumes those components, it excludes an exact
+component-kind-and-bbox signature only when that signature occurs on every page
+in the matched furniture cluster and positively overlaps that cluster's
+page-specific ignored region. This preserves the raw visual evidence while
+preventing recurrent page-number or header clips from expanding a figure; a
+one-page figure that merely crosses the same page-edge region remains eligible.
