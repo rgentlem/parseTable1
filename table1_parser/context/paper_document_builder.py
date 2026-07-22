@@ -1125,26 +1125,35 @@ def build_paper_document(
                     stop_block_id = block_id
                     stop_reason = "next_reference_heading"
                     break
+                block = blocks_by_id[block_id]
                 starts, unnumbered, continuation = bibliography_item_evidence_for_block(
-                    blocks_by_id[block_id],
+                    block,
                     lines_by_id,
                     unnumbered_line_ids=unnumbered_line_ids,
                     continuation_start_x0=continuation_start_x0,
                 )
-                if numbering_style == "numbered" and expected_number is not None and region_block_ids:
-                    block = blocks_by_id[block_id]
+                if numbering_style in ("numbered", "unnumbered") and region_block_ids:
                     previous_block = blocks_by_id[region_block_ids[-1]]
                     next_column = (previous_block.page_num, previous_block.orientation_group_id, previous_block.column_index + 1)
                     same_next_column = (block.page_num, block.orientation_group_id, block.column_index) == next_column
-                    if same_next_column and not any(number == expected_number for number, _ in starts):
-                        first_numbered_block = blocks_by_id[region_block_ids[0]]
+                    top_has_bibliography_evidence = (
+                        any(number == expected_number for number, _ in starts)
+                        if numbering_style == "numbered" and expected_number is not None
+                        else bool(unnumbered)
+                    )
+                    if same_next_column and not top_has_bibliography_evidence:
                         first_next_column_block_id = block_id
+                        if block.page_num != blocks_by_id[heading_block_id].page_num:
+                            stop_block_id = first_next_column_block_id
+                            stop_reason = "no_cross_column_bibliography_continuation"
+                            break
+                        first_bibliography_block = blocks_by_id[region_block_ids[0]]
                         for block_id in candidate_block_iter:
                             block = blocks_by_id[block_id]
                             same_next_column = (block.page_num, block.orientation_group_id, block.column_index) == next_column
                             vertically_aligned = (
-                                block.canonical_bbox[1] < first_numbered_block.canonical_bbox[3]
-                                and first_numbered_block.canonical_bbox[1] < block.canonical_bbox[3]
+                                block.canonical_bbox[1] < first_bibliography_block.canonical_bbox[3]
+                                and first_bibliography_block.canonical_bbox[1] < block.canonical_bbox[3]
                             )
                             if not (same_next_column and vertically_aligned):
                                 continue
@@ -1156,7 +1165,12 @@ def build_paper_document(
                                     continuation_start_x0=continuation_start_x0,
                                 )
                             )
-                            if any(number == expected_number for number, _ in starts):
+                            aligned_has_bibliography_evidence = (
+                                any(number == expected_number for number, _ in starts)
+                                if numbering_style == "numbered" and expected_number is not None
+                                else bool(unnumbered)
+                            )
+                            if aligned_has_bibliography_evidence:
                                 break
                         else:
                             stop_block_id = first_next_column_block_id
