@@ -85,6 +85,40 @@ checks are allowed without approval. If the user explicitly says to implement a 
 logic change, that counts as approval only for that described change; do not
 expand the scope without asking again.
 
+## Narrow Change Discipline
+
+Treat requests for a specific, narrow, minimal, or non-embellished change as a
+hard scope boundary.
+
+- Implement only the named behavior at the smallest existing decision point.
+  Reuse the current control flow, state, artifacts, and helpers wherever
+  possible.
+- Do not generalize the request into a new state machine, abstraction, helper,
+  schema, diagnostic system, fallback, alternate traversal, refactor, or wider
+  cleanup unless the user explicitly asks for that work.
+- If the proposed implementation starts requiring materially more machinery
+  than the request implies, stop before editing. Explain exactly why the narrow
+  change is not staying narrow and wait for direction.
+- Approval for one named parser-logic change does not authorize a broader or
+  more defensive version of that change. Stop and obtain new approval when the
+  implementation scope grows.
+- When the user asks how one concrete fix will be implemented, answer with that
+  implementation and its requested verification. Do not replace it with a
+  multiphase roadmap, unrelated regression list, or speculative future work.
+- Run exactly the verification the user requests, subject to mandatory project
+  gates. Do not substitute a focused check for a requested corpus run or expand
+  a requested focused check into unrelated testing.
+- If the user questions the size, scope, or premise of an active change, stop
+  running tests and stop editing immediately. Report the current diff and state
+  factually; do not revise the implementation until the discussion resolves.
+- Keep observed facts, inferences, and proposed rules explicitly separate. Do
+  not present a design preference or a rule inferred from one paper as an
+  established corpus fact.
+- During exploratory discussion, do not edit the ToDo list, design documents,
+  implementation notes, or other documentation unless the user explicitly asks
+  for a documentation change. Required documentation updates still accompany
+  an approved completed implementation, after its behavior is agreed.
+
 ## Numeric Layout Tolerance Gate
 
 Do not add, restore, adjust, extend, or newly rely on a numeric layout

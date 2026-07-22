@@ -1119,7 +1119,8 @@ def build_paper_document(
             stop_block_id = heading_block_id
             stop_reason = "no_intervening_prose"
         else:
-            for block_id in candidate_block_ids:
+            candidate_block_iter = iter(candidate_block_ids)
+            for block_id in candidate_block_iter:
                 if block_id != heading_block_id and block_id in reference_heading_block_ids:
                     stop_block_id = block_id
                     stop_reason = "next_reference_heading"
@@ -1130,6 +1131,37 @@ def build_paper_document(
                     unnumbered_line_ids=unnumbered_line_ids,
                     continuation_start_x0=continuation_start_x0,
                 )
+                if numbering_style == "numbered" and expected_number is not None and region_block_ids:
+                    block = blocks_by_id[block_id]
+                    previous_block = blocks_by_id[region_block_ids[-1]]
+                    next_column = (previous_block.page_num, previous_block.orientation_group_id, previous_block.column_index + 1)
+                    same_next_column = (block.page_num, block.orientation_group_id, block.column_index) == next_column
+                    if same_next_column and not any(number == expected_number for number, _ in starts):
+                        first_numbered_block = blocks_by_id[region_block_ids[0]]
+                        first_next_column_block_id = block_id
+                        for block_id in candidate_block_iter:
+                            block = blocks_by_id[block_id]
+                            same_next_column = (block.page_num, block.orientation_group_id, block.column_index) == next_column
+                            vertically_aligned = (
+                                block.canonical_bbox[1] < first_numbered_block.canonical_bbox[3]
+                                and first_numbered_block.canonical_bbox[1] < block.canonical_bbox[3]
+                            )
+                            if not (same_next_column and vertically_aligned):
+                                continue
+                            starts, unnumbered, continuation = (
+                                bibliography_item_evidence_for_block(
+                                    block,
+                                    lines_by_id,
+                                    unnumbered_line_ids=unnumbered_line_ids,
+                                    continuation_start_x0=continuation_start_x0,
+                                )
+                            )
+                            if any(number == expected_number for number, _ in starts):
+                                break
+                        else:
+                            stop_block_id = first_next_column_block_id
+                            stop_reason = "no_cross_column_bibliography_continuation"
+                            break
                 accepted_starts: list[tuple[int, str]] = []
                 if numbering_style != "unnumbered" and starts:
                     remaining_start_index = 0
