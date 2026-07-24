@@ -69,13 +69,12 @@ Each `rows` item records:
 - `text`
 
 Footer detection consumes established ownership rather than rediscovering it.
-Rows inside the extracted grid come only from the matching final
-`TableRegion.footer_note_rows`. If the visual footer is outside that grid,
-`paper_document.json` supplies canonical block membership and order for the
-lines named by the final `body_footer` candidate's
-`TableBoundaryProposal.following_text_line_ids`; `paper_positioned_document.json`
-supplies their raw text, typography, spans, and original geometry.
-`TableRegion` has already accepted those adjacent final-rule lines using
+The matching final `TableRegion.footer_line_ids` names the exact accepted
+positioned lines for both footer rows inside the extracted grid and footer text
+outside it. `paper_document.json` supplies canonical block membership and
+order for those lines; `paper_positioned_document.json` supplies their raw
+text, typography, spans, and original geometry. `TableRegion` has already
+accepted them using
 mandatory typography, positioned prose continuity, and preceding-data
 evidence; the footnote stage does not decide ownership again. They are
 persisted with
@@ -220,20 +219,19 @@ definitions in this artifact. Source blocks should preserve raw text, page,
 optional bbox and page height, source scope, source ID, table ID, visual ID, and
 source artifact. Extracted table footer regions are persisted in `footers`;
 definition source lines are then built from the matching final
-`TableRegion.footer_note_rows`. Within that region, a row that starts or embeds
+`TableRegion.footer_line_ids`. Within that region, a line that starts or embeds
 a definition marker opens a table-note block, and adjacent following rows
 without a new marker are appended as continuation text until the next marker
 block.
 `paper_document.json` provides page-furniture-filtered canonical blocks;
 their source line IDs join to `paper_positioned_document.json` for line bbox,
 page/column order, font, and span evidence.
-`find_table_footer_definition_lines()`
-consumes only the positioned lines already attached to the final retained rule
-through `TableBoundaryProposal.following_text_line_ids`. It uses exact raised
-marker geometry, table-local type size, and physical line count to decide
-whether that one adjacent band is a footer. Same-font size variation of at most
-0.2 PDF points remains one band so harmless 8.0/7.9-point jitter cannot truncate
-a definition paragraph. The retained group is persisted in `footers` before it
+`find_table_footer_definition_lines()` consumes only the positioned lines
+already accepted and persisted in `TableRegion.footer_line_ids`. It does not
+reconstruct internal line IDs from row bounds or treat
+`TableBoundaryProposal.following_text_line_ids` as accepted ownership. Exact
+raised-marker geometry is used only when splitting the accepted group into
+definition evidence. The retained group is persisted in `footers` before it
 is split into definition records. This keeps review artifacts aligned when the
 extraction grid omits a visual table footer but the canonical document
 captures it, without scanning arbitrary text below the table bbox.

@@ -75,7 +75,7 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | --- | --- | --- | --- |
 | Extraction | `ExtractedTable` | Written now as `extracted_tables.json` by `extract` and `parse` | Preserve raw table grid and cell provenance |
 | Boundary proposal | `TableBoundaryProposal` | Written now as `table_boundary_proposals.json` by `parse` | Persist canonical geometry alternatives used to establish or compare provisional body intervals, plus review concerns and selected edges |
-| Table region ownership | `TableRegion` | Written now as `table_regions.json` by `parse` | Persist row roles around the geometry-defined body: headers above it and footer/note bands below it, before normalization consumes them |
+| Table region ownership | `TableRegion` | Written now as `table_regions.json` by `parse` | Persist row roles around the geometry-defined body and the exact positioned line IDs accepted for an internal or external footer, before downstream consumers project them |
 | Body occupancy | `BodyOccupancyTable` | Written now as `body_occupancy.json` by `parse` | Persist raw physical-body-line occupancy in character-width-derived x bins plus exact font-qualified zero-gap evidence, without smoothing or downstream grid changes |
 | Leaf-column candidates | `LeafColumnCandidateTable` | Written now as `leaf_column_candidates.json` by `parse` | Persist provisional stub/value bands from exact zero-occupancy gaps at least two observed table-font spaces wide, with supporting unmerged rule endpoints, without changing the extracted grid |
 | Header-structure candidates | `HeaderStructureCandidate` | Written now as `header_structure_candidates.json` by `parse` | Persist positioned leaf/header evidence, preserving a complete flat canonical header cell-for-cell and otherwise classifying one-leaf labels and contiguous multileaf groups from observed anchors, per-band evidence, and individual partial rules; retain linked marker IDs plus raw/base node text, unresolved fragments, and post-assignment diagnostics without changing the accepted column schema |
@@ -102,7 +102,7 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Final parsed output | `ParsedTable` | Written now as `parsed_tables.json` by `parse` | Validated downstream structured table data |
 | Table processing status | `TableProcessingStatus`, `TableProcessingAttempt` | Written now as `table_processing_status.json` by `parse` | Persist resolved-table rescue attempts, source fragment IDs and diagnostics, terminal failure stage, and failure reason without overloading semantic artifacts |
 | Parse quality diagnostics | `ParseQualityReport` | Written now as `parse_quality_reports.json` by `parse` | Persist deterministic row, column, and value-pattern diagnostics without changing parse behavior |
-| Paper footnotes | `PaperFootnotes` | Written now as `paper_footnotes.json` by `parse` | Persist table-local footer regions owned by final `TableRegion.footer_note_rows` or the final rule's `TableBoundaryProposal.following_text_line_ids`, footnote anchors keyed by their source `CellTextAnnotation.annotation_id` with annotation type preserved, separate positioned definition-marker evidence, and explicit glyph-key links whose cross-fragment scope comes only from accepted final `ResolvedTableSet` membership, without rewriting table text or parsed values |
+| Paper footnotes | `PaperFootnotes` | Written now as `paper_footnotes.json` by `parse` | Project table-local footer regions only from final `TableRegion.footer_line_ids`, preserve anchors keyed by their source `CellTextAnnotation.annotation_id`, retain separate positioned definition-marker evidence, and link explicit glyph keys whose cross-fragment scope comes only from accepted final `ResolvedTableSet` membership, without rewriting table text or parsed values |
 | Paper page furniture | `PaperPageFurniture` | Written now as `paper_page_furniture.json` by `parse` | Persist repeated page text observations, clusters, and ignored regions used near the front of document processing to mask document construction, extraction, cell annotations, and document-linked footer detection before downstream artifacts are built |
 
 Design note for future multitable support:
@@ -328,8 +328,10 @@ positioned adjacent band below the rule. Same-font continuation lines allow
 font-size jitter of at most 0.2 PDF points. Known captions, later tables, and
 section headings stop the band. The text remains uninterpreted. `TableRegion`
 adds `body_footer` only after the unified typography, prose-continuity, and
-preceding-data checks accept that exact band. External footnote harvesting can
-consume it but cannot broaden or requalify it.
+preceding-data checks accept that exact band. The proposal fields remain
+non-owning evidence; accepted internal and external footer lines are persisted
+in `TableRegion.footer_line_ids`, which is the only source consumed by footnote
+harvesting.
 
 Each proposal also records `credible_rule_geometry` and
 `coherent_positioned_grid`. The proposal is built before row-region ownership.
@@ -459,6 +461,8 @@ Important fields:
 
 - `caption_rows`, `preamble_rows`, `column_header_rows`, `body_rows`, and
   `footer_note_rows`: row-index lists in extracted-table row space
+- `footer_line_ids`: ordered positioned source-line IDs accepted by the final
+  footer decision for either internal grid rows or an external adjacent band
 - `row_regions`: one role assignment per extracted row with detection basis and
   confidence
 - `horizontal_rules` and `full_width_horizontal_rules`: rule evidence used by

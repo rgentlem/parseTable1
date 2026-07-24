@@ -1102,7 +1102,6 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         resolved_table_set=resolved_table_set,
         paper_document=paper_document,
         paper_positioned_document=paper_positioned_document,
-        table_boundary_proposals=table_boundary_proposals,
         table_regions=table_regions,
     )
     paper_footnote_definition_lines = table_footer_document_definition_lines

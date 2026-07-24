@@ -32,6 +32,8 @@ The stages must remain separate:
   column-header bands, body rows, and footer/note bands. It is built from
   extracted table entries, row/cell geometry, horizontal rules, and cell-text
   annotation marker geometry after page furniture has already been filtered.
+  Its `footer_line_ids` retain the exact positioned source lines accepted by
+  that one footer decision, whether the footer is inside or below the grid.
 - `NormalizedTable` performs structural cleanup, header/body row separation,
   row-level feature extraction, and normalization-time repairs while preserving
   source text provenance. When a `TableRegion` is available, normalization must

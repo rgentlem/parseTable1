@@ -29,7 +29,6 @@ from table1_parser.schemas import (
     PaperFootnotes,
     PaperPositionedDocument,
     ResolvedTableSet,
-    TableBoundaryProposal,
 )
 from table1_parser.schemas.table_region import TableRegion
 from table1_parser.text_cleaning import clean_text
@@ -260,7 +259,6 @@ def find_table_footer_definition_lines(
     resolved_table_set: ResolvedTableSet | None = None,
     paper_document: dict[str, object] | None = None,
     paper_positioned_document: PaperPositionedDocument | None = None,
-    table_boundary_proposals: Sequence[TableBoundaryProposal] | None = None,
     table_regions: Sequence[TableRegion] | None = None,
 ) -> list[FootnoteDefinitionCandidateLine]:
     """Project positioned lines from the footer boundary accepted by TableRegion."""
@@ -270,9 +268,6 @@ def find_table_footer_definition_lines(
         iter_paper_document_lines(paper_document, paper_positioned_document)
     )
     visual_id_by_table_id = _table_visual_ids(extracted_tables, resolved_table_set)
-    proposal_by_table_id = {
-        proposal.table_id: proposal for proposal in table_boundary_proposals or []
-    }
     region_by_table_id = {region.table_id: region for region in table_regions or []}
     lines_by_id = {line.line_id: line for line in document_lines}
     page_heights = {
@@ -281,46 +276,8 @@ def find_table_footer_definition_lines(
 
     footer_lines: list[FootnoteDefinitionCandidateLine] = []
     for table_position, table in enumerate(extracted_tables):
-        proposal = proposal_by_table_id.get(table.table_id)
-        if proposal is None:
-            continue
         region = region_by_table_id.get(table.table_id)
-        footer_rules = [
-            candidate
-            for candidate in proposal.boundary_candidates
-            if "body_footer" in candidate.possible_roles
-            and candidate.following_text_line_ids
-        ]
-        footer_line_ids: list[str] = []
-        if len(footer_rules) == 1:
-            footer_line_ids = footer_rules[0].following_text_line_ids
-        elif region is not None and region.footer_note_rows:
-            footer_bounds = [
-                proposal.canonical_row_bounds[row_idx]
-                for row_idx in region.footer_note_rows
-                if row_idx < len(proposal.canonical_row_bounds)
-            ]
-            table_bbox = proposal.canonical_table_bbox
-            if footer_bounds and table_bbox is not None:
-                footer_line_ids = [
-                    line.line_id
-                    for line in document_lines
-                    if line.page_num == table.page_num
-                    and line.canonical_bbox is not None
-                    and any(
-                        top - 1.0
-                        <= (line.canonical_bbox[1] + line.canonical_bbox[3]) / 2.0
-                        <= bottom + 1.0
-                        for top, bottom in footer_bounds
-                    )
-                    and max(
-                        0.0,
-                        min(line.canonical_bbox[2], table_bbox[2])
-                        - max(line.canonical_bbox[0], table_bbox[0]),
-                    )
-                    / max(line.canonical_bbox[2] - line.canonical_bbox[0], 1.0)
-                    >= 0.25
-                ]
+        footer_line_ids = list(region.footer_line_ids) if region is not None else []
         if not footer_line_ids:
             continue
         group = []

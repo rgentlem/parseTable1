@@ -95,8 +95,8 @@ a consecutive prose block without a horizontal gap of at least two observed
 space widths, and preceding data-band support. A final horizontal rule is
 supporting boundary evidence, not sufficient footer evidence. Internal accepted
 rows move from `body_rows` to `footer_note_rows`; accepted text below the final
-rule remains outside the physical grid and is linked through that rule's
-existing positioned-line references.
+rule remains outside the physical grid. In both cases the exact accepted
+positioned lines are persisted once in `TableRegion.footer_line_ids`.
 
 `table_boundary_proposals.json` is built between canonical extracted geometry
 and `TableRegion`. It keeps rule-supported table-start and header/body edges,
@@ -169,9 +169,10 @@ records the source annotation type, normally `superscript` or `inline_marker`.
 Subscripts remain unpromoted annotation evidence. The stable ID joins back to
 the complete character, span, font, bbox, and attachment evidence in
 `cell_text_annotations.json`; no second positional anchor identity is generated.
-Definition candidates are fed first by the extracted rows owned by the matching
-final `TableRegion.footer_note_rows`. `find_table_footer_rows()` does not rerun
-last-value-row or horizontal-rule inference. Every accepted footer band enters
+Definition candidates are fed by the exact positioned lines owned by the
+matching final `TableRegion.footer_line_ids`.
+`find_table_footer_definition_lines()` does not rerun row-bound, overlap,
+last-value-row, or horizontal-rule inference. Every accepted footer band enters
 definition processing; observed markers may split that band into several
 definitions but do not decide whether the accepted text is processed. Confirmed
 footer rows can carry marker-start evidence from cell-text annotation geometry
@@ -215,10 +216,10 @@ positioned text source for footer candidates absent from the extracted grid.
 The stream preserves visual lines, page/column order, line bbox, dominant font
 name, dominant font size, and document-level font-style counts after
 page-furniture filtering. The external table-footer consumer starts only from
-the final `body_footer` candidate's
-`TableBoundaryProposal.following_text_line_ids` after `TableRegion` has accepted
-ownership. It does not requalify that adjacent group or scan arbitrary text
-below the table bbox. Retained groups are persisted as unsplit `footers`
+the final `TableRegion.footer_line_ids` after `TableRegion` has accepted
+ownership. It does not consume proposal evidence as ownership, requalify that
+adjacent group, or scan arbitrary text below the table bbox. Retained groups
+are persisted as unsplit `footers`
 records, so review can inspect the same raw footer region that later produces
 split definition records.
 The same smaller-raised marker evidence may begin its own physical source line;
@@ -672,7 +673,8 @@ scan evaluates extracted trailing rows and final-rule-adjacent positioned text,
 requires a local typography change and prose continuity without a gap of two
 observed spaces, and uses data-band content plus any final rule only as
 supporting geometry. It does not infer boundaries from footer wording or let a
-later footnote consumer revise ownership.
+later footnote consumer revise ownership. Its ordered `footer_line_ids` are the
+single downstream reference for either kind of accepted footer.
 
 This stage deliberately separates three concepts that should not share one
 generic "header" label:
@@ -681,9 +683,10 @@ generic "header" label:
 - table captions/titles identify a table but are not column headers
 - column-header bands are the rows that define the table's column axis
 
-`NormalizedTable` consumes these region decisions when available. Extracted-row
-footnote harvesting also consumes `footer_note_rows` from this artifact and
-does not independently rediscover footer rows.
+`NormalizedTable` consumes these region decisions when available. Footnote
+harvesting consumes only `footer_line_ids` from this artifact and does not
+independently recover internal lines from row geometry or external lines from a
+boundary proposal.
 
 ### Provisional Column Geometry Diagnostics
 

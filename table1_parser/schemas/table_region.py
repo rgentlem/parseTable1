@@ -33,6 +33,7 @@ class TableRegion(BaseModel):
     column_header_rows: list[int] = Field(default_factory=list)
     body_rows: list[int] = Field(default_factory=list)
     footer_note_rows: list[int] = Field(default_factory=list)
+    footer_line_ids: list[str] = Field(default_factory=list)
     row_regions: list[TableRegionRow] = Field(default_factory=list)
     horizontal_rules: list[float] = Field(default_factory=list)
     full_width_horizontal_rules: list[float] = Field(default_factory=list)

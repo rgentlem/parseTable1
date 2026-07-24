@@ -159,10 +159,12 @@ outputs/testpapers_batch_canonical_orientation_step3_full_20260716
     the extracted grid, `TableBoundaryProposal`, canonical positioned page,
     and `CellTextAnnotationTable`; its wrapper already receives the shared
     `PaperTextStream`, including the ordinary page-text style.
-  - Internal accepted rows remain represented by
-    `TableRegion.footer_note_rows`. Accepted external positioned lines remain
-    represented by the final `TableBoundaryCandidate.following_text_line_ids`,
-    bbox, styles, and `body_footer` role. No schema or artifact is required.
+  - Completed follow-up: internal row indices remain represented by
+    `TableRegion.footer_note_rows`, while exact accepted internal and external
+    positioned lines are now represented uniformly by
+    `TableRegion.footer_line_ids`. The final
+    `TableBoundaryCandidate.following_text_line_ids`, bbox, styles, and
+    `body_footer` role remain non-owning proposal evidence.
   - `build_table_boundary_proposal()` currently goes beyond evidence
     collection: it filters following lines using page-body style, gap, resumed
     body, and smaller-font conditions, then assigns `body_footer`. It must be
@@ -173,17 +175,11 @@ outputs/testpapers_batch_canonical_orientation_step3_full_20260716
     branch. `_footer_marker_rows_by_table_id()` and `_footer_rows()` are the
     competing marker/rule detector to remove when their evidence is folded
     into the one bottom-of-table decision.
-  - `find_table_footer_definition_lines()` in
-    `table1_parser/paper_footnotes.py` currently re-decides external ownership
-    from a structured marker, smaller table-local type, or three physical
-    lines. That acceptance gate must move to the single region-stage detector;
-    marker geometry may remain there only as definition evidence after
-    ownership is established.
-  - `find_table_footer_rows()` is already a pure projection of final
-    `TableRegion.footer_note_rows`. The extracted-row/text-stream footer
-    builders, `build_paper_footnote_definition_candidates()`, and
-    `link_paper_footnotes()` can remain downstream consumers provided none
-    independently accepts or rejects footer ownership.
+  - Completed follow-up: `find_table_footer_definition_lines()` in
+    `table1_parser/paper_footnotes.py` now consumes only
+    `TableRegion.footer_line_ids`. The former internal row-bound/overlap
+    reconstruction and external proposal-backed ownership path are removed;
+    marker geometry remains definition evidence after ownership is established.
   - The retained 28-PDF reference has 91 region/proposal records, 67 final-rule
     adjacent-text bands provisionally labelled `body_footer`, 55 accepted
     external footers, and 10 internal footer regions containing 59 rows: 65

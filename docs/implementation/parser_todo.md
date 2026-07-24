@@ -858,6 +858,26 @@ artifacts with raw values preserved.
   paper's extra unnumbered `REFERENCES AND NOTES` entry was already present
   after the `has_bold` change; neither is caused by the orientation repair. No
   pytest was run.
+  The exact-footer-provenance follow-up is complete in
+  `outputs/testpapers_batch_footer_line_ids_final_20260724`.
+  `TableRegion.footer_line_ids` now persists the exact positioned lines already
+  accepted by the single region-stage footer decision for both internal and
+  external cases. `find_table_footer_definition_lines()` consumes only those
+  IDs; its former internal row-bound/overlap reconstruction and its use of
+  `TableBoundaryProposal.following_text_line_ids` as accepted ownership are
+  removed. All 28 PDFs completed with 92 physical tables, 89 accepted grids,
+  and 81 resolved/parsed tables. The 66 accepted footer regions comprise 60
+  external and six internal regions carrying 276 line IDs; every ID resolves
+  exactly once in both `PaperPositionedDocument` and the canonical
+  `PaperDocument` block registry, and all footnote projections match. Against
+  `outputs/testpapers_batch_external_footer_prose_veto_final_20260724`, every
+  artifact is substantively identical after removing the new field and
+  generated quality-report timestamps. The existing failure on PDF pages 6–7,
+  printed Table 1, of `Helicobacter pylori infection in the United States
+  beyond NHANES- a scoping review of seroprevalence estimates by racial and
+  ethnic groups.pdf` remains unchanged at `table_definition` with
+  `no_variables_for_descriptive_table`. No new artifact, footer decision,
+  fallback, or numeric layout tolerance was added.
 - [ ] Review or explicitly accept the deferred corpus gaps and uncertainties in
   `docs/implementation/corpus_artifact_uncertainties_20260715.md`. This records
   unsupported rotated marker geometry, unresolved header/visual identities,

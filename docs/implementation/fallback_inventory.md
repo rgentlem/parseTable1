@@ -158,17 +158,18 @@ canonical extraction logic with explicit provenance.
   - Former code:
     `table1_parser/paper_footnotes.py::find_table_footer_rows` and
     `_last_value_matrix_row_idx`.
-  - Status: retired in Phase K Step 1. Extracted footer rows now come only from
-    the matching final `TableRegion.footer_note_rows`.
+  - Status: retired in Phase K Step 1. Accepted footer lines now come only from
+    the matching final `TableRegion.footer_line_ids`; internal row indices
+    remain separately available as `footer_note_rows`.
 
 - Arbitrary below-table styled-text scan
   - Former code:
     `table1_parser/paper_footnotes.py::find_table_footer_definition_lines`.
-  - Status: retired in Phase K Step 1. External footer text now starts only
-    from the final retained rule's
-    `TableBoundaryProposal.following_text_line_ids`. Footer ownership is now
-    accepted once by `table1_parser/table_regions.py::build_table_region`;
-    `find_table_footer_definition_lines` only consumes accepted text and builds
+  - Status: retired in Phase K Step 1. Footer ownership is accepted once by
+    `table1_parser/table_regions.py::build_table_region` and persisted as
+    `TableRegion.footer_line_ids` for both internal and external cases.
+    `TableBoundaryProposal.following_text_line_ids` remains non-owning evidence;
+    `find_table_footer_definition_lines` consumes only the region IDs and builds
     definition evidence.
 
 - Competing boundary-model and marker-only footer ownership

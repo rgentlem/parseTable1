@@ -155,6 +155,7 @@ def build_table_region(
     header_rows: list[int]
     body_rows: list[int]
     footer_rows: list[int] = []
+    footer_line_ids: list[str] = []
     start_rule_y: float | None = None
     header_body_rule_y: float | None = None
     body_footer_rule_y: float | None = None
@@ -883,6 +884,9 @@ def build_table_region(
                             )
 
                             if footer_rows:
+                                footer_line_ids = [
+                                    line.line_id for line, _bbox in complete_lines
+                                ]
                                 footer_set = set(footer_rows)
                                 body_rows = [
                                     row_idx
@@ -909,6 +913,7 @@ def build_table_region(
                                     )
                                     complete_lines = []
                                 else:
+                                    footer_line_ids = external_footer_line_ids
                                     boundary_candidate.following_text_line_ids = (
                                         external_footer_line_ids
                                     )
@@ -962,6 +967,7 @@ def build_table_region(
         column_header_rows=header_rows,
         body_rows=body_rows,
         footer_note_rows=footer_rows,
+        footer_line_ids=footer_line_ids,
         row_regions=_row_regions(
             table.n_rows,
             grid,
