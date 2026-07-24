@@ -12,6 +12,39 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
 
 ## Current Priorities
 
+- [ ] Complete canonical table-entity finalization from the current corpus
+  artifacts. Detailed working checklists belong under ignored `tmp/` and are
+  not retained project documentation. The implementation must prove
+  caption/grid/footer block provenance, keep discovery independent of final
+  prose, atomically insert accepted tables as opaque entities, rebuild prose,
+  retire competing table-visual and footer inference, and persist only the
+  finalized `PaperDocument`. This priority is not parser-logic approval.
+  The approved `strong_ruled_geometry` correction now follows existing
+  rule-bounded geometry rather than the candidate-discovery route. The current
+  run is `outputs/testpapers_batch_external_footer_prose_veto_final_20260724`:
+  all 28 inputs completed, with 92 extracted tables and 81 parsed tables. The
+  retained processing failure is `Helicobacter pylori infection in the United
+  States beyond NHANES- a scoping review of seroprevalence estimates by racial
+  and ethnic groups.pdf`, PDF pages 6–7, printed Table 1:
+  `no_variables_for_descriptive_table` at `table_definition`.
+  The external-footer prose-ownership veto rejected the false claims below
+  `fld.pdf`, PDF page 6, printed Table 2, and `Journal of Periodontology - 2015
+  - Eke - Update on Prevalence of Periodontitis in Adults in the United States
+  NHANES 2009.pdf`, PDF page 10, printed Table 5. The run retains 60 external
+  footer claims; that count is not a validity assertion.
+  Known unresolved footer ownership failure: `cardiovascular.pdf`, PDF page 5,
+  printed Table 2 still accepts the following prose heading, `Performance of
+  models`, as an external footer. Its source block also contains the following
+  prose paragraph but remains canonical unassigned residual, so the current
+  prose-owner veto cannot reject it. A font-size-only rejection is not a safe
+  replacement: printed Tables 1, 2, and 4 in `GOLD BioAge and depression-
+  Associations with mortality among depressed NHANES participants
+  (2005–2018).pdf`, PDF pages 4 and 6, use genuine table notes in the same font
+  family as prose, and the printed Table 3 note/prose boundary on PDF page 5
+  remains disputed in review. Resolving these cases requires a separately
+  approved canonical note-versus-prose ownership design, not a downstream
+  cleanup or parallel inference path.
+
 - [x] Record compact, non-operative raster-image and vector clip/group evidence
   on each `PaperPositionedPage` for later caption-bound figure-scope work. The
   artifact has one six-field component shape and no parallel render-entry list.

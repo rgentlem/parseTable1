@@ -76,6 +76,41 @@ def build_table_regions(
         for line in positioned_text_lines_by_id.values()
         if VISUAL_OBJECT_DOI_PATTERN.fullmatch(clean_text(line.raw_text)) is not None
     }
+    prose_owned_line_ids: set[str] | None = None
+    if paper_document is not None:
+        raw_blocks = paper_document.get("blocks")
+        raw_prose = paper_document.get("prose")
+        raw_segments = raw_prose.get("segments") if isinstance(raw_prose, Mapping) else None
+        if isinstance(raw_blocks, list) and isinstance(raw_segments, list):
+            prose_block_ids: set[str] = set()
+            for segment in raw_segments:
+                if not isinstance(segment, Mapping):
+                    continue
+                heading_block_ids = segment.get("heading_block_ids")
+                if isinstance(heading_block_ids, list):
+                    prose_block_ids.update(
+                        block_id for block_id in heading_block_ids if isinstance(block_id, str)
+                    )
+                paragraphs = segment.get("paragraphs")
+                if not isinstance(paragraphs, list):
+                    continue
+                for paragraph in paragraphs:
+                    if not isinstance(paragraph, Mapping):
+                        continue
+                    block_ids = paragraph.get("block_ids")
+                    if isinstance(block_ids, list):
+                        prose_block_ids.update(
+                            block_id for block_id in block_ids if isinstance(block_id, str)
+                        )
+            prose_owned_line_ids = {
+                line_id
+                for block in raw_blocks
+                if isinstance(block, Mapping)
+                and block.get("block_id") in prose_block_ids
+                and isinstance(block.get("line_ids"), list)
+                for line_id in block["line_ids"]
+                if isinstance(line_id, str)
+            }
     return [
         build_table_region(
             table,
@@ -83,6 +118,7 @@ def build_table_regions(
             positioned_page=pages_by_num.get(table.page_num),
             positioned_text_lines_by_id=positioned_text_lines_by_id,
             visual_object_owned_line_ids=visual_object_owned_line_ids,
+            prose_owned_line_ids=prose_owned_line_ids,
             annotation_table=annotations_by_table_id.get(table.table_id),
             page_furniture_rule_bboxes=page_furniture_rule_bboxes_by_page.get(
                 table.page_num,
@@ -100,6 +136,7 @@ def build_table_region(
     positioned_page: PaperPositionedPage | None = None,
     positioned_text_lines_by_id: Mapping[str, object] | None = None,
     visual_object_owned_line_ids: set[str] | None = None,
+    prose_owned_line_ids: set[str] | None = None,
     annotation_table: CellTextAnnotationTable | None = None,
     page_furniture_rule_bboxes: Sequence[
         tuple[float, float, float, float]
@@ -854,26 +891,42 @@ def build_table_region(
                                 ]
                                 body_footer_rule_y = stopping_rule_y
                             elif complete_lines and boundary_candidate is not None:
-                                boundary_candidate.following_text_line_ids = [
+                                external_footer_line_ids = [
                                     line.line_id for line, _bbox in complete_lines
                                 ]
-                                boundary_candidate.following_text_bbox = (
-                                    min(bbox[0] for _line, bbox in complete_lines),
-                                    min(bbox[1] for _line, bbox in complete_lines),
-                                    max(bbox[2] for _line, bbox in complete_lines),
-                                    max(bbox[3] for _line, bbox in complete_lines),
-                                )
-                                boundary_candidate.following_text_styles = (
-                                    [footer_style]
-                                    if footer_style is not None
-                                    else []
-                                )
-                                boundary_candidate.possible_roles.append(
-                                    "body_footer"
-                                )
-                                body_footer_rule_y = (
-                                    boundary_candidate.canonical_y
-                                )
+                                if prose_owned_line_ids is None:
+                                    diagnostics.append(
+                                        "footer_candidate_rejected:"
+                                        "canonical_prose_ownership_unavailable"
+                                    )
+                                    complete_lines = []
+                                elif any(
+                                    line_id in prose_owned_line_ids
+                                    for line_id in external_footer_line_ids
+                                ):
+                                    diagnostics.append(
+                                        "footer_candidate_rejected:canonical_prose_owner"
+                                    )
+                                    complete_lines = []
+                                else:
+                                    boundary_candidate.following_text_line_ids = (
+                                        external_footer_line_ids
+                                    )
+                                    boundary_candidate.following_text_bbox = (
+                                        min(bbox[0] for _line, bbox in complete_lines),
+                                        min(bbox[1] for _line, bbox in complete_lines),
+                                        max(bbox[2] for _line, bbox in complete_lines),
+                                        max(bbox[3] for _line, bbox in complete_lines),
+                                    )
+                                    boundary_candidate.following_text_styles = (
+                                        [footer_style]
+                                        if footer_style is not None
+                                        else []
+                                    )
+                                    boundary_candidate.possible_roles.append(
+                                        "body_footer"
+                                    )
+                                    body_footer_rule_y = boundary_candidate.canonical_y
                             else:
                                 complete_lines = []
                                 diagnostics.append(

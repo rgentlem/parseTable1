@@ -1629,8 +1629,7 @@ def build_text_layout_candidates(
             and ruled_value_rows >= 2
         )
         strong_ruled_geometry = (
-            segment_source in {"horizontal_rule_block", "caption_segment"}
-            and (rule_bounded_value_geometry or rule_bounded_positioned_grid)
+            rule_bounded_value_geometry or rule_bounded_positioned_grid
         )
         strong_geometry = _has_strong_uncaptioned_table_geometry(rows) or strong_ruled_geometry
         if segment_source == "caption_segment" and not caption_signal and not rule_bounded_value_geometry:

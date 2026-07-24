@@ -15,6 +15,7 @@ dist/
 .DS_Store
 
 # Local debug output and test-result artifacts
+/tmp/
 *.out
 *.log
 debug_*.txt
