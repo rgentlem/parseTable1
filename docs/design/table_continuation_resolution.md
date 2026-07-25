@@ -204,6 +204,13 @@ If multiple candidates exist, prefer the one with:
 Ambiguous parent selection should reject integration rather than pick a weak
 candidate.
 
+A captioned terminal fragment may supply table identity to the immediately
+preceding uncaptioned fragment even when that fragment already belongs to an
+integrated continuation. After the same local column-schema match, the terminal
+fragment extends the existing resolved table in place: its resolved-table ID,
+prior source roles, retained-row provenance, and earlier integration boundaries
+remain unchanged, and one new continuation fragment and boundary are appended.
+
 ### 4. Check Column Schema Compatibility
 
 Column compatibility is the first structural gate after continuation identity.

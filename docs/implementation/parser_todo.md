@@ -1,42 +1,15 @@
 # Parser ToDo
 
-> **Current checkpoint — 2026-07-24:** Canonical table-entity finalization is
-> implemented and validated across all 28 PDFs in
-> `outputs/testpapers_batch_paper_document_table_entity_step6_20260724`.
-> The known entity-eligibility and footnote-input exception is the first
-> priority below.
+> **Current checkpoint — 2026-07-25:** Typed table-row ownership and
+> continuation-chain repair is implemented and validated across all 28 PDFs in
+> `outputs/testpapers_batch_canonical_entity_step5_final_20260725`. The corpus
+> has 76 canonical table entities owning 88 physical table references.
 
 This is the persistent implementation ToDo list for parser work. Agents should check it before changing extraction, normalization, row/column semantics, table routing, value parsing, diagnostics, or R inspection helpers. Update it when a task is completed, reprioritized, split, or superseded.
 
 Keep detailed implementation notes and epidemiology-table reasoning here or in linked implementation documents. Keep high-level design docs focused on stable pipeline shape, schemas, persisted artifact contracts, and durable architecture decisions.
 
 ## Current Priorities
-
-- [ ] Repair canonical table-entity eligibility for valid tables whose typed
-  continuation or title/preamble rows remain unassigned, then revert the
-  Step 5 entity-only filtering of footnote-anchor inputs while the ownership
-  correction is developed. Step 6 completed all 28 PDFs in
-  `outputs/testpapers_batch_paper_document_table_entity_step6_20260724` and
-  validated exact ownership, 72 logical table entities, and 81 physical table
-  references, but found this one failure class in three papers:
-  `Helicobacter pylori infection in the United States beyond NHANES- a scoping
-  review of seroprevalence estimates by racial and ethnic groups.pdf`, PDF
-  pages 5–7, printed Table 1, is split instead of resolved as one three-page
-  table; its forward continuation labels and terminal caption are already
-  detected, while the page 6–7 prior-page notes remain `unknown`. It loses 37
-  footnote anchors, including 35 resolved bibliography mentions.
-  `Science-Advanaced-Planetary Health Diet and risk of mortality and chronic
-  diseases- Results from US NHANES, UK Biobank, and a meta-analysis.pdf`, PDF
-  pages 2–3, printed Table 1, resolves across both pages but remains ineligible
-  because the page 3 `(Continued)` row is `unknown`; four symbolic footnote
-  anchors are omitted. `periodontis2.pdf`, PDF page 14, printed Table 3, and
-  PDF page 16, printed Table 4, remain ineligible because their two-line table
-  titles are `unknown`; one symbolic anchor is omitted from each table. The
-  source cell annotations remain unchanged in all three papers. Fix the
-  earliest continuation/title ownership artifacts without a numeric layout
-  tolerance, allow a captioned terminal fragment to extend an already
-  integrated continuation chain, and rerun Step 6 before restoring
-  entity-scoped footnote matching.
 
 - [ ] Complete canonical table-entity finalization from the current corpus
   artifacts. Detailed working checklists belong under ignored `tmp/` and are
@@ -58,16 +31,12 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
   nine known unresolved logical tables residual. Final prose and table consumers
   now derive from canonical ownership or explicit entity links; the EWAS
   footer/DOI block remains intact and the cardiovascular false-footer table stays
-  residual. Step 6 completed with the three-paper exception recorded above.
+  residual.
   The approved `strong_ruled_geometry` correction now follows existing
   rule-bounded geometry rather than the candidate-discovery route. The current
   run is `outputs/testpapers_batch_external_footer_prose_veto_final_20260724`:
   all 28 inputs completed, with 92 extracted tables and 81 parsed tables. The
-  retained processing failure is `Helicobacter pylori infection in the United
-  States beyond NHANES- a scoping review of seroprevalence estimates by racial
-  and ethnic groups.pdf`, PDF pages 6–7, printed Table 1:
-  `no_variables_for_descriptive_table` at `table_definition`.
-  The external-footer prose-ownership veto rejected the false claims below
+  external-footer prose-ownership veto rejected the false claims below
   `fld.pdf`, PDF page 6, printed Table 2, and `Journal of Periodontology - 2015
   - Eke - Update on Prevalence of Periodontitis in Adults in the United States
   NHANES 2009.pdf`, PDF page 10, printed Table 5. The run retains 60 external
@@ -84,182 +53,6 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
   remains disputed in review. Resolving these cases requires a separately
   approved canonical note-versus-prose ownership design, not a downstream
   cleanup or parallel inference path.
-
-- [x] Record compact, non-operative raster-image and vector clip/group evidence
-  on each `PaperPositionedPage` for later caption-bound figure-scope work. The
-  artifact has one six-field component shape and no parallel render-entry list.
-  Focused checks preserved lines, words, characters, image bboxes, and rule
-  segments exactly on PDF pages 4 and 5 of
-  `An atlas of exposome–phenome associations in health and disease risk.pdf`,
-  PDF page 5 of
-  `An environment-wide association study (EWAS) on type 2 diabetes mellitus.pdf`,
-  and PDF page 4 of
-  `Role of Estimated Glucose Disposal Rate in Staging and Death Risk of Cardiovascular-Kidney-Metabolic Syndrome- Insights from NHANES 1999-2018.pdf`.
-  The following retained-block checkpoint required no parser change: the
-  existing builder already filters page furniture before block construction
-  and preserves block source lines, geometry, orientation, text, provenance,
-  and ownership. The next non-operative checkpoint now records block-leading
-  figure-caption assemblies before gutter construction. Focused results are
-  two-block assemblies for printed Figures 2 and 3 on PDF pages 4 and 5 of the
-  atlas paper, one caption block for printed Figure 2 on PDF page 5 of the EWAS
-  paper, and no figure candidate on PDF page 4 containing printed Table 1 of
-  the eGDR paper. Removing the new candidate field reproduces the exact
-  pre-checkpoint paper-document hashes; bibliography hashes are also unchanged.
-  Exact above-caption binding is now implemented non-operatively: PDF page 4
-  printed Figure 2 of the atlas binds 25 vector components, PDF page 5 printed
-  Figure 3 binds 29, and PDF page 5 printed Figure 2 of the EWAS paper binds
-  one raster component. The second EWAS raster lies below the caption and is
-  excluded. The eGDR printed Table 1 page still produces no figure candidate.
-  Extraction order, edge alignment, and distance thresholds are not used.
-  Exact-envelope internal-block assignment is also complete and non-operative.
-  Atlas PDF page 4 printed Figure 2 assigns 133 blocks and includes panel
-  letters a, b, and c; Atlas PDF page 5 printed Figure 3 assigns 114 blocks and
-  includes panel letters a, b, c, and d. Neither page assigns a lower prose
-  block. EWAS PDF page 5 printed Figure 2 assigns no internal blocks because its
-  internal text is embedded in the raster image. No block has competing figure
-  claims; exact content/composite unions pass; and removing the candidate field
-  still reproduces the pre-checkpoint document and bibliography hashes.
-  Figure-component page-furniture filtering is complete at
-  `outputs/testpapers_batch_drawing_scaffold_rule_filter_20260721`.
-  Raw components remain in `PaperPositionedDocument`; figure binding excludes
-  an exact component-kind-and-bbox signature only when it occurs on every page
-  in the matched furniture cluster and overlaps that cluster's page-specific
-  ignored region. On PDF page 5, printed Figure 1, of
-  `Role of Estimated Glucose Disposal Rate in Staging and Death Risk of Cardiovascular-Kidney-Metabolic Syndrome- Insights from NHANES 1999-2018.pdf`,
-  the two recurrent printed-page-number clips are excluded, the raster and its
-  matching clip remain, no prose block is assigned, and the composite bbox is
-  `(58.68, 334.02, 555.33, 733.88)`. The 28-PDF corpus completed without a
-  command failure. The filter changes component proposals for five figure
-  candidates on PDF pages 5–7 of that paper and no candidate in another paper;
-  the established atlas and EWAS figure checks are unchanged. The first
-  rule-evidence correction excluded typed `group` and `clip` scaffolding while
-  retaining it in `visual_components`. On PDF page 5, printed Table 1, of
-  `fld.pdf`, that restored the 39 ordinary rule segments and the 41 x 5 table.
-  All seven canonical table artifacts were also restored exactly for PDF pages
-  10–18, printed Tables 1–5, of `periodontis2.pdf`. The accepted 28-PDF run is
-  `outputs/testpapers_batch_drawing_scaffold_rule_filter_20260721`: all commands
-  completed, 92 extracted and normalized tables and 81 parsed tables were
-  produced, and all 196 compared canonical table artifacts are byte-identical
-  to the retained gutter baseline. Raw visual components and the corrected eGDR
-  figure candidates remain unchanged. A subsequent focused correction now uses
-  the extended drawing hierarchy only for visual components and restores the
-  ordinary `get_drawings()` input for both rule projections. The five affected
-  papers were rerun in
-  `outputs/figure_scope_step1_rule_isolation_focused_20260721`: every
-  `rule_segments` and `stroked_rule_segments` list exactly matches the retained
-  pre-visual baseline, all other artifacts match after excluding intended
-  figure fields and report timestamps, and visual components, figure scopes,
-  and composites are unchanged from the preceding Step 6 run. Revised Step 6
-  is complete in
-  `outputs/testpapers_batch_figure_scope_step6_atomic_20260721`. It persists one
-  four-field composite per accepted scope and one two-field page traversal that
-  substitutes each composite exactly once for its caption and internal blocks.
-  All 28 PDFs completed: 95 scopes yielded 63 accepted figures, 32 rejected
-  scopes, 63 composites, and 63 atomic page traversals. There were no new
-  unclaimed-intersection rejections, duplicate claims, bbox-union failures,
-  exposed member blocks, or composite IDs in existing layout candidates. After
-  the three figure-candidate fields, visual components, and report timestamps
-  are removed, every persisted artifact matches the retained gutter baseline.
-  The focused run in
-  `outputs/figure_scope_step6_atomic_focused_20260721` also preserves the 41 x 5
-  printed Table 1 on PDF page 5 of `fld.pdf` and accepts the expected atlas,
-  EWAS, and eGDR figures. Step 7 canonical ownership is complete in
-  `outputs/testpapers_batch_figure_scope_step7_cutover_20260721`. All 28 PDFs
-  completed. The 63 accepted scopes now resolve to 63 canonical figure entities
-  owning 533 blocks; 32 rejected scopes remain diagnostics. The canonical
-  traversal covers all 336 PDF pages, emits every figure entity once, and emits
-  none of its caption or internal blocks. Block, visual, rule, and layout
-  evidence is unchanged, and the prose/entity/residual ownership partition is
-  complete and pairwise disjoint. The Step 6 candidate composite and traversal
-  fields are retired. All artifacts other than `paper_document.json` match the
-  Step 6 run; `NutritionEx.pdf` differs only because this invocation records
-  `inst/extdata/NutritionEx.pdf` instead of its absolute path, plus report
-  timestamps. Its table data and geometry are unchanged. At that checkpoint,
-  gutter and block-layout participation remained unimplemented.
-  The narrow figure-blob Step 1 checkpoint is complete in
-  `outputs/testpapers_batch_figure_blob_step1_20260721`. Accepted figure
-  entities are now materialized immediately after figure-scope validation and
-  before the existing all-block gutter calculation; figure-member blocks,
-  orientation groups, and the operative layout input remain unchanged pending
-  Step 2. All 28 PDFs completed with 92 extracted and normalized tables and 81
-  parsed tables. The run retains the same 63 accepted figures, 533 owned
-  member blocks, and 32 rejected scopes as the Step 7 baseline. Every block
-  registry, accepted figure entity, rejected scope, and canonical structure is
-  identical to that baseline. The worktree's separate gutter-track refinement
-  produces expected `paper_document.json` layout differences and improves the
-  bibliography to reference 41 in `NutritionEx.pdf` and reference 39 in
-  `fld.pdf`; `periodontitis.pdf` retains reference 19 on PDF page 12. Those
-  layout and bibliography differences are not decisions introduced by the
-  Step 1 entity-materialization move.
-  Figure-blob Step 2 is complete in
-  `outputs/testpapers_batch_figure_blob_step2_20260721`. The unchanged gutter
-  builder now receives every non-figure block plus one opaque composite-bbox
-  unit for each accepted figure; all 533 figure-member blocks remain in the
-  registry but no longer participate independently in layout. The figure box
-  is placed once in its caption block's orientation group, and eight secondary
-  orientation groups containing only hidden member blocks now emit empty text
-  layouts. All 28 PDFs completed. The layout covers 4,173 structural units
-  exactly once, including all 63 accepted figures and no exposed member block,
-  across 515 regions, 898 columns, and 383 positive gutters; no coverage,
-  uniqueness, or gutter invariant failed. Relative to Step 1, only
-  `paper_document.json` changes in the 21 papers containing accepted figures.
-  After the three orientation-group layout fields are removed, all 28
-  documents are identical, and all 1,033 other paper, bibliography,
-  extraction, normalization, semantic, and parsed-table artifacts are
-  unchanged. `NutritionEx.pdf`, PDF page 11, still reaches reference 41;
-  `fld.pdf`, PDF page 12, still reaches reference 39; and
-  `periodontitis.pdf`, PDF page 12, retains reference 19.
-  Figure-blob Step 3 is complete in
-  `outputs/testpapers_batch_figure_blob_step3_20260721`.
-  `PaperDocument.structure` now exactly flattens the accepted page layout in
-  existing orientation-group, region, start-column, canonical-top, and source
-  tie-break order. The former registry-order plus first-member-substitution
-  path is removed. All 28 PDFs completed, and all 336 page structures match
-  their layout placements exactly. The traversal covers the same 4,173 units
-  once, emits all 63 figures once, and emits none of their 533 member blocks.
-  Seventy-nine PDF pages change structure order across 26 papers. After
-  replacing only `structure` with the Step 3 value, every
-  `paper_document.json` matches Step 2; all other 1,033 artifacts are unchanged.
-  Figure-blob Step 4 is complete in
-  `outputs/testpapers_batch_figure_blob_step4_20260721`. The established prose
-  candidate rules now consume ordinary blocks in the flattened layout order;
-  accepted figure units are skipped without opening any of their 533 member
-  blocks. All 28 PDFs completed, all 336 structures still match their layout
-  placements, and the 4,173 structural units and prose/entity/residual ownership
-  partitions pass exact coverage and uniqueness checks. Prose changes in 12
-  papers across 19 PDF pages: six papers change order only, while six gain seven
-  blocks through the unchanged existing continuation and heading-adjacency
-  rules; no prose block is removed. The current classifier consequently promotes
-  the author-list block on PDF page 1 of `Asthma prevalence among United States
-  population insights from NHANES data analysis.pdf`; this known limitation is
-  accepted for the narrow traversal cutover and will be handled by later prose
-  classification refinement. `paper_bibliography.json`, bibliography regions
-  and ownership, and all extraction, normalization, semantic, and parsed-table
-  artifacts remain unchanged apart from existing report timestamps.
-  Figure-blob Step 5 and the final corpus review are complete in
-  `outputs/testpapers_batch_figure_blob_step5_20260721`. Bibliography heading
-  discovery, numbered starts, continuation evidence, and the existing
-  unnumbered route now consume the same flattened ordinary-block traversal as
-  prose; figure units are skipped, and the global classified-line and registry-
-  block ordering inputs are removed. No item, ownership, mask, rescue, or
-  fallback rule changed. Relative to Step 4, all 1,061 persisted files are
-  substantively identical after generated report timestamps are removed. The
-  final output contains 1,373 entries in 29 bibliography entities owning 579
-  blocks: 26 papers use numbered entries and two use the retained unnumbered
-  route. Against the pre-blob Step 7 baseline, the improved gutters add
-  references 28–41 on PDF page 11 of `NutritionEx.pdf`, references 27–39 on PDF
-  page 12 of `fld.pdf`, and the continuation lines for reference 19 on PDF page
-  12 of `periodontitis.pdf`. Those changes add 27 entries, extend three prior
-  terminal entries, add 32 owned blocks, and expand masks on only those three
-  pages; no ownership or mask line is removed. All 28 PDFs complete, every one
-  of the 4,173 structural units is placed once, all 63 figures remain opaque,
-  all 533 member blocks and 828 visual references remain explicitly inspectable,
-  and all 383 gutters and 898 columns are positive and non-overlapping with no
-  region boundary cutting a unit. After normalizing the invocation-path-only
-  `source_pdf` difference for `NutritionEx.pdf`, extraction, normalization,
-  semantic, and parsed-table artifacts are unchanged. The exact page, prose,
-  region, entry, ownership, and mask comparison is recorded in
-  `tmp/figure_blob_step6_corpus_comparison_20260721.md`.
 
 ## Next Bibliography Work
 
@@ -912,11 +705,7 @@ artifacts with raw values preserved.
   `PaperDocument` block registry, and all footnote projections match. Against
   `outputs/testpapers_batch_external_footer_prose_veto_final_20260724`, every
   artifact is substantively identical after removing the new field and
-  generated quality-report timestamps. The existing failure on PDF pages 6–7,
-  printed Table 1, of `Helicobacter pylori infection in the United States
-  beyond NHANES- a scoping review of seroprevalence estimates by racial and
-  ethnic groups.pdf` remains unchanged at `table_definition` with
-  `no_variables_for_descriptive_table`. No new artifact, footer decision,
+  generated quality-report timestamps. No new artifact, footer decision,
   fallback, or numeric layout tolerance was added.
 - [ ] Review or explicitly accept the deferred corpus gaps and uncertainties in
   `docs/implementation/corpus_artifact_uncertainties_20260715.md`. This records

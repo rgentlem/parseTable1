@@ -125,6 +125,7 @@ def build_table_region(
 
     caption_rows: list[int] = []
     preamble_rows: list[int] = []
+    continuation_note_rows: list[int] = []
     header_rows: list[int]
     body_rows: list[int]
     footer_rows: list[int] = []
@@ -174,6 +175,7 @@ def build_table_region(
             n_cols=table.n_cols,
             caption_rows=caption_rows,
             preamble_rows=preamble_rows,
+            continuation_note_rows=continuation_note_rows,
             column_header_rows=[],
             body_rows=[],
             footer_note_rows=[],
@@ -215,6 +217,31 @@ def build_table_region(
         for row_idx in local_body_rows
         if any(clean_text(cell) for cell in content_grid[row_idx])
     ]
+    detected_preamble_rows = header_detection.get("preamble_rows")
+    detected_post_header_note_rows = header_detection.get("post_header_note_rows")
+    detected_continuation_note_rows = header_detection.get("continuation_note_rows")
+    if isinstance(detected_preamble_rows, list):
+        preamble_rows.extend(
+            row_idx + content_start
+            for row_idx in detected_preamble_rows
+            if isinstance(row_idx, int)
+        )
+    if isinstance(detected_post_header_note_rows, list):
+        preamble_rows.extend(
+            row_idx + content_start
+            for row_idx in detected_post_header_note_rows
+            if isinstance(row_idx, int)
+        )
+    preamble_rows = sorted(set(preamble_rows))
+    continuation_note_rows = (
+        sorted(
+            row_idx + content_start
+            for row_idx in detected_continuation_note_rows
+            if isinstance(row_idx, int)
+        )
+        if isinstance(detected_continuation_note_rows, list)
+        else []
+    )
     header_body_rule = header_detection.get("separator_rule_y")
     header_body_rule_y = (
         float(header_body_rule) if isinstance(header_body_rule, (int, float)) else None
@@ -937,6 +964,7 @@ def build_table_region(
         n_cols=table.n_cols,
         caption_rows=caption_rows,
         preamble_rows=preamble_rows,
+        continuation_note_rows=continuation_note_rows,
         column_header_rows=header_rows,
         body_rows=body_rows,
         footer_note_rows=footer_rows,

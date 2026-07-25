@@ -713,7 +713,7 @@ def build_resolved_table_set(
             )
             if (
                 prefix_resolved is not None
-                and prefix_resolved.resolution_type == "singleton"
+                and prefix_resolved.resolution_type in {"singleton", "integrated_continuation"}
                 and not _has_table_identity(prefix_table)
                 and isinstance(prefix_page, int)
                 and not isinstance(prefix_page, bool)
@@ -754,7 +754,11 @@ def build_resolved_table_set(
                             provenance.model_copy(
                                 update={
                                     "resolved_row_idx": resolved_row_idx,
-                                    "source_role": "base_fragment",
+                                    **(
+                                        {"source_role": "base_fragment"}
+                                        if prefix_resolved.resolution_type == "singleton"
+                                        else {}
+                                    ),
                                 }
                             )
                         )
@@ -861,7 +865,11 @@ def build_resolved_table_set(
                         if row_view.row_idx != dropped_prefix_row_idx
                     ]
                     integrated_source_table_ids = [*prefix_resolved.source_table_ids, table.table_id]
-                    integrated_table_id = f"{prefix_resolved.table_id}-resolved-continuation"
+                    integrated_table_id = (
+                        prefix_resolved.table_id
+                        if prefix_resolved.resolution_type == "integrated_continuation"
+                        else f"{prefix_resolved.table_id}-resolved-continuation"
+                    )
                     integrated_boundaries = [*prefix_resolved.integration_boundaries, integration_boundary]
                     integrated_metadata = {
                         **prefix_resolved.table.metadata,
@@ -936,7 +944,7 @@ def build_resolved_table_set(
                             confidence=0.95,
                         )
                     )
-                    if prefix_index < len(source_tables):
+                    if prefix_index < len(source_tables) and prefix_resolved.resolution_type == "singleton":
                         source_tables[prefix_index] = source_tables[prefix_index].model_copy(
                             update={
                                 "role": "base_fragment",

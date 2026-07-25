@@ -616,8 +616,12 @@ An explicit continuation cue at the end of a candidate is not a table row.
 an explicit next-page continuation note, only when that suffix row has no
 table-value cells. `metadata.trailing_non_table_rows` preserves the raw cue,
 its former row position, and the removal reason while the shared positioned
-document retains the source line. A first row on the continuation fragment is
-kept as table data when at least one non-stub cell contains a value; this is why
+document retains the source line. When a typed `to_next_page` table mention
+directly establishes a caption-and-rule candidate region, the same metadata
+path preserves its mention ID, source line and bbox, continuation role, and
+candidate-region provenance without reclassifying it as a caption or matching
+its cleaned text again. A first row on the continuation fragment is kept as
+table data when at least one non-stub cell contains a value; this is why
 `Missing values | 9303 (14.5)` remains part of the continued Asthma Table 1.
 
 The similarly shaped internal `ProvisionalExtractedTable` exists only before
@@ -971,12 +975,14 @@ inherit that parent group tree; a contradictory continuation group is not
 ignored.
 
 Continuation integration is not limited to captions that appear above the first
-fragment. If a strong uncaptained table fragment is immediately followed by a
+fragment. If a strong uncaptioned table fragment, including the last source
+fragment in an already integrated prefix, is immediately followed by a
 captioned fragment whose column schema matches, the captioned terminal fragment
-can supply the logical table identity for the earlier fragment. In that case
-the earlier fragment's headers are carried forward, the repeated terminal
-header row is dropped, and the below-captioned fragment's body rows are
-appended with source-row provenance.
+can supply the logical table identity for the earlier chain. An integrated
+prefix keeps its resolved-table ID, prior source roles, row provenance, and
+existing boundaries; the terminal fragment is appended as a continuation with
+one new boundary. The earlier headers are carried forward and the repeated
+terminal header row is dropped.
 
 The parser still writes the older continuation inspection artifacts for review.
 Those artifacts remain useful for checking source-fragment continuation

@@ -30,6 +30,7 @@ class TableRegion(BaseModel):
     n_cols: int = Field(ge=0)
     caption_rows: list[int] = Field(default_factory=list)
     preamble_rows: list[int] = Field(default_factory=list)
+    continuation_note_rows: list[int] = Field(default_factory=list)
     column_header_rows: list[int] = Field(default_factory=list)
     body_rows: list[int] = Field(default_factory=list)
     footer_note_rows: list[int] = Field(default_factory=list)

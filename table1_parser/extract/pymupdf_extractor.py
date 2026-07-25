@@ -1597,11 +1597,68 @@ def _build_rule_span_candidates(
             paper_table_mentions=[mention],
             candidate_region_bbox=selected_region,
         ):
+            trailing_non_table_rows = candidate.metadata.get(
+                "trailing_non_table_rows"
+            )
+            if mention.continuation_role == "to_next_page":
+                existing_trailing_metadata = (
+                    trailing_non_table_rows
+                    if isinstance(trailing_non_table_rows, dict)
+                    else {}
+                )
+                existing_reasons = existing_trailing_metadata.get("reasons")
+                existing_note_texts = existing_trailing_metadata.get(
+                    "continuation_note_texts"
+                )
+                trailing_non_table_rows = {
+                    **existing_trailing_metadata,
+                    "reasons": list(
+                        dict.fromkeys(
+                            [
+                                *(
+                                    [str(reason) for reason in existing_reasons]
+                                    if isinstance(existing_reasons, list)
+                                    else []
+                                ),
+                                "trailing_continuation_note",
+                            ]
+                        )
+                    ),
+                    "continuation_note_texts": list(
+                        dict.fromkeys(
+                            [
+                                *(
+                                    [str(text) for text in existing_note_texts]
+                                    if isinstance(existing_note_texts, list)
+                                    else []
+                                ),
+                                mention.source_line_text,
+                            ]
+                        )
+                    ),
+                    "continuation_table_number": (
+                        int(mention.table_number)
+                        if mention.table_number.isdigit()
+                        else existing_trailing_metadata.get(
+                            "continuation_table_number"
+                        )
+                    ),
+                    "continuation_mention_provenance": {
+                        "source_artifact": mention.source_artifact,
+                        "mention_id": mention.mention_id,
+                        "source_line_id": mention.source_line_id,
+                        "source_line_bbox": list(mention.source_line_bbox),
+                        "continuation_role": mention.continuation_role,
+                        "candidate_region_source": "caption_and_rule_geometry",
+                        "candidate_rule_span": [left, top, right, bottom],
+                    },
+                }
             candidates.append(
                 candidate.model_copy(
                     update={
                         "metadata": {
                             **candidate.metadata,
+                            "trailing_non_table_rows": trailing_non_table_rows,
                             "candidate_region_source": "caption_and_rule_geometry",
                             "candidate_rule_span": [left, top, right, bottom],
                             **(

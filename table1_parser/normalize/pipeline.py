@@ -65,6 +65,7 @@ def normalize_extracted_table(
         "table_region_confidence": table_region.confidence,
         "caption_rows": list(table_region.caption_rows),
         "preamble_rows": list(table_region.preamble_rows),
+        "continuation_note_rows": list(table_region.continuation_note_rows),
         "footer_note_rows": list(table_region.footer_note_rows),
         "diagnostics": list(table_region.diagnostics),
     }

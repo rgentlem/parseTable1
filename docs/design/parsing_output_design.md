@@ -283,10 +283,13 @@ Design intent:
   candidate bbox touches ignored furniture; it records
   `metadata.page_furniture_mask` when positioned words, chars, or explicit-grid
   rows are actually removed.
-- extraction removes explicit trailing continuation-page cues such as
-  `(Table 1 continues on next page)` or a standalone final `Continued` row only
-  when the cue row contains no table-value cells. The removed range and raw cue
-  text are recorded in `metadata.trailing_non_table_rows`; the positioned line
+- extraction excludes explicit trailing continuation-page cues such as
+  `(Table 1 continues on next page)` or a standalone final `Continued` row from
+  table data only when the cue is a typed `to_next_page` table mention used to
+  establish that candidate region, or when its grid row contains no table-value
+  cells. `metadata.trailing_non_table_rows` records the cue and removal reason;
+  mention-backed records also preserve the mention ID, source line and bbox,
+  continuation role, and candidate-region provenance. The positioned line
   remains in the shared document evidence. Broad footer/furniture cleanup
   belongs to the earlier page-furniture mask, not to value-gap trailing-row
   heuristics.
@@ -459,8 +462,11 @@ Design intent:
 
 Important fields:
 
-- `caption_rows`, `preamble_rows`, `column_header_rows`, `body_rows`, and
-  `footer_note_rows`: row-index lists in extracted-table row space
+- `caption_rows`, `preamble_rows`, `continuation_note_rows`,
+  `column_header_rows`, `body_rows`, and `footer_note_rows`: row-index lists in
+  extracted-table row space. Detector-typed leading preamble and post-header
+  note rows receive preamble ownership; `continuation_note_rows` preserves the
+  typed continuation-note subset for downstream continuation checks.
 - `footer_line_ids`: ordered positioned source-line IDs accepted by the final
   footer decision for either internal grid rows or an external adjacent band
 - `row_regions`: one role assignment per extracted row with detection basis and
@@ -574,7 +580,7 @@ Design intent:
 - normalization records a non-operative comparison of structural header/body
   evidence for inspection; it does not use that comparison to revise the
   `TableRegion` decision
-- when full-width horizontal rules identify a header band, `metadata.header_detection` may record `preamble_rows` above that band and `separator_body_support` explaining whether the body starts with a value-dense row or with a sparse parent/reference row followed by value rows
+- when full-width horizontal rules identify a header band, `metadata.header_detection` may record `preamble_rows` outside the header/body bands, the typed `continuation_note_rows` subset, and `separator_body_support` explaining whether the body starts with a value-dense row or with a sparse parent/reference row followed by value rows
 - those repairs should be driven by row-style expectations and body-value patterns, not by paper-specific header templates
 - normalization may also repair a small set of extractor-facing glyph-to-Unicode failures in parser-facing text, such as a broken replacement character before a numeric threshold becoming `<=`
 - these symbol repairs belong in normalized text only; the original extracted cell text remains preserved in `ExtractedTable`
