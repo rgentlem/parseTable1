@@ -6,7 +6,7 @@ The system works as a multi-stage parser:
 1. Extract tables from PDFs.
 2. Normalize them into a structured intermediate representation.
 3. Parse them into variables, categorical levels, column roles, and values.
-4. Use deterministic heuristics plus LLM assistance where needed.
+4. Use deterministic heuristics.
 5. Output normalized structured representations of the table.
 
 The full architecture specification is in:
@@ -33,6 +33,15 @@ Before starting parser work, also check:
 docs/implementation/parser_todo.md
 
 Use this file as the persistent implementation ToDo list. When work resolves, changes, or creates an important parser priority, update the ToDo list in the same change so project context does not get lost. Keep detailed epidemiology-table reasoning and implementation planning there or in a linked implementation note, not in the high-level design docs unless the schema, artifact contract, or pipeline design actually changes.
+
+## Context discipline
+
+- Read only the documents required by this file and those directly necessary
+  for the current task. Do not load additional related design documents merely
+  for background.
+- Keep source inspection targeted. Use searches and narrow line ranges; do not
+  return whole files or excessively large excerpts when a smaller excerpt or
+  summary is sufficient.
 
 ## Canonical Paper Document Contract
 
@@ -326,7 +335,7 @@ When adding new capabilities, prefer designs that create stable computable artif
 # Architectural Principles
 
 Agents must follow these design principles.
-Extraction, normalization, heuristics, LLM interpretation, and validation must remain separate modules.
+Extraction, normalization, heuristics, and validation must remain separate modules.
 
 ## Repository size limits
 
@@ -336,7 +345,7 @@ Do not generate large example datasets or logs.
 
 ### Separation of responsibilities
 
-Extraction, normalization, heuristics, LLM interpretation, and validation must be separate modules.
+Extraction, normalization, heuristics, and validation must be separate modules.
 
 Never combine them into one step.
 
@@ -368,7 +377,7 @@ Important cross-language rule:
 
 Use rule-based parsing wherever possible.
 
-LLM usage should be limited to semantic disambiguation, not raw extraction.
+LLM use is prohibited.
 
 Paper-level candidate variable inventories are a first-class design artifact for later cross-table consistency.
 Keep them explicit, inspectable, and easy to consume from R.
@@ -472,17 +481,6 @@ Domain vocabulary can be used only as weak semantic evidence after the structura
 
 For multi-row column headers specifically: rows below the horizontal rule that separates headers from data are leaf-column headers; if that leaf-header area has multiple physical rows, treat them first as wrapped text for the same leaf headers. Rows above that rule may become spanning groups only when their cells cover multiple lower-level leaves or groups. If additional rules split higher header bands, process those bands recursively by geometry. Do not promote a physical row into a semantic hierarchy level just because it contains recognizable words.
 
-### LLM safety rules
-
-When the LLM is used:
-
-- It must never invent rows or columns
-- It must only refer to rows that exist in the table
-- It must return structured JSON
-- All results must be validated before being accepted
-- LLM prompts should remain scoped to one table at a time
-- Cross-table consistency should come from separate paper-level artifacts, not from multi-table prompting
-
 ### Preserve raw data
 
 Raw extracted cell values must never be discarded.
@@ -516,79 +514,4 @@ Public functions must include type hints.
 ## Data models
 
 Use the simplest typed structure that provides concrete value for the artifact
-or boundary in question. Pydantic is prohibited by default. Do not introduce it
-for convention, uniformity, serialization convenience, or because adjacent
-code uses it.
-
-Pydantic may be used only when a concrete, testable benefit is demonstrated for
-that specific boundary, such as required external-input validation, settings
-loading, LLM response enforcement, or runtime contract validation, and a
-simpler typed structure cannot provide it. Record that evidence before adding
-the dependency or model. Before implementing any Pydantic use, explicitly tell
-the user that Pydantic is proposed, state the demonstrated benefit and the
-simpler alternatives considered, and wait for explicit approval. Existing
-Pydantic code is not precedent for new Pydantic code; its value is subject to
-the audit recorded in `docs/implementation/parser_todo.md`.
-
-Avoid unstructured dictionaries when a stable shape is genuinely required,
-but do not replace them automatically with a modeling framework or a hierarchy
-of wrapper objects.
-
-## File organization
-
-Follow the structure defined in:
-
-docs/design/codex_build_spec.md
-
-Do not collapse modules into one file.
-
-## Tests
-
-This repository intentionally has no pytest suite. Do not add, run, suggest, or
-ask to restore pytest tests unless the user explicitly requests reinstating
-pytest. Validate parser changes through the approved real-paper checks.
-
----
-
-# Style Guidelines
-
-Prefer:
-
-- small, focused modules
-- pure functions where possible
-- clear docstrings
-- explicit data models
-
-Avoid:
-
-- global state
-- large monolithic classes
-- hidden side effects
-
----
-
-# Error Handling
-
-Extraction pipelines must fail gracefully.
-
-If a table cannot be parsed:
-
-- return a structured error
-- do not crash the pipeline
-
----
-
-# What Agents Should NOT Do
-
-Do not:
-
-- attempt to solve the entire pipeline in one module
-- skip schema definitions
-- rely entirely on LLM interpretation
-- assume all tables have identical structure
-
-Table 1 formats vary across journals.
-
-The system must be robust to variation.
-
----
+or boundary in question. Pydantic is prohibited.
