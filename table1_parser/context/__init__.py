@@ -1,6 +1,10 @@
 """Document-context extraction and retrieval helpers."""
 
-from table1_parser.context.paper_document_builder import build_paper_document
+from table1_parser.context.paper_document_builder import (
+    PaperDocumentBuildState,
+    build_paper_document_state,
+    finalize_paper_document,
+)
 from table1_parser.context.paper_positioned_document import build_paper_positioned_document
 from table1_parser.context.retrieval import (
     build_table_contexts,
@@ -23,7 +27,9 @@ from table1_parser.context.visual_references import annotate_visual_reference_ch
 
 __all__ = [
     "build_table_contexts",
-    "build_paper_document",
+    "PaperDocumentBuildState",
+    "build_paper_document_state",
+    "finalize_paper_document",
     "build_paper_positioned_document",
     "build_paper_sections_from_document",
     "build_paper_table_mentions",

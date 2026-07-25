@@ -18,7 +18,10 @@ from table1_parser.extract.layout_fallback import (
 )
 from table1_parser.extract.provisional_table import ProvisionalExtractedTable
 from table1_parser.context.paper_positioned_document import build_paper_positioned_document
-from table1_parser.context.paper_document import iter_paper_document_lines
+from table1_parser.context.paper_document import (
+    iter_paper_discovery_lines,
+)
+from table1_parser.paper_discovery import PaperDiscoveryState
 from table1_parser.extract.table_detector import (
     DetectedTableCandidate,
 )
@@ -65,17 +68,17 @@ def _caption_label_assignments(
     *,
     page_num: int,
     candidate_metadata: Sequence[dict[str, Any]],
-    paper_document: dict[str, object] | None,
+    paper_discovery: PaperDiscoveryState | None,
     paper_document_lines: Sequence[object],
     paper_table_mentions: Sequence[PaperTableMention] | None,
 ) -> dict[int, tuple[TableCaptionRegion, TableCaptionBinding]]:
     """Bind PyMuPDF caption-label lines to table regions in canonical geometry."""
-    if paper_document is None or not paper_table_mentions:
+    if paper_discovery is None or not paper_table_mentions:
         return {}
     page = next(
         (
             item
-            for item in paper_document["pages"]
+            for item in paper_discovery.pages
             if item["page_num"] == page_num
         ),
         None,
@@ -352,12 +355,12 @@ def _complete_caption_region(
 def _apply_complete_caption_bindings(
     candidates: Sequence[DetectedTableCandidate],
     *,
-    paper_document: dict[str, object] | None,
+    paper_discovery: PaperDiscoveryState | None,
     paper_document_lines: Sequence[object],
     paper_table_mentions: Sequence[PaperTableMention] | None,
 ) -> list[DetectedTableCandidate]:
     """Replace provisional captions with complete PyMuPDF caption regions."""
-    if paper_document is None or not paper_table_mentions:
+    if paper_discovery is None or not paper_table_mentions:
         return [
             candidate.model_copy(
                 update={
@@ -387,7 +390,7 @@ def _apply_complete_caption_bindings(
         assignments = _caption_label_assignments(
             page_num=page_num,
             candidate_metadata=[candidate.metadata for candidate in page_candidates],
-            paper_document=paper_document,
+            paper_discovery=paper_discovery,
             paper_document_lines=paper_document_lines,
             paper_table_mentions=paper_table_mentions,
         )
@@ -456,29 +459,22 @@ def _apply_complete_caption_bindings(
 
 
 def _bibliography_evidence_masks_by_page(
-    paper_document: dict[str, object] | None,
+    paper_discovery: PaperDiscoveryState | None,
     paper_document_lines: Sequence[object],
 ) -> dict[int, BibliographyEvidenceMask]:
     """Build page-local masks from bibliography-owned canonical blocks."""
-    if paper_document is None:
+    if paper_discovery is None:
         return {}
     line_by_id = {
         line.line_id: line
         for line in paper_document_lines
     }
-    bibliography_block_ids = {
-        str(block_id)
-        for entity in paper_document["entities"]
-        if entity["kind"] == "bibliography"
-        for component in entity["components"]
-        for block_id in component["block_ids"]
-    }
     blocks_by_id = {
-        str(block["block_id"]): block for block in paper_document["blocks"]
+        str(block["block_id"]): block for block in paper_discovery.blocks
     }
     bibliography_line_ids = {
         str(line_id)
-        for block_id in bibliography_block_ids
+        for block_id in paper_discovery.bibliography_block_ids
         for line_id in blocks_by_id[block_id]["line_ids"]
     }
     source_line_ids_by_page: dict[int, set[str]] = {}
@@ -623,14 +619,14 @@ class PyMuPDFExtractor(BaseExtractor):
         paper_page_furniture: PaperPageFurniture | None = None,
         paper_positioned_document: PaperPositionedDocument | None = None,
         paper_table_mentions: Sequence[PaperTableMention] | None = None,
-        paper_document: dict[str, object] | None = None,
+        paper_discovery: PaperDiscoveryState | None = None,
     ) -> list[ProvisionalExtractedTable]:
         """Extract and rank raw table candidates from a PDF."""
         try:
             positioned_document = paper_positioned_document or build_paper_positioned_document(pdf_path)
             document_lines = (
-                list(iter_paper_document_lines(paper_document, positioned_document))
-                if paper_document is not None
+                list(iter_paper_discovery_lines(paper_discovery, positioned_document))
+                if paper_discovery is not None
                 else []
             )
             candidates = self._detect_table_candidates(
@@ -638,7 +634,7 @@ class PyMuPDFExtractor(BaseExtractor):
                 paper_page_furniture=paper_page_furniture,
                 paper_positioned_document=positioned_document,
                 paper_table_mentions=paper_table_mentions,
-                paper_document=paper_document,
+                paper_discovery=paper_discovery,
                 paper_document_lines=document_lines,
             )
         except Exception:
@@ -656,14 +652,14 @@ class PyMuPDFExtractor(BaseExtractor):
             return []
         selected_candidates = _apply_complete_caption_bindings(
             selected_candidates,
-            paper_document=paper_document,
+            paper_discovery=paper_discovery,
             paper_document_lines=document_lines,
             paper_table_mentions=paper_table_mentions,
         )
 
         pages_by_num = {page.page_num: page for page in positioned_document.pages}
         bibliography_masks_by_page = _bibliography_evidence_masks_by_page(
-            paper_document,
+            paper_discovery,
             document_lines,
         )
         filtered_items_by_page: dict[int, tuple[list[dict[str, object]], list[dict[str, object]]]] = {}
@@ -696,7 +692,7 @@ class PyMuPDFExtractor(BaseExtractor):
 
         document_pages_by_num = {
             page["page_num"]: page
-            for page in (paper_document["pages"] if paper_document is not None else [])
+            for page in (paper_discovery.pages if paper_discovery is not None else [])
         }
         candidates_with_positioned_evidence: list[DetectedTableCandidate] = []
         for candidate in selected_candidates:
@@ -822,7 +818,7 @@ class PyMuPDFExtractor(BaseExtractor):
         paper_page_furniture: PaperPageFurniture | None = None,
         paper_positioned_document: PaperPositionedDocument | None = None,
         paper_table_mentions: Sequence[PaperTableMention] | None = None,
-        paper_document: dict[str, object] | None = None,
+        paper_discovery: PaperDiscoveryState | None = None,
         paper_document_lines: Sequence[object] = (),
     ) -> list[DetectedTableCandidate]:
         positioned_document = paper_positioned_document or build_paper_positioned_document(pdf_path)
@@ -832,7 +828,7 @@ class PyMuPDFExtractor(BaseExtractor):
         }
         document_pages_by_num = {
             page["page_num"]: page
-            for page in (paper_document["pages"] if paper_document is not None else [])
+            for page in (paper_discovery.pages if paper_discovery is not None else [])
         }
         text_lines_by_page: dict[int, list[object]] = {}
         for line in paper_document_lines:
@@ -840,7 +836,7 @@ class PyMuPDFExtractor(BaseExtractor):
         candidates: list[DetectedTableCandidate] = []
         try:
             bibliography_masks_by_page = _bibliography_evidence_masks_by_page(
-                paper_document,
+                paper_discovery,
                 paper_document_lines,
             )
             abstract_intervals = _abstract_intervals_by_page(positioned_document)

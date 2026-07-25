@@ -30,76 +30,81 @@ FIGURE_CAPTION_PATTERN = re.compile(
 
 
 def build_table_visuals(
+    paper_document: dict[str, object],
     extracted_tables: list[ExtractedTable],
     table_definitions: list[TableDefinition],
 ) -> list[PaperVisual]:
-    """Build paper visual records for extracted tables with explicit table labels."""
+    """Build table visuals only from canonical table entities."""
+    blocks_by_id = {
+        str(block["block_id"]): block for block in paper_document["blocks"]
+    }
+    extracted_by_id = {table.table_id: table for table in extracted_tables}
     definitions_by_id = {definition.table_id: definition for definition in table_definitions}
     visuals_by_id: dict[str, PaperVisual] = {}
-    for table_index, extracted_table in enumerate(extracted_tables):
-        definition = definitions_by_id.get(extracted_table.table_id)
+    for entity in paper_document["entities"]:
+        if entity["kind"] != "table":
+            continue
+        evidence = entity.get("evidence") or {}
+        resolved_table_id = str(evidence.get("resolved_table_id") or "")
+        source_table_ids = [
+            str(content_ref["artifact_id"])
+            for component in entity["components"]
+            if component["role"] == "content"
+            for content_ref in component["content_refs"]
+            if content_ref["artifact_kind"] == "extracted_table"
+        ]
+        source_tables = [
+            extracted_by_id[table_id]
+            for table_id in source_table_ids
+            if table_id in extracted_by_id
+        ]
+        definition = definitions_by_id.get(resolved_table_id)
+        caption_blocks = [
+            blocks_by_id[str(block_id)]
+            for component in entity["components"]
+            if component["role"] == "caption"
+            for block_id in component["block_ids"]
+        ]
+        caption = clean_text(" ".join(str(block["text"]) for block in caption_blocks))
         candidate_texts = [
-            extracted_table.title,
-            extracted_table.caption,
+            caption,
+            *[table.title for table in source_tables],
+            *[table.caption for table in source_tables],
             definition.title if definition is not None else None,
             definition.caption if definition is not None else None,
         ]
         parsed = next((parsed for text in candidate_texts if text and (parsed := parse_visual_label(text))), None)
+        logical_table_number = evidence.get("logical_table_number")
+        if parsed is None and logical_table_number is not None:
+            number = str(logical_table_number)
+            parsed = ("table", number, f"Table {number}")
         if parsed is None:
-            continue
+            raise ValueError(f"Table entity has no resolvable label: {entity['entity_id']}.")
         visual_kind, number, label = parsed
         if visual_kind != "table":
-            continue
-        caption = clean_text(extracted_table.caption or (definition.caption if definition is not None else "") or "")
+            raise ValueError(f"Table entity resolved to a non-table label: {entity['entity_id']}.")
         visual_id = visual_id_for("table", number)
         if visual_id in visuals_by_id:
-            existing = visuals_by_id[visual_id]
-            notes = [*existing.notes]
-            duplicate_note = f"duplicate_source_table_id:{extracted_table.table_id}"
-            if duplicate_note not in notes:
-                notes.append(duplicate_note)
-            visuals_by_id[visual_id] = existing.model_copy(update={"notes": notes})
-            continue
+            raise ValueError(f"Table entities share visual identity {visual_id}.")
+        caption_placements = [
+            str(placement) for placement in evidence.get("caption_placements", [])
+        ]
         visuals_by_id[visual_id] = PaperVisual(
             visual_id=visual_id,
             visual_kind="table",
             label=label,
             number=number,
             caption=caption or None,
-            caption_source="extracted_table" if extracted_table.caption else "unknown",
-            page_num=extracted_table.page_num,
-            source_table_id=extracted_table.table_id,
-            source="table_extraction",
-            confidence=0.95,
-            notes=[f"source_table_order:{table_index}"],
-        )
-    for definition in table_definitions:
-        if definition.table_id in {visual.source_table_id for visual in visuals_by_id.values()}:
-            continue
-        parsed = next(
-            (parsed for text in [definition.title, definition.caption] if text and (parsed := parse_visual_label(text))),
-            None,
-        )
-        if parsed is None:
-            continue
-        visual_kind, number, label = parsed
-        if visual_kind != "table":
-            continue
-        visual_id = visual_id_for("table", number)
-        if visual_id in visuals_by_id:
-            continue
-        caption = clean_text(definition.caption or "")
-        visuals_by_id[visual_id] = PaperVisual(
-            visual_id=visual_id,
-            visual_kind="table",
-            label=label,
-            number=number,
-            caption=caption or None,
-            caption_source="unknown",
-            source_table_id=definition.table_id,
-            source="table_definition",
-            confidence=0.7,
-            notes=[],
+            caption_source="pdf_caption",
+            page_num=(int(caption_blocks[0]["page_num"]) if caption_blocks else None),
+            source_table_id=resolved_table_id or None,
+            source="paper_document_table_entity",
+            confidence=0.98,
+            notes=[
+                f"table_entity_id:{entity['entity_id']}",
+                *[f"source_extracted_table_id:{table_id}" for table_id in source_table_ids],
+                *[f"caption_placement:{placement}_table" for placement in caption_placements],
+            ],
         )
     return list(visuals_by_id.values())
 
@@ -147,8 +152,13 @@ def build_paper_visual_inventory(
     paper_positioned_document: PaperPositionedDocument | None = None,
 ) -> list[PaperVisual]:
     """Build the paper-level inventory of actual table and figure visuals."""
+    if paper_document is None:
+        raise ValueError("PaperDocument is required to build the visual inventory.")
     visuals_by_id: dict[str, PaperVisual] = {}
-    for visual in [*build_table_visuals(extracted_tables, table_definitions), *build_figure_visuals(sections)]:
+    for visual in [
+        *build_table_visuals(paper_document, extracted_tables, table_definitions),
+        *build_figure_visuals(sections),
+    ]:
         if visual.visual_id in visuals_by_id:
             existing = visuals_by_id[visual.visual_id]
             notes = [*existing.notes, *[note for note in visual.notes if note not in existing.notes]]
@@ -160,6 +170,29 @@ def build_paper_visual_inventory(
         if paper_document is not None and paper_positioned_document is not None
         else []
     )
+    table_entity_line_ids_by_visual_id: dict[str, set[str]] = {}
+    blocks_by_id = {
+        str(block["block_id"]): block for block in paper_document["blocks"]
+    }
+    for entity in paper_document["entities"]:
+        if entity["kind"] != "table":
+            continue
+        entity_visual = next(
+            (
+                visual
+                for visual in visuals_by_id.values()
+                if f"table_entity_id:{entity['entity_id']}" in visual.notes
+            ),
+            None,
+        )
+        if entity_visual is None:
+            raise ValueError(f"Table entity has no visual: {entity['entity_id']}.")
+        table_entity_line_ids_by_visual_id[entity_visual.visual_id] = {
+            str(line_id)
+            for component in entity["components"]
+            for block_id in component["block_ids"]
+            for line_id in blocks_by_id[str(block_id)]["line_ids"]
+        }
     for line_index, line in enumerate(text_lines):
         match = VISUAL_OBJECT_DOI_PATTERN.fullmatch(clean_text(line.raw_text))
         if match is None:
@@ -167,6 +200,11 @@ def build_paper_visual_inventory(
         visual_kind = "table" if match.group("object_kind").lower() == "t" else "figure"
         visual_id = visual_id_for(visual_kind, str(int(match.group("object_number"))))
         visual = visuals_by_id.get(visual_id)
+        if (
+            visual_kind == "table"
+            and line.line_id not in table_entity_line_ids_by_visual_id.get(visual_id, set())
+        ):
+            continue
         preceding_line = text_lines[line_index - 1] if line_index > 0 else None
         if (
             visual is None

@@ -16,6 +16,7 @@ TABLE_NUMBER_PATTERN = re.compile(r"\bTable\s+(\d+)\b", re.IGNORECASE)
 def build_table_contexts(
     sections: list[PaperSection],
     table_definitions: list[TableDefinition],
+    entity_table_ids: set[str],
     paper_visual_inventory: list[PaperVisual] | None = None,
     paper_references: list[PaperVisualReference] | None = None,
 ) -> list[TableContext]:
@@ -23,6 +24,7 @@ def build_table_contexts(
     return [
         build_table_context(table_index, definition, sections, paper_visual_inventory, paper_references)
         for table_index, definition in enumerate(table_definitions)
+        if definition.table_id in entity_table_ids
     ]
 
 

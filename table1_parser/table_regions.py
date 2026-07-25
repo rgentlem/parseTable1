@@ -5,9 +5,12 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping, Sequence
 
-from table1_parser.context.paper_document import iter_paper_document_lines
+from table1_parser.context.paper_document import (
+    iter_paper_discovery_lines,
+)
 from table1_parser.context.visual_references import VISUAL_OBJECT_DOI_PATTERN
 from table1_parser.normalize.header_detector import detect_header_rows_with_metadata
+from table1_parser.paper_discovery import PaperDiscoveryState
 from table1_parser.schemas import (
     CellTextAnnotationTable,
     ExtractedTable,
@@ -30,7 +33,7 @@ TABLE_CAPTION_PATTERN = re.compile(r"^\s*table\s*\d+\b", re.IGNORECASE)
 def build_table_regions(
     extracted_tables: Sequence[ExtractedTable],
     *,
-    paper_document: dict[str, object] | None = None,
+    paper_discovery: PaperDiscoveryState | None = None,
     paper_page_furniture: PaperPageFurniture | None = None,
     cell_text_annotations: Sequence[CellTextAnnotationTable] | None = None,
     table_boundary_proposals: Sequence[TableBoundaryProposal] | None = None,
@@ -66,8 +69,8 @@ def build_table_regions(
     positioned_text_lines_by_id = {
         line.line_id: line
         for line in (
-            iter_paper_document_lines(paper_document, paper_positioned_document)
-            if paper_document is not None and paper_positioned_document is not None
+            iter_paper_discovery_lines(paper_discovery, paper_positioned_document)
+            if paper_discovery is not None and paper_positioned_document is not None
             else []
         )
     }
@@ -76,41 +79,11 @@ def build_table_regions(
         for line in positioned_text_lines_by_id.values()
         if VISUAL_OBJECT_DOI_PATTERN.fullmatch(clean_text(line.raw_text)) is not None
     }
-    prose_owned_line_ids: set[str] | None = None
-    if paper_document is not None:
-        raw_blocks = paper_document.get("blocks")
-        raw_prose = paper_document.get("prose")
-        raw_segments = raw_prose.get("segments") if isinstance(raw_prose, Mapping) else None
-        if isinstance(raw_blocks, list) and isinstance(raw_segments, list):
-            prose_block_ids: set[str] = set()
-            for segment in raw_segments:
-                if not isinstance(segment, Mapping):
-                    continue
-                heading_block_ids = segment.get("heading_block_ids")
-                if isinstance(heading_block_ids, list):
-                    prose_block_ids.update(
-                        block_id for block_id in heading_block_ids if isinstance(block_id, str)
-                    )
-                paragraphs = segment.get("paragraphs")
-                if not isinstance(paragraphs, list):
-                    continue
-                for paragraph in paragraphs:
-                    if not isinstance(paragraph, Mapping):
-                        continue
-                    block_ids = paragraph.get("block_ids")
-                    if isinstance(block_ids, list):
-                        prose_block_ids.update(
-                            block_id for block_id in block_ids if isinstance(block_id, str)
-                        )
-            prose_owned_line_ids = {
-                line_id
-                for block in raw_blocks
-                if isinstance(block, Mapping)
-                and block.get("block_id") in prose_block_ids
-                and isinstance(block.get("line_ids"), list)
-                for line_id in block["line_ids"]
-                if isinstance(line_id, str)
-            }
+    prose_owned_line_ids = (
+        set(paper_discovery.prose_line_ids)
+        if paper_discovery is not None
+        else None
+    )
     return [
         build_table_region(
             table,

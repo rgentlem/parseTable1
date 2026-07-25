@@ -1,16 +1,42 @@
 # Parser ToDo
 
-> **Current checkpoint — 2026-07-21:** Figure-aware block layout is operative
-> for `PaperDocument.structure`, first-pass prose, and bibliography traversal.
-> The final 28-PDF run is
-> `outputs/testpapers_batch_figure_blob_step5_20260721`; detailed differences
-> are recorded in `tmp/figure_blob_step6_corpus_comparison_20260721.md`.
+> **Current checkpoint — 2026-07-24:** Canonical table-entity finalization is
+> implemented and validated across all 28 PDFs in
+> `outputs/testpapers_batch_paper_document_table_entity_step6_20260724`.
+> The known entity-eligibility and footnote-input exception is the first
+> priority below.
 
 This is the persistent implementation ToDo list for parser work. Agents should check it before changing extraction, normalization, row/column semantics, table routing, value parsing, diagnostics, or R inspection helpers. Update it when a task is completed, reprioritized, split, or superseded.
 
 Keep detailed implementation notes and epidemiology-table reasoning here or in linked implementation documents. Keep high-level design docs focused on stable pipeline shape, schemas, persisted artifact contracts, and durable architecture decisions.
 
 ## Current Priorities
+
+- [ ] Repair canonical table-entity eligibility for valid tables whose typed
+  continuation or title/preamble rows remain unassigned, then revert the
+  Step 5 entity-only filtering of footnote-anchor inputs while the ownership
+  correction is developed. Step 6 completed all 28 PDFs in
+  `outputs/testpapers_batch_paper_document_table_entity_step6_20260724` and
+  validated exact ownership, 72 logical table entities, and 81 physical table
+  references, but found this one failure class in three papers:
+  `Helicobacter pylori infection in the United States beyond NHANES- a scoping
+  review of seroprevalence estimates by racial and ethnic groups.pdf`, PDF
+  pages 5–7, printed Table 1, is split instead of resolved as one three-page
+  table; its forward continuation labels and terminal caption are already
+  detected, while the page 6–7 prior-page notes remain `unknown`. It loses 37
+  footnote anchors, including 35 resolved bibliography mentions.
+  `Science-Advanaced-Planetary Health Diet and risk of mortality and chronic
+  diseases- Results from US NHANES, UK Biobank, and a meta-analysis.pdf`, PDF
+  pages 2–3, printed Table 1, resolves across both pages but remains ineligible
+  because the page 3 `(Continued)` row is `unknown`; four symbolic footnote
+  anchors are omitted. `periodontis2.pdf`, PDF page 14, printed Table 3, and
+  PDF page 16, printed Table 4, remain ineligible because their two-line table
+  titles are `unknown`; one symbolic anchor is omitted from each table. The
+  source cell annotations remain unchanged in all three papers. Fix the
+  earliest continuation/title ownership artifacts without a numeric layout
+  tolerance, allow a captioned terminal fragment to extend an already
+  integrated continuation chain, and rerun Step 6 before restoring
+  entity-scoped footnote matching.
 
 - [ ] Complete canonical table-entity finalization from the current corpus
   artifacts. Detailed working checklists belong under ignored `tmp/` and are
@@ -19,6 +45,20 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
   prose, atomically insert accepted tables as opaque entities, rebuild prose,
   retire competing table-visual and footer inference, and persist only the
   finalized `PaperDocument`. This priority is not parser-logic approval.
+  The lifecycle reorder is complete in
+  `outputs/testpapers_batch_paper_document_step4_20260724`: canonical blocks,
+  mentions, bibliography masks, and prose-line footer-veto evidence now remain
+  in memory through canonical extraction and geometry; the final document,
+  sections, and Markdown are materialized afterward. All 28 inputs completed,
+  and all 1,061 files match the prior baseline after removing only generated
+  report timestamps.
+  The Step 5 atomic ownership cutover is now implemented. A read-only replay over
+  all 28 retained Step 4 outputs produced 72 table entities referencing 81
+  physical tables, refined exactly 13 caption/content source blocks, and left the
+  nine known unresolved logical tables residual. Final prose and table consumers
+  now derive from canonical ownership or explicit entity links; the EWAS
+  footer/DOI block remains intact and the cardiovascular false-footer table stays
+  residual. Step 6 completed with the three-paper exception recorded above.
   The approved `strong_ruled_geometry` correction now follows existing
   rule-bounded geometry rather than the candidate-discovery route. The current
   run is `outputs/testpapers_batch_external_footer_prose_veto_final_20260724`:

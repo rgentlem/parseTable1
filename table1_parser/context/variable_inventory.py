@@ -112,6 +112,8 @@ def build_paper_variable_inventory(
     paper_id: str,
     sections: list[PaperSection],
     table_definitions: list[TableDefinition],
+    *,
+    entity_table_ids: set[str],
 ) -> PaperVariableInventory:
     """Build a conservative paper-level inventory from sections and table definitions."""
     mention_counter = 0
@@ -119,10 +121,17 @@ def build_paper_variable_inventory(
     seeds: list[_SeedTerm] = []
     seen_mentions: set[tuple[object, ...]] = set()
     table_contexts = _build_table_classification_contexts(table_definitions)
-    paper_parent_keys = set().union(*(context.parent_keys for context in table_contexts.values())) if table_contexts else set()
-    paper_level_keys = set().union(*(context.level_keys for context in table_contexts.values())) if table_contexts else set()
+    entity_table_contexts = {
+        key: context
+        for key, context in table_contexts.items()
+        if key[0] in entity_table_ids
+    }
+    paper_parent_keys = set().union(*(context.parent_keys for context in entity_table_contexts.values())) if entity_table_contexts else set()
+    paper_level_keys = set().union(*(context.level_keys for context in entity_table_contexts.values())) if entity_table_contexts else set()
 
     for table_index, definition in enumerate(table_definitions):
+        if definition.table_id not in entity_table_ids:
+            continue
         table_key = (definition.table_id, table_index)
         table_context = table_contexts[table_key]
         table_label = None

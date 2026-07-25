@@ -287,8 +287,9 @@ and does not independently scan table text for `References`. Table-cell
 reference-marker links are added later after cell text annotations are
 available.
 
-`paper_table_mentions.json` is built from the page-furniture-filtered
-`PaperDocument` blocks joined to positioned lines before table extraction. It records each observed
+`paper_table_mentions.json` is built from the page-furniture-filtered canonical
+block registry joined to positioned lines before table extraction and before
+final `PaperDocument` ownership is materialized. It records each observed
 `Table N` mention as a caption candidate, continuation label, or prose
 reference, preserving line IDs, the source-line bbox, local context, and cue
 evidence such as a previous line ending in `shown in`. Continuation labels also
@@ -402,10 +403,9 @@ The current implemented flow for `parse` is:
 PDF
   -> paper positioned document
   -> page-furniture detection and masking
-  -> canonical blocks, block layout, and provisional prose
-  -> legacy bibliography parsing without block ownership
-  -> sections and prose-only markdown
-  -> extracted tables
+  -> canonical block registry and discovery evidence
+  -> table mentions
+  -> provisional extraction and canonical grid selection
   -> cell text annotations
   -> table boundary proposals
   -> table regions
@@ -414,8 +414,10 @@ PDF
   -> preliminary header-structure diagnostic
   -> normalized tables
   -> column header schemas
-  -> body element candidates
   -> resolved tables
+  -> finalized paper document ownership
+  -> sections and prose-only markdown
+  -> body element candidates
   -> parsed source-cell values
   -> Table 1 continuation inspection artifacts over source fragments
   -> paper footnotes
@@ -476,14 +478,18 @@ Why this is separate:
 ## Step 2: Table Extraction
 
 Before table extraction, the parser builds repeated page-furniture regions from
-positioned page text, then builds canonical paper blocks, figure-aware physical
-layout, provisional prose, and bibliography entities in their shared layout
-order. Paper sections and table mentions are derived from that canonical
-document. The
+positioned page text, then builds the canonical block registry, figure-aware
+physical layout, table mentions, and the existing prose and bibliography
+discovery evidence in memory. No preliminary document, sections, or Markdown
+are exposed. The
 extraction layer receives page-furniture regions, caption/prose table-mention
 evidence, and, when a bibliography was found, bibliography-owned source-line and
 entry-bbox evidence. It is responsible for finding likely tables in the
 remaining PDF geometry and recovering a raw grid for each one.
+
+After provisional extraction, canonical-grid selection, and final table
+geometry complete, the parser materializes the final `PaperDocument` once from
+that same block registry. Sections and Markdown are then derived from its prose.
 
 Conceptually, this stage does five things:
 
@@ -1279,10 +1285,18 @@ This is separate from table extraction.
 The current paper-context path is:
 
 ```text
-PDF -> paper_positioned_document.json -> paper_page_furniture.json -> paper_document.json -> paper_sections.json + paper_markdown.md -> paper_table_mentions.json -> paper_bibliography.json -> paper_visual_inventory.json -> paper_references.json -> paper_style_profile.json -> paper_variable_inventory.json -> table_contexts/*.json
+PDF -> positioned evidence -> page furniture -> canonical discovery blocks
+    -> table mentions -> canonical table extraction and geometry
+    -> paper_document.json -> paper_sections.json + paper_markdown.md
+    -> paper_bibliography.json -> paper_visual_inventory.json
+    -> paper_references.json -> paper_style_profile.json
+    -> paper_variable_inventory.json -> table_contexts/*.json
 ```
 
-`paper_document.json` is built directly from filtered positioned blocks and
+The canonical discovery blocks are built directly from filtered positioned
+evidence. Table mentions, bibliography masks, and the approved prose-line
+footer veto use that in-memory state before extraction. After final table
+geometry, `paper_document.json` is materialized once from the same blocks and
 the established prose-candidate decisions over the flattened layout traversal.
 Figure units remain opaque and are skipped during prose identification and
 bibliography detection. Bibliography heading discovery, numbered starts,
@@ -1332,8 +1346,8 @@ or section-role inference.
 
 ### `paper_table_mentions.json`
 
-The parser scans `PaperDocument` blocks joined to raw positioned lines for
-`Table N` mentions before table extraction. Each record keeps the table number,
+The parser scans the canonical discovery blocks joined to raw positioned lines
+for `Table N` mentions before table extraction. Each record keeps the table number,
 source line ID and bbox, local context line IDs, source-line text, cue, and
 whether the mention is a
 `caption_candidate`, `continuation_label`, or `prose_reference`. A continuation
@@ -1358,8 +1372,9 @@ candidate, but it does not by itself create a table. Line-initial
 classified as `prose_reference`, not `caption_candidate`, because they describe
 external supplementary material rather than an extractable in-paper table.
 
-Table extraction uses these caption candidates together with `PaperDocument`
-blocks and their joined positioned geometry.
+Table extraction uses these caption candidates together with the same canonical
+blocks and their joined positioned geometry. It does not consume preliminary
+sections, Markdown, or document ownership.
 The provisional grid keeps every physical y-band after the caption-label band;
 it does not remove possible continuation text before header geometry is
 available. Complete caption binding then matches the label to a table in the
@@ -1377,15 +1392,16 @@ not yet establish body/footer row bands.
 
 ### `paper_bibliography.json`
 
-The canonical document builder extracts bibliography entries after physical
+The canonical document builder identifies bibliography entries after physical
 layout and provisional prose and before table extraction begins. Independent
 item walks start at explicit reference headings and consume whole blocks in
 layout order. For numbered lists, an entry start may be a bracketed, dotted, or
 bare numeric label; the retained author-year route uses first-author or
 organization lines with hanging-indent continuations. Entries may remain open
 across block, column, and page breaks until the next accepted start. Accepted
-heading and content blocks belong to bibliography entities in `PaperDocument`,
-and each entry preserves its contributing source line IDs. The artifact is
+heading and content blocks supply the in-memory extraction mask and later belong
+to bibliography entities in the finalized `PaperDocument`; each entry preserves
+its contributing source line IDs. The artifact is
 per-paper only: it keeps labels and raw/clean entry text as separate entities
 without DOI lookup, author normalization, cross-paper deduplication, or any
 corpus-level reference store.

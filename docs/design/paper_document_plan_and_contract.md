@@ -550,9 +550,11 @@ blocks.
 
 ### Table and Caption Processing
 
-Pre-extraction layout consumers may inspect the canonical block registry and
-unassigned blocks, but they may not offer frozen prose as a caption or table
-component. Once a table entity is established, `PaperDocument` owns its
+Pre-extraction layout consumers inspect one non-persisted discovery state over
+the canonical block registry. Table mentions join those blocks to positioned
+source lines; bibliography masks and the approved prose-line footer veto reuse
+the same state. No preliminary `PaperDocument`, sections, Markdown, or ownership
+artifact is exposed. Once a table entity is established, `PaperDocument` owns its
 caption/content/footer relationship while `ExtractedTable` remains the
 canonical physical grid.
 

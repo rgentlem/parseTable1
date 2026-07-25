@@ -9,7 +9,6 @@ from collections.abc import Sequence
 from table1_parser.context.paper_document import iter_paper_document_lines
 from table1_parser.schemas import (
     BibliographyEntry,
-    ExtractedTable,
     PaperBibliography,
     PaperFootnotes,
     PaperStyleCheck,
@@ -24,7 +23,6 @@ from table1_parser.text_cleaning import clean_text
 
 
 MAX_EVIDENCE_PER_DIMENSION = 12
-TABLE_CAPTION_LINE_PATTERN = re.compile(r"^Table\s+[A-Za-z]?\d+[A-Za-z]?\b", re.IGNORECASE)
 FIGURE_CAPTION_LINE_PATTERN = re.compile(r"^(?:Fig\.?|Figure)\s+[A-Za-z]?\d+[A-Za-z]?\b", re.IGNORECASE)
 VISUAL_NUMBER_PATTERN = re.compile(r"\b(?:Table|Tables|Fig\.?|Figs\.?|Figure|Figures)\s+[A-Za-z]?\d", re.IGNORECASE)
 BRACKETED_NUMERIC_MARKER_PATTERN = re.compile(r"^\[\s*\d+\s*\]$")
@@ -40,7 +38,6 @@ def build_paper_style_profile(
     source_pdf: str,
     paper_document: dict[str, object],
     paper_positioned_document: PaperPositionedDocument,
-    extracted_tables: Sequence[ExtractedTable],
     paper_footnotes: PaperFootnotes,
     paper_bibliography: PaperBibliography,
     paper_visual_inventory: Sequence[PaperVisual],
@@ -52,7 +49,7 @@ def build_paper_style_profile(
     )
     footnote_marker_style = _footnote_marker_style(paper_footnotes)
     bibliography_reference_style = _bibliography_reference_style(paper_bibliography)
-    table_caption_placement = _table_caption_placement(extracted_tables, document_lines)
+    table_caption_placement = _table_caption_placement(paper_visual_inventory)
     figure_caption_evidence = _figure_caption_evidence(paper_visual_inventory, document_lines)
     visual_reference_style = _visual_reference_style(paper_references)
     return PaperStyleProfile(
@@ -77,13 +74,14 @@ def build_paper_style_profile(
             "source_artifacts": [
                 "paper_document.json",
                 "paper_positioned_document.json",
-                "extracted_tables.json",
                 "paper_footnotes.json",
                 "paper_bibliography.json",
                 "paper_visual_inventory.json",
                 "paper_references.json",
             ],
-            "table_count": len(extracted_tables),
+            "table_count": sum(
+                visual.visual_kind == "table" for visual in paper_visual_inventory
+            ),
             "visual_count": len(paper_visual_inventory),
             "visual_reference_count": len(paper_references),
         },
@@ -237,39 +235,45 @@ def _bibliography_reference_style(paper_bibliography: PaperBibliography) -> Pape
 
 
 def _table_caption_placement(
-    extracted_tables: Sequence[ExtractedTable],
-    document_lines: Sequence[object],
+    paper_visual_inventory: Sequence[PaperVisual],
 ) -> PaperStyleDimension:
     count_by_style: Counter[str] = Counter()
     count_by_source: Counter[str] = Counter()
     caption_source_counts: Counter[str] = Counter()
     evidence: list[PaperStyleEvidence] = []
-    lines_by_page: dict[int, list[object]] = {}
-    for line in document_lines:
-        lines_by_page.setdefault(line.page_num, []).append(line)
-
-    for table in extracted_tables:
-        metadata_source = str(table.metadata.get("caption_source") or "unknown")
-        caption_source_counts[metadata_source] += 1
-        placement = _caption_placement_from_metadata_source(metadata_source)
-        spatial_placement, line = _spatial_table_caption_placement(table, lines_by_page.get(table.page_num, []))
-        if spatial_placement != "unknown":
-            placement = spatial_placement
-            count_by_source["paper_document"] += 1
-        else:
-            count_by_source["extracted_table_metadata"] += 1
+    table_visuals = [
+        visual for visual in paper_visual_inventory if visual.visual_kind == "table"
+    ]
+    for visual in table_visuals:
+        placement = next(
+            (
+                note.removeprefix("caption_placement:")
+                for note in visual.notes
+                if note.startswith("caption_placement:")
+            ),
+            "unknown",
+        )
+        caption_source_counts[visual.caption_source] += 1
+        count_by_source["paper_document_table_entity"] += 1
         count_by_style[placement] += 1
         if len(evidence) < MAX_EVIDENCE_PER_DIMENSION:
             evidence.append(
                 PaperStyleEvidence(
-                    evidence_id=f"table-caption:{table.table_id}",
+                    evidence_id=f"table-caption:{visual.visual_id}",
                     style=placement,
-                    source_artifact="paper_document.json" if line is not None else "extracted_tables.json",
-                    source_id=line.line_id if line is not None else table.table_id,
-                    page_num=table.page_num,
-                    table_id=table.table_id,
-                    text=line.text if line is not None else clean_text(table.caption or table.title or ""),
-                    notes=[f"caption_source:{metadata_source}"],
+                    source_artifact="paper_document.json",
+                    source_id=next(
+                        (
+                            note.removeprefix("table_entity_id:")
+                            for note in visual.notes
+                            if note.startswith("table_entity_id:")
+                        ),
+                        visual.visual_id,
+                    ),
+                    page_num=visual.page_num,
+                    table_id=visual.source_table_id,
+                    text=visual.caption,
+                    notes=[f"caption_source:{visual.caption_source}"],
                 )
             )
 
@@ -279,7 +283,7 @@ def _table_caption_placement(
         count_by_source=count_by_source,
         secondary_counts={"caption_source": caption_source_counts},
         evidence=evidence,
-        notes=[] if extracted_tables else ["no_extracted_tables"],
+        notes=[] if table_visuals else ["no_table_entities"],
     )
 
 
@@ -616,69 +620,6 @@ def _reference_mention_format(label_raw: str) -> str:
     if label.isdigit():
         return "bare_numeric_mention"
     return "other_numeric_mention"
-
-
-def _caption_placement_from_metadata_source(caption_source: str) -> str:
-    if "above" in caption_source:
-        return "above_table"
-    if "below" in caption_source:
-        return "below_table"
-    if caption_source in {"title", "table_title"}:
-        return "title_field"
-    if caption_source == "unknown":
-        return "unknown"
-    return caption_source
-
-
-def _spatial_table_caption_placement(
-    table: ExtractedTable,
-    page_lines: Sequence[object],
-) -> tuple[str, object | None]:
-    table_bbox = _table_bbox(table)
-    if table_bbox is None:
-        return "unknown", None
-    table_number = table.metadata.get("table_number")
-    label_pattern = (
-        re.compile(rf"^Table\s+{re.escape(str(table_number))}\b", re.IGNORECASE)
-        if table_number is not None
-        else TABLE_CAPTION_LINE_PATTERN
-    )
-    left, top, right, bottom = table_bbox
-    candidates: list[tuple[float, str, object]] = []
-    for line in page_lines:
-        if not label_pattern.match(line.text):
-            continue
-        line_left, line_top, line_right, line_bottom = line.bbox
-        horizontal_overlap = min(float(right), float(line_right)) - max(float(left), float(line_left))
-        if horizontal_overlap <= 0.0:
-            continue
-        if float(line_bottom) <= float(top):
-            distance = float(top) - float(line_bottom)
-            if distance <= 120.0:
-                candidates.append((distance, "above_table", line))
-        elif float(line_top) >= float(bottom):
-            distance = float(line_top) - float(bottom)
-            if distance <= 120.0:
-                candidates.append((distance, "below_table", line))
-    if not candidates:
-        return "unknown", None
-    _distance, placement, line = min(candidates, key=lambda item: item[0])
-    return placement, line
-
-
-def _table_bbox(table: ExtractedTable) -> tuple[float, float, float, float] | None:
-    metadata_bbox = table.metadata.get("bbox")
-    if isinstance(metadata_bbox, (list, tuple)) and len(metadata_bbox) == 4:
-        return tuple(float(part) for part in metadata_bbox)
-    cell_bboxes = [cell.bbox for cell in table.cells if cell.bbox is not None]
-    if not cell_bboxes:
-        return None
-    return (
-        min(float(bbox[0]) for bbox in cell_bboxes),
-        min(float(bbox[1]) for bbox in cell_bboxes),
-        max(float(bbox[2]) for bbox in cell_bboxes),
-        max(float(bbox[3]) for bbox in cell_bboxes),
-    )
 
 
 def _figure_label_format(text: str) -> str:

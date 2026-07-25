@@ -6,8 +6,23 @@ from collections.abc import Iterator
 from types import SimpleNamespace
 from typing import Any, cast
 
-from table1_parser.context.paper_positioned_document import canonical_bbox_for_orientation
+from table1_parser.context.paper_positioned_document import (
+    canonical_bbox_for_orientation,
+)
+from table1_parser.paper_discovery import PaperDiscoveryState
 from table1_parser.schemas import PaperPositionedDocument
+
+
+def iter_paper_discovery_lines(
+    discovery: PaperDiscoveryState,
+    positioned_document: PaperPositionedDocument,
+) -> Iterator[SimpleNamespace]:
+    """Yield canonical block lines without requiring a finalized paper document."""
+    yield from _iter_canonical_block_lines(
+        discovery.blocks,
+        discovery.pages,
+        positioned_document,
+    )
 
 
 def iter_paper_document_lines(
@@ -17,6 +32,15 @@ def iter_paper_document_lines(
     """Yield non-persisted joins in canonical block and line order."""
     blocks = cast(list[dict[str, Any]], paper_document["blocks"])
     pages = cast(list[dict[str, Any]], paper_document["pages"])
+    yield from _iter_canonical_block_lines(blocks, pages, positioned_document)
+
+
+def _iter_canonical_block_lines(
+    blocks: list[dict[str, Any]],
+    pages: list[dict[str, Any]],
+    positioned_document: PaperPositionedDocument,
+) -> Iterator[SimpleNamespace]:
+    """Join one canonical block registry to its positioned source lines."""
     source_lines = {
         line.line_id: line for page in positioned_document.pages for line in page.lines
     }
@@ -29,7 +53,9 @@ def iter_paper_document_lines(
         line_ids = cast(list[str], block["line_ids"])
         line_texts = str(block["text"]).split("\n")
         if len(line_ids) != len(line_texts):
-            raise ValueError(f"Canonical block text does not match its line IDs: {block['block_id']}")
+            raise ValueError(
+                f"Canonical block text does not match its line IDs: {block['block_id']}"
+            )
         group = groups[block["orientation_group_id"]]
         for line_id, text in zip(line_ids, line_texts):
             source = source_lines[line_id]

@@ -267,6 +267,28 @@ def find_table_footer_definition_lines(
     document_lines = list(
         iter_paper_document_lines(paper_document, paper_positioned_document)
     )
+    document_blocks_by_id = {
+        str(block["block_id"]): block for block in paper_document["blocks"]
+    }
+    entity_footer_line_ids_by_table_id: dict[str, set[str]] = {}
+    for entity in paper_document["entities"]:
+        if entity["kind"] != "table":
+            continue
+        footer_line_ids = {
+            str(line_id)
+            for component in entity["components"]
+            if component["role"] == "footer"
+            for block_id in component["block_ids"]
+            for line_id in document_blocks_by_id[str(block_id)]["line_ids"]
+        }
+        for component in entity["components"]:
+            if component["role"] != "content":
+                continue
+            for content_ref in component["content_refs"]:
+                if content_ref["artifact_kind"] == "extracted_table":
+                    entity_footer_line_ids_by_table_id[
+                        str(content_ref["artifact_id"])
+                    ] = footer_line_ids
     visual_id_by_table_id = _table_visual_ids(extracted_tables, resolved_table_set)
     region_by_table_id = {region.table_id: region for region in table_regions or []}
     lines_by_id = {line.line_id: line for line in document_lines}
@@ -276,10 +298,19 @@ def find_table_footer_definition_lines(
 
     footer_lines: list[FootnoteDefinitionCandidateLine] = []
     for table_position, table in enumerate(extracted_tables):
+        entity_footer_line_ids = entity_footer_line_ids_by_table_id.get(
+            table.table_id
+        )
+        if entity_footer_line_ids is None:
+            continue
         region = region_by_table_id.get(table.table_id)
         footer_line_ids = list(region.footer_line_ids) if region is not None else []
         if not footer_line_ids:
             continue
+        if not set(footer_line_ids).issubset(entity_footer_line_ids):
+            raise ValueError(
+                f"Accepted footer lines are not owned by table entity: {table.table_id}."
+            )
         group = []
         for line_id in footer_line_ids:
             line = lines_by_id.get(line_id)

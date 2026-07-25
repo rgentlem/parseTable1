@@ -32,8 +32,9 @@ from table1_parser.continued_variable_integration import (
     continued_variable_integrations_to_payload,
 )
 from table1_parser.context import (
+    PaperDocumentBuildState,
     annotate_visual_reference_checks,
-    build_paper_document,
+    build_paper_document_state,
     build_paper_positioned_document,
     build_paper_sections_from_document,
     build_paper_table_mentions,
@@ -41,10 +42,13 @@ from table1_parser.context import (
     build_table_contexts,
     build_paper_variable_inventory,
     collect_paper_visual_references,
+    finalize_paper_document,
     paper_variable_inventory_to_payload,
     paper_table_mentions_to_payload,
 )
-from table1_parser.context.paper_document import iter_paper_document_lines
+from table1_parser.context.paper_document import (
+    iter_paper_discovery_lines,
+)
 from table1_parser.diagnostics import ParseQualityReport, build_parse_quality_report
 from table1_parser.extract import build_extractor
 from table1_parser.extract.provisional_table import ProvisionalExtractedTable
@@ -103,6 +107,7 @@ from table1_parser.paper_bibliography import (
     build_paper_bibliography,
     paper_bibliography_to_payload,
 )
+from table1_parser.paper_discovery import PaperDiscoveryState
 from table1_parser.paper_page_furniture import (
     build_paper_page_furniture,
     paper_page_furniture_to_payload,
@@ -121,7 +126,6 @@ from table1_parser.schemas import (
     BodyElementCandidate,
     BodyRowLabelCandidate,
     ExtractedTable,
-    BibliographyEntry,
     LLMVariablePlausibilityCallRecord,
     LLMVariablePlausibilityMonitoringReport,
     LeafColumnCandidateTable,
@@ -131,7 +135,6 @@ from table1_parser.schemas import (
     PaperBibliography,
     PaperPageFurniture,
     PaperPositionedDocument,
-    PaperSection,
     PaperStyleProfile,
     PaperTableMention,
     PaperVariableInventory,
@@ -166,15 +169,13 @@ DEFAULT_OUTPUT_DIR = Path("outputs")
 
 
 @dataclass(slots=True)
-class PaperContextArtifacts:
-    """Shared paper-level context artifacts built from one positioned text pass."""
+class PaperDiscoveryArtifacts:
+    """Shared in-memory evidence built before final document ownership."""
 
     paper_positioned_document: PaperPositionedDocument
     paper_page_furniture: PaperPageFurniture
-    paper_document: dict[str, object]
-    paper_sections: list[PaperSection]
+    paper_document_state: PaperDocumentBuildState
     paper_table_mentions: list[PaperTableMention]
-    bibliography_entries: list[BibliographyEntry]
 
 
 @dataclass(slots=True)
@@ -328,7 +329,7 @@ def _extract_tables_with_context(
     paper_page_furniture: PaperPageFurniture | None,
     paper_positioned_document: PaperPositionedDocument | None = None,
     paper_table_mentions: list[PaperTableMention] | None = None,
-    paper_document: dict[str, object] | None = None,
+    paper_discovery: PaperDiscoveryState | None = None,
 ) -> list[ProvisionalExtractedTable]:
     """Run extraction while passing optional paper-level context when supported."""
     extract = getattr(extractor, "extract")
@@ -340,7 +341,7 @@ def _extract_tables_with_context(
         parameter.kind == inspect.Parameter.VAR_KEYWORD
         for parameter in signature.parameters.values()
     )
-    supports_paper_document = "paper_document" in signature.parameters or any(
+    supports_paper_discovery = "paper_discovery" in signature.parameters or any(
         parameter.kind == inspect.Parameter.VAR_KEYWORD
         for parameter in signature.parameters.values()
     )
@@ -356,8 +357,8 @@ def _extract_tables_with_context(
     }
     if supports_table_mentions:
         keyword_arguments["paper_table_mentions"] = paper_table_mentions
-    if supports_paper_document:
-        keyword_arguments["paper_document"] = paper_document
+    if supports_paper_discovery:
+        keyword_arguments["paper_discovery"] = paper_discovery
     if supports_positioned_document:
         keyword_arguments["paper_positioned_document"] = paper_positioned_document
     return extract(pdf_path, **keyword_arguments)
@@ -371,26 +372,26 @@ def _extract_payload(tables: list[ExtractedTable]) -> list[dict[str, object]]:
 def _build_table_geometry_artifacts(
     pdf_path: str,
     extracted_tables: Sequence[ExtractedTable],
-    paper_context: PaperContextArtifacts,
+    paper_discovery: PaperDiscoveryArtifacts,
 ) -> CanonicalExtractionArtifacts:
     """Build the geometry evidence associated with one extraction grid."""
     cell_text_annotations = build_cell_text_annotation_tables_from_pdf(
         pdf_path,
         extracted_tables,
-        paper_page_furniture=paper_context.paper_page_furniture,
-        paper_positioned_document=paper_context.paper_positioned_document,
+        paper_page_furniture=paper_discovery.paper_page_furniture,
+        paper_positioned_document=paper_discovery.paper_positioned_document,
     )
     table_boundary_proposals = build_table_boundary_proposals(
         extracted_tables,
-        paper_positioned_document=paper_context.paper_positioned_document,
+        paper_positioned_document=paper_discovery.paper_positioned_document,
     )
     table_regions = build_table_regions(
         extracted_tables,
-        paper_document=paper_context.paper_document,
-        paper_page_furniture=paper_context.paper_page_furniture,
+        paper_discovery=paper_discovery.paper_document_state.discovery,
+        paper_page_furniture=paper_discovery.paper_page_furniture,
         cell_text_annotations=cell_text_annotations,
         table_boundary_proposals=table_boundary_proposals,
-        paper_positioned_document=paper_context.paper_positioned_document,
+        paper_positioned_document=paper_discovery.paper_positioned_document,
     )
     regions_by_table_id = {region.table_id: region for region in table_regions}
     for proposal in table_boundary_proposals:
@@ -409,7 +410,7 @@ def _build_table_geometry_artifacts(
             )
     body_occupancy = build_body_occupancy_tables(
         extracted_tables,
-        paper_positioned_document=paper_context.paper_positioned_document,
+        paper_positioned_document=paper_discovery.paper_positioned_document,
         table_regions=table_regions,
         table_boundary_proposals=table_boundary_proposals,
         cell_text_annotations=cell_text_annotations,
@@ -420,7 +421,7 @@ def _build_table_geometry_artifacts(
     )
     header_structure_candidates = build_header_structure_candidates(
         extracted_tables,
-        paper_positioned_document=paper_context.paper_positioned_document,
+        paper_positioned_document=paper_discovery.paper_positioned_document,
         table_regions=table_regions,
         table_boundary_proposals=table_boundary_proposals,
         leaf_column_candidates=leaf_column_candidates,
@@ -439,33 +440,33 @@ def _build_table_geometry_artifacts(
 
 def _build_canonical_extraction_artifacts(
     pdf_path: str,
-    paper_context: PaperContextArtifacts,
+    paper_discovery: PaperDiscoveryArtifacts,
 ) -> CanonicalExtractionArtifacts:
     """Detect provisional tables, select their grids, and rebuild final evidence."""
     extractor = _build_default_extractor()
     provisional_tables = _extract_tables_with_context(
         extractor,
         pdf_path,
-        paper_page_furniture=paper_context.paper_page_furniture,
-        paper_positioned_document=paper_context.paper_positioned_document,
-        paper_table_mentions=paper_context.paper_table_mentions,
-        paper_document=paper_context.paper_document,
+        paper_page_furniture=paper_discovery.paper_page_furniture,
+        paper_positioned_document=paper_discovery.paper_positioned_document,
+        paper_table_mentions=paper_discovery.paper_table_mentions,
+        paper_discovery=paper_discovery.paper_document_state.discovery,
     )
     provisional = _build_table_geometry_artifacts(
         pdf_path,
         provisional_tables,
-        paper_context,
+        paper_discovery,
     )
     canonical_tables = finalize_canonical_extracted_tables(
         provisional_tables,
-        paper_positioned_document=paper_context.paper_positioned_document,
+        paper_positioned_document=paper_discovery.paper_positioned_document,
         table_boundary_proposals=provisional.table_boundary_proposals,
         leaf_column_candidates=provisional.leaf_column_candidates,
     )
     final = _build_table_geometry_artifacts(
         pdf_path,
         canonical_tables,
-        paper_context,
+        paper_discovery,
     )
     final.header_structure_candidates = inherit_adjacent_continuation_leaf_labels(
         final.extracted_tables,
@@ -474,8 +475,8 @@ def _build_canonical_extraction_artifacts(
     return final
 
 
-def _build_paper_context_artifacts(pdf_path: str) -> PaperContextArtifacts:
-    """Build shared paper-context artifacts from one positioned PyMuPDF text pass."""
+def _build_paper_discovery_artifacts(pdf_path: str) -> PaperDiscoveryArtifacts:
+    """Build canonical blocks and mentions before extraction and final ownership."""
     paper_stem = Path(pdf_path).stem
     paper_positioned_document = build_paper_positioned_document(
         pdf_path, paper_id=paper_stem
@@ -491,23 +492,25 @@ def _build_paper_context_artifacts(pdf_path: str) -> PaperContextArtifacts:
         paper_id=paper_stem,
         paper_positioned_document=paper_positioned_document,
     )
-    paper_document, bibliography_entries = build_paper_document(
+    paper_document_state = build_paper_document_state(
         pdf_path,
         paper_page_furniture=paper_page_furniture,
         paper_positioned_document=paper_positioned_document,
         paper_id=paper_stem,
     )
-    paper_sections = build_paper_sections_from_document(paper_document)
     paper_table_mentions = build_paper_table_mentions(
-        list(iter_paper_document_lines(paper_document, paper_positioned_document))
+        list(
+            iter_paper_discovery_lines(
+                paper_document_state.discovery,
+                paper_positioned_document,
+            )
+        )
     )
-    return PaperContextArtifacts(
+    return PaperDiscoveryArtifacts(
         paper_positioned_document=paper_positioned_document,
         paper_page_furniture=paper_page_furniture,
-        paper_document=paper_document,
-        paper_sections=paper_sections,
+        paper_document_state=paper_document_state,
         paper_table_mentions=paper_table_mentions,
-        bibliography_entries=bibliography_entries,
     )
 
 
@@ -517,10 +520,10 @@ def _handle_extract(args: argparse.Namespace) -> int:
         return 1
 
     try:
-        paper_context = _build_paper_context_artifacts(args.pdf_path)
+        paper_discovery = _build_paper_discovery_artifacts(args.pdf_path)
         canonical = _build_canonical_extraction_artifacts(
             args.pdf_path,
-            paper_context,
+            paper_discovery,
         )
         tables = canonical.extracted_tables
     except Exception as exc:
@@ -544,10 +547,10 @@ def _handle_normalize(args: argparse.Namespace) -> int:
         return 1
 
     try:
-        paper_context = _build_paper_context_artifacts(args.pdf_path)
+        paper_discovery = _build_paper_discovery_artifacts(args.pdf_path)
         canonical = _build_canonical_extraction_artifacts(
             args.pdf_path,
-            paper_context,
+            paper_discovery,
         )
         normalized_tables = normalize_extracted_tables(
             canonical.extracted_tables,
@@ -738,29 +741,13 @@ def _handle_review_variable_plausibility(args: argparse.Namespace) -> int:
 def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     """Run the deterministic parse pipeline and build the paper-level context artifacts."""
     paper_stem = Path(pdf_path).stem
-    paper_context = _build_paper_context_artifacts(pdf_path)
-    paper_positioned_document = paper_context.paper_positioned_document
-    paper_page_furniture = paper_context.paper_page_furniture
-    paper_document = paper_context.paper_document
-    prose_segments = paper_document["prose"]["segments"]
-    blocks_by_id = {block["block_id"]: block for block in paper_document["blocks"]}
-    markdown_parts: list[str] = []
-    for segment in prose_segments:
-        for block_id in segment["heading_block_ids"]:
-            markdown_parts.append(
-                f"## {clean_text(str(blocks_by_id[block_id]['text']))}"
-            )
-        for paragraph in segment["paragraphs"]:
-            markdown_parts.append(paragraph["text"])
-    paper_markdown = "\n\n".join(markdown_parts).strip()
-    if paper_markdown:
-        paper_markdown += "\n"
-    paper_sections = paper_context.paper_sections
-    paper_table_mentions = paper_context.paper_table_mentions
-    bibliography_entries = paper_context.bibliography_entries
+    paper_discovery = _build_paper_discovery_artifacts(pdf_path)
+    paper_positioned_document = paper_discovery.paper_positioned_document
+    paper_page_furniture = paper_discovery.paper_page_furniture
+    paper_table_mentions = paper_discovery.paper_table_mentions
     canonical = _build_canonical_extraction_artifacts(
         pdf_path,
-        paper_context,
+        paper_discovery,
     )
     extracted_tables = canonical.extracted_tables
     cell_text_annotations = canonical.cell_text_annotations
@@ -854,6 +841,58 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     resolved_table_set = build_resolved_table_set(
         normalized_tables, column_header_schemas
     )
+    paper_document, bibliography_entries = finalize_paper_document(
+        paper_discovery.paper_document_state,
+        extracted_tables=extracted_tables,
+        resolved_table_set=resolved_table_set,
+        table_regions=table_regions,
+        paper_positioned_document=paper_positioned_document,
+    )
+    paper_sections = build_paper_sections_from_document(paper_document)
+    prose_segments = paper_document["prose"]["segments"]
+    blocks_by_id = {block["block_id"]: block for block in paper_document["blocks"]}
+    markdown_parts: list[str] = []
+    for segment in prose_segments:
+        for block_id in segment["heading_block_ids"]:
+            markdown_parts.append(
+                f"## {clean_text(str(blocks_by_id[block_id]['text']))}"
+            )
+        for paragraph in segment["paragraphs"]:
+            markdown_parts.append(paragraph["text"])
+    paper_markdown = "\n\n".join(markdown_parts).strip()
+    if paper_markdown:
+        paper_markdown += "\n"
+    table_entity_content_refs = [
+        content_ref
+        for entity in paper_document["entities"]
+        if entity["kind"] == "table"
+        for component in entity["components"]
+        if component["role"] == "content"
+        for content_ref in component["content_refs"]
+    ]
+    entity_source_table_ids = {
+        content_ref["artifact_id"]
+        for content_ref in table_entity_content_refs
+        if content_ref["artifact_kind"] == "extracted_table"
+    }
+    entity_resolved_table_ids = {
+        content_ref["artifact_id"]
+        for content_ref in table_entity_content_refs
+        if content_ref["artifact_kind"] == "resolved_table"
+    }
+    entity_extracted_tables = [
+        table for table in extracted_tables if table.table_id in entity_source_table_ids
+    ]
+    entity_cell_text_annotations = [
+        annotations
+        for annotations in cell_text_annotations
+        if annotations.table_id in entity_source_table_ids
+    ]
+    entity_column_header_schemas = [
+        schema
+        for schema in column_header_schemas
+        if schema.table_id in entity_source_table_ids
+    ]
     resolved_tables = [
         resolved_table.table for resolved_table in resolved_table_set.resolved_tables
     ]
@@ -1091,14 +1130,14 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     paper_footnotes = build_paper_footnote_anchor_inventory(
         paper_id=paper_stem,
         source_pdf=pdf_path,
-        cell_text_annotations=cell_text_annotations,
-        extracted_tables=extracted_tables,
-        column_header_schemas=column_header_schemas,
+        cell_text_annotations=entity_cell_text_annotations,
+        extracted_tables=entity_extracted_tables,
+        column_header_schemas=entity_column_header_schemas,
         resolved_table_set=resolved_table_set,
     )
     paper_footnote_anchors_before_linking = list(paper_footnotes.anchors)
     table_footer_document_definition_lines = find_table_footer_definition_lines(
-        extracted_tables,
+        entity_extracted_tables,
         resolved_table_set=resolved_table_set,
         paper_document=paper_document,
         paper_positioned_document=paper_positioned_document,
@@ -1110,7 +1149,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
     )
     paper_footnote_definitions = build_paper_footnote_definition_candidates(
         paper_footnote_definition_lines,
-        extracted_tables,
+        entity_extracted_tables,
         resolved_table_set=resolved_table_set,
     )
     paper_footnotes = link_paper_footnotes(
@@ -1259,17 +1298,23 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         source_pdf=pdf_path,
         paper_document=paper_document,
         paper_positioned_document=paper_positioned_document,
-        extracted_tables=extracted_tables,
         paper_footnotes=paper_footnotes,
         paper_bibliography=paper_bibliography,
         paper_visual_inventory=paper_visual_inventory,
         paper_references=paper_references,
     )
     paper_variable_inventory = build_paper_variable_inventory(
-        paper_stem, paper_sections, table_definitions
+        paper_stem,
+        paper_sections,
+        table_definitions,
+        entity_table_ids=entity_resolved_table_ids,
     )
     table_contexts = build_table_contexts(
-        paper_sections, table_definitions, paper_visual_inventory, paper_references
+        paper_sections,
+        table_definitions,
+        entity_resolved_table_ids,
+        paper_visual_inventory,
+        paper_references,
     )
     return PaperParseArtifacts(
         paper_stem=paper_stem,

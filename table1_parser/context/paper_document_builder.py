@@ -4,10 +4,14 @@ from __future__ import annotations
 
 import re
 from collections import Counter
+from copy import deepcopy
+from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
 
 from table1_parser.context.paper_positioned_document import canonical_bbox_for_orientation
+from table1_parser.context.visual_references import VISUAL_OBJECT_DOI_PATTERN
+from table1_parser.paper_discovery import PaperDiscoveryState
 from table1_parser.page_furniture_mask import page_furniture_cluster_ids_for_bbox
 from table1_parser.paper_bibliography import (
     bibliography_item_evidence_for_block,
@@ -22,10 +26,13 @@ from table1_parser.reference_sections import (
 )
 from table1_parser.schemas import (
     BibliographyEntry,
+    ExtractedTable,
     PaperPageFurniture,
     PaperPositionedDocument,
     PaperPositionedLine,
     PaperPositionedVisualComponent,
+    ResolvedTableSet,
+    TableRegion,
 )
 from table1_parser.text_cleaning import clean_text
 
@@ -39,31 +46,54 @@ FIGURE_CAPTION_BLOCK_PATTERN = re.compile(
 )
 
 
-def build_paper_document(
+@dataclass(slots=True)
+class PaperDocumentBuildState:
+    """Private in-memory state awaiting final PaperDocument materialization."""
+
+    paper_id: str
+    source_pdf: str
+    discovery: PaperDiscoveryState
+    structure: list[dict[str, object]]
+    layout_ordered_block_ids: list[str]
+    candidate_prose_block_ids: frozenset[str]
+    entity_owned_block_ids: frozenset[str]
+    entities: list[dict[str, object]]
+    bibliography_region_candidates: list[dict[str, object]]
+    figure_scope_rejections: list[dict[str, object]]
+    bibliography_entries: list[BibliographyEntry]
+
+
+def build_paper_document_state(
     pdf_path: str,
     *,
     paper_page_furniture: PaperPageFurniture | None = None,
     paper_positioned_document: PaperPositionedDocument | None = None,
     paper_id: str | None = None,
-) -> tuple[dict[str, object], list[BibliographyEntry]]:
-    """Build canonical block ownership from positioned layout evidence."""
+) -> PaperDocumentBuildState:
+    """Build filtered canonical blocks and pre-final discovery evidence."""
     if paper_positioned_document is None:
         from table1_parser.context.paper_positioned_document import build_paper_positioned_document
 
         paper_positioned_document = build_paper_positioned_document(pdf_path, paper_id=paper_id)
     if paper_positioned_document.page_count <= 0:
-        return {
-            "paper_id": paper_id or Path(pdf_path).stem,
-            "source_pdf": Path(pdf_path).name,
-            "pages": [],
-            "blocks": [],
-            "structure": [],
-            "prose": {"segments": []},
-            "entities": [],
-            "unassigned_block_ids": [],
-            "bibliography_region_candidates": [],
-            "figure_scope_rejections": [],
-        }, []
+        return PaperDocumentBuildState(
+            paper_id=paper_id or Path(pdf_path).stem,
+            source_pdf=Path(pdf_path).name,
+            discovery=PaperDiscoveryState(
+                pages=[],
+                blocks=[],
+                prose_line_ids=frozenset(),
+                bibliography_block_ids=frozenset(),
+            ),
+            structure=[],
+            layout_ordered_block_ids=[],
+            candidate_prose_block_ids=frozenset(),
+            entity_owned_block_ids=frozenset(),
+            entities=[],
+            bibliography_region_candidates=[],
+            figure_scope_rejections=[],
+            bibliography_entries=[],
+        )
 
     stream_lines: list[SimpleNamespace] = []
     stream_pages: list[SimpleNamespace] = []
@@ -983,43 +1013,6 @@ def build_paper_document(
         ):
             prose_ids.add(block.block_id)
 
-    prose_segments: list[dict[str, object]] = []
-    heading_block_ids: list[str] = []
-    paragraphs: list[dict[str, object]] = []
-    paragraph_count = 0
-    for block in layout_ordered_blocks:
-        if block.block_id not in prose_ids:
-            continue
-        if block.role == "heading":
-            if paragraphs:
-                prose_segments.append(
-                    {
-                        "segment_id": f"paper-prose-segment-{len(prose_segments)}",
-                        "heading_block_ids": heading_block_ids,
-                        "paragraphs": paragraphs,
-                    }
-                )
-                heading_block_ids = []
-                paragraphs = []
-            heading_block_ids.append(block.block_id)
-            continue
-        paragraphs.append(
-            {
-                "paragraph_id": f"paper-paragraph-{paragraph_count}",
-                "block_ids": [block.block_id],
-                "text": block.text,
-            }
-        )
-        paragraph_count += 1
-    if heading_block_ids or paragraphs:
-        prose_segments.append(
-            {
-                "segment_id": f"paper-prose-segment-{len(prose_segments)}",
-                "heading_block_ids": heading_block_ids,
-                "paragraphs": paragraphs,
-            }
-        )
-
     blocks_by_line_id: dict[str, SimpleNamespace] = {
         line_id: block
         for block in layout_ordered_blocks
@@ -1374,56 +1367,8 @@ def build_paper_document(
         raise ValueError(
             "PaperDocument.structure does not cover structural layout units exactly once."
         )
-    owned_prose_segments: list[dict[str, object]] = []
-    for segment in prose_segments:
-        heading_block_ids = [
-            block_id
-            for block_id in segment["heading_block_ids"]
-            if block_id not in entity_owned_block_ids
-        ]
-        paragraphs = []
-        for paragraph in segment["paragraphs"]:
-            paragraph_block_ids = [
-                block_id
-                for block_id in paragraph["block_ids"]
-                if block_id not in entity_owned_block_ids
-            ]
-            if paragraph_block_ids:
-                paragraphs.append(
-                    {
-                        **paragraph,
-                        "block_ids": paragraph_block_ids,
-                        "text": "\n".join(
-                            blocks_by_id[block_id].text
-                            for block_id in paragraph_block_ids
-                        ),
-                    }
-                )
-        if heading_block_ids or paragraphs:
-            owned_prose_segments.append(
-                {
-                    **segment,
-                    "heading_block_ids": heading_block_ids,
-                    "paragraphs": paragraphs,
-                }
-            )
-    prose_segments = owned_prose_segments
-    prose_ids = {
-        block_id
-        for segment in prose_segments
-        for block_id in [
-            *segment["heading_block_ids"],
-            *[
-                value
-                for paragraph in segment["paragraphs"]
-                for value in paragraph["block_ids"]
-            ],
-        ]
-    }
-    return {
-        "paper_id": paper_id or Path(pdf_path).stem,
-        "source_pdf": Path(pdf_path).name,
-        "pages": [
+    final_prose_ids = prose_ids - entity_owned_block_ids
+    pages = [
             {
                 "page_num": page.page_num,
                 "width": page.page_width,
@@ -1445,8 +1390,8 @@ def build_paper_document(
                 ],
             }
             for page in stream_pages
-        ],
-        "blocks": [
+        ]
+    block_payloads = [
             {
                 "block_id": block.block_id,
                 "page_num": block.page_num,
@@ -1462,21 +1407,508 @@ def build_paper_document(
                 "text": block.text,
             }
             for block in blocks
+        ]
+    return PaperDocumentBuildState(
+        paper_id=paper_id or Path(pdf_path).stem,
+        source_pdf=Path(pdf_path).name,
+        discovery=PaperDiscoveryState(
+            pages=pages,
+            blocks=block_payloads,
+            prose_line_ids=frozenset(
+                line_id
+                for block in blocks
+                if block.block_id in final_prose_ids
+                for line_id in block.line_ids
+            ),
+            bibliography_block_ids=frozenset(bibliography_owned_block_ids),
+        ),
+        structure=structure,
+        layout_ordered_block_ids=[
+            block.block_id for block in layout_ordered_blocks
         ],
+        candidate_prose_block_ids=frozenset(prose_ids),
+        entity_owned_block_ids=frozenset(entity_owned_block_ids),
+        entities=[*figure_entities, *bibliography_entities],
+        bibliography_region_candidates=bibliography_region_candidates,
+        figure_scope_rejections=[
+            candidate
+            for candidate in figure_scope_candidates
+            if candidate["concerns"]
+        ],
+        bibliography_entries=bibliography_entries,
+    )
+
+
+def finalize_paper_document(
+    state: PaperDocumentBuildState,
+    *,
+    extracted_tables: list[ExtractedTable],
+    resolved_table_set: ResolvedTableSet,
+    table_regions: list[TableRegion],
+    paper_positioned_document: PaperPositionedDocument,
+) -> tuple[dict[str, object], list[BibliographyEntry]]:
+    """Materialize final ownership after table discovery and resolution finish."""
+    original_blocks = [dict(block) for block in state.discovery.blocks]
+    original_blocks_by_id = {
+        str(block["block_id"]): block for block in original_blocks
+    }
+    line_to_block_id: dict[str, str] = {}
+    for block in original_blocks:
+        for line_id in block["line_ids"]:
+            if line_id in line_to_block_id:
+                raise ValueError(f"Canonical line occurs in multiple blocks: {line_id}.")
+            line_to_block_id[str(line_id)] = str(block["block_id"])
+    source_lines_by_id = {
+        line.line_id: line
+        for page in paper_positioned_document.pages
+        for line in page.lines
+    }
+    orientation_groups_by_id = {
+        str(group["group_id"]): group
+        for page in state.discovery.pages
+        for group in page["orientation_groups"]
+    }
+    extracted_by_id = {table.table_id: table for table in extracted_tables}
+    region_by_table_id = {region.table_id: region for region in table_regions}
+    existing_entity_owned_block_ids = {
+        str(block_id)
+        for entity in state.entities
+        for component in entity.get("components", [])
+        for block_id in component.get("block_ids", [])
+    }
+    table_entity_records: list[dict[str, object]] = []
+    claimed_line_entity_ids: dict[str, str] = {}
+    for resolved_table in resolved_table_set.resolved_tables:
+        source_tables = [
+            extracted_by_id[source_table_id]
+            for source_table_id in resolved_table.source_table_ids
+            if source_table_id in extracted_by_id
+        ]
+        if len(source_tables) != len(resolved_table.source_table_ids):
+            continue
+        line_roles: dict[str, str] = {}
+        eligible = bool(source_tables)
+        caption_placements: list[str] = []
+        table_numbers: list[str] = []
+        for table in source_tables:
+            region = region_by_table_id.get(table.table_id)
+            selection = table.metadata.get("canonical_grid_selection") or {}
+            if (
+                region is None
+                or selection.get("status") != "accepted"
+                or any(row.role == "unknown" for row in region.row_regions)
+            ):
+                eligible = False
+                continue
+            caption_region = table.metadata.get("caption_region") or {}
+            caption_line_ids = set(caption_region.get("line_ids") or [])
+            footer_line_ids = set(region.footer_line_ids)
+            positioned_evidence = table.metadata.get("table_positioned_evidence") or {}
+            content_line_ids = (
+                set(positioned_evidence.get("line_ids") or [])
+                - caption_line_ids
+                - footer_line_ids
+            )
+            binding = table.metadata.get("caption_binding") or {}
+            if binding.get("placement"):
+                caption_placements.append(str(binding["placement"]))
+            table_number = caption_region.get("table_number") or table.metadata.get(
+                "table_number"
+            )
+            if table_number is not None:
+                table_numbers.append(str(table_number))
+            for role, line_ids in (
+                ("caption", caption_line_ids),
+                ("content", content_line_ids),
+                ("footer", footer_line_ids),
+            ):
+                for line_id in line_ids:
+                    if line_id in line_roles and line_roles[line_id] != role:
+                        raise ValueError(
+                            f"Table component line has competing roles: {line_id}."
+                        )
+                    line_roles[line_id] = role
+        if not eligible or "caption" not in set(line_roles.values()):
+            continue
+        if any(line_id not in line_to_block_id for line_id in line_roles):
+            continue
+        touched_block_ids = {
+            line_to_block_id[line_id] for line_id in line_roles
+        }
+        if touched_block_ids & existing_entity_owned_block_ids:
+            raise ValueError(
+                f"Table ownership conflicts with an existing entity: {resolved_table.table_id}."
+            )
+        for block_id in touched_block_ids:
+            block = original_blocks_by_id[block_id]
+            unselected_line_ids = [
+                line_id for line_id in block["line_ids"] if line_id not in line_roles
+            ]
+            if not unselected_line_ids:
+                continue
+            block_text_by_line_id = dict(
+                zip(block["line_ids"], str(block["text"]).split("\n"), strict=True)
+            )
+            selected_roles = {
+                line_roles[line_id]
+                for line_id in block["line_ids"]
+                if line_id in line_roles
+            }
+            if selected_roles == {"footer"} and all(
+                VISUAL_OBJECT_DOI_PATTERN.fullmatch(
+                    clean_text(block_text_by_line_id[line_id])
+                )
+                is not None
+                for line_id in unselected_line_ids
+            ):
+                for line_id in unselected_line_ids:
+                    line_roles[line_id] = "footer"
+                continue
+            eligible = False
+            break
+        if not eligible:
+            continue
+        entity_id = f"paper-table:{resolved_table.table_id}"
+        for line_id in line_roles:
+            existing_entity_id = claimed_line_entity_ids.get(line_id)
+            if existing_entity_id is not None and existing_entity_id != entity_id:
+                raise ValueError(f"Table entities compete for line {line_id}.")
+            claimed_line_entity_ids[line_id] = entity_id
+        table_entity_records.append(
+            {
+                "entity_id": entity_id,
+                "resolved_table_id": resolved_table.table_id,
+                "resolution_type": resolved_table.resolution_type,
+                "logical_table_number": resolved_table.logical_table_number,
+                "source_table_ids": list(resolved_table.source_table_ids),
+                "line_roles": line_roles,
+                "scope": (
+                    "supplementary"
+                    if any(number.upper().startswith("S") for number in table_numbers)
+                    else "main"
+                ),
+                "caption_placements": list(dict.fromkeys(caption_placements)),
+            }
+        )
+
+    claims_by_block_id: dict[str, tuple[str, dict[str, str]]] = {}
+    for record in table_entity_records:
+        entity_id = str(record["entity_id"])
+        line_roles = record["line_roles"]
+        for line_id, role in line_roles.items():
+            block_id = line_to_block_id[line_id]
+            if block_id not in claims_by_block_id:
+                claims_by_block_id[block_id] = (entity_id, {})
+            block_entity_id, block_roles = claims_by_block_id[block_id]
+            if block_entity_id != entity_id:
+                raise ValueError(f"Table entities compete for block {block_id}.")
+            block_roles[line_id] = role
+
+    component_block_ids: dict[str, dict[str, list[str]]] = {
+        str(record["entity_id"]): {"caption": [], "content": [], "footer": []}
+        for record in table_entity_records
+    }
+    original_block_to_table_entity: dict[str, str] = {}
+    refined_blocks: list[dict[str, object]] = []
+    for block in original_blocks:
+        block_id = str(block["block_id"])
+        claim = claims_by_block_id.get(block_id)
+        if claim is None:
+            refined_blocks.append(block)
+            continue
+        entity_id, roles_by_line_id = claim
+        line_ids = list(block["line_ids"])
+        line_texts = str(block["text"]).split("\n")
+        if len(line_ids) != len(line_texts) or set(line_ids) != set(roles_by_line_id):
+            raise ValueError(f"Table block refinement is not line-exact: {block_id}.")
+        original_block_to_table_entity[block_id] = entity_id
+        part_start = 0
+        part_index = 0
+        while part_start < len(line_ids):
+            role = roles_by_line_id[line_ids[part_start]]
+            part_end = part_start + 1
+            while (
+                part_end < len(line_ids)
+                and roles_by_line_id[line_ids[part_end]] == role
+            ):
+                part_end += 1
+            part_line_ids = line_ids[part_start:part_end]
+            part_id = (
+                block_id
+                if part_start == 0 and part_end == len(line_ids)
+                else f"{block_id}:table-part-{part_index}"
+            )
+            page_bboxes = [source_lines_by_id[line_id].bbox for line_id in part_line_ids]
+            group = orientation_groups_by_id[str(block["orientation_group_id"])]
+            canonical_bboxes = [
+                canonical_bbox_for_orientation(
+                    bbox,
+                    orientation=str(block["orientation"]),
+                    orientation_source_bbox=group["source_bbox"],
+                )
+                for bbox in page_bboxes
+            ]
+            refined_blocks.append(
+                {
+                    **block,
+                    "block_id": part_id,
+                    "bbox": (
+                        min(bbox[0] for bbox in page_bboxes),
+                        min(bbox[1] for bbox in page_bboxes),
+                        max(bbox[2] for bbox in page_bboxes),
+                        max(bbox[3] for bbox in page_bboxes),
+                    ),
+                    "canonical_bbox": (
+                        min(bbox[0] for bbox in canonical_bboxes),
+                        min(bbox[1] for bbox in canonical_bboxes),
+                        max(bbox[2] for bbox in canonical_bboxes),
+                        max(bbox[3] for bbox in canonical_bboxes),
+                    ),
+                    "line_ids": part_line_ids,
+                    "text": "\n".join(line_texts[part_start:part_end]),
+                }
+            )
+            component_block_ids[entity_id][role].append(part_id)
+            part_start = part_end
+            part_index += 1
+
+    table_entities: list[dict[str, object]] = []
+    for record in table_entity_records:
+        entity_id = str(record["entity_id"])
+        components = [
+            {
+                "role": role,
+                "block_ids": component_block_ids[entity_id][role],
+                "content_refs": (
+                    [
+                        {
+                            "artifact_kind": "resolved_table",
+                            "artifact_id": record["resolved_table_id"],
+                        },
+                        *[
+                            {
+                                "artifact_kind": "extracted_table",
+                                "artifact_id": source_table_id,
+                            }
+                            for source_table_id in record["source_table_ids"]
+                        ],
+                    ]
+                    if role == "content"
+                    else []
+                ),
+            }
+            for role in ("caption", "content", "footer")
+            if component_block_ids[entity_id][role]
+        ]
+        table_entities.append(
+            {
+                "entity_id": entity_id,
+                "kind": "table",
+                "scope": record["scope"],
+                "components": components,
+                "evidence": {
+                    "resolved_table_id": record["resolved_table_id"],
+                    "resolution_type": record["resolution_type"],
+                    "logical_table_number": record["logical_table_number"],
+                    "source_table_ids": record["source_table_ids"],
+                    "caption_placements": record["caption_placements"],
+                },
+            }
+        )
+
+    pages = deepcopy(state.discovery.pages)
+    placed_table_entity_ids: set[str] = set()
+    for page in pages:
+        for group in page["orientation_groups"]:
+            for region in group["layout_regions"]:
+                placements = region["block_placements"]
+                table_placements: dict[str, list[dict[str, object]]] = {}
+                for placement in placements:
+                    entity_id = original_block_to_table_entity.get(
+                        str(placement["block_id"])
+                    )
+                    if entity_id is not None:
+                        table_placements.setdefault(entity_id, []).append(placement)
+                final_placements: list[dict[str, object]] = []
+                emitted_here: set[str] = set()
+                for placement in placements:
+                    entity_id = original_block_to_table_entity.get(
+                        str(placement["block_id"])
+                    )
+                    if entity_id is None:
+                        final_placements.append(placement)
+                        continue
+                    if (
+                        entity_id in placed_table_entity_ids
+                        or entity_id in emitted_here
+                    ):
+                        continue
+                    related = table_placements[entity_id]
+                    final_placements.append(
+                        {
+                            **placement,
+                            "block_id": entity_id,
+                            "start_column": min(
+                                int(item["start_column"]) for item in related
+                            ),
+                            "end_column_exclusive": max(
+                                int(item["end_column_exclusive"]) for item in related
+                            ),
+                        }
+                    )
+                    emitted_here.add(entity_id)
+                region["block_placements"] = final_placements
+                placed_table_entity_ids.update(emitted_here)
+
+    structure: list[dict[str, object]] = []
+    placed_table_entity_ids = set()
+    for page in state.structure:
+        structural_unit_ids: list[str] = []
+        for structural_unit_id in page["structural_unit_ids"]:
+            entity_id = original_block_to_table_entity.get(str(structural_unit_id))
+            if entity_id is None:
+                structural_unit_ids.append(str(structural_unit_id))
+            elif entity_id not in placed_table_entity_ids:
+                structural_unit_ids.append(entity_id)
+                placed_table_entity_ids.add(entity_id)
+        structure.append(
+            {"page_num": page["page_num"], "structural_unit_ids": structural_unit_ids}
+        )
+
+    blocks_by_id = {str(block["block_id"]): block for block in refined_blocks}
+    all_entities = [*state.entities, *table_entities]
+    entity_owned_block_ids = {
+        str(block_id)
+        for entity in all_entities
+        for component in entity.get("components", [])
+        for block_id in component.get("block_ids", [])
+    }
+    prose_segments: list[dict[str, object]] = []
+    heading_block_ids: list[str] = []
+    paragraphs: list[dict[str, object]] = []
+    paragraph_count = 0
+    for block_id in [
+        structural_unit_id
+        for page in structure
+        for structural_unit_id in page["structural_unit_ids"]
+    ]:
+        if (
+            block_id not in state.candidate_prose_block_ids
+            or block_id in entity_owned_block_ids
+        ):
+            continue
+        block = blocks_by_id[block_id]
+        if block["role"] == "heading":
+            if paragraphs:
+                prose_segments.append(
+                    {
+                        "segment_id": f"paper-prose-segment-{len(prose_segments)}",
+                        "heading_block_ids": heading_block_ids,
+                        "paragraphs": paragraphs,
+                    }
+                )
+                heading_block_ids = []
+                paragraphs = []
+            heading_block_ids.append(block_id)
+            continue
+        paragraphs.append(
+            {
+                "paragraph_id": f"paper-paragraph-{paragraph_count}",
+                "block_ids": [block_id],
+                "text": block["text"],
+            }
+        )
+        paragraph_count += 1
+    if heading_block_ids or paragraphs:
+        prose_segments.append(
+            {
+                "segment_id": f"paper-prose-segment-{len(prose_segments)}",
+                "heading_block_ids": heading_block_ids,
+                "paragraphs": paragraphs,
+            }
+        )
+
+    final_prose_ids = {
+        str(block_id)
+        for segment in prose_segments
+        for block_id in segment["heading_block_ids"]
+    } | {
+        str(block_id)
+        for segment in prose_segments
+        for paragraph in segment["paragraphs"]
+        for block_id in paragraph["block_ids"]
+    }
+    unassigned_block_ids = [
+        str(block["block_id"])
+        for block in refined_blocks
+        if block["block_id"] not in final_prose_ids
+        and block["block_id"] not in entity_owned_block_ids
+    ]
+    if (
+        final_prose_ids & entity_owned_block_ids
+        or final_prose_ids & set(unassigned_block_ids)
+        or entity_owned_block_ids & set(unassigned_block_ids)
+        or final_prose_ids | entity_owned_block_ids | set(unassigned_block_ids)
+        != set(blocks_by_id)
+    ):
+        raise ValueError("PaperDocument ownership is not pairwise disjoint and complete.")
+    original_line_counts = Counter(
+        str(line_id) for block in original_blocks for line_id in block["line_ids"]
+    )
+    refined_line_counts = Counter(
+        str(line_id) for block in refined_blocks for line_id in block["line_ids"]
+    )
+    if (
+        original_line_counts != refined_line_counts
+        or any(count != 1 for count in refined_line_counts.values())
+    ):
+        raise ValueError("PaperDocument block refinement changed retained-line coverage.")
+    opaque_entity_ids = {
+        str(entity["entity_id"])
+        for entity in all_entities
+        if entity.get("kind") in {"figure", "table"}
+    }
+    opaque_owned_block_ids = {
+        str(block_id)
+        for entity in all_entities
+        if entity.get("kind") in {"figure", "table"}
+        for component in entity.get("components", [])
+        for block_id in component.get("block_ids", [])
+    }
+    structure_ids = [
+        str(structural_unit_id)
+        for page in structure
+        for structural_unit_id in page["structural_unit_ids"]
+    ]
+    page_placement_ids = [
+        str(placement["block_id"])
+        for page in pages
+        for group in page["orientation_groups"]
+        for region in group["layout_regions"]
+        for placement in region["block_placements"]
+    ]
+    expected_structure_ids = (
+        set(blocks_by_id) - opaque_owned_block_ids
+    ) | opaque_entity_ids
+    if (
+        len(structure_ids) != len(set(structure_ids))
+        or set(structure_ids) != expected_structure_ids
+        or page_placement_ids != structure_ids
+    ):
+        raise ValueError("Final PaperDocument structure does not cover opaque entities once.")
+    paper_document = {
+        "paper_id": state.paper_id,
+        "source_pdf": state.source_pdf,
+        "pages": pages,
+        "blocks": refined_blocks,
         "structure": structure,
         "prose": {"segments": prose_segments},
-        "entities": [*figure_entities, *bibliography_entities],
-        "unassigned_block_ids": [
-            block.block_id
-            for block in blocks
-            if block.block_id not in prose_ids
-            and block.block_id not in entity_owned_block_ids
-        ],
-        "bibliography_region_candidates": bibliography_region_candidates,
-        "figure_scope_rejections": [
-            candidate for candidate in figure_scope_candidates if candidate["concerns"]
-        ],
-    }, bibliography_entries
+        "entities": all_entities,
+        "unassigned_block_ids": unassigned_block_ids,
+        "bibliography_region_candidates": state.bibliography_region_candidates,
+        "figure_scope_rejections": state.figure_scope_rejections,
+    }
+    return paper_document, list(state.bibliography_entries)
 
 
 def _build_block_layout_candidates(
