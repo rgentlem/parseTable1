@@ -14,6 +14,27 @@
 > `outputs/testpapers_batch_canonical_entity_step5_final_20260725`. The corpus
 > has 76 canonical table entities owning 88 physical table references.
 
+> **Page-furniture rule-mask checkpoint — 2026-07-27:** Candidate construction
+> and typed table-local positioned evidence now use one exact-containment mask
+> for an accepted furniture rectangle and its constituent drawing segments.
+> In `Association between anthropometric indices and chronic kidney disease-
+> Insights from NHANES 2009–2018.pdf`, PDF page 8, printed Table 1, the raw
+> artifact retains four ordinary and one stroked representations of the bottom
+> furniture rectangle, both consumers exclude them, and the synthetic rule span
+> at `y=744.2498168945312` is gone. All 28 corpus PDFs parsed successfully in
+> `outputs/testpapers_batch_page_furniture_rule_mask_20260727`. Twenty-six papers
+> are semantically unchanged. The intended paper recovers its PDF-page-8 Table 1
+> continuation and PDF-page-12 Table 4, corrects PDF-page-10 Table 2, and removes
+> the DOI-only row from PDF-page-15 Table 6. In `Systemic inflammation markers
+> and the prevalence of hypertension- A NHANES cross-sectional study.pdf`, PDF
+> pages 5–6, printed Table 1, grids and cells are unchanged; removal metadata
+> changes from three segments and cluster IDs `[1, 2, 3]` to four segments and
+> IDs `[1, 2]` because the singular matcher attributes overlapping exact and
+> containing regions to the first match. Preserving every applicable cluster ID
+> remains a metadata-only follow-up. This correction removes the duplicated-rule
+> trigger; it does not replace the pending canonical prose-boundary ownership
+> work above.
+
 This is the persistent implementation ToDo list for parser work. Agents should check it before changing extraction, normalization, row/column semantics, table routing, value parsing, diagnostics, or R inspection helpers. Update it when a task is completed, reprioritized, split, or superseded.
 
 The evidence-gated page-number substitution completed on 2026-07-27. All 28

@@ -22,6 +22,36 @@ def bbox_overlap_fraction(bbox: BBox, other_bbox: BBox) -> float:
     return (overlap_width * overlap_height) / (width * height)
 
 
+def page_furniture_rule_cluster_id(
+    segment: BBox,
+    page_num: int,
+    paper_page_furniture: PaperPageFurniture | None,
+) -> str | None:
+    """Return the accepted furniture cluster that exactly contains a rule."""
+    if paper_page_furniture is None:
+        return None
+
+    segment_left = min(float(segment[0]), float(segment[2]))
+    segment_top = min(float(segment[1]), float(segment[3]))
+    segment_right = max(float(segment[0]), float(segment[2]))
+    segment_bottom = max(float(segment[1]), float(segment[3]))
+    for region in paper_page_furniture.ignored_rule_regions:
+        if region.page_num != page_num:
+            continue
+        region_left = min(float(region.bbox[0]), float(region.bbox[2]))
+        region_top = min(float(region.bbox[1]), float(region.bbox[3]))
+        region_right = max(float(region.bbox[0]), float(region.bbox[2]))
+        region_bottom = max(float(region.bbox[1]), float(region.bbox[3]))
+        if (
+            region_left <= segment_left
+            and region_top <= segment_top
+            and segment_right <= region_right
+            and segment_bottom <= region_bottom
+        ):
+            return region.rule_cluster_id
+    return None
+
+
 def page_furniture_source_line_ids(
     paper_page_furniture: PaperPageFurniture | None,
 ) -> frozenset[str]:

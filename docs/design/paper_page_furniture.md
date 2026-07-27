@@ -216,6 +216,14 @@ page furniture is not reintroduced as small markers or definition lines.
 Recurrent edge-rule regions are applied only to candidate rule segments; they do
 not remove text, cells, or the raw positioned rule evidence.
 
+One shared exact-containment mask applies each accepted edge-rule region to both
+table-candidate rule geometry and typed table-local positioned evidence. The
+mask normalizes bbox direction and excludes the accepted composite rectangle
+and drawing segments whose bboxes are exactly contained within it. It does not
+round coordinates or use a numeric layout tolerance. The composite and its
+constituent segments remain unchanged in `PaperPositionedDocument` as raw
+source evidence.
+
 Raw raster and vector components remain in `PaperPositionedDocument`. Before
 figure-caption binding consumes those components, it excludes an exact
 component-kind-and-bbox signature only when that signature occurs on every page

@@ -30,6 +30,7 @@ from table1_parser.extract.table_selector import select_top_candidates
 from table1_parser.page_furniture_mask import (
     bbox_overlap_fraction,
     filter_positioned_items_for_page_furniture,
+    page_furniture_rule_cluster_id,
     page_furniture_source_line_ids,
 )
 from table1_parser.schemas import (
@@ -752,15 +753,7 @@ class PyMuPDFExtractor(BaseExtractor):
                 canonical_transform_source_bbox=canonical_transform_source_bbox,
                 orientation_group_id=orientation_group_id,
                 rotation_direction=rotation_direction,
-                ignored_rule_bboxes={
-                    region.bbox
-                    for region in (
-                        paper_page_furniture.ignored_rule_regions
-                        if paper_page_furniture is not None
-                        else []
-                    )
-                    if region.page_num == candidate.page_num
-                },
+                paper_page_furniture=paper_page_furniture,
                 text_filter_artifacts=[
                     artifact
                     for artifact, was_applied in (
@@ -878,19 +871,12 @@ class PyMuPDFExtractor(BaseExtractor):
                 removed_rule_segments = 0
                 removed_rule_cluster_ids: set[str] = set()
                 if paper_page_furniture is not None:
-                    rule_cluster_ids_by_bbox = {
-                        region.bbox: region.rule_cluster_id
-                        for region in paper_page_furniture.ignored_rule_regions
-                        if region.page_num == page_num
-                    }
                     kept_rule_segments: list[tuple[float, float, float, float]] = []
                     for segment in page_rule_segments:
-                        left = min(float(segment[0]), float(segment[2]))
-                        right = max(float(segment[0]), float(segment[2]))
-                        top = min(float(segment[1]), float(segment[3]))
-                        bottom = max(float(segment[1]), float(segment[3]))
-                        rule_cluster_id = rule_cluster_ids_by_bbox.get(
-                            (left, top, right, bottom)
+                        rule_cluster_id = page_furniture_rule_cluster_id(
+                            segment,
+                            page_num,
+                            paper_page_furniture,
                         )
                         if rule_cluster_id is None:
                             kept_rule_segments.append(segment)
@@ -1947,7 +1933,7 @@ def _table_local_positioned_evidence(
     canonical_transform_source_bbox: tuple[float, float, float, float] | None,
     orientation_group_id: str | None,
     rotation_direction: str,
-    ignored_rule_bboxes: set[tuple[float, float, float, float]],
+    paper_page_furniture: PaperPageFurniture | None,
     text_filter_artifacts: list[str],
 ) -> TablePositionedEvidence:
     """Project shared table-local PyMuPDF evidence into one canonical frame."""
@@ -2077,25 +2063,23 @@ def _table_local_positioned_evidence(
         index
         for index, segment in enumerate(page.rule_segments)
         if segment_intersects(segment)
-        and (
-            min(float(segment[0]), float(segment[2])),
-            min(float(segment[1]), float(segment[3])),
-            max(float(segment[0]), float(segment[2])),
-            max(float(segment[1]), float(segment[3])),
+        and page_furniture_rule_cluster_id(
+            segment,
+            page_num,
+            paper_page_furniture,
         )
-        not in ignored_rule_bboxes
+        is None
     ]
     stroked_rule_segment_indices = [
         index
         for index, segment in enumerate(page.stroked_rule_segments)
         if segment_intersects(segment)
-        and (
-            min(float(segment[0]), float(segment[2])),
-            min(float(segment[1]), float(segment[3])),
-            max(float(segment[0]), float(segment[2])),
-            max(float(segment[1]), float(segment[3])),
+        and page_furniture_rule_cluster_id(
+            segment,
+            page_num,
+            paper_page_furniture,
         )
-        not in ignored_rule_bboxes
+        is None
     ]
     source_rule_segments = [page.rule_segments[index] for index in rule_segment_indices]
     source_stroked_rule_segments = [
