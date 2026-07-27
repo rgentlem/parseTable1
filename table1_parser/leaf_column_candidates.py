@@ -1,4 +1,4 @@
-"""Build provisional leaf columns from raw body occupancy and rule endpoints."""
+"""Build provisional physical bands from body occupancy and rule endpoints."""
 
 from __future__ import annotations
 
@@ -7,11 +7,10 @@ from collections.abc import Sequence
 from table1_parser.schemas import (
     BodyOccupancyTable,
     ExtractedTable,
-    LeafColumnBandCandidate,
     LeafColumnCandidateTable,
     LeafColumnRuleEndpointEvidence,
     LeafColumnSeparatorCandidate,
-    TablePositionedEvidence,
+    PhysicalColumnBandCandidate,
 )
 
 
@@ -19,7 +18,7 @@ def build_leaf_column_candidate_tables(
     body_occupancy_tables: Sequence[BodyOccupancyTable],
     extracted_tables: Sequence[ExtractedTable],
 ) -> list[LeafColumnCandidateTable]:
-    """Build one provisional geometry-only leaf-column record per table."""
+    """Build one provisional geometry-only physical-band record per table."""
     extracted_by_table_id = {table.table_id: table for table in extracted_tables}
     return [
         build_leaf_column_candidate_table(
@@ -35,10 +34,10 @@ def build_leaf_column_candidate_table(
     *,
     extracted_table: ExtractedTable | None,
 ) -> LeafColumnCandidateTable:
-    """Build raw zero-valley leaf candidates for one table body."""
+    """Build raw zero-valley physical bands for one table body."""
     source_artifacts = [
         "body_occupancy.json",
-        "extracted_tables.json:metadata.table_positioned_evidence",
+        "extracted_tables.json:positioned_evidence",
     ]
     diagnostics: list[str] = []
     concerns: list[str] = []
@@ -63,18 +62,7 @@ def build_leaf_column_candidate_table(
             diagnostics=list(dict.fromkeys(diagnostics)),
         )
 
-    raw_evidence = extracted_table.metadata.get("table_positioned_evidence")
-    if not isinstance(raw_evidence, dict):
-        diagnostics.append("table_positioned_evidence_missing")
-        return LeafColumnCandidateTable(
-            table_id=occupancy.table_id,
-            page_num=occupancy.page_num,
-            source_artifacts=source_artifacts,
-            body_line_count=len(occupancy.lines),
-            bin_width=occupancy.bin_width,
-            diagnostics=diagnostics,
-        )
-    evidence = TablePositionedEvidence.model_validate(raw_evidence)
+    evidence = extracted_table.positioned_evidence
 
     counts = occupancy.occupied_line_counts
     if occupancy.minimum_separator_gap_width is None:
@@ -142,7 +130,7 @@ def build_leaf_column_candidate_table(
             concerns=concerns,
         )
 
-    bands: list[LeafColumnBandCandidate] = []
+    bands: list[PhysicalColumnBandCandidate] = []
     band_bounds = [occupancy.x_min]
     band_bounds.extend(separator.canonical_x for separator in separators)
     band_bounds.append(occupancy.x_max)
@@ -165,9 +153,8 @@ def build_leaf_column_candidate_table(
             diagnostics.append(f"occupied_band_support_missing:{band_index}")
             continue
         bands.append(
-            LeafColumnBandCandidate(
+            PhysicalColumnBandCandidate(
                 band_id=f"{occupancy.table_id}:band:{band_index}",
-                provisional_role="stub" if band_index == 0 else "value",
                 canonical_x_bounds=(band_left, band_right),
                 left_separator_id=(
                     left_separator.separator_id if left_separator else None
@@ -188,8 +175,7 @@ def build_leaf_column_candidate_table(
         bin_width=occupancy.bin_width,
         separators=separators,
         bands=bands,
-        provisional_grid_band_ids=[band.band_id for band in bands],
-        provisional_stub_band_id=bands[0].band_id,
+        physical_band_ids=[band.band_id for band in bands],
         concerns=concerns,
         diagnostics=diagnostics,
     )
@@ -198,5 +184,5 @@ def build_leaf_column_candidate_table(
 def leaf_column_candidate_tables_to_payload(
     tables: Sequence[LeafColumnCandidateTable],
 ) -> list[dict[str, object]]:
-    """Serialize provisional leaf-column records as JSON-ready dictionaries."""
+    """Serialize provisional physical-band records as JSON-ready dictionaries."""
     return [table.model_dump(mode="json") for table in tables]

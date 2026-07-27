@@ -12,7 +12,6 @@ from table1_parser.schemas import (
     TableBoundaryCandidate,
     TableBoundaryProposal,
     TableBoundaryRuleReference,
-    TablePositionedEvidence,
 )
 
 
@@ -47,15 +46,7 @@ def build_table_boundary_proposal(
     """Build one canonical boundary proposal without selecting row ownership."""
     concerns: list[str] = []
     diagnostics: list[str] = []
-    raw_evidence = table.metadata.get("table_positioned_evidence")
-    if not isinstance(raw_evidence, dict):
-        return TableBoundaryProposal(
-            table_id=table.table_id,
-            page_num=table.page_num,
-            review_required=True,
-            concerns=["missing_table_positioned_evidence"],
-        )
-    evidence = TablePositionedEvidence.model_validate(raw_evidence)
+    evidence = table.positioned_evidence
     table_bbox = evidence.canonical_candidate_bbox or evidence.canonical_bbox
     if table_bbox is None:
         return TableBoundaryProposal(

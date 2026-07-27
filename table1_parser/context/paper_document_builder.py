@@ -12,13 +12,12 @@ from types import SimpleNamespace
 from table1_parser.context.paper_positioned_document import canonical_bbox_for_orientation
 from table1_parser.context.visual_references import VISUAL_OBJECT_DOI_PATTERN
 from table1_parser.paper_discovery import PaperDiscoveryState
-from table1_parser.page_furniture_mask import page_furniture_cluster_ids_for_bbox
+from table1_parser.page_furniture_mask import page_furniture_source_line_ids
 from table1_parser.paper_bibliography import (
     bibliography_item_evidence_for_block,
     build_numbered_bibliography_entries_from_region,
     build_unnumbered_bibliography_entries_from_layout_lines,
 )
-from table1_parser.paper_page_furniture import normalize_page_furniture_text
 from table1_parser.reference_sections import (
     INLINE_REFERENCE_START_PATTERN,
     REFERENCE_HEADING_LINE_PATTERN,
@@ -99,7 +98,9 @@ def build_paper_document_state(
     stream_pages: list[SimpleNamespace] = []
     font_style_counts: Counter[tuple[str, float]] = Counter()
     removed_furniture_line_count = 0
-    furniture_text_keys, furniture_text_patterns = _page_furniture_text_matchers(paper_page_furniture)
+    furniture_source_line_ids = page_furniture_source_line_ids(
+        paper_page_furniture
+    )
     for page in paper_positioned_document.pages:
         page_line_records: list[dict[str, object]] = []
         leading_digit_bboxes_by_line: dict[
@@ -124,15 +125,7 @@ def build_paper_document_state(
                 and positioned_line.line_index is not None
                 else (-1, -1)
             )
-            if _is_page_furniture_text(line_record["text"], furniture_text_keys, furniture_text_patterns):
-                removed_on_page += 1
-                continue
-            if page_furniture_cluster_ids_for_bbox(
-                paper_page_furniture,
-                page_num=page.page_num,
-                bbox=line_record["bbox"],
-                min_overlap_fraction=0.8,
-            ):
+            if positioned_line.line_id in furniture_source_line_ids:
                 removed_on_page += 1
                 continue
             page_line_records.append(line_record)
@@ -567,60 +560,12 @@ def build_paper_document_state(
     positioned_pages = {
         page.page_num: page for page in paper_positioned_document.pages
     }
-    component_pages_by_signature: dict[
-        tuple[str, tuple[float, float, float, float]], set[int]
-    ] = {}
-    for page_num, page in positioned_pages.items():
-        for component in page.visual_components:
-            component_pages_by_signature.setdefault(
-                (component.component_kind, component.bbox), set()
-            ).add(page_num)
-    page_furniture_cluster_pages = (
-        {
-            cluster.cluster_id: set(cluster.page_nums)
-            for cluster in paper_page_furniture.clusters
-        }
-        if paper_page_furniture is not None
-        else {}
-    )
     figure_eligible_components_by_page: dict[
         int, list[PaperPositionedVisualComponent]
-    ] = {}
-    for page_num, page in positioned_pages.items():
-        page_furniture_regions = (
-            [
-                region
-                for region in paper_page_furniture.ignored_regions
-                if region.page_num == page_num
-            ]
-            if paper_page_furniture is not None
-            else []
-        )
-        eligible_components: list[PaperPositionedVisualComponent] = []
-        for component in page.visual_components:
-            component_page_nums = component_pages_by_signature[
-                (component.component_kind, component.bbox)
-            ]
-            represents_page_furniture = False
-            for region in page_furniture_regions:
-                cluster_page_nums = page_furniture_cluster_pages.get(
-                    region.cluster_id, set()
-                )
-                recurs_with_cluster = bool(cluster_page_nums) and (
-                    cluster_page_nums <= component_page_nums
-                )
-                overlaps_region = (
-                    component.bbox[0] < region.bbox[2]
-                    and component.bbox[2] > region.bbox[0]
-                    and component.bbox[1] < region.bbox[3]
-                    and component.bbox[3] > region.bbox[1]
-                )
-                if recurs_with_cluster and overlaps_region:
-                    represents_page_furniture = True
-                    break
-            if not represents_page_furniture:
-                eligible_components.append(component)
-        figure_eligible_components_by_page[page_num] = eligible_components
+    ] = {
+        page_num: list(page.visual_components)
+        for page_num, page in positioned_pages.items()
+    }
     component_proposals: dict[str, list[PaperPositionedVisualComponent]] = {}
     caption_bboxes: dict[str, tuple[float, float, float, float]] = {}
     for candidate in figure_scope_candidates:
@@ -1503,9 +1448,8 @@ def finalize_paper_document(
             caption_region = table.metadata.get("caption_region") or {}
             caption_line_ids = set(caption_region.get("line_ids") or [])
             footer_line_ids = set(region.footer_line_ids)
-            positioned_evidence = table.metadata.get("table_positioned_evidence") or {}
             content_line_ids = (
-                set(positioned_evidence.get("line_ids") or [])
+                set(table.positioned_evidence.line_ids)
                 - caption_line_ids
                 - footer_line_ids
             )
@@ -2246,34 +2190,6 @@ def _line_orientation(direction: object) -> str:
         if abs(dy) > abs(dx):
             return "vertical_text_up" if dy < 0.0 else "vertical_text_down"
     return "upright"
-
-
-def _page_furniture_text_matchers(
-    paper_page_furniture: PaperPageFurniture | None,
-) -> tuple[set[str], list[re.Pattern[str]]]:
-    if paper_page_furniture is None:
-        return set(), []
-    exact_keys: set[str] = set()
-    wildcard_patterns: list[re.Pattern[str]] = []
-    for cluster in paper_page_furniture.clusters:
-        key = " ".join(cluster.normalized_text_key.split())
-        if not key:
-            continue
-        if "<page_num>" in key:
-            continue
-        exact_keys.add(key)
-    return exact_keys, wildcard_patterns
-
-
-def _is_page_furniture_text(
-    text: object,
-    exact_keys: set[str],
-    wildcard_patterns: list[re.Pattern[str]],
-) -> bool:
-    if not exact_keys and not wildcard_patterns:
-        return False
-    normalized_text = normalize_page_furniture_text(clean_text(str(text)))
-    return normalized_text in exact_keys or any(pattern.match(normalized_text) for pattern in wildcard_patterns)
 
 
 def _detect_page_columns(

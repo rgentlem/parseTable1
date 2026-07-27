@@ -173,6 +173,7 @@ class PaperDiscoveryArtifacts:
     """Shared in-memory evidence built before final document ownership."""
 
     paper_positioned_document: PaperPositionedDocument
+    raw_paper_positioned_document: PaperPositionedDocument
     paper_page_furniture: PaperPageFurniture
     paper_document_state: PaperDocumentBuildState
     paper_table_mentions: list[PaperTableMention]
@@ -378,7 +379,6 @@ def _build_table_geometry_artifacts(
     cell_text_annotations = build_cell_text_annotation_tables_from_pdf(
         pdf_path,
         extracted_tables,
-        paper_page_furniture=paper_discovery.paper_page_furniture,
         paper_positioned_document=paper_discovery.paper_positioned_document,
     )
     table_boundary_proposals = build_table_boundary_proposals(
@@ -388,7 +388,6 @@ def _build_table_geometry_artifacts(
     table_regions = build_table_regions(
         extracted_tables,
         paper_discovery=paper_discovery.paper_document_state.discovery,
-        paper_page_furniture=paper_discovery.paper_page_furniture,
         cell_text_annotations=cell_text_annotations,
         table_boundary_proposals=table_boundary_proposals,
         paper_positioned_document=paper_discovery.paper_positioned_document,
@@ -462,6 +461,7 @@ def _build_canonical_extraction_artifacts(
         paper_positioned_document=paper_discovery.paper_positioned_document,
         table_boundary_proposals=provisional.table_boundary_proposals,
         leaf_column_candidates=provisional.leaf_column_candidates,
+        header_structure_candidates=provisional.header_structure_candidates,
     )
     final = _build_table_geometry_artifacts(
         pdf_path,
@@ -470,7 +470,7 @@ def _build_canonical_extraction_artifacts(
     )
     final.header_structure_candidates = inherit_adjacent_continuation_leaf_labels(
         final.extracted_tables,
-        final.header_structure_candidates,
+        provisional.header_structure_candidates,
     )
     return final
 
@@ -492,6 +492,17 @@ def _build_paper_discovery_artifacts(pdf_path: str) -> PaperDiscoveryArtifacts:
         paper_id=paper_stem,
         paper_positioned_document=paper_positioned_document,
     )
+    raw_paper_positioned_document = paper_positioned_document
+    paper_positioned_document = paper_positioned_document.model_copy(
+        update={
+            "pages": [
+                page
+                for page in paper_positioned_document.pages
+                if page.page_num in paper_page_furniture.page_scope.included_page_nums
+            ],
+            "page_count": len(paper_page_furniture.page_scope.included_page_nums),
+        }
+    )
     paper_document_state = build_paper_document_state(
         pdf_path,
         paper_page_furniture=paper_page_furniture,
@@ -508,6 +519,7 @@ def _build_paper_discovery_artifacts(pdf_path: str) -> PaperDiscoveryArtifacts:
     )
     return PaperDiscoveryArtifacts(
         paper_positioned_document=paper_positioned_document,
+        raw_paper_positioned_document=raw_paper_positioned_document,
         paper_page_furniture=paper_page_furniture,
         paper_document_state=paper_document_state,
         paper_table_mentions=paper_table_mentions,
@@ -1346,7 +1358,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         paper_footnotes=paper_footnotes,
         paper_bibliography=paper_bibliography,
         paper_page_furniture=paper_page_furniture,
-        paper_positioned_document=paper_positioned_document,
+        paper_positioned_document=paper_discovery.raw_paper_positioned_document,
         paper_document=paper_document,
         paper_style_profile=paper_style_profile,
         paper_markdown=paper_markdown,

@@ -21,17 +21,17 @@ class HeaderTextEvidence(BaseModel):
 
 
 class HeaderLeafCandidate(BaseModel):
-    """One preliminary leaf defined by a body-occupancy band."""
+    """One preliminary terminal header node mapped to a physical column."""
 
     leaf_id: str
-    leaf_index: int = Field(ge=0)
+    physical_col_idx: int = Field(ge=0)
     label: str
     raw_text: str = ""
     base_text: str = ""
     canonical_x_bounds: tuple[float, float]
     evidence_ids: list[str] = Field(default_factory=list)
-    occupancy_band_ids: list[str] = Field(default_factory=list)
-    occupancy_alignment: Literal["one_to_one"]
+    physical_band_ids: list[str] = Field(default_factory=list)
+    physical_band_alignment: Literal["one_to_one"]
     marker_ids: list[str] = Field(default_factory=list)
     label_source: Literal["local_positioned_text", "inherited_continuation"] = (
         "local_positioned_text"
@@ -77,7 +77,7 @@ class HeaderMarkerAttachmentCandidate(BaseModel):
 
 
 class HeaderStructureCandidate(BaseModel):
-    """Preliminary LaTeX-like header aligned with body occupancy bands."""
+    """Preliminary semantic header aligned with physical column bands."""
 
     candidate_id: str
     table_id: str
@@ -88,7 +88,7 @@ class HeaderStructureCandidate(BaseModel):
     source_artifacts: list[str] = Field(default_factory=list)
     header_row_indices: list[int] = Field(default_factory=list)
     body_row_indices: list[int] = Field(default_factory=list)
-    occupancy_band_ids: list[str] = Field(default_factory=list)
+    physical_band_ids: list[str] = Field(default_factory=list)
     leaf_candidates: list[HeaderLeafCandidate] = Field(default_factory=list)
     group_candidates: list[HeaderGroupCandidate] = Field(default_factory=list)
     relationships: list[HeaderStructureRelationship] = Field(default_factory=list)

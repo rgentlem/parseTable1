@@ -69,10 +69,10 @@ def build_column_header_schema(
 
     candidate_leaves = sorted(
         candidate.leaf_candidates,
-        key=lambda item: item.leaf_index,
+        key=lambda item: item.physical_col_idx,
     )
     candidate_leaf_by_id = {leaf.leaf_id: leaf for leaf in candidate_leaves}
-    leaf_indices = [leaf.leaf_index for leaf in candidate_leaves]
+    leaf_indices = [leaf.physical_col_idx for leaf in candidate_leaves]
     if leaf_indices != list(range(table.n_cols)):
         projection_errors.append(
             "candidate_leaf_axis_incomplete:"
@@ -125,10 +125,10 @@ def build_column_header_schema(
                     f"candidate_leaf_unknown_evidence:{leaf.leaf_id}:{evidence_id}"
                 )
                 continue
-            evidence_columns[evidence_id].add(leaf.leaf_index)
+            evidence_columns[evidence_id].add(leaf.physical_col_idx)
     for group in candidate.group_candidates:
         group_columns = sorted(
-            candidate_leaf_by_id[leaf_id].leaf_index
+            candidate_leaf_by_id[leaf_id].physical_col_idx
             for leaf_id in group.leaf_ids
             if leaf_id in candidate_leaf_by_id
         )
@@ -179,7 +179,7 @@ def build_column_header_schema(
     leaf_header_row_idx = max(candidate.header_row_indices, default=None)
     leaves: list[ColumnHeaderLeaf] = []
     for leaf in candidate_leaves:
-        col_idx = leaf.leaf_index
+        col_idx = leaf.physical_col_idx
         left, right = leaf.canonical_x_bounds
         body_nonempty_rows = [
             row_idx
@@ -215,7 +215,7 @@ def build_column_header_schema(
     groups: list[ColumnHeaderGroup] = []
     for group in candidate.group_candidates:
         group_columns = sorted(
-            candidate_leaf_by_id[leaf_id].leaf_index
+            candidate_leaf_by_id[leaf_id].physical_col_idx
             for leaf_id in group.leaf_ids
             if leaf_id in candidate_leaf_by_id
         )
@@ -263,7 +263,7 @@ def build_column_header_schema(
                 table_id=table.table_id,
                 parent_group_id=relationship.parent_group_id,
                 child_leaf_id=relationship.child_leaf_id,
-                leaf_col_idx=leaf.leaf_index,
+                leaf_col_idx=leaf.physical_col_idx,
                 evidence_ids=list(
                     dict.fromkeys([*group.evidence_ids, *leaf.evidence_ids])
                 ),

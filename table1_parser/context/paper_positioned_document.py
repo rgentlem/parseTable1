@@ -89,7 +89,7 @@ def build_paper_positioned_document(
                 continue
 
             page_width, page_height = page_size_from_pymupdf_page(page)
-            page_bbox = bbox_from_pymupdf_value(page.rect) or (
+            page_bbox = (
                 0.0,
                 0.0,
                 page_width,
@@ -343,7 +343,26 @@ def positioned_line_from_pymupdf_line(
 
 
 def page_size_from_pymupdf_page(page: Any) -> tuple[float, float]:
-    """Return page width and height from a PyMuPDF page object."""
+    """Return dimensions in PyMuPDF's unrotated page-coordinate frame."""
+    page_cropbox = getattr(page, "cropbox", None)
+    if (
+        page_cropbox is not None
+        and hasattr(page_cropbox, "width")
+        and hasattr(page_cropbox, "height")
+    ):
+        return float(page_cropbox.width), float(page_cropbox.height)
+    if page_cropbox is not None and all(
+        hasattr(page_cropbox, attr) for attr in ("x0", "y0", "x1", "y1")
+    ):
+        return (
+            float(page_cropbox.x1) - float(page_cropbox.x0),
+            float(page_cropbox.y1) - float(page_cropbox.y0),
+        )
+    if isinstance(page_cropbox, (list, tuple)) and len(page_cropbox) == 4:
+        return (
+            float(page_cropbox[2]) - float(page_cropbox[0]),
+            float(page_cropbox[3]) - float(page_cropbox[1]),
+        )
     page_rect = getattr(page, "rect", None)
     if page_rect is not None and hasattr(page_rect, "width") and hasattr(page_rect, "height"):
         return float(page_rect.width), float(page_rect.height)

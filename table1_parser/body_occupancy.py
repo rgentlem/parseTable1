@@ -18,7 +18,6 @@ from table1_parser.schemas import (
     PaperPositionedPage,
     TableBoundaryProposal,
     TableCell,
-    TablePositionedEvidence,
     TableRegion,
 )
 
@@ -117,14 +116,10 @@ def build_body_occupancy_table(
         diagnostics.append("table_boundary_proposal_missing")
     if positioned_page is None:
         diagnostics.append("positioned_page_missing")
-    raw_evidence = table.metadata.get("table_positioned_evidence")
-    if not isinstance(raw_evidence, dict):
-        diagnostics.append("table_positioned_evidence_missing")
     if (
         diagnostics
         or table_boundary_proposal is None
         or positioned_page is None
-        or not isinstance(raw_evidence, dict)
     ):
         return BodyOccupancyTable(
             table_id=table.table_id,
@@ -134,7 +129,7 @@ def build_body_occupancy_table(
             diagnostics=diagnostics,
         )
 
-    evidence = TablePositionedEvidence.model_validate(raw_evidence)
+    evidence = table.positioned_evidence
     table_bbox = table_boundary_proposal.canonical_table_bbox
     if table_bbox is None:
         diagnostics.append("canonical_table_bbox_missing")

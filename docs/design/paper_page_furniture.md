@@ -40,6 +40,7 @@ the same ignored regions before they build downstream artifacts.
 {
   "paper_id": "paper-stem",
   "source_pdf": "paper.pdf",
+  "page_scope": {},
   "observations": [],
   "clusters": [],
   "ignored_regions": [],
@@ -51,6 +52,23 @@ the same ignored regions before they build downstream artifacts.
   }
 }
 ```
+
+## Page Scope Record
+
+`page_scope` is the sole paper-length authority. It records
+`physical_page_count`, `detection_status`, `reported_paper_page_total`,
+`terminal_pdf_page_num`, `included_page_nums`,
+`excluded_trailing_page_nums`, `printed_page_offset`, accepted source
+observation IDs, and diagnostics.
+
+Detection uses the first accepted recurrent page-number candidate matching
+`N of M` or `N / M` whose constant printed-page offset yields a terminal PDF
+page and whose observations include `M of M`. If no candidate qualifies,
+`detection_status` is `unknown`, every physical page is included, and none is
+excluded.
+
+Furniture clustering and recurrent-rule detection use only the included page
+set and its count. Raw observations remain present for every physical PDF page.
 
 ## Text Observation Record
 
@@ -81,25 +99,31 @@ Optional fields:
 region as page-width/page-height fractions, so repeated positions can be compared
 across pages with slightly different sizes.
 
-`normalized_text` is only a matching key. It collapses whitespace and maps a
-standalone numeric line to `<page_num>` without requiring the printed number to
-equal the PDF page index. A line with at least two standalone integer tokens is
-treated as a structural page counter when its first integer equals the current
-PDF page number. Only that first token position becomes `<page_num>`; the
-remaining text, punctuation, and numeric tokens stay unchanged and must recur
-exactly before clustering can classify the line as page furniture. This
-recognizes counter forms without requiring wording such as `Page N of M` or
-assuming that the counter total equals the physical PDF page count. Existing
-embedded PDF-index masking remains available for other repeated mixed-text
-lines. `raw_text` preserves the observed text.
+`normalized_text` collapses whitespace only. It preserves every observed
+integer, while `raw_text` preserves the exact source text.
+
+Page-number substitution is an evidence-gated matching feature, not observation
+normalization. The collector creates one private candidate for each standalone
+integer and masks only that slot in its candidate template. Candidates group by
+single-slot template and orientation only while their page-relative source bboxes
+retain one positive common intersection. Spatially ambiguous membership is
+rejected. A group is accepted only when it has one observation on each of at
+least two distinct PDF pages, completely covers all PDF pages, all even PDF
+pages, or all odd PDF pages after page 1, and every observation has the same
+`slot value - PDF page number`.
+
+Only an accepted template becomes an additional matching key in canonical
+furniture clustering. Its regions contain exactly the accepted source-line IDs.
+A rejected candidate leaves the ordinary full-text key available for exact-text
+clustering; no observation is mutated before or after candidate evaluation.
 
 The top-level metadata `page_count` should come from the PDF document page
 count, not from the highest page number with extractable text observations.
 
 ## Cluster Record
 
-A cluster is repeated text with similar normalized content and stable
-page-relative location.
+A cluster is repeated ordinary text or an accepted page-number template with
+stable page-relative location.
 
 Required fields:
 
@@ -154,35 +178,34 @@ arbitrary page subset remain available to table extraction.
 
 ## Recurrence Rule
 
-Initial clustering should require both:
+Clustering requires both:
 
-- repeated normalized text or repeated text pattern
+- repeated ordinary normalized text or an accepted page-number candidate template
 - stable page-relative position
 
-The initial implementation clusters exact `normalized_text` values by nearby
-page-relative centers, then only accepts clusters in a page edge band. This
-keeps repeated body-table values or repeated table notes from becoming page
-furniture just because they recur at similar coordinates. It records
-`all_pages`, `odd_pages`, `even_pages`, or `page_subset` recurrence according to
-the pages covered by the matched group.
+The implementation clusters matching keys and orientations when their
+page-relative source bboxes retain one positive common intersection. This
+admits observed coordinate drift and text-width changes without rounding
+coordinates or adding a distance, overlap-fraction, or IoU threshold. It then
+evaluates complete all-page, even-page, and odd-body-page recurrence
+independently. Even recurrence must cover every even PDF page; odd-body
+recurrence must cover every odd PDF page after page 1. Partial parity sequences
+and arbitrary page subsets are rejected regardless of their total-page
+fraction.
 
-A practical starting threshold is at least three pages or at least 50-70% of
-paper pages. Store the exact threshold and skipped-candidate diagnostics in
-`metadata`.
-
-Also evaluate odd-page and even-page recurrence separately. Printed page
-furniture often alternates by page parity, such as different left/right running
-headers. In that case `page_fraction` may be low across the full paper, but
-`scope_page_fraction` can be high within `recurrence_scope = "odd_pages"` or
-`"even_pages"`.
-
-A variable standalone numeric line may become `<page_num>` furniture only when
-it is in the top or bottom edge band and recurs over `all_pages`, `odd_pages`,
-or `even_pages`. Arbitrary `page_subset` recurrence is insufficient because
-continued tables can place changing numeric values at stable near-edge
-positions on several consecutive pages.
+A numeric slot can produce `<page_num>` only through the candidate gate above.
+The constant-offset invariant supports consecutive or odd/even page sequences
+and nonzero printed-page offsets while rejecting constant issue, volume, year,
+or counter-total slots. Duplicate observations on one PDF page, contradictory
+offsets, insufficient coverage, and spatial ambiguity reject the candidate.
 
 ## Consumption Status
+
+Immediately after page-furniture detection, the parser creates one in-memory
+projection of `PaperPositionedDocument` containing only `included_page_nums`.
+Every later document-interpretation and table-extraction stage consumes that
+projection. The persisted `paper_positioned_document.json` remains the complete
+raw record of all physical pages.
 
 Extraction uses this artifact before candidate refinement. It records
 `page_furniture_overlap` metadata when a candidate bbox touches ignored regions

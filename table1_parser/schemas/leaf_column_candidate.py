@@ -1,4 +1,4 @@
-"""Schemas for provisional geometry-only leaf-column candidates."""
+"""Schemas for provisional geometry-only physical-column candidates."""
 
 from __future__ import annotations
 
@@ -28,11 +28,10 @@ class LeafColumnSeparatorCandidate(BaseModel):
     rule_endpoints: list[LeafColumnRuleEndpointEvidence] = Field(default_factory=list)
 
 
-class LeafColumnBandCandidate(BaseModel):
+class PhysicalColumnBandCandidate(BaseModel):
     """One provisional physical column band bounded by occupancy valleys."""
 
     band_id: str
-    provisional_role: Literal["stub", "value"]
     canonical_x_bounds: tuple[float, float]
     left_separator_id: str | None = None
     right_separator_id: str | None = None
@@ -41,7 +40,7 @@ class LeafColumnBandCandidate(BaseModel):
 
 
 class LeafColumnCandidateTable(BaseModel):
-    """Provisional occupancy/rule leaf-column evidence for one table."""
+    """Legacy-named provisional physical-band evidence for one table."""
 
     table_id: str
     page_num: int = Field(ge=1)
@@ -52,8 +51,7 @@ class LeafColumnCandidateTable(BaseModel):
     body_line_count: int = Field(ge=0)
     bin_width: float | None = Field(default=None, gt=0.0)
     separators: list[LeafColumnSeparatorCandidate] = Field(default_factory=list)
-    bands: list[LeafColumnBandCandidate] = Field(default_factory=list)
-    provisional_grid_band_ids: list[str] = Field(default_factory=list)
-    provisional_stub_band_id: str | None = None
+    bands: list[PhysicalColumnBandCandidate] = Field(default_factory=list)
+    physical_band_ids: list[str] = Field(default_factory=list)
     concerns: list[str] = Field(default_factory=list)
     diagnostics: list[str] = Field(default_factory=list)

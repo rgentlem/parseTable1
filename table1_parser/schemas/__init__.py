@@ -47,10 +47,10 @@ from table1_parser.schemas.llm_variable_plausibility_monitoring import (
     LLMVariablePlausibilityMonitoringReport,
 )
 from table1_parser.schemas.leaf_column_candidate import (
-    LeafColumnBandCandidate,
     LeafColumnCandidateTable,
     LeafColumnRuleEndpointEvidence,
     LeafColumnSeparatorCandidate,
+    PhysicalColumnBandCandidate,
 )
 from table1_parser.schemas.header_structure_candidate import (
     HeaderGroupCandidate,
@@ -106,6 +106,8 @@ from table1_parser.schemas.paper_footnotes import (
     PaperFootnotes,
 )
 from table1_parser.schemas.paper_page_furniture import (
+    PaperPageScope,
+    PaperPageScopeDetectionStatus,
     PageFurnitureCluster,
     PageFurnitureRecurrenceScope,
     PageFurnitureRegion,
@@ -207,10 +209,10 @@ __all__ = [
     "FootnoteSourceScope",
     "LLMVariablePlausibilityCallRecord",
     "LLMVariablePlausibilityMonitoringReport",
-    "LeafColumnBandCandidate",
     "LeafColumnCandidateTable",
     "LeafColumnRuleEndpointEvidence",
     "LeafColumnSeparatorCandidate",
+    "PhysicalColumnBandCandidate",
     "HeaderGroupCandidate",
     "HeaderLeafCandidate",
     "HeaderMarkerAttachmentCandidate",
@@ -221,6 +223,8 @@ __all__ = [
     "PaperSection",
     "PaperBibliography",
     "PaperFootnotes",
+    "PaperPageScope",
+    "PaperPageScopeDetectionStatus",
     "PaperPageFurniture",
     "PageFurnitureRuleRegion",
     "PaperPositionedChar",

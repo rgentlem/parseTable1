@@ -14,11 +14,9 @@ from table1_parser.paper_discovery import PaperDiscoveryState
 from table1_parser.schemas import (
     CellTextAnnotationTable,
     ExtractedTable,
-    PaperPageFurniture,
     PaperPositionedDocument,
     PaperPositionedPage,
     TableBoundaryProposal,
-    TablePositionedEvidence,
 )
 from table1_parser.schemas.table_region import TableRegion, TableRegionRow
 from table1_parser.table1_continuations import CONTINUATION_PATTERN
@@ -34,7 +32,6 @@ def build_table_regions(
     extracted_tables: Sequence[ExtractedTable],
     *,
     paper_discovery: PaperDiscoveryState | None = None,
-    paper_page_furniture: PaperPageFurniture | None = None,
     cell_text_annotations: Sequence[CellTextAnnotationTable] | None = None,
     table_boundary_proposals: Sequence[TableBoundaryProposal] | None = None,
     paper_positioned_document: PaperPositionedDocument | None = None,
@@ -55,17 +52,6 @@ def build_table_regions(
             else []
         )
     }
-    page_furniture_rule_bboxes_by_page: dict[
-        int, list[tuple[float, float, float, float]]
-    ] = {}
-    for region in (
-        paper_page_furniture.ignored_rule_regions
-        if paper_page_furniture is not None
-        else []
-    ):
-        page_furniture_rule_bboxes_by_page.setdefault(region.page_num, []).append(
-            region.bbox
-        )
     positioned_text_lines_by_id = {
         line.line_id: line
         for line in (
@@ -93,10 +79,6 @@ def build_table_regions(
             visual_object_owned_line_ids=visual_object_owned_line_ids,
             prose_owned_line_ids=prose_owned_line_ids,
             annotation_table=annotations_by_table_id.get(table.table_id),
-            page_furniture_rule_bboxes=page_furniture_rule_bboxes_by_page.get(
-                table.page_num,
-                [],
-            ),
         )
         for table in extracted_tables
     ]
@@ -111,9 +93,6 @@ def build_table_region(
     visual_object_owned_line_ids: set[str] | None = None,
     prose_owned_line_ids: set[str] | None = None,
     annotation_table: CellTextAnnotationTable | None = None,
-    page_furniture_rule_bboxes: Sequence[
-        tuple[float, float, float, float]
-    ] = (),
 ) -> TableRegion:
     """Assign extracted rows to caption, column-header, body, and footer regions."""
     grid = _cell_grid(table)
@@ -291,17 +270,9 @@ def build_table_region(
                 ),
                 default=None,
             )
-            positioned_evidence = table.metadata.get("table_positioned_evidence")
-            line_ids = (
-                positioned_evidence.get("line_ids")
-                if isinstance(positioned_evidence, dict)
-                else None
-            )
-            canonical_line_bboxes = (
-                positioned_evidence.get("canonical_line_bboxes")
-                if isinstance(positioned_evidence, dict)
-                else None
-            )
+            positioned_evidence = table.positioned_evidence
+            line_ids = positioned_evidence.line_ids
+            canonical_line_bboxes = positioned_evidence.canonical_line_bboxes
             if (
                 upper_rule is not None
                 and lower_rule is not None
@@ -309,8 +280,6 @@ def build_table_region(
                 and row_top - upper_rule <= max(RULE_TOLERANCE, row_height)
                 and lower_rule - row_bottom <= max(RULE_TOLERANCE, row_height)
                 and lower_rule <= row_bounds[following_row][0] + RULE_TOLERANCE
-                and isinstance(line_ids, list)
-                and isinstance(canonical_line_bboxes, list)
                 and len(line_ids) == len(canonical_line_bboxes)
             ):
                 lines_by_id = {line.line_id: line for line in positioned_page.lines}
@@ -323,12 +292,7 @@ def build_table_region(
                     canonical_line_bboxes,
                     strict=True,
                 ):
-                    if (
-                        not isinstance(line_id, str)
-                        or not isinstance(line_bbox, (list, tuple))
-                        or len(line_bbox) != 4
-                        or line_id not in lines_by_id
-                    ):
+                    if line_id not in lines_by_id:
                         continue
                     line_center_y = (float(line_bbox[1]) + float(line_bbox[3])) / 2.0
                     matched_row = next(
@@ -388,16 +352,8 @@ def build_table_region(
         and table_boundary_proposal is not None
         and row_bounds is not None
     ):
-        raw_positioned_evidence = table.metadata.get("table_positioned_evidence")
-        positioned_evidence = (
-            TablePositionedEvidence.model_validate(raw_positioned_evidence)
-            if isinstance(raw_positioned_evidence, Mapping)
-            else None
-        )
-        if (
-            positioned_text_lines_by_id is not None
-            and positioned_evidence is not None
-        ):
+        positioned_evidence = table.positioned_evidence
+        if positioned_text_lines_by_id is not None:
             table_bbox = (
                 table_boundary_proposal.canonical_table_bbox
                 or positioned_evidence.canonical_candidate_bbox
@@ -475,27 +431,7 @@ def build_table_region(
                     ),
                     default=None,
                 )
-                page_furniture_rule_y = min(
-                    (
-                        (bbox[1] + bbox[3]) / 2.0
-                        for bbox in page_furniture_rule_bboxes
-                        if positioned_evidence.rotation_direction is None
-                        and bbox[2] - bbox[0] > bbox[3] - bbox[1]
-                        and bbox[1] >= table_bbox[3]
-                    ),
-                    default=None,
-                )
-                footer_scan_bottom_y = min(
-                    (
-                        boundary_y
-                        for boundary_y in (
-                            visual_object_barrier_y,
-                            page_furniture_rule_y,
-                        )
-                        if boundary_y is not None
-                    ),
-                    default=None,
-                )
+                footer_scan_bottom_y = visual_object_barrier_y
                 raw_lines = [
                     record
                     for record in aligned_page_lines

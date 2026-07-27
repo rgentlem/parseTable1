@@ -142,8 +142,11 @@ Then use the documents below as needed.
 
 - `docs/implementation/table_geometry_reconstruction_checklist.md`
   Ordered checklist for table-local marker inventory, body occupancy evidence,
-  leaf-column candidates, preliminary LaTeX-like header structure, canonical
-  extraction, marker attachment, footer resolution, and corpus verification.
+  role-free physical-column band candidates (under the legacy leaf-candidate
+  filename), preliminary semantic header structure, canonical extraction,
+  marker attachment, footer resolution, and corpus verification. Its phase
+  checkpoints are historical; the current authority cutover is tracked in
+  `canonical_orientation_unification_checklist.md`.
 
 - `docs/implementation/sideways_table_extraction_implementation_spec.md`
   Concrete implementation plan for extracting visually landscape tables drawn sideways on portrait pages.

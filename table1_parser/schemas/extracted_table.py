@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 
 class TableCell(BaseModel):
-    """A single raw cell extracted from a table grid."""
+    """A raw grid cell whose bbox is evidence, not its semantic column slot."""
 
     row_idx: int = Field(ge=0)
     col_idx: int = Field(ge=0)
@@ -39,7 +39,7 @@ class TableCanonicalTransform(BaseModel):
 
 
 class TablePositionedEvidence(BaseModel):
-    """Compact table-local references into the shared PyMuPDF evidence."""
+    """Compact table-local source references and canonical physical geometry."""
 
     source_artifact: Literal["paper_positioned_document.json"] = "paper_positioned_document.json"
     page_num: int = Field(ge=1)
@@ -55,6 +55,11 @@ class TablePositionedEvidence(BaseModel):
     canonical_candidate_bbox: tuple[float, float, float, float] | None = None
     canonical_caption_bbox: tuple[float, float, float, float] | None = None
     canonical_structural_scope_bbox: tuple[float, float, float, float] | None = None
+    canonical_grid_bbox: tuple[float, float, float, float] | None = None
+    canonical_row_bounds: list[tuple[float, float]] = Field(default_factory=list)
+    canonical_physical_column_bounds: list[tuple[float, float]] = Field(
+        default_factory=list
+    )
     canonical_transform: TableCanonicalTransform | None = None
     geometry_transform_applied: bool = False
     rotation_direction: Literal["vertical_text_up", "vertical_text_down"] | None = None
@@ -127,5 +132,6 @@ class ExtractedTable(BaseModel):
     n_rows: int = Field(ge=0)
     n_cols: int = Field(ge=0)
     cells: list[TableCell] = Field(default_factory=list)
+    positioned_evidence: TablePositionedEvidence
     extraction_backend: str
     metadata: dict[str, Any] = Field(default_factory=dict)

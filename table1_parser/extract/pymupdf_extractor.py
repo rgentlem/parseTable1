@@ -15,6 +15,7 @@ from table1_parser.extract.layout_fallback import (
     build_word_lines,
     normalize_bbox_for_rotation,
     normalize_positioned_geometry_for_rotation,
+    rotation_affine_matrix,
 )
 from table1_parser.extract.provisional_table import ProvisionalExtractedTable
 from table1_parser.context.paper_positioned_document import build_paper_positioned_document
@@ -29,6 +30,7 @@ from table1_parser.extract.table_selector import select_top_candidates
 from table1_parser.page_furniture_mask import (
     bbox_overlap_fraction,
     filter_positioned_items_for_page_furniture,
+    page_furniture_source_line_ids,
 )
 from table1_parser.schemas import (
     PaperPageFurniture,
@@ -670,12 +672,10 @@ class PyMuPDFExtractor(BaseExtractor):
             page_words, _ = filter_positioned_items_for_page_furniture(
                 _positioned_page_words(positioned_page),
                 paper_page_furniture,
-                page_num=page_num,
             )
             page_chars, _ = filter_positioned_items_for_page_furniture(
                 _positioned_page_chars(positioned_page),
                 paper_page_furniture,
-                page_num=page_num,
             )
             bibliography_mask = bibliography_masks_by_page.get(page_num)
             page_words, _ = _filter_positioned_items_for_bibliography(
@@ -694,7 +694,9 @@ class PyMuPDFExtractor(BaseExtractor):
             page["page_num"]: page
             for page in (paper_discovery.pages if paper_discovery is not None else [])
         }
-        candidates_with_positioned_evidence: list[DetectedTableCandidate] = []
+        candidates_with_positioned_evidence: list[
+            tuple[DetectedTableCandidate, TablePositionedEvidence]
+        ] = []
         for candidate in selected_candidates:
             positioned_page = pages_by_num.get(candidate.page_num)
             document_page = document_pages_by_num.get(candidate.page_num)
@@ -750,6 +752,15 @@ class PyMuPDFExtractor(BaseExtractor):
                 canonical_transform_source_bbox=canonical_transform_source_bbox,
                 orientation_group_id=orientation_group_id,
                 rotation_direction=rotation_direction,
+                ignored_rule_bboxes={
+                    region.bbox
+                    for region in (
+                        paper_page_furniture.ignored_rule_regions
+                        if paper_page_furniture is not None
+                        else []
+                    )
+                    if region.page_num == candidate.page_num
+                },
                 text_filter_artifacts=[
                     artifact
                     for artifact, was_applied in (
@@ -763,22 +774,16 @@ class PyMuPDFExtractor(BaseExtractor):
                 ],
             )
             candidates_with_positioned_evidence.append(
-                candidate.model_copy(
-                    update={
-                        "metadata": {
-                            **candidate.metadata,
-                            "table_positioned_evidence": positioned_evidence.model_dump(
-                                mode="json"
-                            ),
-                        }
-                    }
-                )
+                (candidate, positioned_evidence)
             )
-        selected_candidates = candidates_with_positioned_evidence
 
         tables = [
-            self._build_extracted_table(pdf_path=pdf_path, candidate=candidate)
-            for candidate in selected_candidates
+            self._build_extracted_table(
+                pdf_path=pdf_path,
+                candidate=candidate,
+                positioned_evidence=positioned_evidence,
+            )
+            for candidate, positioned_evidence in candidates_with_positioned_evidence
         ]
         observed_table_numbers = sorted(
             {
@@ -835,6 +840,9 @@ class PyMuPDFExtractor(BaseExtractor):
             text_lines_by_page.setdefault(line.page_num, []).append(line)
         candidates: list[DetectedTableCandidate] = []
         try:
+            furniture_source_line_ids = page_furniture_source_line_ids(
+                paper_page_furniture
+            )
             bibliography_masks_by_page = _bibliography_evidence_masks_by_page(
                 paper_discovery,
                 paper_document_lines,
@@ -842,16 +850,18 @@ class PyMuPDFExtractor(BaseExtractor):
             abstract_intervals = _abstract_intervals_by_page(positioned_document)
             for page_num in sorted(positioned_pages_by_num):
                 positioned_page = positioned_pages_by_num[page_num]
-                page_text = positioned_page.text
+                page_text = "\n".join(
+                    line.raw_text
+                    for line in positioned_page.lines
+                    if line.line_id not in furniture_source_line_ids
+                )
                 page_words, page_word_mask_metadata = filter_positioned_items_for_page_furniture(
                     _positioned_page_words(positioned_page),
                     paper_page_furniture,
-                    page_num=page_num,
                 )
                 page_chars, page_char_mask_metadata = filter_positioned_items_for_page_furniture(
                     _positioned_page_chars(positioned_page),
                     paper_page_furniture,
-                    page_num=page_num,
                 )
                 bibliography_mask = bibliography_masks_by_page.get(page_num)
                 page_words, page_word_bibliography_mask_metadata = _filter_positioned_items_for_bibliography(
@@ -868,35 +878,25 @@ class PyMuPDFExtractor(BaseExtractor):
                 removed_rule_segments = 0
                 removed_rule_cluster_ids: set[str] = set()
                 if paper_page_furniture is not None:
-                    rule_regions = [
-                        region
+                    rule_cluster_ids_by_bbox = {
+                        region.bbox: region.rule_cluster_id
                         for region in paper_page_furniture.ignored_rule_regions
                         if region.page_num == page_num
-                    ]
+                    }
                     kept_rule_segments: list[tuple[float, float, float, float]] = []
                     for segment in page_rule_segments:
                         left = min(float(segment[0]), float(segment[2]))
                         right = max(float(segment[0]), float(segment[2]))
                         top = min(float(segment[1]), float(segment[3]))
                         bottom = max(float(segment[1]), float(segment[3]))
-                        width = right - left
-                        matched_region = None
-                        if width > bottom - top:
-                            center_y = (top + bottom) / 2.0
-                            for region in rule_regions:
-                                region_left, region_top, region_right, region_bottom = region.bbox
-                                overlap = min(right, region_right) - max(left, region_left)
-                                if (
-                                    abs(center_y - (region_top + region_bottom) / 2.0) <= 2.0
-                                    and overlap >= min(width, region_right - region_left) * 0.8
-                                ):
-                                    matched_region = region
-                                    break
-                        if matched_region is None:
+                        rule_cluster_id = rule_cluster_ids_by_bbox.get(
+                            (left, top, right, bottom)
+                        )
+                        if rule_cluster_id is None:
                             kept_rule_segments.append(segment)
                             continue
                         removed_rule_segments += 1
-                        removed_rule_cluster_ids.add(matched_region.rule_cluster_id)
+                        removed_rule_cluster_ids.add(rule_cluster_id)
                     page_rule_segments = kept_rule_segments
                 document_page = document_pages_by_num.get(page_num)
                 orientation_groups = (
@@ -1030,7 +1030,6 @@ class PyMuPDFExtractor(BaseExtractor):
                             chars=transformed_chars,
                             rule_segments=transformed_rules,
                             layout_source="pymupdf_text_positions",
-                            paper_page_furniture=None,
                             paper_table_mentions=transformed_mentions,
                             allow_uncaptioned_orientation_group=(
                                 group["orientation"] != "upright"
@@ -1136,6 +1135,8 @@ class PyMuPDFExtractor(BaseExtractor):
         self,
         pdf_path: str,
         candidate: DetectedTableCandidate,
+        *,
+        positioned_evidence: TablePositionedEvidence,
     ) -> ProvisionalExtractedTable:
         if not candidate.caption:
             title, caption = None, None
@@ -1181,6 +1182,7 @@ class PyMuPDFExtractor(BaseExtractor):
             n_rows=len(candidate.raw_rows),
             n_cols=max((len(row) for row in candidate.raw_rows), default=0),
             cells=cells,
+            positioned_evidence=positioned_evidence,
             extraction_backend=self.backend_name,
             metadata=metadata,
         )
@@ -1593,7 +1595,6 @@ def _build_rule_span_candidates(
             chars=region_chars,
             rule_segments=region_rules,
             layout_source="pymupdf_text_positions",
-            paper_page_furniture=None,
             paper_table_mentions=[mention],
             candidate_region_bbox=selected_region,
         ):
@@ -1715,7 +1716,6 @@ def _build_rule_span_candidates(
             chars=region_chars,
             rule_segments=region_rules,
             layout_source="pymupdf_text_positions",
-            paper_page_furniture=None,
             paper_table_mentions=[],
             candidate_region_bbox=region_bbox,
         ):
@@ -1878,7 +1878,6 @@ def _build_cross_page_continuation_candidates(
             chars=region_chars,
             rule_segments=region_rules,
             layout_source="pymupdf_text_positions",
-            paper_page_furniture=None,
             paper_table_mentions=[],
             candidate_region_bbox=(left, top, right, bottom),
         )
@@ -1887,15 +1886,53 @@ def _build_cross_page_continuation_candidates(
 
 def _positioned_page_words(page: PaperPositionedPage) -> list[dict[str, object]]:
     """Project positioned-document words into the dict shape used by extraction heuristics."""
+    source_line_ids = {
+        (line.block_index, line.line_index): line.line_id
+        for line in page.lines
+        if line.block_index is not None and line.line_index is not None
+    }
     return [
-        {**word.model_dump(mode="json"), "source_word_index": word_index}
+        {
+            **word.model_dump(mode="json"),
+            "source_word_index": word_index,
+            **(
+                {"source_line_id": source_line_id}
+                if (
+                    source_line_id := source_line_ids.get(
+                        (word.block_index, word.line_index)
+                    )
+                )
+                is not None
+                else {}
+            ),
+        }
         for word_index, word in enumerate(page.words)
     ]
 
 
 def _positioned_page_chars(page: PaperPositionedPage) -> list[dict[str, object]]:
     """Project positioned-document chars into the dict shape used by extraction heuristics."""
-    return [char.model_dump(mode="json", exclude_none=True) for char in page.chars]
+    source_line_ids = {
+        (line.block_index, line.line_index): line.line_id
+        for line in page.lines
+        if line.block_index is not None and line.line_index is not None
+    }
+    return [
+        {
+            **char.model_dump(mode="json", exclude_none=True),
+            **(
+                {"source_line_id": source_line_id}
+                if (
+                    source_line_id := source_line_ids.get(
+                        (char.block_index, char.line_index)
+                    )
+                )
+                is not None
+                else {}
+            ),
+        }
+        for char in page.chars
+    ]
 
 
 def _table_local_positioned_evidence(
@@ -1910,6 +1947,7 @@ def _table_local_positioned_evidence(
     canonical_transform_source_bbox: tuple[float, float, float, float] | None,
     orientation_group_id: str | None,
     rotation_direction: str,
+    ignored_rule_bboxes: set[tuple[float, float, float, float]],
     text_filter_artifacts: list[str],
 ) -> TablePositionedEvidence:
     """Project shared table-local PyMuPDF evidence into one canonical frame."""
@@ -2006,6 +2044,28 @@ def _table_local_positioned_evidence(
             )
             span_bboxes.append(span.bbox)
 
+    owned_line_ids = set(line_ids)
+    owned_line_orientations = {
+        (
+            "vertical_text_up"
+            if line.direction[1] < 0.0
+            else "vertical_text_down"
+        )
+        if abs(line.direction[1]) > abs(line.direction[0])
+        else "upright"
+        for line in page.lines
+        if line.line_id in owned_line_ids and line.direction is not None
+    }
+    if len(owned_line_orientations) == 1:
+        owned_rotation_direction = next(iter(owned_line_orientations))
+        if owned_rotation_direction != rotation_direction:
+            diagnostics.append("table_owned_orientation_group_mismatch")
+        rotation_direction = owned_rotation_direction
+    elif not owned_line_orientations:
+        diagnostics.append("table_owned_text_orientation_missing")
+    else:
+        diagnostics.append("table_owned_text_orientation_ambiguous")
+
     def segment_intersects(segment: tuple[float, float, float, float]) -> bool:
         x0, y0, x1, y1 = segment
         return intersects(
@@ -2017,11 +2077,25 @@ def _table_local_positioned_evidence(
         index
         for index, segment in enumerate(page.rule_segments)
         if segment_intersects(segment)
+        and (
+            min(float(segment[0]), float(segment[2])),
+            min(float(segment[1]), float(segment[3])),
+            max(float(segment[0]), float(segment[2])),
+            max(float(segment[1]), float(segment[3])),
+        )
+        not in ignored_rule_bboxes
     ]
     stroked_rule_segment_indices = [
         index
         for index, segment in enumerate(page.stroked_rule_segments)
         if segment_intersects(segment)
+        and (
+            min(float(segment[0]), float(segment[2])),
+            min(float(segment[1]), float(segment[3])),
+            max(float(segment[0]), float(segment[2])),
+            max(float(segment[1]), float(segment[3])),
+        )
+        not in ignored_rule_bboxes
     ]
     source_rule_segments = [page.rule_segments[index] for index in rule_segment_indices]
     source_stroked_rule_segments = [
@@ -2040,53 +2114,81 @@ def _table_local_positioned_evidence(
             rotation_direction=rotation_direction,
         )
 
-    _, _, canonical_rule_segments, _ = normalize_positioned_geometry_for_rotation(
-        words=[],
-        chars=[],
-        rule_segments=source_rule_segments,
+    (
+        canonical_words,
+        canonical_chars,
+        canonical_rule_segments,
+        _canonical_transform_bbox,
+    ) = normalize_positioned_geometry_for_rotation(
+        words=table_words,
+        chars=table_chars,
+        rule_segments=[*source_rule_segments, *source_stroked_rule_segments],
         bbox=canonical_transform_source_bbox,
         rotation_direction=rotation_direction,
     )
-    _, _, canonical_stroked_rule_segments, _ = normalize_positioned_geometry_for_rotation(
-        words=[],
-        chars=[],
-        rule_segments=source_stroked_rule_segments,
-        bbox=canonical_transform_source_bbox,
+    canonical_stroked_rule_segments = canonical_rule_segments[
+        len(source_rule_segments) :
+    ]
+    canonical_rule_segments = canonical_rule_segments[: len(source_rule_segments)]
+    affine_matrix = rotation_affine_matrix(
+        source_bbox=canonical_transform_source_bbox,
         rotation_direction=rotation_direction,
     )
-    if rotation_direction == "vertical_text_up":
-        affine_matrix = (
-            0.0,
-            1.0,
-            -1.0,
-            0.0,
-            canonical_transform_source_bbox[3],
-            -canonical_transform_source_bbox[0],
-        )
-    elif rotation_direction == "vertical_text_down":
-        affine_matrix = (
-            0.0,
-            -1.0,
-            1.0,
-            0.0,
-            -canonical_transform_source_bbox[1],
-            canonical_transform_source_bbox[2],
-        )
-    else:
-        affine_matrix = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
 
     canonical_line_bboxes = [canonical_bbox(item) for item in line_bboxes]
     canonical_span_bboxes = [canonical_bbox(item) for item in span_bboxes]
     canonical_word_bboxes = [
-        canonical_bbox(_positioned_item_bbox(item))
-        for item in table_words
+        _positioned_item_bbox(item)
+        for item in canonical_words
     ]
     canonical_char_bboxes = [
-        canonical_bbox(_positioned_item_bbox(item))
-        for item in table_chars
+        _positioned_item_bbox(item)
+        for item in canonical_chars
     ]
     if any(item is None for item in canonical_word_bboxes + canonical_char_bboxes):
         diagnostics.append("canonical_item_bbox_missing")
+
+    canonical_lines = sorted(
+        (
+            (line_id, bbox)
+            for line_id, bbox in zip(line_ids, canonical_line_bboxes, strict=True)
+            if bbox is not None
+        ),
+        key=lambda item: (item[1][1], item[1][0], item[0]),
+    )
+    canonical_spans = sorted(
+        (
+            (reference, bbox)
+            for reference, bbox in zip(
+                span_references,
+                canonical_span_bboxes,
+                strict=True,
+            )
+            if bbox is not None
+        ),
+        key=lambda item: (
+            item[1][1],
+            item[1][0],
+            item[0].line_id,
+            item[0].span_index,
+        ),
+    )
+    canonical_word_items = sorted(
+        (
+            (int(item["source_word_index"]), bbox)
+            for item, bbox in zip(table_words, canonical_word_bboxes, strict=True)
+            if bbox is not None
+        ),
+        key=lambda item: (item[1][1], item[1][0], item[0]),
+    )
+    canonical_char_items = sorted(
+        (
+            (int(item["char_index"]), bbox)
+            for item, bbox in zip(table_chars, canonical_char_bboxes, strict=True)
+            if bbox is not None
+        ),
+        key=lambda item: (item[1][1], item[1][0], item[0]),
+    )
 
     return TablePositionedEvidence(
         page_num=page.page_num,
@@ -2110,14 +2212,14 @@ def _table_local_positioned_evidence(
         geometry_transform_applied=geometry_transform_applied,
         rotation_direction=(rotation_direction if geometry_transform_applied else None),
         orientation_group_id=orientation_group_id,
-        line_ids=line_ids,
-        canonical_line_bboxes=[item for item in canonical_line_bboxes if item is not None],
-        span_references=span_references,
-        canonical_span_bboxes=[item for item in canonical_span_bboxes if item is not None],
-        word_indices=[int(item["source_word_index"]) for item in table_words],
-        canonical_word_bboxes=[item for item in canonical_word_bboxes if item is not None],
-        char_indices=[int(item["char_index"]) for item in table_chars],
-        canonical_char_bboxes=[item for item in canonical_char_bboxes if item is not None],
+        line_ids=[item[0] for item in canonical_lines],
+        canonical_line_bboxes=[item[1] for item in canonical_lines],
+        span_references=[item[0] for item in canonical_spans],
+        canonical_span_bboxes=[item[1] for item in canonical_spans],
+        word_indices=[item[0] for item in canonical_word_items],
+        canonical_word_bboxes=[item[1] for item in canonical_word_items],
+        char_indices=[item[0] for item in canonical_char_items],
+        canonical_char_bboxes=[item[1] for item in canonical_char_items],
         rule_segment_indices=rule_segment_indices,
         canonical_rule_segments=canonical_rule_segments,
         stroked_rule_segment_indices=stroked_rule_segment_indices,

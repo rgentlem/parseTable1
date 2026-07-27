@@ -20,7 +20,6 @@ from table1_parser.schemas import (
     PaperPositionedPage,
     TableBoundaryProposal,
     TableBoundaryRuleReference,
-    TablePositionedEvidence,
     TableRegion,
 )
 from table1_parser.text_cleaning import clean_text
@@ -65,25 +64,31 @@ def inherit_adjacent_continuation_leaf_labels(
             continue
         parent = updated[parent_index]
         continuation = updated[continuation_index]
-        parent_leaves = sorted(parent.leaf_candidates, key=lambda leaf: leaf.leaf_index)
+        parent_leaves = sorted(
+            parent.leaf_candidates,
+            key=lambda leaf: leaf.physical_col_idx,
+        )
         continuation_leaves = sorted(
             continuation.leaf_candidates,
-            key=lambda leaf: leaf.leaf_index,
+            key=lambda leaf: leaf.physical_col_idx,
         )
         expected_indices = list(range(parent_table.n_cols))
         if (
             parent_table.n_cols != continuation_table.n_cols
-            or [leaf.leaf_index for leaf in parent_leaves] != expected_indices
-            or [leaf.leaf_index for leaf in continuation_leaves] != expected_indices
+            or [leaf.physical_col_idx for leaf in parent_leaves] != expected_indices
+            or [leaf.physical_col_idx for leaf in continuation_leaves]
+            != expected_indices
             or any(
-                not leaf.occupancy_band_ids
+                not leaf.physical_band_ids
                 for leaf in [*parent_leaves, *continuation_leaves]
             )
         ):
             continue
-        parent_leaf_index = {leaf.leaf_id: leaf.leaf_index for leaf in parent_leaves}
+        parent_leaf_index = {
+            leaf.leaf_id: leaf.physical_col_idx for leaf in parent_leaves
+        }
         continuation_leaf_index = {
-            leaf.leaf_id: leaf.leaf_index for leaf in continuation_leaves
+            leaf.leaf_id: leaf.physical_col_idx for leaf in continuation_leaves
         }
         parent_groups = sorted(
             (
@@ -124,7 +129,7 @@ def inherit_adjacent_continuation_leaf_labels(
         ):
             continue
         inherited_indices = [
-            local.leaf_index
+            local.physical_col_idx
             for source, local in zip(parent_leaves, continuation_leaves, strict=True)
             if not clean_text(local.label) and clean_text(source.label)
         ]
@@ -137,7 +142,7 @@ def inherit_adjacent_continuation_leaf_labels(
                 if explicit_identity
                 else f"existing_uncaptioned_adjacent_identity:{parent_number}"
             ),
-            f"complete_one_to_one_occupancy_leaf_alignment:{len(parent_leaves)}",
+            f"complete_one_to_one_physical_column_alignment:{len(parent_leaves)}",
             f"matching_header_group_spans:{len(parent_groups)}",
             "nonblank_local_leaf_labels_compatible",
         ]
@@ -157,7 +162,7 @@ def inherit_adjacent_continuation_leaf_labels(
                             "inheritance_evidence": inheritance_evidence,
                         }
                     )
-                    if local.leaf_index in inherited_indices
+                    if local.physical_col_idx in inherited_indices
                     else local
                     for source, local in zip(
                         parent_leaves,
@@ -218,7 +223,7 @@ def build_header_structure_candidate(
     candidate_id = f"{table.table_id}:header_structure_candidate"
     source_artifacts = [
         "paper_positioned_document.json",
-        "extracted_tables.json:metadata.table_positioned_evidence",
+        "extracted_tables.json:positioned_evidence",
         "table_regions.json",
         "table_boundary_proposals.json",
         "leaf_column_candidates.json",
@@ -238,19 +243,15 @@ def build_header_structure_candidate(
         diagnostics.append("leaf_column_candidate_missing")
     if positioned_page is None:
         diagnostics.append("positioned_page_missing")
-    raw_evidence = table.metadata.get("table_positioned_evidence")
-    if not isinstance(raw_evidence, dict):
-        diagnostics.append("table_positioned_evidence_missing")
     local_bands = (
         leaf_column_candidate.bands if leaf_column_candidate is not None else []
     )
     if not local_bands:
-        diagnostics.append("occupancy_bands_missing")
+        diagnostics.append("physical_bands_missing")
     if (
         diagnostics
         or table_boundary_proposal is None
         or positioned_page is None
-        or not isinstance(raw_evidence, dict)
     ):
         return HeaderStructureCandidate(
             candidate_id=candidate_id,
@@ -259,11 +260,11 @@ def build_header_structure_candidate(
             source_artifacts=source_artifacts,
             header_row_indices=list(header_rows),
             body_row_indices=list(body_rows),
-            occupancy_band_ids=[band.band_id for band in local_bands],
+            physical_band_ids=[band.band_id for band in local_bands],
             diagnostics=diagnostics,
         )
 
-    evidence = TablePositionedEvidence.model_validate(raw_evidence)
+    evidence = table.positioned_evidence
     row_bounds = table_boundary_proposal.canonical_row_bounds
     if len(row_bounds) != table.n_rows:
         return HeaderStructureCandidate(
@@ -273,12 +274,12 @@ def build_header_structure_candidate(
             source_artifacts=source_artifacts,
             header_row_indices=list(header_rows),
             body_row_indices=list(body_rows),
-            occupancy_band_ids=[band.band_id for band in local_bands],
+            physical_band_ids=[band.band_id for band in local_bands],
             diagnostics=["canonical_row_bounds_incomplete"],
         )
 
     leaf_axis_ids = [band.band_id for band in local_bands]
-    leaf_axis_roles = [band.provisional_role for band in local_bands]
+    descriptor_leaf_indices = {0} if local_bands else set()
     leaf_axis_bounds = [band.canonical_x_bounds for band in local_bands]
     leaf_ids = [
         f"{candidate_id}:leaf:{leaf_index}" for leaf_index in range(len(local_bands))
@@ -538,7 +539,7 @@ def build_header_structure_candidate(
                 directly_covered_indices = [
                     index
                     for index, (left, right) in enumerate(leaf_axis_bounds)
-                    if leaf_axis_roles[index] != "stub"
+                    if index not in descriptor_leaf_indices
                     and (
                         any(
                             support_left - 1.0 <= anchor <= support_right + 1.0
@@ -729,7 +730,7 @@ def build_header_structure_candidate(
                 covered_indices = [
                     index
                     for index, anchor in enumerate(leaf_anchors)
-                    if leaf_axis_roles[index] != "stub"
+                    if index not in descriptor_leaf_indices
                     and domain_left - 1.0 <= anchor <= domain_right + 1.0
                 ]
                 ordered_peers = sorted(
@@ -751,7 +752,7 @@ def build_header_structure_candidate(
                     matching_stub_indices = [
                         index
                         for index, (left, right) in enumerate(leaf_axis_bounds)
-                        if leaf_axis_roles[index] == "stub"
+                        if index in descriptor_leaf_indices
                         and left - 1.0 <= peer_center <= right + 1.0
                     ]
                     if len(matching_stub_indices) == 1:
@@ -817,7 +818,7 @@ def build_header_structure_candidate(
                             [
                                 index
                                 for index, anchor in enumerate(leaf_anchors)
-                                if leaf_axis_roles[index] != "stub"
+                                if index not in descriptor_leaf_indices
                                 and left - 1.0 <= anchor <= right + 1.0
                             ],
                             references,
@@ -1011,9 +1012,7 @@ def build_header_structure_candidate(
                 if (
                     len(covered_indices) < 2
                     or not contiguous
-                    or any(
-                        leaf_axis_roles[index] == "stub" for index in covered_indices
-                    )
+                    or any(index in descriptor_leaf_indices for index in covered_indices)
                     or not supported
                     or crosses_existing
                 ):
@@ -1084,14 +1083,14 @@ def build_header_structure_candidate(
         leaves.append(
             HeaderLeafCandidate(
                 leaf_id=leaf_ids[leaf_index],
-                leaf_index=leaf_index,
+                physical_col_idx=leaf_index,
                 label=label,
                 raw_text=label,
                 base_text=label,
                 canonical_x_bounds=bounds,
                 evidence_ids=[item.evidence_id for item in parts],
-                occupancy_band_ids=[band_id],
-                occupancy_alignment="one_to_one",
+                physical_band_ids=[band_id],
+                physical_band_alignment="one_to_one",
             )
         )
     for item in header_evidence:
@@ -1207,7 +1206,7 @@ def build_header_structure_candidate(
         )
 
     if len(leaves) != len(leaf_axis_ids):
-        diagnostics.append("header_leaf_geometry_disagrees")
+        diagnostics.append("terminal_header_physical_column_mismatch")
 
     return HeaderStructureCandidate(
         candidate_id=candidate_id,
@@ -1216,7 +1215,7 @@ def build_header_structure_candidate(
         source_artifacts=source_artifacts,
         header_row_indices=list(header_rows),
         body_row_indices=list(body_rows),
-        occupancy_band_ids=leaf_axis_ids,
+        physical_band_ids=leaf_axis_ids,
         leaf_candidates=leaves,
         group_candidates=groups,
         relationships=relationships,

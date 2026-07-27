@@ -8,16 +8,13 @@ from statistics import median
 
 from table1_parser.context.paper_positioned_document import build_paper_positioned_document
 from table1_parser.marker_glyphs import glyph_fields
-from table1_parser.page_furniture_mask import filter_positioned_items_for_page_furniture
 from table1_parser.schemas import (
     CellTextAnnotation,
     CellTextAnnotationTable,
     ExtractedTable,
-    PaperPageFurniture,
     PaperPositionedDocument,
     PositionedSpanReference,
     TableCell,
-    TablePositionedEvidence,
 )
 
 
@@ -36,7 +33,6 @@ def build_cell_text_annotation_tables_from_pdf(
     pdf_path: str,
     extracted_tables: Sequence[ExtractedTable],
     *,
-    paper_page_furniture: PaperPageFurniture | None = None,
     paper_positioned_document: PaperPositionedDocument | None = None,
 ) -> list[CellTextAnnotationTable]:
     """Build cell text annotation artifacts using shared positioned character geometry."""
@@ -58,11 +54,7 @@ def build_cell_text_annotation_tables_from_pdf(
             if source_line_id is not None:
                 char_record["source_line_id"] = source_line_id
             page_chars.append(char_record)
-        page_chars_by_page[page.page_num], _metadata = filter_positioned_items_for_page_furniture(
-            page_chars,
-            paper_page_furniture,
-            page_num=page.page_num,
-        )
+        page_chars_by_page[page.page_num] = page_chars
     if diagnostic is None and not any(page_chars_by_page.values()):
         diagnostic = "char_geometry_unavailable"
 
@@ -94,54 +86,45 @@ def build_cell_text_annotation_tables(
         cells_with_bbox = [cell for cell in table.cells if cell.bbox is not None]
         page_num = table.page_num
         page_chars = list(page_chars_by_page.get(page_num, []))
-        raw_evidence = table.metadata.get("table_positioned_evidence")
-        evidence: TablePositionedEvidence | None = None
-        if isinstance(raw_evidence, dict):
-            try:
-                evidence = TablePositionedEvidence.model_validate(raw_evidence)
-            except (TypeError, ValueError):
-                diagnostics.append("table_positioned_evidence_invalid")
-        else:
-            diagnostics.append("table_positioned_evidence_missing")
+        evidence = table.positioned_evidence
         page_chars_by_index = {
             int(char["char_index"]): char
             for char in page_chars
             if isinstance(char.get("char_index"), int)
         }
         positioned_chars: list[Mapping[str, object]] = []
-        if evidence is not None:
-            if len(evidence.char_indices) != len(evidence.canonical_char_bboxes):
-                diagnostics.append("canonical_char_reference_length_mismatch")
-            missing_source_count = 0
-            for char_index, bbox in zip(
-                evidence.char_indices,
-                evidence.canonical_char_bboxes,
-                strict=False,
-            ):
-                source_char = page_chars_by_index.get(char_index)
-                if source_char is None:
-                    missing_source_count += 1
-                    continue
-                canonical_char = dict(source_char)
-                canonical_char.update(
-                    {
-                        "x0": float(bbox[0]),
-                        "top": float(bbox[1]),
-                        "x1": float(bbox[2]),
-                        "bottom": float(bbox[3]),
-                        "char_height": float(bbox[3]) - float(bbox[1]),
-                    }
-                )
-                positioned_chars.append(canonical_char)
-            if missing_source_count:
-                diagnostics.append(
-                    f"canonical_char_sources_missing:{missing_source_count}"
-                )
+        if len(evidence.char_indices) != len(evidence.canonical_char_bboxes):
+            diagnostics.append("canonical_char_reference_length_mismatch")
+        missing_source_count = 0
+        for char_index, bbox in zip(
+            evidence.char_indices,
+            evidence.canonical_char_bboxes,
+            strict=False,
+        ):
+            source_char = page_chars_by_index.get(char_index)
+            if source_char is None:
+                missing_source_count += 1
+                continue
+            canonical_char = dict(source_char)
+            canonical_char.update(
+                {
+                    "x0": float(bbox[0]),
+                    "top": float(bbox[1]),
+                    "x1": float(bbox[2]),
+                    "bottom": float(bbox[3]),
+                    "char_height": float(bbox[3]) - float(bbox[1]),
+                }
+            )
+            positioned_chars.append(canonical_char)
+        if missing_source_count:
+            diagnostics.append(
+                f"canonical_char_sources_missing:{missing_source_count}"
+            )
         if not cells_with_bbox:
             diagnostics.append("cell_bboxes_missing")
         if not page_chars:
             diagnostics.append("char_geometry_unavailable")
-        elif evidence is not None and not positioned_chars:
+        elif not positioned_chars:
             diagnostics.append("canonical_char_geometry_unavailable")
 
         if cells_with_bbox and positioned_chars:

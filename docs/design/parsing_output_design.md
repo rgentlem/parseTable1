@@ -77,11 +77,11 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Boundary proposal | `TableBoundaryProposal` | Written now as `table_boundary_proposals.json` by `parse` | Persist canonical geometry alternatives used to establish or compare provisional body intervals, plus review concerns and selected edges |
 | Table region ownership | `TableRegion` | Written now as `table_regions.json` by `parse` | Persist row roles around the geometry-defined body and the exact positioned line IDs accepted for an internal or external footer, before downstream consumers project them |
 | Body occupancy | `BodyOccupancyTable` | Written now as `body_occupancy.json` by `parse` | Persist raw physical-body-line occupancy in character-width-derived x bins plus exact font-qualified zero-gap evidence, without smoothing or downstream grid changes |
-| Leaf-column candidates | `LeafColumnCandidateTable` | Written now as `leaf_column_candidates.json` by `parse` | Persist provisional stub/value bands from exact zero-occupancy gaps at least two observed table-font spaces wide, with supporting unmerged rule endpoints, without changing the extracted grid |
-| Header-structure candidates | `HeaderStructureCandidate` | Written now as `header_structure_candidates.json` by `parse` | Persist positioned leaf/header evidence, preserving a complete flat canonical header cell-for-cell and otherwise classifying one-leaf labels and contiguous multileaf groups from observed anchors, per-band evidence, and individual partial rules; retain linked marker IDs plus raw/base node text, unresolved fragments, and post-assignment diagnostics without changing the accepted column schema |
+| Physical-column band candidates | `LeafColumnCandidateTable` (legacy container name) | Written now as `leaf_column_candidates.json` by `parse` | Persist role-free provisional physical bands from exact zero-occupancy gaps at least two observed table-font spaces wide, with supporting unmerged rule endpoints; the artifact does not assign descriptor, value, group, or leaf meaning |
+| Header-structure candidates | `HeaderStructureCandidate` | Written now as `header_structure_candidates.json` by `parse` | Persist preliminary terminal header nodes explicitly mapped to physical columns, preserving a complete flat canonical header cell-for-cell and otherwise classifying one-column labels and contiguous multicolumn groups from observed anchors, per-band evidence, and individual partial rules; retain linked marker IDs plus raw/base node text, unresolved fragments, and post-assignment diagnostics without changing the physical grid |
 | Cell text annotations | `CellTextAnnotationTable` | Written now as `cell_text_annotations.json` by `parse` | Preserve superscript, subscript, and small marker geometry as extraction-side evidence without rewriting raw cell text |
 | Normalization | `NormalizedTable` | Written now as `normalized_tables.json` by `normalize` and `parse` | Clean rows, apply table-region row ownership when available, and derive row features |
-| Column header schema | `ColumnHeaderSchema` | Written now as `column_header_schemas.json` by `parse` | Persist parser-native leaf columns, spanning header groups, group-to-leaf relationships, raw cell evidence, and coordinates before semantic column projection |
+| Column header schema | `ColumnHeaderSchema` | Written now as `column_header_schemas.json` by `parse` | Persist parser-native terminal header nodes, their physical-column mappings and current semantic flags, spanning groups, relationships, raw cell evidence, and coordinates before `TableDefinition` |
 | Body element candidates | `BodyElementCandidate` | Written now as `body_element_candidates.json` by `parse` | Persist logical body-value candidates, linked marker IDs, and raw/base text built over the settled column grid without changing extracted or normalized physical cells |
 | Body row-label candidates | `BodyRowLabelCandidate` | Written now as `body_row_label_candidates.json` by `parse` | Persist logical body row-label candidates, linked marker IDs, and raw/base text built over adjacent physical source rows without changing extracted or normalized physical rows |
 | Resolved table set | `ResolvedTableSet` | Written now as `resolved_tables.json` by `parse` | Persist the semantic working table list after continuation resolution while preserving `normalized_tables.json` as full source evidence |
@@ -103,7 +103,7 @@ This principle applies to `TableDefinition`, `ParsedTable`, paper-context artifa
 | Table processing status | `TableProcessingStatus`, `TableProcessingAttempt` | Written now as `table_processing_status.json` by `parse` | Persist resolved-table rescue attempts, source fragment IDs and diagnostics, terminal failure stage, and failure reason without overloading semantic artifacts |
 | Parse quality diagnostics | `ParseQualityReport` | Written now as `parse_quality_reports.json` by `parse` | Persist deterministic row, column, and value-pattern diagnostics without changing parse behavior |
 | Paper footnotes | `PaperFootnotes` | Written now as `paper_footnotes.json` by `parse` | Project table-local footer regions only from final `TableRegion.footer_line_ids`, preserve anchors keyed by their source `CellTextAnnotation.annotation_id`, retain separate positioned definition-marker evidence, and link explicit glyph keys whose cross-fragment scope comes only from accepted final `ResolvedTableSet` membership, without rewriting table text or parsed values |
-| Paper page furniture | `PaperPageFurniture` | Written now as `paper_page_furniture.json` by `parse` | Persist repeated page text observations, clusters, and ignored regions used near the front of document processing to mask document construction, extraction, cell annotations, and document-linked footer detection before downstream artifacts are built |
+| Paper page furniture | `PaperPageFurniture`, `PaperPageScope` | Written now as `paper_page_furniture.json` by `parse` | Persist the sole paper-length authority plus raw page observations, included-page recurrence clusters, and ignored regions; unknown length retains every physical page, while a detected terminal page defines the single early positioned-document projection used by all interpreted and extracted outputs |
 
 Design note for future multitable support:
 
@@ -153,7 +153,8 @@ Top-level shape:
 Canonical model:
 
 - `ExtractedTable`
-- child models: `TableCell`, `TableCaptionRegion`, `TableCaptionBinding`
+- child models: `TableCell`, `TablePositionedEvidence`,
+  `TableCaptionRegion`, `TableCaptionBinding`
 
 Top-level design components:
 
@@ -164,6 +165,8 @@ Top-level design components:
 - `caption`: detected caption when available
 - `n_rows`, `n_cols`: extracted grid dimensions
 - `cells`: flat list of `TableCell` objects
+- `positioned_evidence`: typed table-local source references and their canonical
+  geometry projections
 - `extraction_backend`: extractor name, currently `pymupdf4llm`
 - `metadata`: extractor-specific extensions
 
@@ -193,16 +196,15 @@ Important current `metadata` keys produced by extraction may include:
 - `page_furniture_overlap`
 - `page_furniture_mask`
 - `trailing_non_table_rows`
-- `table_positioned_evidence`
 - `canonical_grid_selection`
 
 `metadata.canonical_grid_selection` records the accepted row and column source,
-selected boundaries and bands, and structured diagnostics.
+selected boundaries and physical bands, and structured diagnostics.
 `positioned_grid_validation` records repeated header-cell bboxes that are wholly
-contained by different occupancy leaves when that hard conflict rejects
-otherwise equal-count positioned cell ownership.
+contained by different physical bands when that hard conflict rejects otherwise
+equal-count positioned cell ownership.
 
-`metadata.table_positioned_evidence` is a compact, typed table-local projection
+`positioned_evidence` is the sole typed table-local projection
 of `paper_positioned_document.json`. It records the candidate page-space bbox,
 positioned line IDs, line/span references, page-local word and character
 indices, individual rule-segment indices, and the text-mask artifacts applied
@@ -213,6 +215,11 @@ into the table's `paper_text_orientation_group` frame. Candidate, evidence,
 caption, and structural-scope bounds are retained in both page and canonical
 coordinates. The structural scope is only the union of evidence and caption
 bounds; its rule segments remain individual unclassified records.
+`canonical_grid_bbox`, `canonical_row_bounds`, and
+`canonical_physical_column_bounds` are the typed destination for the final
+caption-free physical grid and carry no descriptor, value, group, or leaf
+meaning. Step 3 introduces that contract; the fields remain null or empty until
+the Step 4 physical-grid cutover populates them.
 
 `metadata.candidate_visual_object_barrier_bbox` records the canonical bbox of
 an image object that constrained caption-and-rule candidate construction. When
@@ -224,8 +231,9 @@ bbox.
 The projection duplicates geometry only, not text or font payloads. Consumers
 resolve those through the source references into the shared PyMuPDF artifact.
 Upright and rotated tables expose the same canonical fields; upright tables use
-an identity transform. This record does not classify rows, columns, or rules
-and does not change the extracted grid.
+an identity transform. The record is required on every `ExtractedTable`; there
+is no metadata copy or compatibility alias. It does not classify rows, columns,
+or rules and does not change the extracted grid.
 
 `metadata.caption_region` records the complete caption assembled from
 `paper_document.json` joined to positioned lines: its source mention, ordered source line IDs, preserved
@@ -252,6 +260,9 @@ Design intent:
 
 - this is the canonical extraction contract
 - raw values are preserved here
+- `bbox` is extractor-provided geometry evidence for the cell's text or region;
+  it is not the authoritative row/column slot and does not make the cell a
+  semantic leaf
 - extractor-specific details belong in `metadata`, not in renamed top-level fields
 - literal displayed captions should be preserved even for continuations such as `Table 1 (continued)`
 - continuation linkage belongs in metadata, not in synthetic renamed titles such as `Table 1a`
@@ -316,7 +327,7 @@ canonical orientation-group frame. Each table record includes canonical table,
 caption, row, stub, and value bounds; retained rule-level candidates with
 references to individual unmerged source segments; adjacent row indices; rule
 coverage; immediate font-change evidence; and review concerns. Repeated body
-rule patterns remain available in `table_positioned_evidence` and are not
+rule patterns remain available in `ExtractedTable.positioned_evidence` and are not
 copied into this smaller proposal artifact.
 
 The artifact also records the header/body and internal body/footer row edges
@@ -364,28 +375,36 @@ with the largest interval winning a tie. Marker exclusions require exact
 `source_char_indices`; unmatched markers remain visible and are reported rather
 than removed by proximity.
 
-## Leaf-Column Candidate Diagnostic
+## Physical-Column Band Diagnostic (Legacy Filename)
 
-`leaf_column_candidates.json` is built directly from `body_occupancy.json` and
-the canonical unmerged rule segments referenced by `ExtractedTable`. Exact
-character-box gaps with no ordinary body character are separator candidates
-only when their width is at least twice the median observed space width for the
-dominant table font and size. This avoids dependence on the arbitrary origin of
-the diagnostic x bins. Separator midpoints define contiguous provisional band
-extents, with the leftmost band identified as the stub candidate. Individual
+`leaf_column_candidates.json` retains its filename and
+`LeafColumnCandidateTable` container name temporarily, but its contents are
+geometry-only physical-column evidence. It is built directly from
+`body_occupancy.json` and the canonical unmerged rule segments referenced by
+`ExtractedTable`. Exact character-box gaps with no ordinary body character are
+separator candidates only when their width is at least twice the median
+observed space width for the dominant table font and size. This avoids
+dependence on the arbitrary origin of the diagnostic x bins. Separator
+midpoints define contiguous provisional physical-band extents. Individual
 horizontal-rule endpoints are attached only when they fall inside a separator.
 
 The artifact does not use token starts, header text, expected column counts,
-value syntax, or semantic vocabulary. It does not select or rewrite the
-`ExtractedTable` grid and has no downstream consumer. A table with no complete
-font-qualified zero-occupancy gap records
+value syntax, or semantic vocabulary, and it assigns no stub, descriptor,
+value, group, or leaf role. Its `physical_band_ids` are geometry identities.
+In the current transitional flow these bands participate in canonical-grid
+selection and provide the physical axis consumed by header interpretation;
+Step 5 of the unification checklist retires this provisional/final cycle. A
+table with no complete font-qualified zero-occupancy gap records
 `no_qualified_zero_occupancy_column_separator` and emits no provisional grid
 rather than receiving a guessed split.
 
 ## Header-Structure Candidate Diagnostic
 
 `header_structure_candidates.json` normally aligns positioned header words
-with the provisional leaf bands, with one preliminary leaf per occupancy band.
+with the provisional physical bands. Header interpretation, not band
+construction, creates one preliminary terminal header node per mapped physical
+column. Each node records `physical_col_idx`, `physical_band_ids`, and
+`physical_band_alignment` explicitly.
 After canonical extraction, a complete flat header is preserved directly when
 there is exactly one header row, every selected canonical column already has a
 non-empty extracted cell, and the selected axis is supported by the local leaf
@@ -414,11 +433,15 @@ Outside a complete flat canonical header, words from one intact header run
 that cross candidate band boundaries are not divided. The artifact records
 `header_evidence_words_cross_occupancy_bands` with the source evidence ID and
 affected bands. A band without attached header text is also explicit. These
-signals support later Phase F review but do not create, merge, or split leaves.
+signals support later review but do not create, merge, or split physical
+columns.
 
-This artifact is diagnostic only. It is not consumed by `TableRegion`,
-normalization, `ColumnHeaderSchema`, continuation resolution, or semantic
-parsing.
+The artifact does not gate `TableRegion`, normalization, or physical-grid
+selection. It is consumed by `ColumnHeaderSchema`, and its exact physical-
+column alignment supports provenance-bearing blank-label inheritance for an
+accepted continuation. The current header interpreter still treats physical
+column zero as the descriptor side; that semantic assumption lives here rather
+than in the geometry bands and is scheduled for removal in Step 7.
 
 ## 3. `table_regions.json`
 
@@ -625,9 +648,10 @@ Canonical model:
 Design components:
 
 - `leaves`
-  record one parser-facing normalized column each, including the row-label
-  column, leaf header label, body-row indices with non-empty cells, optional
-  original column index, and optional coordinate summary
+  record one terminal header node mapped to a parser-facing normalized physical
+  column, including its current semantic descriptor/value flags, header label,
+  body-row indices with non-empty cells, optional original column index, and
+  optional coordinate summary
 - `groups`
   record higher header labels spanning one or more leaf columns
 - `relationships`
@@ -649,6 +673,8 @@ Design intent:
 
 - column-header recovery is a first-class parser artifact, not hidden inside
   `TableDefinition`
+- terminal header nodes map to physical columns before semantic descriptor or
+  value roles are projected
 - leaf labels come from the header row closest to the body
 - higher header rows become spanning groups with explicit relationships to leaf
   columns
@@ -947,6 +973,7 @@ Current CLI paths:
 
 ```text
 outputs/papers/<paper_stem>/paper_positioned_document.json
+outputs/papers/<paper_stem>/paper_page_furniture.json
 outputs/papers/<paper_stem>/paper_document.json
 outputs/papers/<paper_stem>/paper_markdown.md
 outputs/papers/<paper_stem>/paper_sections.json
@@ -998,6 +1025,13 @@ Design components:
   paper-context, extraction, and annotation stages should consume this artifact
   or a typed projection of it instead of reopening the PDF for another
   positioned-geometry pass.
+- `paper_page_furniture.json`
+  records `PaperPageScope` as the sole page-length authority. The first accepted
+  recurrent `N of M` or `N / M` candidate with an observed terminal counter
+  defines the included page set; otherwise all physical pages are included.
+  Its observations and the persisted positioned document retain all physical
+  pages, while every later interpreted or extracted artifact consumes one
+  in-memory positioned-document projection over the included pages.
 - `paper_document.json`
   canonical ownership projection over the existing filtered block registry. It
   preserves block geometry and source identity, orders current prose candidates

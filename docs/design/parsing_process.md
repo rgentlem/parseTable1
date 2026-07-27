@@ -12,10 +12,12 @@ PDF -> ExtractedTable -> TableBoundaryProposal -> TableRegion -> NormalizedTable
 
 After `TableRegion`, `parse` also writes `body_occupancy.json`,
 `leaf_column_candidates.json`, and `header_structure_candidates.json` as
-inspectable geometry artifacts. They use positioned table evidence in the
-canonical orientation-group frame. Occupancy and leaf candidates participate
-in canonical extraction; header structure remains post-extraction evidence and
-none of them enables normalization-time geometry repair.
+inspectable artifacts. They use positioned table evidence in the canonical
+orientation-group frame. The legacy-named leaf-candidate artifact contains
+role-free physical bands, not semantic leaves. Occupancy and physical-band
+candidates currently participate in canonical extraction; header structure is
+post-extraction semantic evidence consumed by `ColumnHeaderSchema`, and none of
+them enables normalization-time geometry repair.
 
 The early document stages have a strict order:
 
@@ -41,7 +43,7 @@ ExtractedTable
 -> TableBoundaryProposal
 -> TableRegion
 -> BodyOccupancy
--> LeafColumnCandidate
+-> PhysicalColumnBandCandidate (legacy LeafColumnCandidateTable container)
 -> HeaderStructureCandidate
 -> NormalizedTable
 -> ColumnHeaderSchema
@@ -59,15 +61,16 @@ consecutive prose block without an exact gap at least two observed spaces wide.
 Selected edges are then attached to the proposal for inspection.
 `HeaderStructureCandidate` is now an evidence-preserving first pass over
 positioned header spans, individual rule segments, and candidate physical
-columns. Each occupancy band defines one preliminary leaf. Intact positioned
-header runs attach to the leaf with greatest horizontal overlap, and multiple
-runs may stack on the same leaf. Individual partial rules define multicolumn
-groups over those leaves. Header words crossing candidate band boundaries are
-retained as diagnostics rather than being split into new columns. Marker
-occurrences attach only to source-supported leaf or group nodes.
-The artifact remains provisional and has no downstream consumer. A later phase
-may let `TableRegion` and `ColumnHeaderSchema` validate and consume it instead
-of rebuilding an unrelated header model.
+columns. Physical bands carry no descriptor/value role. Header interpretation
+creates preliminary terminal nodes mapped explicitly through
+`physical_col_idx`; intact positioned runs attach to the node with greatest
+horizontal overlap, and multiple runs may stack on the same node. Individual
+partial rules define multicolumn groups over terminal nodes. Header words
+crossing candidate band boundaries are retained as diagnostics rather than
+being split into new physical columns. Marker occurrences attach only to
+source-supported terminal or group nodes. The artifact remains provisional but
+is consumed by `ColumnHeaderSchema` and by structurally exact continuation
+label inheritance.
 
 For continued tables, the resolved stage can integrate compatible source
 fragments before semantic parsing:
@@ -87,15 +90,18 @@ In plain terms:
 - `CellTextAnnotations` preserves attached marker geometry without changing
   the raw extracted grid; a planned linked-text view will additionally expose
   marker-free base text while retaining the marker association
-- `HeaderStructureCandidate` is the provisional LaTeX-like header structure
-  aligned with body occupancy and positioned marker evidence
+- `HeaderStructureCandidate` is the provisional semantic header structure,
+  with terminal nodes explicitly mapped to physical columns and aligned with
+  positioned marker evidence
 - `TableBoundaryProposal` is geometry-only evidence for reviewing the current
   caption/start, header/body, and body/footer boundaries
 - `TableRegion` is the structural ownership model anchored by body geometry for captions,
   column-header bands, body rows, and footer/note bands, including footer
   marker-row evidence from cell-text annotation geometry
 - `NormalizedTable` is the cleaned and organized version used for interpretation
-- `ColumnHeaderSchema` is the explicit leaf-column and spanning-header model
+- `ColumnHeaderSchema` is the explicit terminal-column and spanning-header
+  model; its current first-column descriptor assumption is a later semantic
+  limitation, not physical geometry
 - `ResolvedTableSet` is the table list consumed by semantic parsing
 - `TableDefinition` is the value-free semantic structure used for database matching and later parsing
 - `ParsedTable` is the final structured result with variables, levels, columns, and values

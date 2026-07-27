@@ -81,12 +81,13 @@ parent spanning-group row. The resolved table inherits the parent's complete
 tree only after that exact leaf match. A conflicting continuation group is not
 discarded or overridden.
 
-An adjacent continuation may also inherit locally blank candidate leaf labels
-when its complete occupancy leaf axis, nonblank labels, and repeated group spans
-uniquely align with the parent. The candidate retains the blank local label and
-parent table, leaf, page, and structural evidence. Schema construction consumes
-that effective candidate only for this provenance-bearing case; it does not
-alter the physical grid or infer missing text independently.
+An adjacent continuation may also inherit locally blank candidate terminal
+labels when its complete one-to-one physical-column alignment, nonblank labels,
+and repeated group spans uniquely align with the parent. The candidate retains
+the blank local label and parent table, terminal node, page, and structural
+evidence. Schema construction consumes that effective candidate only for this
+provenance-bearing case; it does not alter the physical grid or infer missing
+text independently.
 
 ## Relationship To Tableone-Style Projection
 
@@ -129,16 +130,25 @@ only render that object.
 
 ## Core Concepts
 
-### Leaf Columns
+### Terminal Header Nodes And Column Roles
 
-A leaf column is a parser-facing normalized column that may carry body content.
-The schema should keep the row-label column as a leaf-like column with
-`is_row_label_column = true`, because it participates in header alignment and
-downstream column identity. Data columns should have `is_value_column = true`.
+A terminal header node is the lowest semantic header node mapped to one
+parser-facing physical column. `HeaderStructureCandidate.physical_col_idx`
+makes that mapping explicit; neither a physical band nor a cell bbox is itself
+a semantic leaf.
 
-Leaf columns are inferred from:
+Descriptor and value are later semantic roles on those mapped columns. A table
+may ultimately have more than one descriptor column, and a terminal node may
+remain role-unknown when structural evidence is insufficient. The current
+`ColumnHeaderSchema` builder still marks physical column zero as
+`is_row_label_column = true` and the remaining columns as
+`is_value_column = true`; this is an explicit implementation limitation to be
+removed in Step 7 of the canonical positioned-evidence unification checklist,
+not a physical-grid rule.
 
-1. normalized column indices
+Terminal header nodes are inferred from:
+
+1. an explicit physical-column index
 2. body-row non-empty evidence
 3. the header row closest to the body
 
@@ -148,8 +158,8 @@ the first strongly numeric body row. This fallback should remain conservative:
 it records diagnostics and raw cell evidence in `ColumnHeaderSchema` rather
 than rewriting `NormalizedTable`.
 
-The closest-to-body header row supplies the leaf label. If that cell is blank,
-the leaf label stays blank and the schema records a diagnostic. The parser
+The closest-to-body header row supplies the terminal label. If that cell is
+blank, the label stays blank and the schema records a diagnostic. The parser
 should not silently promote an upper spanning group to the leaf label unless no
 leaf header row exists at all.
 

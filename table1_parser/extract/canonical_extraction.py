@@ -7,11 +7,11 @@ from collections.abc import Sequence
 from table1_parser.extract.provisional_table import ProvisionalExtractedTable
 from table1_parser.schemas import (
     ExtractedTable,
+    HeaderStructureCandidate,
     LeafColumnCandidateTable,
     PaperPositionedDocument,
     TableBoundaryProposal,
     TableCell,
-    TablePositionedEvidence,
 )
 
 
@@ -21,8 +21,9 @@ def finalize_canonical_extracted_tables(
     paper_positioned_document: PaperPositionedDocument,
     table_boundary_proposals: Sequence[TableBoundaryProposal],
     leaf_column_candidates: Sequence[LeafColumnCandidateTable],
+    header_structure_candidates: Sequence[HeaderStructureCandidate],
 ) -> list[ExtractedTable]:
-    """Select and materialize one positioned physical grid per table."""
+    """Materialize occupancy columns with their accepted header structures."""
     pages_by_num = {
         page.page_num: page for page in paper_positioned_document.pages
     }
@@ -32,19 +33,18 @@ def finalize_canonical_extracted_tables(
     leaves_by_table_id = {
         candidate.table_id: candidate for candidate in leaf_column_candidates
     }
+    headers_by_table_id = {
+        candidate.table_id: candidate for candidate in header_structure_candidates
+    }
     finalized_tables: list[ExtractedTable] = []
 
     for table in extracted_tables:
         diagnostics: list[str] = []
         page = pages_by_num.get(table.page_num)
         proposal = proposals_by_table_id.get(table.table_id)
-        leaf_candidate = leaves_by_table_id.get(table.table_id)
-        raw_evidence = table.metadata.get("table_positioned_evidence")
-        evidence = (
-            TablePositionedEvidence.model_validate(raw_evidence)
-            if isinstance(raw_evidence, dict)
-            else None
-        )
+        physical_band_candidate = leaves_by_table_id.get(table.table_id)
+        header_candidate = headers_by_table_id.get(table.table_id)
+        evidence = table.positioned_evidence
 
         if page is None:
             diagnostics.append("positioned_page_missing")
@@ -54,16 +54,14 @@ def finalize_canonical_extracted_tables(
             proposal.credible_rule_geometry or proposal.coherent_positioned_grid
         ):
             diagnostics.append("credible_table_geometry_missing")
-        if leaf_candidate is None:
-            diagnostics.append("leaf_column_candidate_missing")
-        elif leaf_candidate.diagnostics or leaf_candidate.concerns:
-            diagnostics.append("leaf_column_geometry_inadequate")
-        elif len(leaf_candidate.bands) < 2:
-            diagnostics.append("leaf_column_count_inadequate")
-        if evidence is None:
-            diagnostics.append("table_positioned_evidence_missing")
-        elif evidence.diagnostics:
-            diagnostics.append("table_positioned_evidence_has_diagnostics")
+        if physical_band_candidate is None:
+            diagnostics.append("physical_column_band_candidate_missing")
+        elif physical_band_candidate.diagnostics or physical_band_candidate.concerns:
+            diagnostics.append("physical_column_band_geometry_inadequate")
+        elif len(physical_band_candidate.bands) < 2:
+            diagnostics.append("physical_column_band_count_inadequate")
+        if evidence.diagnostics:
+            diagnostics.append("positioned_evidence_has_diagnostics")
 
         row_bounds = proposal.canonical_row_bounds if proposal is not None else []
         if len(row_bounds) != table.n_rows or not row_bounds:
@@ -74,14 +72,126 @@ def finalize_canonical_extracted_tables(
         ):
             diagnostics.append("canonical_row_bounds_invalid")
 
-        leaf_validation_concerns: list[str] = []
-        if leaf_candidate is None:
-            leaf_validation_concerns.append("leaf_column_candidate_missing")
+        physical_band_validation_concerns: list[str] = []
+        if physical_band_candidate is None:
+            physical_band_validation_concerns.append(
+                "physical_column_band_candidate_missing"
+            )
         else:
-            leaf_validation_concerns.extend(leaf_candidate.diagnostics)
-            leaf_validation_concerns.extend(leaf_candidate.concerns)
-            if len(leaf_candidate.bands) < 2:
-                leaf_validation_concerns.append("leaf_column_count_inadequate")
+            physical_band_validation_concerns.extend(
+                physical_band_candidate.diagnostics
+            )
+            physical_band_validation_concerns.extend(
+                physical_band_candidate.concerns
+            )
+            if len(physical_band_candidate.bands) < 2:
+                physical_band_validation_concerns.append(
+                    "physical_column_band_count_inadequate"
+                )
+
+        header_structure_validation_concerns: list[str] = []
+        if header_candidate is None:
+            header_structure_validation_concerns.append(
+                "header_structure_candidate_missing"
+            )
+        elif physical_band_candidate is not None:
+            expected_band_ids = [
+                band.band_id for band in physical_band_candidate.bands
+            ]
+            if header_candidate.page_num != table.page_num:
+                header_structure_validation_concerns.append(
+                    "header_structure_candidate_page_mismatch"
+                )
+            if header_candidate.physical_band_ids != expected_band_ids:
+                header_structure_validation_concerns.append(
+                    "header_physical_band_axis_mismatch"
+                )
+
+            ordered_leaves = sorted(
+                header_candidate.leaf_candidates,
+                key=lambda leaf: leaf.physical_col_idx,
+            )
+            if [leaf.physical_col_idx for leaf in ordered_leaves] != list(
+                range(len(expected_band_ids))
+            ):
+                header_structure_validation_concerns.append(
+                    "terminal_header_physical_column_mismatch"
+                )
+            if len({leaf.leaf_id for leaf in ordered_leaves}) != len(
+                ordered_leaves
+            ):
+                header_structure_validation_concerns.append(
+                    "terminal_header_leaf_ids_duplicate"
+                )
+            for leaf in ordered_leaves:
+                if leaf.physical_col_idx >= len(expected_band_ids):
+                    continue
+                band = physical_band_candidate.bands[leaf.physical_col_idx]
+                if (
+                    leaf.physical_band_ids != [band.band_id]
+                    or leaf.canonical_x_bounds != band.canonical_x_bounds
+                ):
+                    header_structure_validation_concerns.append(
+                        f"terminal_header_band_mapping_mismatch:{leaf.leaf_id}"
+                    )
+
+            leaf_index_by_id = {
+                leaf.leaf_id: leaf.physical_col_idx for leaf in ordered_leaves
+            }
+            if len(
+                {group.group_id for group in header_candidate.group_candidates}
+            ) != len(header_candidate.group_candidates):
+                header_structure_validation_concerns.append(
+                    "header_group_ids_duplicate"
+                )
+            group_spans: list[tuple[int, int, str]] = []
+            for group in header_candidate.group_candidates:
+                group_indices = [
+                    leaf_index_by_id[leaf_id]
+                    for leaf_id in group.leaf_ids
+                    if leaf_id in leaf_index_by_id
+                ]
+                if (
+                    not group.leaf_ids
+                    or len(group_indices) != len(group.leaf_ids)
+                    or len(set(group.leaf_ids)) != len(group.leaf_ids)
+                ):
+                    header_structure_validation_concerns.append(
+                        f"header_group_leaf_reference_invalid:{group.group_id}"
+                    )
+                    continue
+                ordered_group_indices = sorted(group_indices)
+                if ordered_group_indices != list(
+                    range(
+                        ordered_group_indices[0],
+                        ordered_group_indices[-1] + 1,
+                    )
+                ):
+                    header_structure_validation_concerns.append(
+                        f"header_group_noncontiguous:{group.group_id}"
+                    )
+                    continue
+                group_spans.append(
+                    (
+                        ordered_group_indices[0],
+                        ordered_group_indices[-1],
+                        group.group_id,
+                    )
+                )
+            for span_index, (left, right, group_id) in enumerate(group_spans):
+                for other_left, other_right, other_group_id in group_spans[
+                    span_index + 1 :
+                ]:
+                    if (left < other_left <= right < other_right) or (
+                        other_left < left <= other_right < right
+                    ):
+                        header_structure_validation_concerns.append(
+                            "header_group_spans_conflict:"
+                            f"{group_id}:{other_group_id}"
+                        )
+
+        if header_structure_validation_concerns:
+            diagnostics.append("header_structure_candidate_inconsistent")
 
         selection_metadata = {
             "status": "rejected" if diagnostics else "accepted",
@@ -89,26 +199,30 @@ def finalize_canonical_extracted_tables(
                 "paper_positioned_document.json",
                 "table_boundary_proposals.json",
                 "leaf_column_candidates.json",
+                "header_structure_candidates.json",
             ],
             "prior_column_count": table.n_cols,
             "selected_column_count": (
-                len(leaf_candidate.bands)
-                if leaf_candidate is not None
+                len(physical_band_candidate.bands)
+                if physical_band_candidate is not None
                 else 0
             ),
             "selected_row_count": len(row_bounds),
-            "leaf_geometry_validation_concerns": list(
-                dict.fromkeys(leaf_validation_concerns)
+            "physical_band_validation_concerns": list(
+                dict.fromkeys(physical_band_validation_concerns)
+            ),
+            "header_structure_validation_concerns": list(
+                dict.fromkeys(header_structure_validation_concerns)
             ),
             "diagnostics": diagnostics,
-            "selected_column_source": "body_occupancy_leaf_geometry",
+            "selected_column_source": "body_occupancy_physical_band_geometry",
         }
         if (
             diagnostics
             or page is None
             or proposal is None
-            or leaf_candidate is None
-            or evidence is None
+            or physical_band_candidate is None
+            or header_candidate is None
         ):
             finalized_table = ExtractedTable.model_validate(
                 table.model_copy(
@@ -160,10 +274,15 @@ def finalize_canonical_extracted_tables(
                 )
             ) not in caption_line_ids
         ]
+        canonical_grid_source_rows = {
+            *header_candidate.header_row_indices,
+            *header_candidate.body_row_indices,
+        }
         retained_row_indices = [
             row_idx
             for row_idx, (top, bottom) in enumerate(row_bounds)
-            if any(
+            if row_idx in canonical_grid_source_rows
+            and any(
                 top - 1.0 <= (bbox[1] + bbox[3]) / 2.0 <= bottom + 1.0
                 for _word_index, _word, bbox in positioned_words
             )
@@ -187,242 +306,77 @@ def finalize_canonical_extracted_tables(
             )
             finalized_tables.append(finalized_table)
             continue
-        nonempty_source_columns = sorted(
-            {
-                cell.col_idx
-                for cell in table.cells
-                if cell.row_idx in retained_row_indices
-                and 0 <= cell.col_idx < table.n_cols
-                and cell.text.strip()
-            }
-        )
-        retained_column_indices = (
-            list(
-                range(
-                    nonempty_source_columns[0],
-                    nonempty_source_columns[-1] + 1,
-                )
-            )
-            if nonempty_source_columns
-            else []
-        )
-        selected_positioned_boundaries: list[float] = []
-        raw_column_starts = table.metadata.get(
-            "positioned_column_start_boundaries"
-        )
-        table_bbox = evidence.canonical_candidate_bbox or evidence.canonical_bbox
-        if (
-            retained_column_indices
-            and isinstance(raw_column_starts, list)
-            and table_bbox is not None
-        ):
-            positioned_boundaries = [float(value) for value in raw_column_starts]
-            if (
-                retained_column_indices[0] == 0
-                and len(positioned_boundaries)
-                == len(retained_column_indices) - 1
-            ):
-                selected_positioned_boundaries = [
-                    table_bbox[0],
-                    *positioned_boundaries,
-                    table_bbox[2],
-                ]
-            elif len(positioned_boundaries) == table.n_cols - 1:
-                source_boundaries = [
-                    table_bbox[0],
-                    *positioned_boundaries,
-                    table_bbox[2],
-                ]
-                selected_positioned_boundaries = source_boundaries[
-                    retained_column_indices[0] : retained_column_indices[-1] + 2
-                ]
-
-        positioned_header_cell_conflicts: dict[int, list[dict[str, object]]] = {}
-        selected_header_body_rows = proposal.selected_header_body_rows
-        if (
-            len(retained_column_indices) >= 2
-            and len(retained_column_indices) == len(leaf_candidate.bands)
-            and selected_header_body_rows is not None
-            and len(selected_header_body_rows) == 2
-        ):
-            body_start_row_idx = selected_header_body_rows[1]
-            canonical_col_by_source_col = {
-                source_col_idx: canonical_col_idx
-                for canonical_col_idx, source_col_idx in enumerate(
-                    retained_column_indices
-                )
-            }
-            for cell in table.cells:
-                canonical_col_idx = canonical_col_by_source_col.get(cell.col_idx)
-                if (
-                    canonical_col_idx is None
-                    or cell.row_idx not in retained_row_indices
-                    or cell.row_idx >= body_start_row_idx
-                    or not cell.text.strip()
-                    or cell.bbox is None
-                ):
-                    continue
-                containing_leaf_indices = [
-                    leaf_index
-                    for leaf_index, band in enumerate(leaf_candidate.bands)
-                    if band.canonical_x_bounds[0] - 1.0 <= cell.bbox[0]
-                    and cell.bbox[2] <= band.canonical_x_bounds[1] + 1.0
-                ]
-                if (
-                    len(containing_leaf_indices) == 1
-                    and containing_leaf_indices[0] != canonical_col_idx
-                ):
-                    positioned_header_cell_conflicts.setdefault(
-                        cell.row_idx, []
-                    ).append(
-                        {
-                            "source_column_index": cell.col_idx,
-                            "canonical_column_index": canonical_col_idx,
-                            "containing_leaf_index": containing_leaf_indices[0],
-                            "bbox": cell.bbox,
-                        }
-                    )
-        conflicting_header_rows = {
-            row_idx: conflicts
-            for row_idx, conflicts in positioned_header_cell_conflicts.items()
-            if len(conflicts) >= 2
+        row_index_map = {
+            source_row_idx: canonical_row_idx
+            for canonical_row_idx, source_row_idx in enumerate(retained_row_indices)
         }
-        positioned_leaf_count_agreement = (
-            len(retained_column_indices) >= 2
-            and len(retained_column_indices) == len(leaf_candidate.bands)
-            and not conflicting_header_rows
-        )
-        use_positioned_grid = positioned_leaf_count_agreement
-        if use_positioned_grid:
-            selection_metadata["selected_column_source"] = (
-                "positioned_grid_confirmed_by_leaf_count_agreement"
-            )
-        elif conflicting_header_rows:
-            selection_metadata["positioned_grid_validation"] = {
-                "status": "rejected",
-                "reason": (
-                    "repeated_header_cells_contained_by_different_leaf_bands"
-                ),
-                "conflicts_by_source_row": conflicting_header_rows,
-            }
-
-        if use_positioned_grid:
-            row_index_map = {
-                source_row_idx: canonical_row_idx
-                for canonical_row_idx, source_row_idx in enumerate(
-                    retained_row_indices
+        selected_band_candidate = physical_band_candidate
+        bands = selected_band_candidate.bands
+        canonical_header_rows = {
+            row_index_map[row_idx]
+            for row_idx in header_candidate.header_row_indices
+            if row_idx in row_index_map
+        }
+        canonical_body_rows = {
+            row_index_map[row_idx]
+            for row_idx in header_candidate.body_row_indices
+            if row_idx in row_index_map
+        }
+        header_columns_by_evidence_id: dict[str, set[int]] = {}
+        leaf_column_by_id = {
+            leaf.leaf_id: leaf.physical_col_idx
+            for leaf in header_candidate.leaf_candidates
+        }
+        for leaf in header_candidate.leaf_candidates:
+            for evidence_id in leaf.evidence_ids:
+                header_columns_by_evidence_id.setdefault(evidence_id, set()).add(
+                    leaf.physical_col_idx
                 )
-            }
-            column_index_map = {
-                source_col_idx: canonical_col_idx
-                for canonical_col_idx, source_col_idx in enumerate(
-                    retained_column_indices
+        for group in header_candidate.group_candidates:
+            group_columns = [
+                leaf_column_by_id[leaf_id]
+                for leaf_id in group.leaf_ids
+                if leaf_id in leaf_column_by_id
+            ]
+            if not group_columns:
+                continue
+            anchor_col_idx = min(group_columns)
+            for evidence_id in group.evidence_ids:
+                header_columns_by_evidence_id.setdefault(evidence_id, set()).add(
+                    anchor_col_idx
                 )
-            }
-            source_cells = {
-                (cell.row_idx, cell.col_idx): cell
-                for cell in table.cells
-                if cell.row_idx in row_index_map
-                and cell.col_idx in column_index_map
-            }
-            confidence = table.metadata.get("candidate_score")
-            cells: list[TableCell] = []
-            table_cells: list[list[tuple[float, float, float, float] | None]] = []
-            first_column_text_x0_by_row: dict[int, float] = {}
-            for source_row_idx in retained_row_indices:
-                canonical_row_idx = row_index_map[source_row_idx]
-                bbox_row: list[tuple[float, float, float, float] | None] = []
-                for source_col_idx in retained_column_indices:
-                    canonical_col_idx = column_index_map[source_col_idx]
-                    source_cell = source_cells.get(
-                        (source_row_idx, source_col_idx)
-                    )
-                    bbox = source_cell.bbox if source_cell is not None else None
-                    text = source_cell.text if source_cell is not None else ""
-                    if canonical_col_idx == 0 and bbox is not None:
-                        first_column_text_x0_by_row[canonical_row_idx] = bbox[0]
-                    bbox_row.append(bbox)
-                    cells.append(
-                        TableCell(
-                            row_idx=canonical_row_idx,
-                            col_idx=canonical_col_idx,
-                            text=text,
-                            page_num=table.page_num,
-                            bbox=bbox,
-                            extractor_name=(
-                                source_cell.extractor_name
-                                if source_cell is not None
-                                else "pymupdf"
-                            ),
-                            confidence=(
-                                source_cell.confidence
-                                if source_cell is not None
-                                else (
-                                    float(confidence)
-                                    if isinstance(confidence, (int, float))
-                                    else None
-                                )
-                            ),
-                        )
-                    )
-                table_cells.append(bbox_row)
 
-            metadata = dict(table.metadata)
-            raw_header_roles = metadata.get("header_row_geometry_roles")
-            if isinstance(raw_header_roles, list):
-                metadata["header_row_geometry_roles"] = [
-                    raw_header_roles[row_idx]
-                    for row_idx in retained_row_indices
-                    if row_idx < len(raw_header_roles)
-                ]
-            selection_metadata.update(
-                {
-                    "selected_row_count": len(row_bounds),
-                    "selected_column_count": len(retained_column_indices),
-                    "selected_column_boundaries": selected_positioned_boundaries,
-                    "selected_band_ids": [
-                        f"{table.table_id}:positioned_column:{source_col_idx}"
-                        for source_col_idx in retained_column_indices
-                    ],
-                    "removed_caption_or_empty_row_indices": [
-                        row_idx
-                        for row_idx in range(table.n_rows)
-                        if row_idx not in row_index_map
-                    ],
-                    "removed_empty_outer_column_indices": [
-                        col_idx
-                        for col_idx in range(table.n_cols)
-                        if col_idx not in column_index_map
-                    ],
-                }
+        header_evidence_by_cell: dict[
+            tuple[int, int],
+            list[tuple[int, str, tuple[float, float, float, float]]],
+        ] = {}
+        for evidence_index, header_evidence in enumerate(header_candidate.evidence):
+            evidence_columns = header_columns_by_evidence_id.get(
+                header_evidence.evidence_id,
+                set(),
             )
-            metadata.update(
-                {
-                    "table_cells": table_cells,
-                    "row_bounds": row_bounds,
-                    "first_column_text_x0_by_row": first_column_text_x0_by_row,
-                    "canonical_extraction_layer": "pymupdf_positioned_geometry",
-                    "grid_refinement_source": "text_position_column_geometry",
-                    "canonical_grid_selection": selection_metadata,
-                }
+            evidence_rows = [
+                row_index_map[row_idx]
+                for row_idx in header_evidence.header_row_indices
+                if row_idx in row_index_map
+            ]
+            if len(evidence_columns) != 1 or not evidence_rows:
+                continue
+            header_evidence_by_cell.setdefault(
+                (min(evidence_rows), next(iter(evidence_columns))),
+                [],
+            ).append(
+                (
+                    evidence_index,
+                    header_evidence.text,
+                    header_evidence.canonical_bbox,
+                )
             )
-            finalized_table = ExtractedTable.model_validate(
-                table.model_copy(
-                    update={
-                        "n_rows": len(row_bounds),
-                        "n_cols": len(retained_column_indices),
-                        "cells": cells,
-                        "extraction_backend": "pymupdf",
-                        "metadata": metadata,
-                    }
-                ).model_dump()
-            )
-            finalized_tables.append(finalized_table)
-            continue
 
-        selected_leaf_candidate = leaf_candidate
-        bands = selected_leaf_candidate.bands
-        words_by_cell: dict[tuple[int, int], list[tuple[int, str, tuple[float, float, float, float]]]] = {}
+        words_by_cell: dict[
+            tuple[int, int],
+            list[tuple[int, str, tuple[float, float, float, float]]],
+        ] = {}
         for word_index, word, bbox in positioned_words:
             center_y = (bbox[1] + bbox[3]) / 2.0
             candidate_rows = [
@@ -438,6 +392,8 @@ def finalize_canonical_extracted_tables(
                     center_y - sum(row_bounds[index]) / 2.0
                 ),
             )
+            if row_idx not in canonical_body_rows:
+                continue
             overlaps = [
                 max(
                     0.0,
@@ -448,13 +404,7 @@ def finalize_canonical_extracted_tables(
             ]
             col_idx = max(range(len(bands)), key=lambda index: overlaps[index])
             if overlaps[col_idx] <= 0.0:
-                center_x = (bbox[0] + bbox[2]) / 2.0
-                col_idx = min(
-                    range(len(bands)),
-                    key=lambda index: abs(
-                        center_x - sum(bands[index].canonical_x_bounds) / 2.0
-                    ),
-                )
+                continue
             words_by_cell.setdefault((row_idx, col_idx), []).append(
                 (word_index, word.text.strip(), bbox)
             )
@@ -466,19 +416,25 @@ def finalize_canonical_extracted_tables(
         for row_idx in range(len(row_bounds)):
             bbox_row: list[tuple[float, float, float, float] | None] = []
             for col_idx in range(len(bands)):
-                cell_words = sorted(
-                    words_by_cell.get((row_idx, col_idx), []),
-                    key=lambda item: (item[2][0], item[0]),
-                )
-                text = " ".join(item[1] for item in cell_words)
+                if row_idx in canonical_header_rows:
+                    cell_items = sorted(
+                        header_evidence_by_cell.get((row_idx, col_idx), []),
+                        key=lambda item: (item[2][1], item[2][0], item[0]),
+                    )
+                else:
+                    cell_items = sorted(
+                        words_by_cell.get((row_idx, col_idx), []),
+                        key=lambda item: (item[2][0], item[0]),
+                    )
+                text = " ".join(item[1] for item in cell_items)
                 bbox = (
                     (
-                        min(item[2][0] for item in cell_words),
-                        min(item[2][1] for item in cell_words),
-                        max(item[2][2] for item in cell_words),
-                        max(item[2][3] for item in cell_words),
+                        min(item[2][0] for item in cell_items),
+                        min(item[2][1] for item in cell_items),
+                        max(item[2][2] for item in cell_items),
+                        max(item[2][3] for item in cell_items),
                     )
-                    if cell_words
+                    if cell_items
                     else None
                 )
                 if col_idx == 0 and bbox is not None:
@@ -505,10 +461,24 @@ def finalize_canonical_extracted_tables(
             bands[0].canonical_x_bounds[0],
             *[
                 separator.canonical_x
-                for separator in selected_leaf_candidate.separators
+                for separator in selected_band_candidate.separators
             ],
             bands[-1].canonical_x_bounds[1],
         ]
+        canonical_evidence = evidence.model_copy(
+            update={
+                "canonical_grid_bbox": (
+                    bands[0].canonical_x_bounds[0],
+                    row_bounds[0][0],
+                    bands[-1].canonical_x_bounds[1],
+                    row_bounds[-1][1],
+                ),
+                "canonical_row_bounds": list(row_bounds),
+                "canonical_physical_column_bounds": [
+                    band.canonical_x_bounds for band in bands
+                ],
+            }
+        )
         metadata = dict(table.metadata)
         metadata.update(
             {
@@ -516,13 +486,13 @@ def finalize_canonical_extracted_tables(
                 "row_bounds": row_bounds,
                 "first_column_text_x0_by_row": first_column_text_x0_by_row,
                 "canonical_extraction_layer": "pymupdf_positioned_geometry",
-                "grid_refinement_source": "body_occupancy_leaf_geometry",
+                "grid_refinement_source": "body_occupancy_physical_band_geometry",
                 "canonical_grid_selection": {
                     **selection_metadata,
                     "selected_row_count": len(row_bounds),
                     "selected_column_boundaries": selected_boundaries,
                     "selected_band_ids": list(
-                        selected_leaf_candidate.provisional_grid_band_ids
+                        band.band_id for band in bands
                     ),
                 },
             }
@@ -540,6 +510,7 @@ def finalize_canonical_extracted_tables(
                     "n_rows": len(row_bounds),
                     "n_cols": len(bands),
                     "cells": cells,
+                    "positioned_evidence": canonical_evidence,
                     "extraction_backend": "pymupdf",
                     "metadata": metadata,
                 }

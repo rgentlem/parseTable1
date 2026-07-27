@@ -8,10 +8,8 @@ from typing import NamedTuple
 
 from table1_parser.page_furniture_mask import (
     bbox_overlap_fraction,
-    filter_positioned_items_for_page_furniture,
-    page_furniture_cluster_ids_for_bbox,
 )
-from table1_parser.schemas import PaperPageFurniture, PaperTableMention
+from table1_parser.schemas import PaperTableMention
 from table1_parser.text_cleaning import clean_text
 from table1_parser.extract.table_detector import (
     DetectedTableCandidate,
@@ -135,14 +133,10 @@ def normalize_positioned_geometry_for_rotation(
     tuple[float, float, float, float],
 ]:
     """Normalize clipped positioned geometry into an upright table-local coordinate frame."""
-    left, top, right, bottom = bbox
-    if rotation_direction not in {"vertical_text_up", "vertical_text_down"}:
-        return (words, chars or [], rule_segments or [], bbox)
-
-    def _transform_point(x: float, y: float) -> tuple[float, float]:
-        if rotation_direction == "vertical_text_up":
-            return (bottom - y, x - left)
-        return (y - top, right - x)
+    affine_matrix = rotation_affine_matrix(
+        source_bbox=bbox,
+        rotation_direction=rotation_direction,
+    )
 
     transformed_words: list[dict[str, object]] = []
     for word in words:
@@ -151,10 +145,10 @@ def normalize_positioned_geometry_for_rotation(
         word_top = float(word["top"])
         word_bottom = float(word["bottom"])
         transformed_corners = [
-            _transform_point(x0, word_top),
-            _transform_point(x1, word_top),
-            _transform_point(x0, word_bottom),
-            _transform_point(x1, word_bottom),
+            apply_affine_point(affine_matrix, x0, word_top),
+            apply_affine_point(affine_matrix, x1, word_top),
+            apply_affine_point(affine_matrix, x0, word_bottom),
+            apply_affine_point(affine_matrix, x1, word_bottom),
         ]
         transformed_word = {
             key: value
@@ -179,10 +173,10 @@ def normalize_positioned_geometry_for_rotation(
         char_top = float(char["top"])
         char_bottom = float(char["bottom"])
         transformed_corners = [
-            _transform_point(x0, char_top),
-            _transform_point(x1, char_top),
-            _transform_point(x0, char_bottom),
-            _transform_point(x1, char_bottom),
+            apply_affine_point(affine_matrix, x0, char_top),
+            apply_affine_point(affine_matrix, x1, char_top),
+            apply_affine_point(affine_matrix, x0, char_bottom),
+            apply_affine_point(affine_matrix, x1, char_bottom),
         ]
         transformed_left = min(point[0] for point in transformed_corners)
         transformed_right = max(point[0] for point in transformed_corners)
@@ -206,12 +200,48 @@ def normalize_positioned_geometry_for_rotation(
 
     transformed_rule_segments: list[tuple[float, float, float, float]] = []
     for x0, y0, x1, y1 in rule_segments or []:
-        start_x, start_y = _transform_point(float(x0), float(y0))
-        end_x, end_y = _transform_point(float(x1), float(y1))
+        start_x, start_y = apply_affine_point(
+            affine_matrix,
+            float(x0),
+            float(y0),
+        )
+        end_x, end_y = apply_affine_point(
+            affine_matrix,
+            float(x1),
+            float(y1),
+        )
         transformed_rule_segments.append((start_x, start_y, end_x, end_y))
 
-    transformed_bbox = (0.0, 0.0, float(bottom) - float(top), float(right) - float(left))
+    transformed_bbox = normalize_bbox_for_rotation(
+        bbox,
+        source_bbox=bbox,
+        rotation_direction=rotation_direction,
+    )
     return (transformed_words, transformed_chars, transformed_rule_segments, transformed_bbox)
+
+
+def rotation_affine_matrix(
+    *,
+    source_bbox: tuple[float, float, float, float],
+    rotation_direction: str,
+) -> tuple[float, float, float, float, float, float]:
+    """Return the exact page-to-canonical affine matrix for one table scope."""
+    left, top, right, bottom = source_bbox
+    if rotation_direction == "vertical_text_up":
+        return (0.0, 1.0, -1.0, 0.0, bottom, -left)
+    if rotation_direction == "vertical_text_down":
+        return (0.0, -1.0, 1.0, 0.0, -top, right)
+    return (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+
+
+def apply_affine_point(
+    affine_matrix: tuple[float, float, float, float, float, float],
+    x: float,
+    y: float,
+) -> tuple[float, float]:
+    """Apply one six-value PDF affine matrix to a point."""
+    a, b, c, d, e, f = affine_matrix
+    return (a * x + c * y + e, b * x + d * y + f)
 
 
 def normalize_bbox_for_rotation(
@@ -221,22 +251,16 @@ def normalize_bbox_for_rotation(
     rotation_direction: str,
 ) -> tuple[float, float, float, float]:
     """Transform one page-space bbox into the canonical upright table frame."""
-    if rotation_direction not in {"vertical_text_up", "vertical_text_down"}:
-        return bbox
-
-    source_left, source_top, source_right, source_bottom = source_bbox
-
-    def _transform_point(x: float, y: float) -> tuple[float, float]:
-        if rotation_direction == "vertical_text_up":
-            return (source_bottom - y, x - source_left)
-        return (y - source_top, source_right - x)
-
+    affine_matrix = rotation_affine_matrix(
+        source_bbox=source_bbox,
+        rotation_direction=rotation_direction,
+    )
     left, top, right, bottom = bbox
     transformed_corners = [
-        _transform_point(left, top),
-        _transform_point(right, top),
-        _transform_point(left, bottom),
-        _transform_point(right, bottom),
+        apply_affine_point(affine_matrix, left, top),
+        apply_affine_point(affine_matrix, right, top),
+        apply_affine_point(affine_matrix, left, bottom),
+        apply_affine_point(affine_matrix, right, bottom),
     ]
     return (
         min(point[0] for point in transformed_corners),
@@ -1448,23 +1472,13 @@ def build_text_layout_candidates(
     chars: list[dict[str, object]] | None = None,
     rule_segments: list[tuple[float, float, float, float]] | None = None,
     layout_source: str = "text_positions",
-    paper_page_furniture: PaperPageFurniture | None = None,
     paper_table_mentions: Sequence[PaperTableMention] | None = None,
     allow_uncaptioned_orientation_group: bool = False,
     candidate_region_bbox: tuple[float, float, float, float] | None = None,
 ) -> list[DetectedTableCandidate]:
     """Build scored candidates from page word and char geometry."""
-    working_words, word_mask_metadata = filter_positioned_items_for_page_furniture(
-        words,
-        paper_page_furniture,
-        page_num=page_num,
-    )
-    page_chars, char_mask_metadata = filter_positioned_items_for_page_furniture(
-        chars or [],
-        paper_page_furniture,
-        page_num=page_num,
-    )
-    lines = build_word_lines(working_words)
+    page_chars = chars or []
+    lines = build_word_lines(words)
 
     caption_bboxes = [
         mention.source_line_bbox
@@ -1636,12 +1650,6 @@ def build_text_layout_candidates(
             return False
         if not caption_signal and not strong_geometry:
             return False
-        table_bbox_cluster_ids = page_furniture_cluster_ids_for_bbox(
-            paper_page_furniture,
-            page_num=page_num,
-            bbox=bbox,
-            min_overlap_fraction=0.0,
-        )
         segments.append(
             {
                 "caption": caption if caption_signal else None,
@@ -1667,19 +1675,6 @@ def build_text_layout_candidates(
                 "value_region_prose_density": prose_density,
                 "uncaptioned_segment_source": segment_source if not caption_signal else None,
                 "strong_ruled_geometry": strong_ruled_geometry,
-                "page_furniture_overlap": {
-                    "source_artifact": "paper_page_furniture.json",
-                    "has_overlap": bool(table_bbox_cluster_ids),
-                    "table_bbox_cluster_ids": table_bbox_cluster_ids,
-                },
-                "page_furniture_mask": {
-                    key: value
-                    for key, value in {
-                        "word_items": word_mask_metadata,
-                        "char_items": char_mask_metadata,
-                    }.items()
-                    if value is not None
-                },
             }
         )
         return True
@@ -1783,8 +1778,6 @@ def build_text_layout_candidates(
                         "strong_ruled_geometry": segment["strong_ruled_geometry"],
                         "trailing_non_table_rows": segment["trailing_non_table_rows"],
                         "value_region_prose_density": segment["value_region_prose_density"],
-                        "page_furniture_overlap": segment["page_furniture_overlap"],
-                        "page_furniture_mask": segment["page_furniture_mask"],
                     },
                 )
             )

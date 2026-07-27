@@ -44,6 +44,12 @@ direction, rules, and exact PDF coordinates. It preserves what the extractor
 reported, including imperfect source grouping or text. Accepted document
 corrections do not overwrite or remove that evidence.
 
+The persisted positioned document retains every physical PDF page. After
+`PaperPageFurniture` establishes its authoritative `page_scope`, one in-memory
+projection containing only `included_page_nums` is the positioned input to
+`PaperDocument` and every other interpreted or extracted artifact. An
+`unknown` scope includes every physical page.
+
 `PaperDocument` is the corrected canonical representation of the paper. It is
 not required to reproduce an incorrect source-block grouping or extracted text
 unchanged. It is the source of truth for:
@@ -524,6 +530,11 @@ This contract does not itself authorize a new numeric layout tolerance.
 Page-furniture filtering occurs before `PaperDocument` blocks and ownership are
 built. Repeated headers, footers, watermarks, and similar ignored regions must
 not be removed later from prose or entities by string cleanup.
+Its `page_scope` is also the sole paper-length authority: the first qualifying
+recurrent `N of M` or `N / M` counter defines the terminal PDF page, while
+unresolved detection fails closed by retaining all physical pages. The same
+included page set governs furniture recurrence and the single positioned-
+document projection passed to all later stages.
 `PaperPositionedDocument` retains raw raster and vector components, but figure
 candidate construction must exclude an exact component-kind-and-bbox signature
 when it recurs on every page in an established furniture cluster and overlaps

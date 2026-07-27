@@ -2,12 +2,29 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
 
 PageFurnitureRecurrenceScope = Literal["all_pages", "odd_pages", "even_pages", "page_subset"]
+PaperPageScopeDetectionStatus = Literal["unknown", "detected"]
+
+
+@dataclass(frozen=True)
+class PaperPageScope:
+    """Authoritative paper boundary within the physical PDF."""
+
+    physical_page_count: int
+    detection_status: PaperPageScopeDetectionStatus
+    reported_paper_page_total: int | None
+    terminal_pdf_page_num: int | None
+    included_page_nums: list[int] = field(default_factory=list)
+    excluded_trailing_page_nums: list[int] = field(default_factory=list)
+    printed_page_offset: int | None = None
+    source_observation_ids: list[str] = field(default_factory=list)
+    diagnostics: list[str] = field(default_factory=list)
 
 
 class PageFurnitureTextObservation(BaseModel):
@@ -30,7 +47,7 @@ class PageFurnitureTextObservation(BaseModel):
 
 
 class PageFurnitureCluster(BaseModel):
-    """Repeated text cluster with stable page-relative position."""
+    """Repeated text cluster with intersecting page-relative position and orientation."""
 
     cluster_id: str
     normalized_text_key: str
@@ -63,7 +80,7 @@ class PageFurnitureRegion(BaseModel):
 
 
 class PageFurnitureRuleRegion(BaseModel):
-    """One recurrent page-edge rule excluded from table geometry."""
+    """One recurrent page rule excluded from table geometry."""
 
     region_id: str
     rule_cluster_id: str
@@ -82,6 +99,7 @@ class PaperPageFurniture(BaseModel):
 
     paper_id: str
     source_pdf: str
+    page_scope: PaperPageScope
     observations: list[PageFurnitureTextObservation] = Field(default_factory=list)
     clusters: list[PageFurnitureCluster] = Field(default_factory=list)
     ignored_regions: list[PageFurnitureRegion] = Field(default_factory=list)

@@ -9,6 +9,15 @@ This checklist tracks the planned geometry-first path from a detected table
 region to a canonical `ExtractedTable`, marker-linked logical elements, and
 footer resolution.
 
+Current-contract note — 2026-07-25: the phase checkpoints below are retained as
+historical verification records. The live contract is now defined by
+`canonical_orientation_unification_checklist.md`: the legacy-named
+`LeafColumnCandidateTable` contains role-free physical bands, while terminal
+header nodes and their physical-column mappings begin in
+`HeaderStructureCandidate`. Statements below that call those artifacts
+diagnostic-only or assign stub/value meaning describe their historical phase,
+not the current consumer graph.
+
 Mark a step complete only after its artifact can be inspected on real papers
 and the 28-paper corpus shows changes only in the intended direction.
 
@@ -29,14 +38,14 @@ Completion evidence:
   second PDF parse.
 - Discontinuous same-y rule segments remain separate records.
 
-Implemented as `ExtractedTable.metadata.table_positioned_evidence`, validated
-through the typed `TablePositionedEvidence` model. It stores the candidate bbox,
+Implemented as the required typed `ExtractedTable.positioned_evidence` field.
+It stores the candidate bbox,
 line IDs, line/span references, and page-local word, character, rule-segment,
 and stroked-rule-segment indices into `paper_positioned_document.json`. Text and
 font payloads remain in that shared PyMuPDF artifact and are not duplicated.
 The 2026-07-12 verification run parsed all 27 corpus papers and 82 tables with
 zero invalid references, zero Phase A diagnostics, and no extraction changes
-after excluding the new metadata field from comparison.
+after excluding the then-new evidence record from comparison.
 
 ## B. Inventory Candidate Marker Glyphs
 
@@ -102,7 +111,7 @@ dimensions, cell text, and cell coordinates are identical to Stage 1.
 Stage 3 canonical-evidence prerequisite is complete. Every retained table-local
 line, span, word, character, individual rule segment, and stroked rule segment
 now has a positionally aligned canonical bbox or segment in
-`table_positioned_evidence`. Candidate, evidence, caption, and structural-scope
+`ExtractedTable.positioned_evidence`. Candidate, evidence, caption, and structural-scope
 bounds use the same orientation-group frame and retain page-space originals.
 One affine transform records the mapping; upright tables use its identity form.
 No rule is merged, promoted, or classified. The checkpoint

@@ -61,19 +61,21 @@ The stages must remain separate:
 - `ParsedTable` combines the normalized grid, table definition, and value
   parsing into final structured value records.
 
-The current geometry path also writes three inspectable geometry artifacts after
-`TableRegion`: `body_occupancy.json`, `leaf_column_candidates.json`, and
-`header_structure_candidates.json`.
-`HeaderStructureCandidate` preserves
-preliminary leaves, partial-rule groups, wrapped fragments, source-supported
-marker attachments, and cross-band header diagnostics. Preliminary leaves are
+The current geometry path also writes three inspectable artifacts after
+`TableRegion`: `body_occupancy.json`, the legacy-named
+`leaf_column_candidates.json`, and `header_structure_candidates.json`.
+`leaf_column_candidates.json` contains role-free provisional physical bands
 defined by exact zero-occupancy gaps at least two observed space-glyph widths
-wide in the dominant table font and size; positioned header text attaches to
-the resulting bands but does not create additional physical columns.
-Body occupancy and leaf candidates participate in canonical extraction;
-header-structure candidates remain post-extraction evidence and do not rewrite
-the physical grid. None of these artifacts feeds normalization-time geometry
-repair.
+wide in the dominant table font and size. A band is not a descriptor column,
+value column, or semantic leaf. `HeaderStructureCandidate` is the later header-
+interpretation artifact: it maps preliminary terminal header nodes explicitly
+to physical columns, and preserves partial-rule groups, wrapped fragments,
+source-supported marker attachments, and cross-band diagnostics. Positioned
+header text attaches to the physical bands but does not create additional
+physical columns. Body occupancy and physical-band candidates currently
+participate in canonical extraction; header-structure candidates remain post-
+extraction evidence and do not rewrite the physical grid. None of these
+artifacts feeds normalization-time geometry repair.
 
 For continued-table work, the confirmed semantic working path is:
 
@@ -244,6 +246,7 @@ caption
 n_rows  
 n_cols  
 cells (list of TableCell)  
+positioned_evidence (TablePositionedEvidence)
 extraction_backend  
 metadata
 
