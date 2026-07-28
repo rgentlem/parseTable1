@@ -1,0 +1,4 @@
+interface:
+  display_name: "Run Corpus Comparison"
+  short_description: "Run and audit parser corpus regressions"
+  default_prompt: "Use $run-corpus-comparison to run the 28-PDF corpus and report semantic differences and missing table-footnote links."

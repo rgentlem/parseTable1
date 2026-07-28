@@ -11,12 +11,20 @@ from table1_parser.text_cleaning import clean_text
 
 
 TABLE_MENTION_PATTERN = re.compile(
-    r"\b(?P<label>Tables?\s*(?P<numbers>[A-Za-z]?\d+[A-Za-z]?"
-    r"(?:\s*(?:,|and|&|-|to)\s*[A-Za-z]?\d+[A-Za-z]?){0,8}))\b",
+    r"\b(?P<label>Tables?\s*(?P<numbers>(?=[A-Za-z0-9.]*\d)"
+    r"[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*"
+    r"(?:\s*(?:,|and|&|-|to)\s*(?=[A-Za-z0-9.]*\d)"
+    r"[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*){0,8}))\b",
     re.IGNORECASE,
 )
-TABLE_NUMBER_PATTERN = re.compile(r"[A-Za-z]?\d+[A-Za-z]?")
-CAPTION_LINE_START_PATTERN = re.compile(r"^\s*Table\s*[A-Za-z]?\d+[A-Za-z]?\b(?:\s*[.:])?", re.IGNORECASE)
+TABLE_NUMBER_PATTERN = re.compile(
+    r"(?=[A-Za-z0-9.]*\d)[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*"
+)
+CAPTION_LINE_START_PATTERN = re.compile(
+    r"^\s*Table\s*(?=[A-Za-z0-9.]*\d)"
+    r"[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*\b(?:\s*[.:])?",
+    re.IGNORECASE,
+)
 CONTINUATION_PATTERN = re.compile(r"\b(?:continued|continues?|cont\.)\b", re.IGNORECASE)
 PROSE_CUE_BEFORE_PATTERN = re.compile(
     r"\b(?:shown|presented|reported|summari[sz]ed|listed|described|displayed|provided|given|seen)\s+in\s*$"
@@ -68,7 +76,11 @@ def build_paper_table_mentions(lines: Sequence[object]) -> list[PaperTableMentio
             following_font = str(nonspace_spans[3].get("font") or "")
             if (
                 first_text.lower() == "table"
-                and re.fullmatch(r"[A-Za-z]?\d+[A-Za-z]?[.:]?", number_text)
+                and re.fullmatch(
+                    r"(?=[A-Za-z0-9.]*\d)"
+                    r"[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*[.:]?",
+                    number_text,
+                )
                 and len(separator_text) == 1
                 and separator_font
                 and separator_font != number_font

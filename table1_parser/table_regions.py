@@ -178,24 +178,71 @@ def build_table_region(
 
     content_grid = grid[content_start:]
     content_row_bounds = row_bounds[content_start:] if row_bounds is not None else None
-    local_header_rows, local_body_rows, header_detection = (
-        detect_header_rows_with_metadata(
-            content_grid,
-            row_bounds=content_row_bounds,
-            horizontal_rules=horizontal_rules,
-            separator_horizontal_rules=full_width_rules or None,
+    typed_header_body_candidates = [
+        candidate
+        for candidate in (
+            table_boundary_proposal.boundary_candidates
+            if table_boundary_proposal is not None
+            else []
         )
+        if "header_body" in candidate.possible_roles
+        and candidate.row_before_idx is not None
+        and candidate.row_after_idx is not None
+        and candidate.row_after_idx == candidate.row_before_idx + 1
+        and content_start <= candidate.row_before_idx < table.n_rows
+        and candidate.row_after_idx < table.n_rows
+    ]
+    typed_header_body_candidate = (
+        typed_header_body_candidates[0]
+        if len(typed_header_body_candidates) == 1
+        else None
     )
-    header_rows = [
-        row_idx + content_start
-        for row_idx in local_header_rows
-        if any(clean_text(cell) for cell in content_grid[row_idx])
-    ]
-    body_rows = [
-        row_idx + content_start
-        for row_idx in local_body_rows
-        if any(clean_text(cell) for cell in content_grid[row_idx])
-    ]
+    if typed_header_body_candidate is not None:
+        header_rows = [
+            row_idx
+            for row_idx in range(
+                content_start,
+                typed_header_body_candidate.row_before_idx + 1,
+            )
+            if any(clean_text(cell) for cell in grid[row_idx])
+        ]
+        body_rows = [
+            row_idx
+            for row_idx in range(
+                typed_header_body_candidate.row_after_idx,
+                table.n_rows,
+            )
+            if any(clean_text(cell) for cell in grid[row_idx])
+        ]
+        header_detection: dict[str, object] = {}
+        header_body_rule_y = typed_header_body_candidate.canonical_y
+        header_source = "typed_boundary_proposal"
+    else:
+        local_header_rows, local_body_rows, header_detection = (
+            detect_header_rows_with_metadata(
+                content_grid,
+                row_bounds=content_row_bounds,
+                horizontal_rules=horizontal_rules,
+                separator_horizontal_rules=full_width_rules or None,
+            )
+        )
+        header_rows = [
+            row_idx + content_start
+            for row_idx in local_header_rows
+            if any(clean_text(cell) for cell in content_grid[row_idx])
+        ]
+        body_rows = [
+            row_idx + content_start
+            for row_idx in local_body_rows
+            if any(clean_text(cell) for cell in content_grid[row_idx])
+        ]
+        header_body_rule = header_detection.get("separator_rule_y")
+        header_body_rule_y = (
+            float(header_body_rule)
+            if isinstance(header_body_rule, (int, float))
+            else None
+        )
+        header_source = str(header_detection.get("source") or "unclassified")
     detected_preamble_rows = header_detection.get("preamble_rows")
     detected_post_header_note_rows = header_detection.get("post_header_note_rows")
     detected_continuation_note_rows = header_detection.get("continuation_note_rows")
@@ -221,15 +268,10 @@ def build_table_region(
         if isinstance(detected_continuation_note_rows, list)
         else []
     )
-    header_body_rule = header_detection.get("separator_rule_y")
-    header_body_rule_y = (
-        float(header_body_rule) if isinstance(header_body_rule, (int, float)) else None
-    )
-    header_source = str(header_detection.get("source") or "unclassified")
     detection_basis = f"table_region_{header_source}"
     confidence = (
         0.92
-        if header_source == "horizontal_rule_separator"
+        if header_source in {"horizontal_rule_separator", "typed_boundary_proposal"}
         else 0.78
         if header_source == "value_region_anchor"
         else 0.35
@@ -764,6 +806,54 @@ def build_table_region(
                                 current_footer_block_indices = group_block_indices
                                 current_footer_fonts = group_fonts
                                 event_index -= 1
+
+                            complete_line_ids = {
+                                line.line_id for line, _bbox in complete_lines
+                            }
+                            positioned_line_ids_by_candidate_row = {
+                                row_idx: {
+                                    line.line_id
+                                    for _center,
+                                    _style,
+                                    _valid_text,
+                                    _separated_fragments,
+                                    group_rows,
+                                    group_lines in classified_groups
+                                    if row_idx in group_rows
+                                    for line, _bbox in group_lines
+                                }
+                                for row_idx in candidate_footer_rows
+                            }
+                            incomplete_footer_rows = {
+                                row_idx
+                                for row_idx, source_line_ids in (
+                                    positioned_line_ids_by_candidate_row.items()
+                                )
+                                if not source_line_ids.issubset(complete_line_ids)
+                            }
+                            if incomplete_footer_rows:
+                                incomplete_line_ids = {
+                                    line_id
+                                    for row_idx in incomplete_footer_rows
+                                    for line_id in (
+                                        positioned_line_ids_by_candidate_row[row_idx]
+                                    )
+                                }
+                                candidate_footer_rows.difference_update(
+                                    incomplete_footer_rows
+                                )
+                                complete_lines = [
+                                    record
+                                    for record in complete_lines
+                                    if record[0].line_id not in incomplete_line_ids
+                                ]
+                                diagnostics.append(
+                                    "footer_candidate_rejected:partial_positioned_row:"
+                                    + ",".join(
+                                        str(row_idx)
+                                        for row_idx in sorted(incomplete_footer_rows)
+                                    )
+                                )
 
                             table_end_candidates = [
                                 candidate

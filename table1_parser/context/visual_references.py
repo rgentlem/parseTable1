@@ -15,12 +15,15 @@ EMBEDDED_MARKDOWN_TABLE_START_PATTERN = re.compile(
 )
 SENTENCE_BOUNDARY_PATTERN = re.compile(r"(?<=[.!?])\s+(?=[A-Z0-9])")
 VISUAL_LABEL_PATTERN = re.compile(
-    r"\b(?P<kind>Table|Tables|Fig\.?|Figs\.?|Figure|Figures)\s*(?P<number>[A-Za-z]?\d+[A-Za-z]?)\b",
+    r"\b(?P<kind>Table|Tables|Fig\.?|Figs\.?|Figure|Figures)\s*"
+    r"(?P<number>(?=[A-Za-z0-9.]*\d)[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*)\b",
     re.IGNORECASE,
 )
 VISUAL_REFERENCE_PATTERN = re.compile(
     r"\b(?P<kind>Table|Tables|Fig\.?|Figs\.?|Figure|Figures)\s*"
-    r"(?P<numbers>[A-Za-z]?\d+[A-Za-z]?(?:\s*(?:,|and|&)\s*[A-Za-z]?\d+[A-Za-z]?){0,8})\b",
+    r"(?P<numbers>(?=[A-Za-z0-9.]*\d)[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*"
+    r"(?:\s*(?:,|and|&)\s*(?=[A-Za-z0-9.]*\d)"
+    r"[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*){0,8})\b",
     re.IGNORECASE,
 )
 VISUAL_OBJECT_DOI_PATTERN = re.compile(
@@ -28,7 +31,9 @@ VISUAL_OBJECT_DOI_PATTERN = re.compile(
     r"(?P<doi>10\.\d{4,9}/\S+\.(?P<object_kind>[tg])(?P<object_number>\d+))$",
     re.IGNORECASE,
 )
-REFERENCE_NUMBER_PATTERN = re.compile(r"[A-Za-z]?\d+[A-Za-z]?")
+REFERENCE_NUMBER_PATTERN = re.compile(
+    r"(?=[A-Za-z0-9.]*\d)[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*"
+)
 TEXT_REFERENCE_CUE_PATTERN = re.compile(
     r"\b(?:shown|presented|reported|summari[sz]ed|listed|described|displayed|provided|given|seen)\s+in\s*$"
     r"|\b(?:see|refer\s+to|according\s+to)\s*$",

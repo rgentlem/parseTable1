@@ -20,6 +20,32 @@ class PaperPositionedVisualComponent:
     drawing_sequence_range: tuple[int, int] | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class PaperPositionedDrawingRectangle:
+    """One exact rectangle item from an ordinary PyMuPDF drawing record."""
+
+    bbox: tuple[float, float, float, float]
+    source_drawing_index: int
+    source_item_index: int
+    source_drawing_bbox: tuple[float, float, float, float] | None = None
+    fill_color: tuple[float, ...] | None = None
+    stroke_color: tuple[float, ...] | None = None
+    stroke_width: float | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class PaperPositionedDrawingLine:
+    """One exact line item from an ordinary PyMuPDF drawing record."""
+
+    start: tuple[float, float]
+    end: tuple[float, float]
+    source_drawing_index: int
+    source_item_index: int
+    source_drawing_bbox: tuple[float, float, float, float] | None = None
+    stroke_color: tuple[float, ...] | None = None
+    stroke_width: float | None = None
+
+
 class PaperPositionedSpan(BaseModel):
     """One PyMuPDF text span with geometry and font evidence."""
 
@@ -102,6 +128,10 @@ class PaperPositionedPage(BaseModel):
     visual_components: list[PaperPositionedVisualComponent] = Field(
         default_factory=list
     )
+    drawing_rectangles: list[PaperPositionedDrawingRectangle] = Field(
+        default_factory=list
+    )
+    drawing_lines: list[PaperPositionedDrawingLine] = Field(default_factory=list)
     rule_segments: list[tuple[float, float, float, float]] = Field(default_factory=list)
     stroked_rule_segments: list[tuple[float, float, float, float]] = Field(default_factory=list)
     diagnostics: list[str] = Field(default_factory=list)

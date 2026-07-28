@@ -17,6 +17,8 @@ from table1_parser.extract.pymupdf_page_adapter import (
 from table1_parser.schemas import (
     PaperPositionedChar,
     PaperPositionedDocument,
+    PaperPositionedDrawingLine,
+    PaperPositionedDrawingRectangle,
     PaperPositionedLine,
     PaperPositionedPage,
     PaperPositionedSpan,
@@ -107,6 +109,66 @@ def build_paper_positioned_document(
                 page_rule_drawings = page.get_drawings() or []
             except Exception:  # noqa: BLE001
                 page_rule_drawings = []
+
+            page_drawing_rectangles: list[PaperPositionedDrawingRectangle] = []
+            page_drawing_lines: list[PaperPositionedDrawingLine] = []
+            for drawing_index, drawing in enumerate(page_rule_drawings):
+                if not isinstance(drawing, dict):
+                    continue
+                source_drawing_bbox = bbox_from_pymupdf_value(drawing.get("rect"))
+                fill_value = drawing.get("fill")
+                fill_color = (
+                    tuple(float(value) for value in fill_value)
+                    if isinstance(fill_value, (list, tuple))
+                    else None
+                )
+                stroke_value = drawing.get("color")
+                stroke_color = (
+                    tuple(float(value) for value in stroke_value)
+                    if isinstance(stroke_value, (list, tuple))
+                    else None
+                )
+                width_value = drawing.get("width")
+                stroke_width = (
+                    float(width_value)
+                    if isinstance(width_value, (int, float))
+                    else None
+                )
+                for item_index, item in enumerate(drawing.get("items", [])):
+                    if not isinstance(item, tuple):
+                        continue
+                    if len(item) >= 2 and item[0] == "re":
+                        item_bbox = bbox_from_pymupdf_value(item[1])
+                        if item_bbox is not None:
+                            page_drawing_rectangles.append(
+                                PaperPositionedDrawingRectangle(
+                                    bbox=item_bbox,
+                                    source_drawing_index=drawing_index,
+                                    source_item_index=item_index,
+                                    source_drawing_bbox=source_drawing_bbox,
+                                    fill_color=fill_color,
+                                    stroke_color=stroke_color,
+                                    stroke_width=stroke_width,
+                                )
+                            )
+                    if len(item) < 3 or item[0] != "l":
+                        continue
+                    try:
+                        start = (float(item[1][0]), float(item[1][1]))
+                        end = (float(item[2][0]), float(item[2][1]))
+                    except (IndexError, TypeError, ValueError):
+                        continue
+                    page_drawing_lines.append(
+                        PaperPositionedDrawingLine(
+                            start=start,
+                            end=end,
+                            source_drawing_index=drawing_index,
+                            source_item_index=item_index,
+                            source_drawing_bbox=source_drawing_bbox,
+                            stroke_color=stroke_color,
+                            stroke_width=stroke_width,
+                        )
+                    )
 
             page_lines: list[PaperPositionedLine] = []
             page_image_bboxes: list[tuple[float, float, float, float]] = []
@@ -223,6 +285,8 @@ def build_paper_positioned_document(
                     chars=page_chars,
                     image_bboxes=page_image_bboxes,
                     visual_components=page_visual_components,
+                    drawing_rectangles=page_drawing_rectangles,
+                    drawing_lines=page_drawing_lines,
                     rule_segments=page_rule_segments,
                     stroked_rule_segments=page_stroked_rule_segments,
                 )

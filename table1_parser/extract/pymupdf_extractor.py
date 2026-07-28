@@ -6,6 +6,7 @@ import re
 from pathlib import Path
 from collections.abc import Sequence
 from dataclasses import dataclass
+from itertools import groupby
 from typing import Any
 
 from table1_parser.config import Settings
@@ -18,6 +19,7 @@ from table1_parser.extract.layout_fallback import (
     rotation_affine_matrix,
 )
 from table1_parser.extract.provisional_table import ProvisionalExtractedTable
+from table1_parser.extract.pymupdf_page_adapter import open_pymupdf_document
 from table1_parser.context.paper_positioned_document import build_paper_positioned_document
 from table1_parser.context.paper_document import (
     iter_paper_discovery_lines,
@@ -25,6 +27,7 @@ from table1_parser.context.paper_document import (
 from table1_parser.paper_discovery import PaperDiscoveryState
 from table1_parser.extract.table_detector import (
     DetectedTableCandidate,
+    score_candidate,
 )
 from table1_parser.extract.table_selector import select_top_candidates
 from table1_parser.page_furniture_mask import (
@@ -65,6 +68,46 @@ class BibliographyEvidenceMask:
     source_line_keys: set[tuple[int, int]]
     line_regions: list[tuple[float, float, float, float]]
     entry_regions: list[tuple[float, float, float, float]]
+
+
+@dataclass(frozen=True, slots=True)
+class TableCandidateBlockScope:
+    """Canonical block scope for one accepted table caption."""
+
+    page_num: int
+    mention_id: str
+    orientation_group_id: str
+    canonical_bbox: tuple[float, float, float, float]
+    block_ids: tuple[str, ...]
+    source_block_indices: tuple[int, ...]
+    line_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class TableCandidateGridProposal:
+    """Scoped native grid geometry awaiting one candidate decision."""
+
+    page_num: int
+    mention_id: str
+    orientation_group_id: str
+    detector_bbox: tuple[float, float, float, float]
+    row_bboxes: tuple[tuple[float, float, float, float], ...]
+    column_bboxes: tuple[tuple[float, float, float, float], ...]
+    cell_bboxes: tuple[tuple[tuple[float, float, float, float] | None, ...], ...]
+    supporting_drawing_items: tuple[tuple[str, int, int], ...]
+    materialized_cells: tuple[tuple[TableCandidateGridCell, ...], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class TableCandidateGridCell:
+    """Shared positioned text and provenance assigned to one proposed cell."""
+
+    bbox: tuple[float, float, float, float] | None
+    text: str
+    block_ids: tuple[str, ...]
+    line_ids: tuple[str, ...]
+    word_indices: tuple[int, ...]
+    char_indices: tuple[int, ...]
 
 
 def _caption_label_assignments(
@@ -421,18 +464,14 @@ def _apply_complete_caption_bindings(
                 paper_document_lines=paper_document_lines,
                 caption_label_line_ids=caption_label_line_ids,
             )
-            numeric_table_number = (
-                int(region.table_number)
-                if region.table_number.isdigit()
-                else candidate.metadata.get("table_number")
-            )
+            caption_table_number = region.table_number
             signals = candidate.metadata.get("signals")
             updated_signals = (
                 {
                     **signals,
                     "caption_match": True,
-                    "table_1_match": numeric_table_number == 1,
-                    "caption_table_number": numeric_table_number,
+                    "table_1_match": caption_table_number == "1",
+                    "caption_table_number": caption_table_number,
                     "caption_is_continuation": region.mention_kind == "continuation_label",
                 }
                 if isinstance(signals, dict)
@@ -447,10 +486,10 @@ def _apply_complete_caption_bindings(
                         "caption_region": region.model_dump(mode="json"),
                         "caption_binding": binding.model_dump(mode="json"),
                         "caption_detection_space": "paper_document_orientation_group",
-                        "table_number": numeric_table_number,
+                        "table_number": caption_table_number,
                         "is_continuation": region.mention_kind == "continuation_label",
                         "continuation_of_table_number": (
-                            numeric_table_number
+                            caption_table_number
                             if region.mention_kind == "continuation_label"
                             else None
                         ),
@@ -766,6 +805,65 @@ class PyMuPDFExtractor(BaseExtractor):
                     if was_applied
                 ],
             )
+            native_grid = candidate.metadata.get("native_grid_proposal")
+            if isinstance(native_grid, dict):
+                row_bboxes = [
+                    _as_bbox(item) for item in native_grid.get("row_bboxes", [])
+                ]
+                column_bboxes = [
+                    _as_bbox(item) for item in native_grid.get("column_bboxes", [])
+                ]
+                native_cells = [
+                    cell
+                    for row in native_grid.get("cells", [])
+                    if isinstance(row, list)
+                    for cell in row
+                    if isinstance(cell, dict)
+                ]
+                positioned_evidence = positioned_evidence.model_copy(
+                    update={
+                        "canonical_grid_bbox": _as_bbox(
+                            native_grid.get("detector_bbox")
+                        ),
+                        "canonical_row_bounds": [
+                            (item[1], item[3]) for item in row_bboxes if item
+                        ],
+                        "canonical_physical_column_bounds": [
+                            (item[0], item[2]) for item in column_bboxes if item
+                        ],
+                        "canonical_grid_cell_bboxes": _coerce_cell_bboxes(
+                            native_grid.get("cell_bboxes", [])
+                        ),
+                        "grid_source_block_ids": [
+                            str(item) for item in native_grid.get("block_ids", [])
+                        ],
+                        "grid_source_line_ids": list(
+                            dict.fromkeys(
+                                str(item)
+                                for cell in native_cells
+                                for item in cell.get("line_ids", [])
+                            )
+                        ),
+                        "grid_source_word_indices": list(
+                            dict.fromkeys(
+                                int(item)
+                                for cell in native_cells
+                                for item in cell.get("word_indices", [])
+                            )
+                        ),
+                        "grid_source_char_indices": list(
+                            dict.fromkeys(
+                                int(item)
+                                for cell in native_cells
+                                for item in cell.get("char_indices", [])
+                            )
+                        ),
+                        "grid_source_drawing_items": [
+                            tuple(item)
+                            for item in native_grid.get("drawing_items", [])
+                        ],
+                    }
+                )
             candidates_with_positioned_evidence.append(
                 (candidate, positioned_evidence)
             )
@@ -828,6 +926,11 @@ class PyMuPDFExtractor(BaseExtractor):
             page["page_num"]: page
             for page in (paper_discovery.pages if paper_discovery is not None else [])
         }
+        bibliography_block_ids = paper_discovery.bibliography_block_ids if paper_discovery else frozenset()
+        document_blocks_by_page: dict[int, list[dict[str, object]]] = {}
+        for block in paper_discovery.blocks if paper_discovery is not None else []:
+            if str(block["block_id"]) not in bibliography_block_ids:
+                document_blocks_by_page.setdefault(int(block["page_num"]), []).append(block)
         text_lines_by_page: dict[int, list[object]] = {}
         for line in paper_document_lines:
             text_lines_by_page.setdefault(line.page_num, []).append(line)
@@ -967,6 +1070,21 @@ class PyMuPDFExtractor(BaseExtractor):
                         and mention.source_line_id in group_line_ids
                         and line_by_id[mention.source_line_id].canonical_bbox is not None
                     ]
+                    group_blocks = [block for block in document_blocks_by_page.get(page_num, [])
+                                    if block["orientation_group_id"] == group["group_id"]]
+                    _block_scope_proposals = _build_block_scope_proposals(
+                        page_num=page_num,
+                        blocks=group_blocks,
+                        rule_segments=transformed_rules,
+                        paper_table_mentions=transformed_mentions,
+                    )
+                    _native_grid_proposals = _build_native_grid_proposals(
+                        pdf_path=pdf_path,
+                        positioned_page=positioned_page,
+                        block_scopes=_block_scope_proposals,
+                        words=transformed_words,
+                        chars=transformed_chars,
+                    ) if group["orientation"] == "upright" else []
                     group_text = "\n".join(line.text for line in group_lines) or page_text
                     text_layout_candidates = _build_rule_span_candidates(
                         page_num=page_num,
@@ -977,6 +1095,167 @@ class PyMuPDFExtractor(BaseExtractor):
                         image_bboxes=transformed_image_bboxes,
                         paper_table_mentions=transformed_mentions,
                     )
+                    proposals_by_mention_id: dict[
+                        str, list[TableCandidateGridProposal]
+                    ] = {}
+                    for proposal in _native_grid_proposals:
+                        proposals_by_mention_id.setdefault(
+                            proposal.mention_id, []
+                        ).append(proposal)
+                    scopes_by_mention_id: dict[str, list[TableCandidateBlockScope]] = {}
+                    for scope in _block_scope_proposals:
+                        scopes_by_mention_id.setdefault(scope.mention_id, []).append(scope)
+
+                    native_replacements: dict[int, DetectedTableCandidate] = {}
+                    native_insertions: list[DetectedTableCandidate] = []
+                    for mention_id, proposals in proposals_by_mention_id.items():
+                        scopes = scopes_by_mention_id.get(mention_id, [])
+                        mention = next(
+                            (
+                                item
+                                for item in transformed_mentions
+                                if item.mention_id == mention_id
+                            ),
+                            None,
+                        )
+                        if len(proposals) != 1 or len(scopes) != 1 or mention is None:
+                            continue
+                        proposal = proposals[0]
+                        scope = scopes[0]
+                        row_count = len(proposal.row_bboxes)
+                        column_count = len(proposal.column_bboxes)
+                        if (
+                            not mention.source_line_text.strip()
+                            or not scope.block_ids
+                            or not scope.line_ids
+                            or not proposal.supporting_drawing_items
+                            or row_count == 0
+                            or column_count == 0
+                            or len(proposal.cell_bboxes) != row_count
+                            or len(proposal.materialized_cells) != row_count
+                            or any(
+                                len(row) != column_count
+                                for row in proposal.cell_bboxes
+                            )
+                            or any(
+                                len(row) != column_count
+                                for row in proposal.materialized_cells
+                            )
+                            or not (
+                                scope.canonical_bbox[0]
+                                <= proposal.detector_bbox[0]
+                                < proposal.detector_bbox[2]
+                                <= scope.canonical_bbox[2]
+                                and scope.canonical_bbox[1]
+                                <= proposal.detector_bbox[1]
+                                < proposal.detector_bbox[3]
+                                <= scope.canonical_bbox[3]
+                            )
+                        ):
+                            continue
+                        matching_candidates = [
+                            candidate
+                            for candidate in text_layout_candidates
+                            if candidate.metadata.get("caption_mention_id")
+                            == mention_id
+                            and candidate.metadata.get("candidate_region_source")
+                            == "caption_and_rule_geometry"
+                        ]
+                        if len(matching_candidates) > 1:
+                            continue
+                        existing_candidate = (
+                            matching_candidates[0] if matching_candidates else None
+                        )
+                        native_cells = [
+                            [
+                                {
+                                    "bbox": cell.bbox,
+                                    "block_ids": list(cell.block_ids),
+                                    "line_ids": list(cell.line_ids),
+                                    "word_indices": list(cell.word_indices),
+                                    "char_indices": list(cell.char_indices),
+                                }
+                                for cell in row
+                            ]
+                            for row in proposal.materialized_cells
+                        ]
+                        native_metadata = {
+                            **(
+                                existing_candidate.metadata
+                                if existing_candidate is not None
+                                else {}
+                            ),
+                            "layout_source": "pymupdf_scoped_native_grid",
+                            "candidate_region_source": (
+                                "caption_block_scope_native_grid"
+                            ),
+                            "caption_mention_id": mention_id,
+                            "caption_table_number": mention.table_number,
+                            "caption_is_continuation": (
+                                mention.mention_kind == "continuation_label"
+                            ),
+                            "is_rectangular": True,
+                            "strong_ruled_geometry": True,
+                            "table_cells": [
+                                [cell for cell in row]
+                                for row in proposal.cell_bboxes
+                            ],
+                            "row_bounds": [
+                                (row[1], row[3]) for row in proposal.row_bboxes
+                            ],
+                            "native_grid_proposal": {
+                                "detector_bbox": proposal.detector_bbox,
+                                "row_bboxes": proposal.row_bboxes,
+                                "column_bboxes": proposal.column_bboxes,
+                                "cell_bboxes": [
+                                    [cell for cell in row]
+                                    for row in proposal.cell_bboxes
+                                ],
+                                "block_ids": scope.block_ids,
+                                "source_block_indices": scope.source_block_indices,
+                                "line_ids": scope.line_ids,
+                                "drawing_items": proposal.supporting_drawing_items,
+                                "cells": native_cells,
+                            },
+                        }
+                        native_candidate = score_candidate(
+                            DetectedTableCandidate(
+                                page_num=page_num,
+                                table_index=(
+                                    existing_candidate.table_index
+                                    if existing_candidate is not None
+                                    else 0
+                                ),
+                                bbox=proposal.detector_bbox,
+                                raw_rows=[
+                                    [cell.text for cell in row]
+                                    for row in proposal.materialized_cells
+                                ],
+                                caption=(
+                                    existing_candidate.caption
+                                    if existing_candidate is not None
+                                    else mention.source_line_text
+                                ),
+                                page_text=(
+                                    existing_candidate.page_text
+                                    if existing_candidate is not None
+                                    else group_text
+                                ),
+                                metadata=native_metadata,
+                            )
+                        )
+                        if existing_candidate is None:
+                            native_insertions.append(native_candidate)
+                        else:
+                            native_replacements[id(existing_candidate)] = (
+                                native_candidate
+                            )
+                    if native_replacements or native_insertions:
+                        text_layout_candidates = [
+                            native_replacements.get(id(candidate), candidate)
+                            for candidate in text_layout_candidates
+                        ]
+                        text_layout_candidates.extend(native_insertions)
                     if group["orientation"] == "upright":
                         continuation_candidates = (
                             _build_cross_page_continuation_candidates(
@@ -1342,6 +1621,208 @@ def _connected_rule_grid_regions(
     return sorted(regions, key=lambda region: (region[1], region[0]))
 
 
+def _build_block_scope_proposals(
+    *,
+    page_num: int,
+    blocks: Sequence[dict[str, object]],
+    rule_segments: Sequence[tuple[float, float, float, float]],
+    paper_table_mentions: Sequence[PaperTableMention],
+) -> list[TableCandidateBlockScope]:
+    """Build exact outer scopes without assigning table or header structure."""
+    horizontal_extents_by_y: dict[float, tuple[float, float]] = {}
+    for x0, y0, x1, y1 in rule_segments:
+        if y0 != y1 or x0 == x1:
+            continue
+        left, right = sorted((float(x0), float(x1)))
+        current = horizontal_extents_by_y.get(float(y0))
+        horizontal_extents_by_y[float(y0)] = (min(left, current[0]), max(right, current[1])) if current else (left, right)
+    rule_rows_by_extent: dict[tuple[float, float], list[float]] = {}
+    for rule_y, extent in horizontal_extents_by_y.items():
+        rule_rows_by_extent.setdefault(extent, []).append(rule_y)
+
+    captions = sorted(
+        (mention for mention in paper_table_mentions
+         if mention.page_num == page_num and mention.is_caption_candidate),
+        key=lambda mention: mention.source_line_bbox[1],
+    )
+    proposals: list[TableCandidateBlockScope] = []
+    for mention in captions:
+        caption_block = next((block for block in blocks
+                              if mention.source_line_id in block["line_ids"]), None)
+        if caption_block is None:
+            continue
+        caption_left, caption_top, caption_right, caption_bottom = mention.source_line_bbox
+        next_caption_top = min(
+            (other.source_line_bbox[1] for other in captions
+             if other.source_line_bbox[1] > caption_top),
+            default=float("inf"),
+        )
+        related_rule_groups = [
+            (rows[0], extent[0], extent[1], rows)
+            for extent, source_rows in rule_rows_by_extent.items()
+            if len(rows := sorted(y for y in source_rows if caption_bottom <= y < next_caption_top)) >= 2
+            and min(caption_right, extent[1]) > max(caption_left, extent[0])
+        ]
+        if not related_rule_groups:
+            continue
+        _, left, right, rule_rows = min(related_rule_groups)
+        top, bottom = rule_rows[0], rule_rows[-1]
+        scoped_blocks = sorted(
+            (
+                block
+                for block in blocks
+                if len(block["canonical_bbox"]) == 4
+                and top <= float(block["canonical_bbox"][1])
+                and float(block["canonical_bbox"][3]) <= bottom
+                and min(right, float(block["canonical_bbox"][2]))
+                > max(left, float(block["canonical_bbox"][0]))
+            ),
+            key=lambda block: (int(block["source_block_index"]), str(block["block_id"])),
+        )
+        if not scoped_blocks:
+            continue
+        proposals.append(
+            TableCandidateBlockScope(
+                page_num=page_num,
+                mention_id=mention.mention_id,
+                orientation_group_id=str(caption_block["orientation_group_id"]),
+                canonical_bbox=(left, top, right, bottom),
+                block_ids=tuple(str(block["block_id"]) for block in scoped_blocks),
+                source_block_indices=tuple(int(block["source_block_index"]) for block in scoped_blocks),
+                line_ids=tuple(str(line_id) for block in scoped_blocks for line_id in block["line_ids"]),
+            )
+        )
+    return proposals
+
+
+def _build_native_grid_proposals(
+    *,
+    pdf_path: str,
+    positioned_page: PaperPositionedPage,
+    block_scopes: Sequence[TableCandidateBlockScope],
+    words: Sequence[dict[str, object]],
+    chars: Sequence[dict[str, object]],
+) -> list[TableCandidateGridProposal]:
+    """Build scoped native grid geometry without changing candidate selection."""
+    if not block_scopes:
+        return []
+    document = open_pymupdf_document(pdf_path)
+    proposals: list[TableCandidateGridProposal] = []
+    try:
+        page = document[positioned_page.page_num - 1]
+        for scope in block_scopes:
+            left, top, right, bottom = scope.canonical_bbox
+            block_id_by_source_index = dict(
+                zip(scope.source_block_indices, scope.block_ids, strict=True)
+            )
+            vertical_lines: list[float] = []
+            drawing_items: list[tuple[str, int, int]] = []
+            for rectangle in positioned_page.drawing_rectangles:
+                rect_left, rect_top, rect_right, rect_bottom = rectangle.bbox
+                if not (left <= rect_left and rect_right <= right
+                        and top <= rect_top and rect_bottom <= bottom):
+                    continue
+                vertical_lines.extend((rect_left, rect_right))
+                drawing_items.append(("rectangle", rectangle.source_drawing_index,
+                                      rectangle.source_item_index))
+            for line in positioned_page.drawing_lines:
+                if line.start[1] != line.end[1] or line.start[0] == line.end[0]:
+                    continue
+                if not (left <= line.start[0] <= right and left <= line.end[0] <= right
+                        and top <= line.start[1] <= bottom):
+                    continue
+                vertical_lines.extend((line.start[0], line.end[0]))
+                drawing_items.append(("line", line.source_drawing_index,
+                                      line.source_item_index))
+            if not vertical_lines:
+                continue
+            finder = page.find_tables(
+                clip=scope.canonical_bbox,
+                vertical_lines=vertical_lines,
+                horizontal_strategy="lines",
+            )
+            for table in finder.tables if finder is not None else []:
+                cell_bboxes = tuple(
+                    tuple(None if cell is None else tuple(float(value) for value in cell)
+                          for cell in row.cells)
+                    for row in table.rows
+                )
+                column_bboxes: list[tuple[float, float, float, float]] = []
+                for col_idx in range(table.col_count):
+                    cells = [row[col_idx] for row in cell_bboxes
+                             if col_idx < len(row) and row[col_idx] is not None]
+                    if cells:
+                        column_bboxes.append((min(cell[0] for cell in cells),
+                                              min(cell[1] for cell in cells),
+                                              max(cell[2] for cell in cells),
+                                              max(cell[3] for cell in cells)))
+                materialized_rows: list[tuple[TableCandidateGridCell, ...]] = []
+                for cell_row in cell_bboxes:
+                    materialized_row: list[TableCandidateGridCell] = []
+                    for cell in cell_row:
+                        if cell is None:
+                            materialized_row.append(TableCandidateGridCell(
+                                bbox=None, text="", block_ids=(), line_ids=(),
+                                word_indices=(), char_indices=()))
+                            continue
+                        cell_words = sorted(
+                            (item for item in words
+                             if isinstance(item.get("source_word_index"), int)
+                             and cell[0] <= (float(item["x0"]) + float(item["x1"])) / 2 < cell[2]
+                             and cell[1] <= (float(item["top"]) + float(item["bottom"])) / 2 < cell[3]),
+                            key=lambda item: (int(item["block_index"]), int(item["line_index"]),
+                                              int(item["source_word_index"])),
+                        )
+                        cell_chars = sorted(
+                            (item for item in chars
+                             if isinstance(item.get("char_index"), int)
+                             and cell[0] <= (float(item["x0"]) + float(item["x1"])) / 2 < cell[2]
+                             and cell[1] <= (float(item["top"]) + float(item["bottom"])) / 2 < cell[3]),
+                            key=lambda item: (int(item["block_index"]), int(item["line_index"]),
+                                              int(item["char_index"])),
+                        )
+                        source_items = [*cell_words, *cell_chars]
+                        materialized_row.append(TableCandidateGridCell(
+                            bbox=cell,
+                            text="\n".join(
+                                " ".join(str(item["text"]) for item in line_words)
+                                for _, line_words in groupby(
+                                    cell_words,
+                                    key=lambda item: (item["block_index"], item["line_index"]),
+                                )
+                            ),
+                            block_ids=tuple(dict.fromkeys(
+                                block_id_by_source_index[int(item["block_index"])]
+                                for item in source_items
+                                if int(item["block_index"]) in block_id_by_source_index
+                            )),
+                            line_ids=tuple(dict.fromkeys(
+                                str(item["source_line_id"])
+                                for item in source_items if isinstance(item.get("source_line_id"), str)
+                            )),
+                            word_indices=tuple(int(item["source_word_index"]) for item in cell_words),
+                            char_indices=tuple(int(item["char_index"]) for item in cell_chars),
+                        ))
+                    materialized_rows.append(tuple(materialized_row))
+                proposals.append(
+                    TableCandidateGridProposal(
+                        page_num=scope.page_num,
+                        mention_id=scope.mention_id,
+                        orientation_group_id=scope.orientation_group_id,
+                        detector_bbox=tuple(float(value) for value in table.bbox),
+                        row_bboxes=tuple(tuple(float(value) for value in row.bbox)
+                                         for row in table.rows),
+                        column_bboxes=tuple(column_bboxes),
+                        cell_bboxes=cell_bboxes,
+                        supporting_drawing_items=tuple(drawing_items),
+                        materialized_cells=tuple(materialized_rows),
+                    )
+                )
+    finally:
+        document.close()
+    return proposals
+
+
 def _build_rule_span_candidates(
     *,
     page_num: int,
@@ -1647,6 +2128,7 @@ def _build_rule_span_candidates(
                             **candidate.metadata,
                             "trailing_non_table_rows": trailing_non_table_rows,
                             "candidate_region_source": "caption_and_rule_geometry",
+                            "caption_mention_id": mention.mention_id,
                             "candidate_rule_span": [left, top, right, bottom],
                             **(
                                 {

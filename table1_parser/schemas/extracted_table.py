@@ -60,6 +60,14 @@ class TablePositionedEvidence(BaseModel):
     canonical_physical_column_bounds: list[tuple[float, float]] = Field(
         default_factory=list
     )
+    canonical_grid_cell_bboxes: list[
+        list[tuple[float, float, float, float] | None]
+    ] = Field(default_factory=list)
+    grid_source_block_ids: list[str] = Field(default_factory=list)
+    grid_source_line_ids: list[str] = Field(default_factory=list)
+    grid_source_word_indices: list[int] = Field(default_factory=list)
+    grid_source_char_indices: list[int] = Field(default_factory=list)
+    grid_source_drawing_items: list[tuple[str, int, int]] = Field(default_factory=list)
     canonical_transform: TableCanonicalTransform | None = None
     geometry_transform_applied: bool = False
     rotation_direction: Literal["vertical_text_up", "vertical_text_down"] | None = None

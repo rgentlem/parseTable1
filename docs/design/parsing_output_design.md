@@ -990,7 +990,10 @@ Canonical structures:
 
 - `PaperPositionedDocument`
 - child models: `PaperPositionedPage`, `PaperPositionedLine`,
-  `PaperPositionedSpan`, `PaperPositionedVisualComponent`
+  `PaperPositionedSpan`, `PaperPositionedVisualComponent`,
+  `PaperPositionedDrawingRectangle`, `PaperPositionedDrawingLine`
+- `TableCandidateGridProposal` is typed in-memory geometry; an accepted
+  proposal is projected into `ExtractedTable` and its positioned evidence
 - `PaperDocument` declarative artifact shape; its initial implementation is a
   plain projection rather than a new model hierarchy
 - `PaperSection`
@@ -1012,10 +1015,17 @@ Design components:
   shared whole-paper PyMuPDF positioned text pass with page sizes, visual lines,
   span text, bboxes, font names, font sizes, flags, line direction/orientation,
   words, characters, horizontal rule segments, compact raster/vector visual
-  components, and raw/cleaned text. Visual components preserve only stable ID,
-  kind, page-space bbox, source index, optional nesting level, and optional
-  drawing-sequence range; they do not classify figures. The extended drawing
-  hierarchy supplies visual-component evidence only. `rule_segments` and
+  components, exact ordinary-drawing rectangle and line items, and raw/cleaned
+  text.
+  Each drawing rectangle preserves its page-space bbox, source drawing and item
+  indices, source drawing bbox, fill and stroke colors, and stroke width without
+  changing table candidates or either rule projection. Each drawing line
+  preserves its exact start and end points, source drawing and item indices,
+  source drawing bbox, stroke color, and stroke width under the same
+  non-operative contract. Visual components
+  preserve only stable ID, kind, page-space bbox, source index, optional nesting
+  level, and optional drawing-sequence range; they do not classify figures. The
+  extended drawing hierarchy supplies visual-component evidence only. `rule_segments` and
   `stroked_rule_segments` continue to consume the ordinary `get_drawings()`
   records; extended clip, group, and separately exposed nested records do not
   enter either rule projection. A line's
@@ -1025,6 +1035,22 @@ Design components:
   paper-context, extraction, and annotation stages should consume this artifact
   or a typed projection of it instead of reopening the PDF for another
   positioned-geometry pass.
+- `TableCandidateGridProposal`
+  is built only after an exact upright block scope exists. Its clipped core
+  PyMuPDF detector call receives unchanged rectangle edges and horizontal-line
+  endpoints from the shared artifact. It retains detector, row, column, and
+  cell bboxes plus source drawing kinds and drawing/item indices. Each proposed
+  cell materializes text from already filtered positioned words ordered by
+  source block, line, and word identity, while retaining contributing block and
+  line IDs plus word and character indices. It retains no detector text. A
+  complete, unique proposal replaces the uniquely linked caption-and-rule
+  candidate or is inserted as the sole candidate for that caption and scope;
+  incomplete, ambiguous, or competing proposals do not alter extraction. The
+  ruled path remains authoritative for scopes without an accepted proposal.
+  Selected native geometry and block, line, word, character, and drawing-item
+  provenance are retained in `ExtractedTable.positioned_evidence`; header/body
+  meaning remains the responsibility of `TableRegion` and the typed boundary
+  proposal.
 - `paper_page_furniture.json`
   records `PaperPageScope` as the sole page-length authority. The first accepted
   recurrent `N of M` or `N / M` candidate with an observed terminal counter

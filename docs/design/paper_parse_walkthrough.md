@@ -114,8 +114,15 @@ afterward for inspection.
 `paper_positioned_document.json` records the shared PyMuPDF positioned text pass
 for the whole paper: pages, visual lines, span text, bboxes, font names, font
 sizes, flags, line directions, words, characters, and horizontal rule segments.
-Each page also records one compact `visual_components` collection. Raster
-components reuse displayed image-block bboxes and source block indices; vector
+Each page also records exact `drawing_rectangles` from ordinary PyMuPDF `re`
+items, retaining source drawing/item indices, the source drawing bbox, fill and
+stroke colors, and stroke width as exact source evidence. Exact `drawing_lines`
+from ordinary `l` items likewise retain their start/end points, source
+drawing/item indices, source drawing bbox, stroke color, and stroke width. Scoped
+native-grid proposals may reference these items without changing either existing
+rule projection. Each page also records one compact
+`visual_components` collection. Raster components reuse displayed image-block
+bboxes and source block indices; vector
 clip and group components come from the page's single extended-drawing pass and
 retain their exact bbox, source index, nesting level, and available drawing
 sequence range. Full-page default clips are omitted. These records are
@@ -133,6 +140,23 @@ It is built before paper furniture, text streaming, section parsing,
 bibliography extraction, table mention detection, table extraction context, and
 cell text annotation.
 
+After an accepted caption has an exact upright block-and-rule scope, candidate
+construction makes one narrow second page access and calls core PyMuPDF table
+detection only inside that clip. Exact rectangle edges and horizontal drawing-
+line endpoints from the shared positioned artifact are passed unchanged; the
+parser does not reconcile them. The resulting typed in-memory proposal retains
+detector grid geometry and source drawing identities. Already filtered shared
+words and characters are then assigned to the exact proposed cell bboxes. Cell
+text follows retained block, line, and word order; each cell also retains its
+contributing block and line IDs plus word and character indices. When exactly
+one complete proposal exists for one caption and scope, it replaces the uniquely
+linked ruled candidate or becomes the sole candidate for that caption and scope.
+Ambiguous or incomplete proposals remain non-operative. Promotion replaces only
+the physical grid and preserves actual source-rule provenance; it does not
+retain detector text or assign header meaning. `TableRegion` continues to own
+row roles and accepts a typed `TableBoundaryProposal` header/body edge only when
+exactly one consecutive-row candidate exists.
+
 Each selected extracted table records
 `positioned_evidence`, a typed compact set of page-local references
 back into this shared PyMuPDF artifact. The record identifies table-local lines,
@@ -146,9 +170,10 @@ require a separate downstream geometry route. It is the sole table-local
 positioned-evidence authority; there is no metadata copy or compatibility
 alias. The record does not copy text/font payloads, classify any boundary, or
 alter the extracted table grid. It now reserves `canonical_grid_bbox`,
-`canonical_row_bounds`, and `canonical_physical_column_bounds` for the final
-caption-free physical grid. Those fields have no semantic column roles and
-remain null or empty until the Step 4 grid-authority cutover populates them.
+`canonical_row_bounds`, `canonical_physical_column_bounds`, and
+`canonical_grid_cell_bboxes` for the final caption-free physical grid. A
+promoted native grid also records its contributing block, line, word, character,
+and drawing-item identities. These fields have no semantic column roles.
 
 `paper_page_furniture.json` records repeated page text observations, recurrence
 clusters, generic ignored regions, and the authoritative `page_scope`. It is built from

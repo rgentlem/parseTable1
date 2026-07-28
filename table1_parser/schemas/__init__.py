@@ -86,6 +86,8 @@ from table1_parser.schemas.paper_table_mentions import (
 from table1_parser.schemas.paper_positioned_document import (
     PaperPositionedChar,
     PaperPositionedDocument,
+    PaperPositionedDrawingLine,
+    PaperPositionedDrawingRectangle,
     PaperPositionedLine,
     PaperPositionedPage,
     PaperPositionedSpan,
@@ -229,6 +231,8 @@ __all__ = [
     "PageFurnitureRuleRegion",
     "PaperPositionedChar",
     "PaperPositionedDocument",
+    "PaperPositionedDrawingLine",
+    "PaperPositionedDrawingRectangle",
     "PaperPositionedLine",
     "PaperPositionedPage",
     "PaperPositionedSpan",

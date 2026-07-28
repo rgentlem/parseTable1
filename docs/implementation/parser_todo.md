@@ -1,5 +1,26 @@
 # Parser ToDo
 
+- [x] Validated the completed printed-table identifier preservation cutover
+  through the deterministic mention-to-reference chain and the ordinary Table
+  1 and supplementary Table S1 references in
+  `An environment-wide association study (EWAS) on type 2 diabetes mellitus.pdf`.
+
+> **Printed-table identifier implementation checkpoint — 2026-07-28:** The
+> mention and visual-reference grammars now preserve one complete alphanumeric,
+> dot-separated identifier containing at least one digit. Caption binding keeps
+> the caption region's identifier string instead of replacing it with a reduced
+> candidate value. Existing `PaperDocument` table-caption ownership and schemas
+> are unchanged, and visual construction continues to consume that caption
+> component. Focused boundary checks pass for `1`, `S1`, `4A`, `4B`, `3.1`,
+> `A.1`, and `B3.1.1`. The known non-extracting
+> `upload_manuscript__WEE_Bangladesh.pdf` case is not an acceptance input for
+> this identifier change. Final validation completed on
+> 2026-07-28: the deterministic chain preserves `Table 3.1` through
+> `paper_visual:table:3.1` and its resolved prose reference, and the fresh
+> focused parse in `outputs/printed_table_identity_step6_ewas_20260728`
+> preserves ordinary Table 1 on PDF pages 4 and 6 and supplementary Table S1
+> on PDF pages 4 and 9.
+
 - [ ] Make table-candidate scoping consume the existing canonical block/prose
   boundary so later prose blocks and later page rules cannot expand a table
   candidate. Page furniture must remain only an early evidence mask, not the
@@ -34,6 +55,47 @@
 > remains a metadata-only follow-up. This correction removes the duplicated-rule
 > trigger; it does not replace the pending canonical prose-boundary ownership
 > work above.
+
+> **Internal-footer row-atomicity checkpoint — 2026-07-28:** `TableRegion` now
+> rejects an internal footer-row claim when the completed backward footer walk
+> does not own every classified positioned line group mapped to that physical
+> row. The focused reconstruction of `Uses of NHANES Biomarker Data for Chemical
+> Risk Assessment- Trends, Challenges, and Opportunities.pdf`, PDF page 7,
+> printed Table 1, retains physical rows 0–9 and rejects the former partial claim
+> on wrapped row 9. All 28 corpus PDFs parsed successfully in
+> `outputs/testpapers_batch_footer_row_atomicity_20260728`. All current semantic
+> artifacts match `outputs/testpapers_batch_page_furniture_rule_mask_20260727`;
+> only the already approved non-operative drawing collections in
+> `paper_positioned_document.json` and report timestamps differ. Because native
+> proposal promotion remains non-operative at Step 4, the corpus establishes no
+> regression while the focused reconstruction exercises the corrected ownership
+> decision.
+
+> **Scoped native-grid Step 5 checkpoint — 2026-07-28:** Complete unique native
+> proposals now cut over at the existing candidate decision point while
+> ambiguous proposals fail closed and the ruled path retains scopes without an
+> accepted proposal. `TableRegion` selects exactly one typed consecutive
+> header/body boundary without changing later header interpretation. In
+> `Uses of NHANES Biomarker Data for Chemical Risk Assessment- Trends,
+> Challenges, and Opportunities.pdf`, PDF page 7, printed Table 1, the normal
+> CLI emits one 10×2 table with row 0 as its two-leaf header and rows 1–9 as
+> body. In `upload_manuscript__WEE_Bangladesh.pdf`, PDF page 81, printed Table
+> 3.1, it emits one 3×5 table with row 0 as its five-leaf header and visual ID
+> `paper_visual:table:3.1`. The fresh 28-PDF corpus run in
+> `outputs/testpapers_batch_native_table_step5_20260728` completed 26 papers and
+> exposed two known blockers accepted for this checkpoint commit:
+>
+> - `Helicobacter pylori infection in the United States beyond NHANES- a
+>   scoping review of seroprevalence estimates by racial and ethnic groups.pdf`,
+>   PDF page 7, printed Table 1, aborts because continuation resolution still
+>   expects an integer table number after canonical caption binding has
+>   preserved the printed identifier as a string.
+> - `periodontis2.pdf`, PDF page 12, printed Table 2, aborts after the Step 5
+>   candidate becomes an empty 0×0 canonical extraction while a later column
+>   header schema still projects source column indices onto that rejected grid.
+>
+> These failures remain explicit next work. They are not treated as a passing
+> corpus result.
 
 This is the persistent implementation ToDo list for parser work. Agents should check it before changing extraction, normalization, row/column semantics, table routing, value parsing, diagnostics, or R inspection helpers. Update it when a task is completed, reprioritized, split, or superseded.
 
