@@ -719,11 +719,11 @@ paper_table_inventory_df <- function(outputs) {
   records <- outputs$paper_table_inventory$tables %||% list()
   rows <- lapply(records, function(record) {
     data.frame(
-      table_number = as.integer(record$table_number %||% NA_integer_),
+      table_number = as.character(record$table_number %||% NA_character_),
       table_id = as.character(record$table_id %||% ""),
       table_category = as.character(record$table_category %||% ""),
       category_confidence = as.numeric(record$category_confidence %||% NA_real_),
-      continuation_of_table_number = as.integer(record$continuation_of_table_number %||% NA_integer_),
+      continuation_of_table_number = as.character(record$continuation_of_table_number %||% NA_character_),
       table_family = as.character(record$table_family %||% NA_character_),
       processing_status = as.character(record$processing_status %||% NA_character_),
       failure_reason = as.character(record$failure_reason %||% NA_character_),
@@ -734,11 +734,11 @@ paper_table_inventory_df <- function(outputs) {
   })
   if (length(rows) == 0) {
     data.frame(
-      table_number = integer(),
+      table_number = character(),
       table_id = character(),
       table_category = character(),
       category_confidence = numeric(),
-      continuation_of_table_number = integer(),
+      continuation_of_table_number = character(),
       table_family = character(),
       processing_status = character(),
       failure_reason = character(),
@@ -829,7 +829,7 @@ cell_text_annotation_table_by_index <- function(outputs, table_index = 0L) {
 
 cell_text_annotations_df <- function(outputs, table_number = NULL, table_index = NULL) {
   empty_df <- data.frame(
-    table_number = integer(),
+    table_number = character(),
     table_index = integer(),
     table_id = character(),
     page_num = integer(),
@@ -886,7 +886,7 @@ cell_text_annotations_df <- function(outputs, table_number = NULL, table_index =
     ) {
       table_number_for_outputs(outputs, table_index_value)
     } else {
-      NA_integer_
+      NA_character_
     }
     metadata <- annotation_table$metadata %||% list()
     diagnostics <- paste(character_vector(metadata$diagnostics), collapse = " | ")
@@ -943,7 +943,7 @@ footnote_record_matches_context <- function(record, context) {
 
 footnote_footers_df <- function(outputs, table_number = NULL, table_index = NULL) {
   empty_df <- data.frame(
-    table_number = integer(),
+    table_number = character(),
     table_index = integer(),
     table_id = character(),
     footer_id = character(),
@@ -969,7 +969,7 @@ footnote_footers_df <- function(outputs, table_number = NULL, table_index = NULL
   rows <- lapply(footers, function(footer) {
     table_id <- as.character(footer$table_id %||% "")
     row_table_index <- table_index_for_table_id(outputs, table_id)
-    row_table_number <- if (is.na(row_table_index)) NA_integer_ else table_number_for_outputs(outputs, row_table_index)
+    row_table_number <- if (is.na(row_table_index)) NA_character_ else table_number_for_outputs(outputs, row_table_index)
     footer_rows <- footer$rows %||% list()
     data.frame(
       table_number = row_table_number,
@@ -998,7 +998,7 @@ footnote_footers_df <- function(outputs, table_number = NULL, table_index = NULL
 
 footnote_anchors_df <- function(outputs, table_number = NULL, table_index = NULL) {
   empty_df <- data.frame(
-    table_number = integer(),
+    table_number = character(),
     table_index = integer(),
     table_id = character(),
     anchor_id = character(),
@@ -1031,7 +1031,7 @@ footnote_anchors_df <- function(outputs, table_number = NULL, table_index = NULL
   rows <- lapply(anchors, function(anchor) {
     table_id <- as.character(anchor$table_id %||% "")
     row_table_index <- table_index_for_table_id(outputs, table_id)
-    row_table_number <- if (is.na(row_table_index)) NA_integer_ else table_number_for_outputs(outputs, row_table_index)
+    row_table_number <- if (is.na(row_table_index)) NA_character_ else table_number_for_outputs(outputs, row_table_index)
     bbox_values <- unlist(anchor$bbox %||% list(), use.names = FALSE)
     data.frame(
       table_number = row_table_number,
@@ -1067,7 +1067,7 @@ footnote_anchors_df <- function(outputs, table_number = NULL, table_index = NULL
 
 footnote_definitions_df <- function(outputs, table_number = NULL, table_index = NULL) {
   empty_df <- data.frame(
-    table_number = integer(),
+    table_number = character(),
     table_index = integer(),
     table_id = character(),
     definition_id = character(),
@@ -1116,7 +1116,7 @@ footnote_definitions_df <- function(outputs, table_number = NULL, table_index = 
   rows <- lapply(definitions, function(definition) {
     table_id <- as.character(definition$table_id %||% "")
     row_table_index <- table_index_for_table_id(outputs, table_id)
-    row_table_number <- if (is.na(row_table_index)) NA_integer_ else table_number_for_outputs(outputs, row_table_index)
+    row_table_number <- if (is.na(row_table_index)) NA_character_ else table_number_for_outputs(outputs, row_table_index)
     bbox_values <- unlist(definition$bbox %||% list(), use.names = FALSE)
     data.frame(
       table_number = row_table_number,
@@ -1150,7 +1150,7 @@ footnote_definitions_df <- function(outputs, table_number = NULL, table_index = 
 
 footnote_links_df <- function(outputs, table_number = NULL, table_index = NULL) {
   empty_df <- data.frame(
-    table_number = integer(),
+    table_number = character(),
     table_index = integer(),
     table_id = character(),
     link_id = character(),
@@ -1201,7 +1201,7 @@ footnote_links_df <- function(outputs, table_number = NULL, table_index = NULL) 
     anchor_table_id <- anchor_table_ids[as.character(link$anchor_id %||% "")]
     table_id <- if (is.na(anchor_table_id)) "" else as.character(unname(anchor_table_id))
     row_table_index <- table_index_for_table_id(outputs, table_id)
-    row_table_number <- if (is.na(row_table_index)) NA_integer_ else table_number_for_outputs(outputs, row_table_index)
+    row_table_number <- if (is.na(row_table_index)) NA_character_ else table_number_for_outputs(outputs, row_table_index)
     inferred_meaning <- link$inferred_meaning %||% list()
     data.frame(
       table_number = row_table_number,
@@ -1248,7 +1248,7 @@ show_paper_footnotes <- function(paper_dir, table_number = NULL, table_index = N
   } else if (is.na(context$table_number)) {
     cat("Paper footnotes for unnumbered table\n")
   } else {
-    cat(sprintf("Paper footnotes for table_number=%s\n", as.integer(context$table_number)))
+    cat(sprintf("Paper footnotes for table_number=%s\n", as.character(context$table_number)))
   }
   cat(sprintf("paper_id: %s\n", as.character(outputs$paper_footnotes$paper_id %||% "")))
   if (!is.null(context)) {
@@ -1463,10 +1463,10 @@ show_column_header_trees <- function(paper_dir, table_number = NULL) {
   }
   table_indices <- seq_along(schemas) - 1L
   if (!is.null(table_number)) {
-    wanted <- as.integer(table_number)
+    wanted <- as.character(table_number)
     table_indices <- table_indices[vapply(table_indices, function(table_index) {
       table <- outputs$normalized_tables[[table_index + 1L]]
-      identical(as.integer(table$metadata$table_number %||% NA_integer_), wanted)
+      identical(table_number_for_table(table), wanted)
     }, logical(1))]
   }
   rows <- lapply(table_indices, function(table_index) {
@@ -1493,14 +1493,18 @@ table_number_for_table <- function(table) {
       as.character(table$caption %||% ""),
       sep = " "
     )
-    match <- regexpr("\\b[Tt]able\\s+([0-9]+)\\b", text, perl = TRUE)
+    match <- regexpr(
+      "\\b[Tt]able\\s+((?=[A-Za-z0-9.]*[0-9])[A-Za-z0-9]+(?:\\.[A-Za-z0-9]+)*)\\b",
+      text,
+      perl = TRUE
+    )
     if (match < 0L) {
-      return(NA_integer_)
+      return(NA_character_)
     }
     matched <- regmatches(text, match)
-    return(as.integer(sub(".*\\b[Tt]able\\s+([0-9]+)\\b.*", "\\1", matched, perl = TRUE)))
+    return(sub("^\\b[Tt]able\\s+", "", matched, perl = TRUE))
   }
-  as.integer(value)
+  as.character(value)
 }
 
 table_number_for_normalized_table <- function(table) {
@@ -1560,7 +1564,7 @@ table_visual_id_for_outputs <- function(outputs, table_index) {
 
   table_number <- table_number_for_outputs(outputs, table_index)
   if (!is.na(table_number)) {
-    return(sprintf("paper_visual:table:%s", as.integer(table_number)))
+    return(sprintf("paper_visual:table:%s", as.character(table_number)))
   }
   ""
 }
@@ -1585,7 +1589,7 @@ table_index_for_table_id <- function(outputs, table_id) {
 }
 
 table_index_by_number <- function(outputs, table_number) {
-  requested <- as.integer(table_number)
+  requested <- as.character(table_number)
   matches <- which(vapply(
     outputs$normalized_tables %||% list(),
     function(x) identical(table_number_for_normalized_table(x), requested),
@@ -1608,7 +1612,7 @@ table_index_by_number <- function(outputs, table_number) {
   as.integer(matches[[1]] - 1L)
 }
 
-resolve_table_index <- function(outputs, table_number = 1L, table_index = NULL) {
+resolve_table_index <- function(outputs, table_number = "1", table_index = NULL) {
   if (!is.null(table_index)) {
     return(as.integer(table_index))
   }
@@ -1799,7 +1803,7 @@ summarize_table1_continuations <- function(paper_dir) {
       decision_reason = as.character(group$decision_reason %||% ""),
       confidence = as.numeric(group$confidence %||% NA_real_),
       column_headers_match = as.logical(group$column_headers_match %||% FALSE),
-      table_number = as.integer(group$table_number %||% NA_integer_),
+      table_number = as.character(group$table_number %||% NA_character_),
       source_table_ids = paste(as.character(unlist(group$source_table_ids %||% list())), collapse = " | "),
       diagnostics = paste(as.character(unlist(group$diagnostics %||% list())), collapse = " | "),
       stringsAsFactors = FALSE
@@ -1812,7 +1816,7 @@ summarize_table1_continuations <- function(paper_dir) {
       decision_reason = character(),
       confidence = numeric(),
       column_headers_match = logical(),
-      table_number = integer(),
+      table_number = character(),
       source_table_ids = character(),
       diagnostics = character(),
       stringsAsFactors = FALSE
@@ -1940,7 +1944,7 @@ table_continuation_column_checks_df <- function(outputs) {
   rows <- lapply(checks, function(check) {
     data.frame(
       check_id = as.character(check$check_id %||% ""),
-      table_number = as.integer(check$table_number %||% NA_integer_),
+      table_number = as.character(check$table_number %||% NA_character_),
       base_table_index = as.integer(check$base_table_index %||% NA_integer_),
       continuation_table_index = as.integer(check$continuation_table_index %||% NA_integer_),
       base_table_id = as.character(check$base_table_id %||% ""),
@@ -1960,7 +1964,7 @@ table_continuation_column_checks_df <- function(outputs) {
   if (length(rows) == 0) {
     data.frame(
       check_id = character(),
-      table_number = integer(),
+      table_number = character(),
       base_table_index = integer(),
       continuation_table_index = integer(),
       base_table_id = character(),
@@ -2003,7 +2007,7 @@ show_table_continuation_column_check <- function(paper_dir, check_index = 0L) {
   }
   check <- checks[[idx]]
   cat(sprintf("Table continuation column check %s\n", as.character(check$check_id %||% "")))
-  cat(sprintf("table_number: %s\n", as.integer(check$table_number %||% NA_integer_)))
+  cat(sprintf("table_number: %s\n", as.character(check$table_number %||% NA_character_)))
   cat(sprintf("base: %s\n", as.character(check$base_table_id %||% "")))
   cat(sprintf("continuation: %s\n", as.character(check$continuation_table_id %||% "")))
   cat(sprintf("categories: %s -> %s\n", as.character(check$base_table_category %||% ""), as.character(check$continuation_table_category %||% "")))
@@ -2160,7 +2164,7 @@ summarize_table_processing <- function(paper_dir) {
 
   summary_df <- if (length(rows) == 0) {
     data.frame(
-      table_number = integer(),
+      table_number = character(),
       table_id = character(),
       title = character(),
       status = character(),
@@ -2196,7 +2200,7 @@ summarize_table_processing <- function(paper_dir) {
   invisible(summary_df)
 }
 
-show_table_processing <- function(paper_dir, table_number = 1L, table_index = NULL) {
+show_table_processing <- function(paper_dir, table_number = "1", table_index = NULL) {
   outputs <- load_paper_outputs(paper_dir)
   table_index <- resolve_table_index(outputs, table_number = table_number, table_index = table_index)
   resolved_table_number <- table_number_for_outputs(outputs, table_index)
@@ -2212,7 +2216,7 @@ show_table_processing <- function(paper_dir, table_number = 1L, table_index = NU
   if (is.na(resolved_table_number)) {
     cat("Table processing for unnumbered table\n")
   } else {
-    cat(sprintf("Table processing for table_number=%s\n", as.integer(resolved_table_number)))
+    cat(sprintf("Table processing for table_number=%s\n", as.character(resolved_table_number)))
   }
   cat(sprintf("table_id: %s\n", definition$table_id %||% normalized$table_id %||% parsed$table_id %||% ""))
   if (!is.null(definition$title) && nzchar(definition$title)) {
@@ -2273,7 +2277,7 @@ show_table_processing <- function(paper_dir, table_number = 1L, table_index = NU
   invisible(status_record)
 }
 
-show_parse_quality <- function(paper_dir, table_number = 1L, table_index = NULL) {
+show_parse_quality <- function(paper_dir, table_number = "1", table_index = NULL) {
   outputs <- load_paper_outputs(paper_dir)
   table_index <- resolve_table_index(outputs, table_number = table_number, table_index = table_index)
   resolved_table_number <- table_number_for_outputs(outputs, table_index)
@@ -2291,7 +2295,7 @@ show_parse_quality <- function(paper_dir, table_number = 1L, table_index = NULL)
   if (is.na(resolved_table_number)) {
     cat("Parse quality for unnumbered table\n")
   } else {
-    cat(sprintf("Parse quality for table_number=%s\n", as.integer(resolved_table_number)))
+    cat(sprintf("Parse quality for table_number=%s\n", as.character(resolved_table_number)))
   }
   cat(sprintf("table_id: %s\n", as.character(report$table_id %||% normalized$table_id %||% "")))
   cat(sprintf("total_body_rows: %s\n", as.integer(summary$total_body_rows %||% 0L)))
@@ -2320,7 +2324,7 @@ show_parse_quality <- function(paper_dir, table_number = 1L, table_index = NULL)
   invisible(report)
 }
 
-show_cell_text_annotations <- function(paper_dir, table_number = 1L, table_index = NULL) {
+show_cell_text_annotations <- function(paper_dir, table_number = "1", table_index = NULL) {
   outputs <- load_paper_outputs(paper_dir)
   table_index <- resolve_table_index(outputs, table_number = table_number, table_index = table_index)
   resolved_table_number <- table_number_for_outputs(outputs, table_index)
@@ -2333,7 +2337,7 @@ show_cell_text_annotations <- function(paper_dir, table_number = 1L, table_index
   if (is.na(resolved_table_number)) {
     cat("Cell text annotations for unnumbered table\n")
   } else {
-    cat(sprintf("Cell text annotations for table_number=%s\n", as.integer(resolved_table_number)))
+    cat(sprintf("Cell text annotations for table_number=%s\n", as.character(resolved_table_number)))
   }
   cat(sprintf("table_id: %s\n", as.character(annotation_table$table_id %||% "")))
   cat(sprintf("page_num: %s\n", as.integer(annotation_table$page_num %||% NA_integer_)))
@@ -2363,7 +2367,7 @@ show_cell_text_annotations <- function(paper_dir, table_number = 1L, table_index
 
 show_table_structure <- function(
   paper_dir,
-  table_number = 1L,
+  table_number = "1",
   table_index = NULL,
   max_rows = NULL,
   include_raw_header_rows = FALSE
@@ -2424,7 +2428,7 @@ show_table_structure <- function(
   if (is.na(resolved_table_number)) {
     cat("table_number: NA\n")
   } else {
-    cat(sprintf("table_number: %s\n", as.integer(resolved_table_number)))
+    cat(sprintf("table_number: %s\n", as.character(resolved_table_number)))
   }
   cat(sprintf("table_id: %s\n", definition$table_id %||% normalized$table_id %||% ""))
   if (!is.null(definition$title) && nzchar(definition$title)) {
@@ -2635,7 +2639,7 @@ llm_variable_plausibility_df <- function(outputs, table_number = NULL, table_ind
       logical(1)
     ))
     table_index_value <- if (length(matching_indices) == 0) NA_integer_ else as.integer(matching_indices[[1]] - 1L)
-    table_number_value <- if (is.na(table_index_value)) NA_integer_ else table_number_for_outputs(outputs, table_index_value)
+    table_number_value <- if (is.na(table_index_value)) NA_character_ else table_number_for_outputs(outputs, table_index_value)
     for (variable in review$variables %||% list()) {
       levels <- variable$levels %||% list()
       rows[[length(rows) + 1L]] <- data.frame(
@@ -2660,7 +2664,7 @@ llm_variable_plausibility_df <- function(outputs, table_number = NULL, table_ind
 
   if (length(rows) == 0) {
     return(data.frame(
-      table_number = integer(),
+      table_number = character(),
       table_id = character(),
       row_start = integer(),
       row_end = integer(),
@@ -2769,7 +2773,7 @@ show_variable_plausibility_review <- function(review, normalized_table, table_de
   ))
 }
 
-show_llm_variable_plausibility <- function(paper_dir, table_number = 1L, table_index = NULL) {
+show_llm_variable_plausibility <- function(paper_dir, table_number = "1", table_index = NULL) {
   outputs <- load_paper_outputs(paper_dir)
   table_index <- resolve_table_index(outputs, table_number = table_number, table_index = table_index)
   review <- llm_variable_plausibility_review_by_index(outputs, table_index = table_index)
@@ -2790,7 +2794,7 @@ summarize_llm_variable_plausibility_monitoring <- function(paper_dir, run_id = N
       logical(1)
     ))
     table_index_value <- if (length(matching_indices) == 0) NA_integer_ else as.integer(matching_indices[[1]] - 1L)
-    table_number_value <- if (is.na(table_index_value)) NA_integer_ else table_number_for_outputs(outputs, table_index_value)
+    table_number_value <- if (is.na(table_index_value)) NA_character_ else table_number_for_outputs(outputs, table_index_value)
     data.frame(
       table_number = table_number_value,
       table_id = as.character(x$table_id %||% ""),
@@ -2808,7 +2812,7 @@ summarize_llm_variable_plausibility_monitoring <- function(paper_dir, run_id = N
   })
   summary_df <- if (length(rows) == 0) {
     data.frame(
-      table_number = integer(),
+      table_number = character(),
       table_id = character(),
       table_family = character(),
       eligible_for_review = logical(),
@@ -2910,7 +2914,7 @@ show_paper_references <- function(paper_dir, reference_kind = NULL, reference_la
   invisible(references)
 }
 
-show_table_context <- function(paper_dir, table_number = 1L, table_index = NULL, match_type = NULL) {
+show_table_context <- function(paper_dir, table_number = "1", table_index = NULL, match_type = NULL) {
   outputs <- load_paper_outputs(paper_dir)
   table_index <- resolve_table_index(outputs, table_number = table_number, table_index = table_index)
   resolved_table_number <- table_number_for_outputs(outputs, table_index)
@@ -2923,7 +2927,7 @@ show_table_context <- function(paper_dir, table_number = 1L, table_index = NULL,
   if (is.na(resolved_table_number)) {
     cat("Table context for unnumbered table\n")
   } else {
-    cat(sprintf("Table context for table_number=%s\n", as.integer(resolved_table_number)))
+    cat(sprintf("Table context for table_number=%s\n", as.character(resolved_table_number)))
   }
   if (!is.null(context$table_label)) {
     cat(sprintf("Label: %s\n", context$table_label))

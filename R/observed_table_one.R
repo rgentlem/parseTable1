@@ -91,18 +91,22 @@ pt1_table_number_for_table <- function(table) {
       as.character(table$caption %||% ""),
       sep = " "
     )
-    match <- regexpr("\\b[Tt]able\\s+([0-9]+)\\b", text, perl = TRUE)
+    match <- regexpr(
+      "\\b[Tt]able\\s+((?=[A-Za-z0-9.]*[0-9])[A-Za-z0-9]+(?:\\.[A-Za-z0-9]+)*)\\b",
+      text,
+      perl = TRUE
+    )
     if (match < 0L) {
-      return(NA_integer_)
+      return(NA_character_)
     }
     matched <- regmatches(text, match)
-    return(as.integer(sub(".*\\b[Tt]able\\s+([0-9]+)\\b.*", "\\1", matched, perl = TRUE)))
+    return(sub("^\\b[Tt]able\\s+", "", matched, perl = TRUE))
   }
-  as.integer(value)
+  as.character(value)
 }
 
 pt1_table_index_by_number <- function(tables, table_number) {
-  requested <- as.integer(table_number)
+  requested <- as.character(table_number)
   matches <- which(vapply(
     tables %||% list(),
     function(x) identical(pt1_table_number_for_table(x), requested),
@@ -181,7 +185,7 @@ print.ObservedFootnotes <- function(x, printToggle = x$printToggle, quote = x$qu
   }
   cat("<ObservedFootnotes>\n")
   table_id <- pt1_character_or_null(x$MetaData$table_id)
-  table_number <- pt1_integer_or_null(x$MetaData$table_number)
+  table_number <- pt1_character_or_null(x$MetaData$table_number)
   if (!is.null(table_id) && nzchar(table_id)) {
     cat(sprintf("table_id: %s\n", table_id))
   }
@@ -237,7 +241,7 @@ build_observed_footnotes <- function(
   }
 
   resolved_table_id <- pt1_character_or_null(table_id) %||% ""
-  resolved_table_number <- pt1_integer_or_null(table_number)
+  resolved_table_number <- pt1_character_or_null(table_number)
   resolved_visual_id <- if (!is.null(resolved_table_number) && !is.na(resolved_table_number)) {
     sprintf("paper_visual:table:%s", resolved_table_number)
   } else {
@@ -669,7 +673,7 @@ build_observed_table_one <- function(
   )
 }
 
-build_observed_table_one_from_paper_dir <- function(paper_dir, table_number = 1L, table_index = NULL) {
+build_observed_table_one_from_paper_dir <- function(paper_dir, table_number = "1", table_index = NULL) {
   paper_dir <- normalizePath(paper_dir, winslash = "/", mustWork = TRUE)
   table_definitions_path <- file.path(paper_dir, "table_definitions.json")
   parsed_tables_path <- file.path(paper_dir, "parsed_tables.json")

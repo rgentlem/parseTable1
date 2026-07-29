@@ -6,6 +6,7 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass
 
+from table1_parser.extract.table_detector import TABLE_IDENTIFIER_PATTERN
 from table1_parser.normalize.text_normalizer import normalize_label_text
 from table1_parser.schemas import (
     PaperSection,
@@ -17,7 +18,10 @@ from table1_parser.schemas import (
 from table1_parser.text_cleaning import clean_text
 
 
-TABLE_NUMBER_PATTERN = re.compile(r"\bTable\s+(\d+)\b", re.IGNORECASE)
+TABLE_NUMBER_PATTERN = re.compile(
+    rf"\bTable\s+(?P<table_number>{TABLE_IDENTIFIER_PATTERN.pattern})\b",
+    re.IGNORECASE,
+)
 PARAGRAPH_SPLIT_PATTERN = re.compile(r"\n\s*\n")
 TRAILING_SUMMARY_PATTERN = re.compile(
     r"(?:,?\s*(?:n\s*\(%\)|no\.\s*\(%\)|mean\s*\(sd\)|mean\s*\(se\)|median\s*\(iqr\)|median\s*\(interquartile range\)|weighted mean\s*\(se\)))+$",
@@ -27,7 +31,10 @@ TRAILING_GROUP_PATTERN = re.compile(r"\s+groups?$", re.IGNORECASE)
 TRAILING_QUANTILE_PATTERN = re.compile(r"\s+(?:quintiles?|quartiles?)$", re.IGNORECASE)
 MODEL_LABEL_PATTERN = re.compile(r"^model[\s_-]*\d+$", re.IGNORECASE)
 REFERENCE_FLAG_PATTERN = re.compile(r"\b(reference)\b", re.IGNORECASE)
-TABLE_CONTINUED_PATTERN = re.compile(r"^table\s+\d+.*continued", re.IGNORECASE)
+TABLE_CONTINUED_PATTERN = re.compile(
+    rf"^table\s+{TABLE_IDENTIFIER_PATTERN.pattern}.*continued",
+    re.IGNORECASE,
+)
 QUANTILE_LEVEL_PATTERN = re.compile(r"^(?:q\d+|quartile[\s_-]*\d+|quintile[\s_-]*\d+)$", re.IGNORECASE)
 RANGE_BIN_PATTERN = re.compile(
     r"^(?:[<>]=?\s*)?\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?\+?)?$|^\d+(?:\.\d+)?\s*-\s*\d+(?:\.\d+)?\+?$",
@@ -114,6 +121,7 @@ def build_paper_variable_inventory(
     table_definitions: list[TableDefinition],
     *,
     entity_table_ids: set[str],
+    resolved_table_numbers_by_id: dict[str, str] | None = None,
 ) -> PaperVariableInventory:
     """Build a conservative paper-level inventory from sections and table definitions."""
     mention_counter = 0
@@ -134,13 +142,22 @@ def build_paper_variable_inventory(
             continue
         table_key = (definition.table_id, table_index)
         table_context = table_contexts[table_key]
-        table_label = None
+        resolved_table_number = (resolved_table_numbers_by_id or {}).get(
+            definition.table_id
+        )
+        table_label = (
+            f"Table {resolved_table_number}"
+            if isinstance(resolved_table_number, str)
+            and TABLE_IDENTIFIER_PATTERN.fullmatch(resolved_table_number) is not None
+            else None
+        )
         table_seeds: list[_SeedTerm] = []
-        for text in (definition.title, definition.caption):
-            match = TABLE_NUMBER_PATTERN.search(text or "")
-            if match is not None:
-                table_label = f"Table {match.group(1)}"
-                break
+        if table_label is None:
+            for text in (definition.title, definition.caption):
+                match = TABLE_NUMBER_PATTERN.search(text or "")
+                if match is not None:
+                    table_label = f"Table {match.group('table_number')}"
+                    break
 
         for variable in definition.variables:
             variable_label = clean_text(variable.variable_label)

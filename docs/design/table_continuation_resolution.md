@@ -104,7 +104,7 @@ class ResolvedTableSet(BaseModel):
 class ResolvedTable(BaseModel):
     table_id: str
     resolution_type: Literal["singleton", "integrated_continuation"]
-    logical_table_number: int | None
+    logical_table_number: str | None
     title: str | None
     caption: str | None
     table: NormalizedTable
@@ -134,6 +134,20 @@ continuation candidates inspectable as singleton resolved tables with
 diagnostics.
 `table1-parser parse` writes this artifact and feeds resolved tables into
 `TableProfile`, `TableDefinition`, and `ParsedTable` assembly.
+
+Table identity is the complete printed identifier string throughout this
+stage. `logical_table_number`, source `table_number`,
+`continuation_of_table_number`, trailing `continuation_table_number`, and the
+continuation-column check's `table_number` therefore store values such as
+`"1"`, `"3.1"`, and `"S1"`, or `null` where the field is optional. Parent
+selection and continuation grouping compare those strings exactly, so
+`"3.1"` cannot resolve against `"3"`. The legacy Table 1 inspection group is
+still deliberately Table 1-specific and stores the string `"1"`.
+
+`paper_visual:table:<printed identifier>` remains a derived visual ID rather
+than a continuation key. Source-table indices, page numbers, row and column
+indices, and counts remain numeric.
+
 The paper-footnote stage also consumes this final artifact. Anchors and
 definitions on different source fragments share continuation scope only when
 their source table IDs belong to the same accepted integrated resolved table.
@@ -173,8 +187,8 @@ has clear continuation evidence for a specific table.
 Accepted evidence can include:
 
 - extractor metadata: `is_continuation = true`
-- extractor metadata: `continuation_of_table_number = N`
-- caption or title text such as `Table N (continued)`
+- extractor metadata: `continuation_of_table_number = "<printed identifier>"`
+- caption or title text such as `Table 3.1 (continued)`
 - a continuation marker in the first normalized rows when it names the table
   number
 - conservative adjacent-page continuation evidence already recorded by the

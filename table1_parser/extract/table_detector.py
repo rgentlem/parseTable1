@@ -8,8 +8,16 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
-TABLE_CAPTION_LINE_PATTERN = re.compile(r"^\s*table\s*(\d+)\b(?:\s*[:.])?", re.IGNORECASE)
-TABLE_CAPTION_CORRUPT_DASH_PATTERN = re.compile(r"^\s*[Tt]able\s*(\d+)d(?=[A-Z])")
+TABLE_IDENTIFIER_PATTERN = re.compile(
+    r"(?=[A-Za-z0-9.]*\d)[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*"
+)
+TABLE_CAPTION_LINE_PATTERN = re.compile(
+    rf"^\s*table\s*(?P<table_number>{TABLE_IDENTIFIER_PATTERN.pattern})\b(?:\s*[:.])?",
+    re.IGNORECASE,
+)
+TABLE_CAPTION_CORRUPT_DASH_PATTERN = re.compile(
+    r"^\s*[Tt]able\s*(?P<table_number>\d+)d(?=[A-Z])"
+)
 TABLE_CONTINUATION_PATTERN = re.compile(r"^(?:\(\s*continued\s*\)|continued)(?:\s|\b|$)", re.IGNORECASE)
 TABLE_PROSE_REFERENCE_PATTERN = re.compile(
     r"^(?:displays?|shows?|presents?|describes?|illustrates?|reports?|lists?|contains?|"
@@ -64,14 +72,13 @@ def _table_caption_metadata(line: str) -> dict[str, Any] | None:
     stripped = line.strip()
     if not stripped:
         return None
-    corrupt_dash_caption = False
-    match = TABLE_CAPTION_LINE_PATTERN.match(stripped)
+    match = TABLE_CAPTION_CORRUPT_DASH_PATTERN.match(stripped)
+    corrupt_dash_caption = match is not None
     if match is None:
-        match = TABLE_CAPTION_CORRUPT_DASH_PATTERN.match(stripped)
+        match = TABLE_CAPTION_LINE_PATTERN.match(stripped)
         if match is None:
             return None
-        corrupt_dash_caption = True
-    table_number = int(match.group(1))
+    table_number = match.group("table_number")
     remainder = stripped[match.end():].strip()
     caption_prefix = f"Table {table_number}." if corrupt_dash_caption else stripped[:match.end()].strip()
     continuation_match = TABLE_CONTINUATION_PATTERN.match(remainder)
@@ -154,10 +161,9 @@ def score_candidate(candidate: DetectedTableCandidate) -> DetectedTableCandidate
         effective_caption = None
     caption_table_number_hint = candidate.metadata.get("caption_table_number")
     hinted_table_number = (
-        int(caption_table_number_hint)
-        if isinstance(caption_table_number_hint, int)
-        and not isinstance(caption_table_number_hint, bool)
-        and caption_table_number_hint > 0
+        caption_table_number_hint
+        if isinstance(caption_table_number_hint, str)
+        and TABLE_IDENTIFIER_PATTERN.fullmatch(caption_table_number_hint) is not None
         else None
     )
     if effective_caption and hinted_table_number is not None:
@@ -180,11 +186,11 @@ def score_candidate(candidate: DetectedTableCandidate) -> DetectedTableCandidate
         is_continuation = False
         continuation_of_table_number = None
     else:
-        caption_table_number = int(caption_metadata["table_number"])
+        caption_table_number = caption_metadata["table_number"]
         is_continuation = bool(caption_metadata["is_continuation"])
         continuation_of_table_number = caption_metadata["continuation_of_table_number"]
     caption_match = caption_metadata is not None
-    table_1_match = caption_table_number == 1
+    table_1_match = caption_table_number == "1"
     first_column_values = [row[0] for row in candidate.raw_rows if row]
     populated_first_column = [value for value in first_column_values if value.strip()]
     first_column_text_ratio = (

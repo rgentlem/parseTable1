@@ -6,6 +6,7 @@ import re
 from collections.abc import Sequence
 
 from table1_parser.diagnostics import ParseQualityReport
+from table1_parser.extract.table_detector import TABLE_IDENTIFIER_PATTERN
 from table1_parser.heuristics.value_pattern_detector import detect_value_pattern
 from table1_parser.schemas import (
     ExtractedTable,
@@ -20,7 +21,10 @@ from table1_parser.schemas import (
 from table1_parser.text_cleaning import clean_text
 
 
-TABLE_NUMBER_PATTERN = re.compile(r"\btable\s+(?P<number>[0-9]+)\b", re.IGNORECASE)
+TABLE_NUMBER_PATTERN = re.compile(
+    rf"\btable\s+(?P<table_number>{TABLE_IDENTIFIER_PATTERN.pattern})\b",
+    re.IGNORECASE,
+)
 DESCRIPTIVE_TITLE_PATTERN = re.compile(
     r"\b(?:baseline|characteristics?|demographics?|study population|participants?|sample|cohort)\b",
     re.IGNORECASE,
@@ -102,21 +106,39 @@ def build_paper_table_inventory(
         extracted_metadata = extracted.metadata if extracted is not None and isinstance(extracted.metadata, dict) else {}
         normalized_signals = normalized_metadata.get("signals", {}) if isinstance(normalized_metadata.get("signals", {}), dict) else {}
         extracted_signals = extracted_metadata.get("signals", {}) if isinstance(extracted_metadata.get("signals", {}), dict) else {}
-        table_number = (
-            normalized_metadata.get("table_number")
-            or extracted_metadata.get("table_number")
-            or normalized_signals.get("caption_table_number")
-            or extracted_signals.get("caption_table_number")
+        table_number = next(
+            (
+                value
+                for value in (
+                    normalized_metadata.get("table_number"),
+                    extracted_metadata.get("table_number"),
+                    normalized_signals.get("caption_table_number"),
+                    extracted_signals.get("caption_table_number"),
+                )
+                if isinstance(value, str)
+                and TABLE_IDENTIFIER_PATTERN.fullmatch(value) is not None
+            ),
+            None,
         )
-        if not isinstance(table_number, int):
+        if table_number is None:
             text_match = TABLE_NUMBER_PATTERN.search(" ".join(part for part in [title or "", caption or ""] if part))
-            table_number = int(text_match.group("number")) if text_match is not None else None
-        continuation_of_table_number = (
-            normalized_metadata.get("continuation_of_table_number")
-            or extracted_metadata.get("continuation_of_table_number")
+            table_number = (
+                text_match.group("table_number")
+                if text_match is not None
+                else None
+            )
+        continuation_of_table_number = next(
+            (
+                value
+                for value in (
+                    normalized_metadata.get("continuation_of_table_number"),
+                    extracted_metadata.get("continuation_of_table_number"),
+                )
+                if isinstance(value, str)
+                and TABLE_IDENTIFIER_PATTERN.fullmatch(value) is not None
+            ),
+            None,
         )
-        if not isinstance(continuation_of_table_number, int):
-            continuation_of_table_number = None
 
         cleaned_rows = normalized_metadata.get("cleaned_rows") if normalized_metadata else []
         if not isinstance(cleaned_rows, list):
@@ -301,7 +323,7 @@ def build_paper_table_inventory(
         if usable_column_count >= 2 and any(column.inferred_role in {"overall", "group", "comparison_group"} for column in columns):
             demographic_score += 0.10
             demographic_evidence.append("coherent_overall_or_group_columns")
-        if table_number == 1 and status is not None and status.status != "failed":
+        if table_number == "1" and status is not None and status.status != "failed":
             demographic_score += 0.05
             demographic_evidence.append("published_table_1_with_successful_parse")
         category_scores["demographic_description"] = (min(demographic_score, 0.98), demographic_evidence)

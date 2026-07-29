@@ -16,7 +16,7 @@ if (!exists("load_paper_outputs", mode = "function")) {
   source(helper_path)
 }
 
-compare_normalized_rows_to_definition <- function(paper_dir, table_number = 1L, table_index = NULL) {
+compare_normalized_rows_to_definition <- function(paper_dir, table_number = "1", table_index = NULL) {
   outputs <- load_paper_outputs(paper_dir)
   resolved_index <- if (!is.null(table_index)) {
     as.integer(table_index) - 1L
@@ -25,10 +25,10 @@ compare_normalized_rows_to_definition <- function(paper_dir, table_number = 1L, 
   }
   list_position <- as.integer(resolved_index) + 1L
   if (length(outputs$normalized_tables) < list_position) {
-    stop(sprintf("No normalized table found for table_number=%s.", as.integer(table_number)), call. = FALSE)
+    stop(sprintf("No normalized table found for table_number=%s.", as.character(table_number)), call. = FALSE)
   }
   if (length(outputs$table_definitions) < list_position) {
-    stop(sprintf("No table definition found for table_number=%s.", as.integer(table_number)), call. = FALSE)
+    stop(sprintf("No table definition found for table_number=%s.", as.character(table_number)), call. = FALSE)
   }
 
   normalized_table <- outputs$normalized_tables[[list_position]]

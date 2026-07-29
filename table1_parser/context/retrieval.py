@@ -5,12 +5,16 @@ from __future__ import annotations
 import re
 
 from table1_parser.context.visual_references import parse_visual_label, section_paragraphs, visual_id_for
+from table1_parser.extract.table_detector import TABLE_IDENTIFIER_PATTERN
 from table1_parser.normalize.text_normalizer import normalize_label_text
 from table1_parser.schemas import PaperSection, PaperVisual, PaperVisualReference, RetrievedPassage, TableContext, TableDefinition
 from table1_parser.text_cleaning import clean_text
 
 
-TABLE_NUMBER_PATTERN = re.compile(r"\bTable\s+(\d+)\b", re.IGNORECASE)
+TABLE_NUMBER_PATTERN = re.compile(
+    rf"\bTable\s+(?P<table_number>{TABLE_IDENTIFIER_PATTERN.pattern})\b",
+    re.IGNORECASE,
+)
 
 
 def build_table_contexts(
@@ -19,10 +23,21 @@ def build_table_contexts(
     entity_table_ids: set[str],
     paper_visual_inventory: list[PaperVisual] | None = None,
     paper_references: list[PaperVisualReference] | None = None,
+    *,
+    resolved_table_numbers_by_id: dict[str, str] | None = None,
 ) -> list[TableContext]:
     """Build per-table retrieval bundles from parsed sections and table definitions."""
     return [
-        build_table_context(table_index, definition, sections, paper_visual_inventory, paper_references)
+        build_table_context(
+            table_index,
+            definition,
+            sections,
+            paper_visual_inventory,
+            paper_references,
+            resolved_table_number=(resolved_table_numbers_by_id or {}).get(
+                definition.table_id
+            ),
+        )
         for table_index, definition in enumerate(table_definitions)
         if definition.table_id in entity_table_ids
     ]
@@ -34,14 +49,22 @@ def build_table_context(
     sections: list[PaperSection],
     paper_visual_inventory: list[PaperVisual] | None = None,
     paper_references: list[PaperVisualReference] | None = None,
+    *,
+    resolved_table_number: str | None = None,
 ) -> TableContext:
     """Build one per-table context bundle."""
-    table_label = None
-    for text in (definition.title, definition.caption):
-        match = TABLE_NUMBER_PATTERN.search(text or "")
-        if match is not None:
-            table_label = f"Table {match.group(1)}"
-            break
+    table_label = (
+        f"Table {resolved_table_number}"
+        if isinstance(resolved_table_number, str)
+        and TABLE_IDENTIFIER_PATTERN.fullmatch(resolved_table_number) is not None
+        else None
+    )
+    if table_label is None:
+        for text in (definition.title, definition.caption):
+            match = TABLE_NUMBER_PATTERN.search(text or "")
+            if match is not None:
+                table_label = f"Table {match.group('table_number')}"
+                break
     row_terms = _dedupe(
         [
             variable.variable_label

@@ -118,12 +118,22 @@ Design note for future multitable support:
 These rules matter because later stages refer back to earlier stages.
 
 - `table_id` is the stable table identifier for one extracted table.
+- Identity-bearing `table_number`, `continuation_of_table_number`,
+  `continuation_table_number`, and `logical_table_number` fields store the
+  complete printed identifier as a JSON string or `null`. Examples include
+  `"1"`, `"3.1"`, and `"S1"`; these values must not be reduced to an integer.
+- A visual ID such as `paper_visual:table:3.1` is derived from that printed
+  string. It is not the stored table number or an alternate resolver key.
 - `row_idx` values are zero-based row indices in the table grid.
 - `TableRegion` row assignments, `header_rows`, and `body_rows` are lists of
   those same grid row indices. In current parse output, `header_rows` should
   mean the table's column-header band, not a page header or table caption.
 - `row_start`, `row_end`, and level `row_idx` values refer to the same row-index space, not to a separate body-only counter.
 - `col_idx` is a zero-based column index in the normalized table grid after any edge-column trimming performed during normalization.
+- Page numbers, row and column indices, extraction-order table indices, and
+  counts remain numeric. `table_numbering_audit` is also numeric because it
+  deliberately projects only digit-only printed identifiers into the derived
+  missing-integer sequence; dotted and alphanumeric identifiers are excluded.
 
 This stability is important because the LLM layer is required to reference existing rows only and must never invent new rows or columns.
 
@@ -824,7 +834,7 @@ Design components:
 
 Design intent:
 
-- handle explicit Table 1 continuation evidence, such as `Table 1 (continued)` or extractor continuation metadata for table number 1
+- handle explicit Table 1 continuation evidence, such as `Table 1 (continued)` or extractor continuation metadata for table number `"1"`
 - also inspect an uncaptained, unnumbered table-like fragment on the next page after Table 1 when it has body rows and a plausible grid
 - require compatible schema-derived column headers before writing a merged table artifact
 - ignore non-Table 1 continuations, including later result tables that happen to span pages
@@ -846,7 +856,7 @@ continuation candidate.
 This artifact:
 
 - requires clear continuation evidence or a narrow adjacent-page uncaptained continuation candidate before checking a pair
-- compares the continuation to the closest prior fragment for the same table number
+- compares the continuation to the closest prior fragment for the same complete printed table-identifier string
 - records normalized column-count agreement
 - records column-header agreement using `ColumnHeaderSchema`
 - fails compatibility with a structured diagnostic when a usable column-header schema is missing, rather than reconstructing column meaning from normalized rows
@@ -1191,6 +1201,9 @@ views.
 - `reference_ids`
 - `resolved_visual_ids`
 - `passages`
+
+`table_label` is derived first from the canonical resolved identifier keyed by
+`table_id`, preserving complete strings such as `Table 3.1` and `Table S1`.
 
 `RetrievedPassage` design components:
 
@@ -1805,7 +1818,7 @@ Allowed `table_category` values:
 
 Design intent:
 
-- use the paper's table number as the public conceptual identifier where available
+- use the paper's complete printed table-identifier string as the public conceptual identifier where available
 - keep continuation as `continuation_of_table_number`, with `null` when the table is not a continuation
 - choose only one max-score category and persist only the chosen category, confidence, and evidence
 - prioritize effect or estimate columns for `analysis_outputs`; p-values and model labels alone should not override a demographic-description classification

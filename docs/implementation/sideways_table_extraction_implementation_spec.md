@@ -189,8 +189,8 @@ For this implementation, support only conservative continuation evidence:
 If the second case is implemented, set:
 
 - `is_continuation = TRUE`
-- `continuation_of_table_number = <previous table number>`
-- `table_number = <previous table number>`
+- `continuation_of_table_number = <previous complete printed identifier string>`
+- `table_number = <previous complete printed identifier string>`
 - diagnostic evidence in `sideways_detection_signals` or a continuation-specific
   metadata field
 
@@ -238,15 +238,15 @@ Minimum synthetic tests:
 
 1. A portrait page with vertical line directions and a sideways `Table 1` caption
    produces a candidate with:
-   - `metadata$table_number == 1`
+   - `metadata$table_number == "1"`
    - `metadata$orientation_strategy == "sideways_transformed"`
    - `metadata$caption_detection_space == "transformed_coordinates"`
    - a non-collapsed grid
 
 2. A sideways `Table 1. (continued)` caption preserves:
-   - `metadata$table_number == 1`
+   - `metadata$table_number == "1"`
    - `metadata$is_continuation == TRUE`
-   - `metadata$continuation_of_table_number == 1`
+   - `metadata$continuation_of_table_number == "1"`
 
 3. An upright page with ordinary table geometry does not receive sideways metadata
    and still follows the existing extraction path.
@@ -271,10 +271,10 @@ Inspect:
 
 Expected results:
 
-- Table 1 first page has `table_number = 1`
-- Table 1 continuation has `continuation_of_table_number = 1`
-- Table 2 first page has `table_number = 2`
-- Table 2 continuation has `continuation_of_table_number = 2` if conservative
+- Table 1 first page has `table_number = "1"`
+- Table 1 continuation has `continuation_of_table_number = "1"`
+- Table 2 first page has `table_number = "2"`
+- Table 2 continuation has `continuation_of_table_number = "2"` if conservative
   continuation evidence is sufficient
 - Tables 1 and 2 have separated rows and numeric columns rather than giant
   concatenated cells

@@ -21,13 +21,13 @@ class PaperTableRecord(BaseModel):
     """One table-level taxonomy prediction within a paper."""
 
     table_id: str
-    table_number: int | None = Field(default=None, ge=1)
+    table_number: str | None = None
     title: str | None = None
     caption: str | None = None
     table_category: TableCategory
     category_confidence: float = Field(ge=0.0, le=1.0)
     category_evidence: list[str] = Field(default_factory=list)
-    continuation_of_table_number: int | None = Field(default=None, ge=1)
+    continuation_of_table_number: str | None = None
     table_family: str | None = None
     processing_status: str | None = None
     failure_reason: str | None = None

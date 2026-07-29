@@ -28,7 +28,7 @@ class Table1ContinuationGroup(BaseModel):
     """Decision record for one potential Table 1 continuation group."""
 
     group_id: str
-    table_number: int = 1
+    table_number: str = "1"
     source_table_indices: list[int] = Field(default_factory=list)
     source_table_ids: list[str] = Field(default_factory=list)
     merge_decision: Table1ContinuationDecision

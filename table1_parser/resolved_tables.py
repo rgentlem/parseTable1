@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 
 from table1_parser.column_header_schema import column_header_comparison_labels
+from table1_parser.extract.table_detector import TABLE_IDENTIFIER_PATTERN
 from table1_parser.schemas import (
     ColumnHeaderSchema,
     ColumnSchemaCompatibilityDecision,
@@ -19,7 +20,10 @@ from table1_parser.schemas import (
 )
 
 
-TABLE_NUMBER_PATTERN = re.compile(r"\btable\s*(\d+)\b", re.IGNORECASE)
+TABLE_NUMBER_PATTERN = re.compile(
+    rf"\btable\s*(?P<table_number>{TABLE_IDENTIFIER_PATTERN.pattern})\b",
+    re.IGNORECASE,
+)
 CONTINUATION_PATTERN = re.compile(r"\bcont(?:inued)?\.?\b|\(\s*continued\s*\)", re.IGNORECASE)
 CONTINUED_ROW_PATTERN = re.compile(r"^\(?\s*continued\s*\)?$", re.IGNORECASE)
 
@@ -45,7 +49,10 @@ def _has_table_identity(table: NormalizedTable) -> bool:
     if table.title or table.caption:
         return True
     metadata_number = table.metadata.get("table_number")
-    return isinstance(metadata_number, int) and not isinstance(metadata_number, bool) and metadata_number >= 1
+    return (
+        isinstance(metadata_number, str)
+        and TABLE_IDENTIFIER_PATTERN.fullmatch(metadata_number) is not None
+    )
 
 
 def _schema_match_decision(
@@ -168,7 +175,7 @@ def _schema_match_decision(
     )
 
 
-def _trailing_continuation_table_number(table: NormalizedTable) -> int | None:
+def _trailing_continuation_table_number(table: NormalizedTable) -> str | None:
     trailing_rows = table.metadata.get("trailing_non_table_rows")
     if not isinstance(trailing_rows, dict):
         return None
@@ -176,7 +183,10 @@ def _trailing_continuation_table_number(table: NormalizedTable) -> int | None:
     if not isinstance(reasons, list) or "trailing_continuation_note" not in {str(reason) for reason in reasons}:
         return None
     table_number = trailing_rows.get("continuation_table_number")
-    if isinstance(table_number, int) and not isinstance(table_number, bool) and table_number >= 1:
+    if (
+        isinstance(table_number, str)
+        and TABLE_IDENTIFIER_PATTERN.fullmatch(table_number) is not None
+    ):
         return table_number
     return None
 
@@ -203,8 +213,8 @@ def build_resolved_table_set(
     resolved_tables: list[ResolvedTable] = []
     decisions: list[TableResolutionDecision] = []
     source_tables: list[SourceTableResolution] = []
-    latest_fragment_by_number: dict[int, int] = {}
-    parent_indices_by_number: dict[int, list[int]] = {}
+    latest_fragment_by_number: dict[str, int] = {}
+    parent_indices_by_number: dict[str, list[int]] = {}
     source_to_resolved_index: dict[int, int] = {}
 
     for source_index, table in enumerate(normalized_tables):
@@ -236,9 +246,8 @@ def build_resolved_table_set(
                     source_page_num_by_row_idx[row_idx] = row_page_num
         logical_table_number = table.metadata.get("table_number")
         if (
-            not isinstance(logical_table_number, int)
-            or isinstance(logical_table_number, bool)
-            or logical_table_number < 1
+            not isinstance(logical_table_number, str)
+            or TABLE_IDENTIFIER_PATTERN.fullmatch(logical_table_number) is None
         ):
             logical_table_number = None
         trailing_continuation_number = _trailing_continuation_table_number(table)
@@ -247,7 +256,7 @@ def build_resolved_table_set(
         if logical_table_number is None:
             table_number_match = TABLE_NUMBER_PATTERN.search(title_caption_text)
             if table_number_match is not None:
-                logical_table_number = int(table_number_match.group(1))
+                logical_table_number = table_number_match.group("table_number")
 
         cleaned_rows = table.metadata.get("cleaned_rows")
         first_rows_text = ""
@@ -260,13 +269,17 @@ def build_resolved_table_set(
                     first_row_texts.append(str(row))
             first_rows_text = " ".join(first_row_texts)
 
-        continuation_number: int | None = None
+        continuation_number: str | None = None
         continuation_identity_evidence: list[str] = []
         metadata_continuation_number = table.metadata.get("continuation_of_table_number")
         metadata_is_continuation = table.metadata.get("is_continuation") is True
 
-        if isinstance(metadata_continuation_number, int) and not isinstance(metadata_continuation_number, bool):
-            if metadata_continuation_number >= 1 and (
+        if (
+            isinstance(metadata_continuation_number, str)
+            and TABLE_IDENTIFIER_PATTERN.fullmatch(metadata_continuation_number)
+            is not None
+        ):
+            if (
                 metadata_is_continuation
                 or CONTINUATION_PATTERN.search(title_caption_text)
                 or CONTINUATION_PATTERN.search(first_rows_text)
@@ -286,13 +299,13 @@ def build_resolved_table_set(
         if continuation_number is None and CONTINUATION_PATTERN.search(title_caption_text):
             match = TABLE_NUMBER_PATTERN.search(title_caption_text)
             if match is not None:
-                continuation_number = int(match.group(1))
+                continuation_number = match.group("table_number")
                 continuation_identity_evidence.append(f"title_or_caption_table_continued:{continuation_number}")
 
         if continuation_number is None and CONTINUATION_PATTERN.search(first_rows_text):
             match = TABLE_NUMBER_PATTERN.search(first_rows_text)
             if match is not None:
-                continuation_number = int(match.group(1))
+                continuation_number = match.group("table_number")
                 continuation_identity_evidence.append(f"first_rows_table_continued:{continuation_number}")
 
         boundary_parent_index: int | None = None

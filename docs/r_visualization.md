@@ -32,10 +32,10 @@ Public functions:
 - `summarize_table_processing(paper_dir)`
 - `paper_table_inventory_list(papers_dir = file.path("outputs", "papers"))`
 - `show_paper_table_inventory(paper_dir)`
-- `show_table_processing(paper_dir, table_number = 1L)`
-- `show_parse_quality(paper_dir, table_number = 1L)`
+- `show_table_processing(paper_dir, table_number = "1")`
+- `show_parse_quality(paper_dir, table_number = "1")`
 - `cell_text_annotations_df(outputs, table_number = NULL, table_index = NULL)`
-- `show_cell_text_annotations(paper_dir, table_number = 1L, table_index = NULL)`
+- `show_cell_text_annotations(paper_dir, table_number = "1", table_index = NULL)`
 - `footnote_footers_df(outputs, table_number = NULL, table_index = NULL)`
 - `footnote_anchors_df(outputs, table_number = NULL, table_index = NULL)`
 - `footnote_definitions_df(outputs, table_number = NULL, table_index = NULL)`
@@ -62,16 +62,19 @@ Public functions:
 - `show_paper_style_profiles(papers_dir = file.path("outputs", "papers"))`
 - `show_paper_visuals(paper_dir, visual_kind = NULL)`
 - `show_paper_references(paper_dir, reference_kind = NULL, reference_label = NULL, resolution_status = NULL)`
-- `show_table_structure(paper_dir, table_number = 1L, max_rows = NULL, include_raw_header_rows = FALSE)`
+- `show_table_structure(paper_dir, table_number = "1", max_rows = NULL, include_raw_header_rows = FALSE)`
 - `llm_variable_plausibility_df(outputs, table_number = NULL)`
-- `show_llm_variable_plausibility(paper_dir, table_number = 1L)`
+- `show_llm_variable_plausibility(paper_dir, table_number = "1")`
 - `list_llm_variable_plausibility_debug_runs(paper_dir)`
 - `summarize_llm_variable_plausibility_monitoring(paper_dir, run_id = NULL)`
-- `show_table_context(paper_dir, table_number = 1L, match_type = NULL)`
+- `show_table_context(paper_dir, table_number = "1", match_type = NULL)`
 
 These helpers use the same per-paper output directory written by
 `table1-parser parse` and, when run, `table1-parser review-variable-plausibility`.
 `cell_text_annotations.json` is part of the current parse output contract.
+All `table_number` arguments and columns use the exact printed identifier
+string, including dotted and supplementary labels such as `"3.1"` and `"S1"`.
+Explicit `table_index` arguments remain numeric extraction-order handles.
 
 ## Observed TableOne Helper
 
@@ -90,14 +93,14 @@ source("R/inspect_paper_outputs.R")
 x <- load_paper_outputs("outputs/papers/cobaltpaper")
 summarize_table_processing("outputs/papers/cobaltpaper")
 show_paper_table_inventory("outputs/papers/cobaltpaper")
-show_table_processing("outputs/papers/cobaltpaper", table_number = 1L)
-show_parse_quality("outputs/papers/cobaltpaper", table_number = 1L)
-cell_text_annotations_df(x, table_number = 1L)
-show_cell_text_annotations("outputs/papers/cobaltpaper", table_number = 1L)
-footnote_anchors_df(x, table_number = 1L)
-footnote_definitions_df(x, table_number = 1L)
-footnote_links_df(x, table_number = 1L)
-show_paper_footnotes("outputs/papers/cobaltpaper", table_number = 1L)
+show_table_processing("outputs/papers/cobaltpaper", table_number = "1")
+show_parse_quality("outputs/papers/cobaltpaper", table_number = "1")
+cell_text_annotations_df(x, table_number = "1")
+show_cell_text_annotations("outputs/papers/cobaltpaper", table_number = "1")
+footnote_anchors_df(x, table_number = "1")
+footnote_definitions_df(x, table_number = "1")
+footnote_links_df(x, table_number = "1")
+show_paper_footnotes("outputs/papers/cobaltpaper", table_number = "1")
 page_furniture_clusters_df(x)
 page_furniture_regions_df(x)
 show_paper_page_furniture("outputs/papers/cobaltpaper")
@@ -111,12 +114,12 @@ show_paper_variable_mentions("outputs/papers/cobaltpaper", source_type = "text_b
 show_paper_style_profile("outputs/papers/cobaltpaper")
 show_paper_visuals("outputs/papers/cobaltpaper", visual_kind = "figure")
 show_paper_references("outputs/papers/cobaltpaper", resolution_status = "resolved")
-show_table_structure("outputs/papers/cobaltpaper", table_number = 1L)
+show_table_structure("outputs/papers/cobaltpaper", table_number = "1")
 llm_variable_plausibility_df(x)
-show_llm_variable_plausibility("outputs/papers/cobaltpaper", table_number = 1L)
+show_llm_variable_plausibility("outputs/papers/cobaltpaper", table_number = "1")
 list_llm_variable_plausibility_debug_runs("outputs/papers/cobaltpaper")
 summarize_llm_variable_plausibility_monitoring("outputs/papers/cobaltpaper")
-show_table_context("outputs/papers/cobaltpaper", table_number = 1L, match_type = "table_reference")
+show_table_context("outputs/papers/cobaltpaper", table_number = "1", match_type = "table_reference")
 ```
 
 ### Corpus-Level Usage
@@ -238,8 +241,8 @@ Use `table_number` in public inspection helpers. The parser may keep extraction-
 
 ```r
 source("R/inspect_paper_outputs.R")
-show_table_structure("outputs/papers/OPEandRA", table_number = 1L)
-show_parse_quality("outputs/papers/OPEandRA", table_number = 1L)
+show_table_structure("outputs/papers/OPEandRA", table_number = "1")
+show_parse_quality("outputs/papers/OPEandRA", table_number = "1")
 ```
 
 2. Run the optional variable-plausibility review with debug tracing enabled:
@@ -266,7 +269,7 @@ Rscript R/visualize_table_from_json.R outputs/papers/OPEandRA/llm_variable_plaus
 source("R/inspect_paper_outputs.R")
 options(width = 200)
 
-show_llm_variable_plausibility("outputs/papers/OPEandRA", table_number = 1L)
+show_llm_variable_plausibility("outputs/papers/OPEandRA", table_number = "1")
 ```
 
 ## Notes

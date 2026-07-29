@@ -266,6 +266,12 @@ Interpretation notes:
 - `text_based` means the mention was found in paper prose
 - text-based mentions should always preserve the section location
 - table-derived mentions should always preserve table identity
+- `table_label` should be `Table <exact printed identifier>` from the canonical
+  resolved-table identity keyed by `table_id`, with caption parsing used only
+  when that canonical identity is unavailable
+- dotted and alphanumeric identifiers remain literal label text, so `Table
+  3.1` and `Table S1` must not be coerced to `Table 3` or a numeric missing
+  value
 - `mention_role` should distinguish likely variables from levels, range bins, and artifacts
 - a mention can be preserved in `mentions` even when it is intentionally excluded from `candidates`
 

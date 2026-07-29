@@ -12,7 +12,11 @@ continuous, categorical, and statistic semantics.
 \usage{
 build_observed_table_one(table_definition, parsed_table, normalized_table = NULL, provenance = NULL)
 
-build_observed_table_one_from_paper_dir(paper_dir, table_index = 0L)
+build_observed_table_one_from_paper_dir(
+  paper_dir,
+  table_number = "1",
+  table_index = NULL
+)
 
 new_observed_table_one(
   table_id,
@@ -36,7 +40,8 @@ validate_observed_table_one(x)
   \item{normalized_table}{Optional matching entry from \code{normalized_tables.json}.}
   \item{provenance}{Optional list describing the source of the constructed object.}
   \item{paper_dir}{Path to one paper output directory under \code{outputs/papers/}.}
-  \item{table_index}{Zero-based table index within the paper output directory.}
+  \item{table_number}{Exact printed table identifier string, such as \code{"1"}, \code{"3.1"}, or \code{"S1"}.}
+  \item{table_index}{Optional zero-based numeric table index for low-level debugging.}
   \item{table_id}{Stable table identifier.}
   \item{title}{Optional table title.}
   \item{caption}{Optional table caption.}
@@ -60,7 +65,7 @@ source("R/observed_table_one.R")
 
 x <- build_observed_table_one_from_paper_dir(
   "outputs/papers/cobaltpaper",
-  table_index = 0L
+  table_number = "1"
 )
 print(x)
 }

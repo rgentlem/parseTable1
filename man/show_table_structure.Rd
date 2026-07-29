@@ -10,16 +10,18 @@ the processing status and terminal failure information from
 \usage{
 show_table_structure(
   paper_dir,
-  table_index = 0L,
-  variant = c("deterministic", "llm"),
-  max_rows = NULL
+  table_number = "1",
+  table_index = NULL,
+  max_rows = NULL,
+  include_raw_header_rows = FALSE
 )
 }
 \arguments{
   \item{paper_dir}{Path to one paper output directory.}
-  \item{table_index}{Zero-based table index.}
-  \item{variant}{Which table-definition variant to show, either \code{"deterministic"} or \code{"llm"}.}
+  \item{table_number}{Exact printed table identifier string, such as \code{"1"}, \code{"3.1"}, or \code{"S1"}.}
+  \item{table_index}{Optional zero-based numeric table index for low-level debugging.}
   \item{max_rows}{Optional maximum number of normalized rows to print.}
+  \item{include_raw_header_rows}{Whether to include normalized header rows in the row display.}
 }
 \value{
 Invisibly returns a list with \code{normalized_table} and \code{table_definition}.
@@ -27,7 +29,7 @@ Invisibly returns a list with \code{normalized_table} and \code{table_definition
 \examples{
 \dontrun{
 source("R/inspect_paper_outputs.R")
-show_table_structure("outputs/papers/cobaltpaper", table_index = 1L)
-show_table_structure("outputs/papers/cobaltpaper", table_index = 1L, max_rows = 20L)
+show_table_structure("outputs/papers/cobaltpaper", table_number = "1")
+show_table_structure("outputs/papers/cobaltpaper", table_number = "3.1", max_rows = 20L)
 }
 }

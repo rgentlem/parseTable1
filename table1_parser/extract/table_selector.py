@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from table1_parser.extract.table_detector import DetectedTableCandidate
+from table1_parser.extract.table_detector import (
+    TABLE_IDENTIFIER_PATTERN,
+    DetectedTableCandidate,
+)
 from table1_parser.page_furniture_mask import bbox_overlap_fraction
 
 
@@ -109,21 +112,18 @@ def select_top_candidates(
         geometry_deduplicated,
         key=lambda candidate: (candidate.page_num, candidate.table_index),
     )
-    candidate_table_numbers: list[int | None] = []
+    candidate_table_numbers: list[str | None] = []
     for candidate in ordered_candidates:
         signals = candidate.metadata.get("signals")
         number_value = candidate.metadata.get("table_number")
         if number_value is None and isinstance(signals, dict):
             number_value = signals.get("caption_table_number")
-        table_number: int | None = None
-        if isinstance(number_value, int) and not isinstance(number_value, bool):
-            table_number = number_value if number_value > 0 else None
-        elif isinstance(number_value, float) and number_value.is_integer():
-            parsed_number = int(number_value)
-            table_number = parsed_number if parsed_number > 0 else None
-        elif isinstance(number_value, str) and number_value.isdigit():
-            parsed_number = int(number_value)
-            table_number = parsed_number if parsed_number > 0 else None
+        table_number = (
+            number_value
+            if isinstance(number_value, str)
+            and TABLE_IDENTIFIER_PATTERN.fullmatch(number_value) is not None
+            else None
+        )
         candidate_table_numbers.append(table_number)
 
     numbered_positions = [
@@ -137,7 +137,7 @@ def select_top_candidates(
     first_table_one_indices = [
         index
         for index, table_number in numbered_positions
-        if table_number == 1
+        if table_number == "1"
     ]
     first_table_one_index = min(first_table_one_indices) if first_table_one_indices else None
 
@@ -147,8 +147,8 @@ def select_top_candidates(
             filtered_candidates.append(candidate)
             continue
 
-        previous_numbered: tuple[int, int] | None = None
-        next_numbered: tuple[int, int] | None = None
+        previous_numbered: tuple[int, str] | None = None
+        next_numbered: tuple[int, str] | None = None
         for numbered_index, table_number in numbered_positions:
             if numbered_index < index:
                 previous_numbered = (numbered_index, table_number)
@@ -194,7 +194,9 @@ def select_top_candidates(
             suppress_candidate = (
                 previous_numbered is not None
                 and next_numbered is not None
-                and next_numbered[1] == previous_numbered[1] + 1
+                and previous_numbered[1].isdecimal()
+                and next_numbered[1].isdecimal()
+                and int(next_numbered[1]) == int(previous_numbered[1]) + 1
             )
         if not suppress_candidate:
             filtered_candidates.append(candidate)

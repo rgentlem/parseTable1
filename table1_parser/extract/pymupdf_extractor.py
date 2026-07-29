@@ -26,6 +26,7 @@ from table1_parser.context.paper_document import (
 )
 from table1_parser.paper_discovery import PaperDiscoveryState
 from table1_parser.extract.table_detector import (
+    TABLE_IDENTIFIER_PATTERN,
     DetectedTableCandidate,
     score_candidate,
 )
@@ -878,9 +879,9 @@ class PyMuPDFExtractor(BaseExtractor):
         ]
         observed_table_numbers = sorted(
             {
-                table_number
+                int(table_number)
                 for table_number in (table.metadata.get("table_number") for table in tables)
-                if isinstance(table_number, int)
+                if isinstance(table_number, str) and table_number.isdecimal()
             }
         )
         if observed_table_numbers:
@@ -2104,13 +2105,7 @@ def _build_rule_span_candidates(
                             ]
                         )
                     ),
-                    "continuation_table_number": (
-                        int(mention.table_number)
-                        if mention.table_number.isdigit()
-                        else existing_trailing_metadata.get(
-                            "continuation_table_number"
-                        )
-                    ),
+                    "continuation_table_number": mention.table_number,
                     "continuation_mention_provenance": {
                         "source_artifact": mention.source_artifact,
                         "mention_id": mention.mention_id,
@@ -2319,9 +2314,8 @@ def _build_cross_page_continuation_candidates(
     ]
     prior_table_number = prior_candidate.metadata.get("table_number")
     if (
-        not isinstance(prior_table_number, int)
-        or isinstance(prior_table_number, bool)
-        or prior_table_number < 1
+        not isinstance(prior_table_number, str)
+        or TABLE_IDENTIFIER_PATTERN.fullmatch(prior_table_number) is None
     ):
         prior_table_number = None
     return [

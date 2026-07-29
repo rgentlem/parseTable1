@@ -1315,11 +1315,17 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         paper_visual_inventory=paper_visual_inventory,
         paper_references=paper_references,
     )
+    resolved_table_numbers_by_id = {
+        resolved_table.table_id: resolved_table.logical_table_number
+        for resolved_table in resolved_table_set.resolved_tables
+        if resolved_table.logical_table_number is not None
+    }
     paper_variable_inventory = build_paper_variable_inventory(
         paper_stem,
         paper_sections,
         table_definitions,
         entity_table_ids=entity_resolved_table_ids,
+        resolved_table_numbers_by_id=resolved_table_numbers_by_id,
     )
     table_contexts = build_table_contexts(
         paper_sections,
@@ -1327,6 +1333,7 @@ def _build_paper_parse_artifacts(pdf_path: str) -> PaperParseArtifacts:
         entity_resolved_table_ids,
         paper_visual_inventory,
         paper_references,
+        resolved_table_numbers_by_id=resolved_table_numbers_by_id,
     )
     return PaperParseArtifacts(
         paper_stem=paper_stem,

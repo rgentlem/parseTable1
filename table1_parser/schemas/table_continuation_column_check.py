@@ -15,7 +15,7 @@ class TableContinuationColumnCheck(BaseModel):
     """Schema-based column compatibility check for one continuation fragment."""
 
     check_id: str
-    table_number: int
+    table_number: str
     base_table_index: int | None = None
     continuation_table_index: int = Field(ge=0)
     base_table_id: str | None = None

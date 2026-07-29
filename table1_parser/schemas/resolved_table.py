@@ -101,7 +101,7 @@ class ResolvedTable(BaseModel):
 
     table_id: str
     resolution_type: ResolvedTableType
-    logical_table_number: int | None = Field(default=None, ge=1)
+    logical_table_number: str | None = None
     title: str | None = None
     caption: str | None = None
     table: NormalizedTable

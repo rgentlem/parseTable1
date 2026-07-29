@@ -6,6 +6,7 @@ from collections import defaultdict
 from collections.abc import Sequence
 from statistics import median
 
+from table1_parser.extract.table_detector import TABLE_IDENTIFIER_PATTERN
 from table1_parser.schemas import (
     CellTextAnnotationTable,
     ExtractedTable,
@@ -46,9 +47,16 @@ def inherit_adjacent_continuation_leaf_labels(
         ) or continuation_table.metadata.get("table_number")
         if (
             continuation_table.page_num != parent_table.page_num + 1
-            or not isinstance(parent_number, int)
-            or isinstance(parent_number, bool)
-            or parent_number < 1
+            or not isinstance(parent_number, str)
+            or TABLE_IDENTIFIER_PATTERN.fullmatch(parent_number) is None
+            or (
+                continuation_number is not None
+                and (
+                    not isinstance(continuation_number, str)
+                    or TABLE_IDENTIFIER_PATTERN.fullmatch(continuation_number)
+                    is None
+                )
+            )
             or (
                 continuation_number is not None and continuation_number != parent_number
             )

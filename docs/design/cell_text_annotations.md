@@ -135,7 +135,7 @@ Do not use paper-specific vocabulary.
 R loads this parse artifact through `load_paper_outputs()` and exposes:
 
 - `cell_text_annotations_df(outputs, table_number = NULL, table_index = NULL)`
-- `show_cell_text_annotations(paper_dir, table_number = 1L, table_index = NULL)`
+- `show_cell_text_annotations(paper_dir, table_number = "1", table_index = NULL)`
 
 R should display persisted evidence only, not infer marker meaning.
 

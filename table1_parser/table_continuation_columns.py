@@ -5,11 +5,15 @@ from __future__ import annotations
 import re
 
 from table1_parser.column_header_schema import column_header_comparison_labels
+from table1_parser.extract.table_detector import TABLE_IDENTIFIER_PATTERN
 from table1_parser.schemas import ColumnHeaderSchema, ExtractedTable, NormalizedTable, TableProfile
 from table1_parser.schemas.table_continuation_column_check import TableContinuationColumnCheck
 
 
-TABLE_NUMBER_PATTERN = re.compile(r"\btable\s*(\d+)\b", re.IGNORECASE)
+TABLE_NUMBER_PATTERN = re.compile(
+    rf"\btable\s*(?P<table_number>{TABLE_IDENTIFIER_PATTERN.pattern})\b",
+    re.IGNORECASE,
+)
 CONTINUATION_PATTERN = re.compile(r"\bcont(?:inued)?\.?\b|\(\s*continued\s*\)", re.IGNORECASE)
 
 
@@ -22,7 +26,7 @@ def build_table_continuation_column_checks(
 ) -> list[TableContinuationColumnCheck]:
     """Build column-compatibility diagnostics for demographic-table continuations."""
     checks: list[TableContinuationColumnCheck] = []
-    latest_fragment_by_number: dict[int, int] = {}
+    latest_fragment_by_number: dict[str, int] = {}
 
     for table_index, table in enumerate(normalized_tables):
         continuation_number = _clear_continuation_table_number(table)
@@ -83,7 +87,7 @@ def table_continuation_column_checks_to_payload(
 def _build_column_check(
     *,
     check_id: str,
-    table_number: int,
+    table_number: str,
     normalized_tables: list[NormalizedTable],
     table_profiles: list[TableProfile] | None,
     table_categories: list[str | None] | None,
@@ -198,9 +202,12 @@ def _table_category_at(table_categories: list[str | None] | None, table_index: i
     return table_categories[table_index]
 
 
-def _clear_continuation_table_number(table: NormalizedTable) -> int | None:
+def _clear_continuation_table_number(table: NormalizedTable) -> str | None:
     metadata_number = table.metadata.get("continuation_of_table_number")
-    if isinstance(metadata_number, int):
+    if (
+        isinstance(metadata_number, str)
+        and TABLE_IDENTIFIER_PATTERN.fullmatch(metadata_number) is not None
+    ):
         if table.metadata.get("is_continuation") is True or _has_continuation_text(table):
             return metadata_number
 
@@ -216,7 +223,7 @@ def _clear_continuation_table_number(table: NormalizedTable) -> int | None:
 
     match = TABLE_NUMBER_PATTERN.search(text)
     if match is not None:
-        return int(match.group(1))
+        return match.group("table_number")
     table_number = _table_number(table)
     return table_number if table_number is not None else None
 
@@ -236,9 +243,9 @@ def _inferred_uncaptioned_continuation_number(
     normalized_tables: list[NormalizedTable],
     table_profiles: list[TableProfile] | None,
     table_categories: list[str | None] | None,
-    latest_fragment_by_number: dict[int, int],
+    latest_fragment_by_number: dict[str, int],
     table_index: int,
-) -> int | None:
+) -> str | None:
     table = normalized_tables[table_index]
     if _table_number(table) is not None or _has_continuation_text(table) or table.title or table.caption:
         return None
@@ -258,13 +265,16 @@ def _inferred_uncaptioned_continuation_number(
     return None
 
 
-def _table_number(table: NormalizedTable) -> int | None:
+def _table_number(table: NormalizedTable) -> str | None:
     metadata_number = table.metadata.get("table_number")
-    if isinstance(metadata_number, int):
+    if (
+        isinstance(metadata_number, str)
+        and TABLE_IDENTIFIER_PATTERN.fullmatch(metadata_number) is not None
+    ):
         return metadata_number
     text = " ".join(part for part in [table.title, table.caption] if part)
     match = TABLE_NUMBER_PATTERN.search(text)
-    return int(match.group(1)) if match is not None else None
+    return match.group("table_number") if match is not None else None
 
 
 def _source_page_num(table: NormalizedTable) -> int | None:

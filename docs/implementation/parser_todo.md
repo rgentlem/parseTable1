@@ -1,25 +1,69 @@
 # Parser ToDo
 
-- [x] Validated the completed printed-table identifier preservation cutover
-  through the deterministic mention-to-reference chain and the ordinary Table
-  1 and supplementary Table S1 references in
-  `An environment-wide association study (EWAS) on type 2 diabetes mellitus.pdf`.
+- [x] Complete the stored printed-table identifier string cutover through
+  candidate scoring, extraction continuation metadata, header inheritance,
+  canonical resolution, continuation review artifacts, table inventory, table
+  contexts, variable inventory, and R inspection. Identity-bearing table-number
+  fields retain complete strings such as `"1"`, `"3.1"`, and `"S1"`; page,
+  row, column, extraction-order indices, and the digit-only missing-integer-
+  sequence audit remain numeric.
 
-> **Printed-table identifier implementation checkpoint — 2026-07-28:** The
-> mention and visual-reference grammars now preserve one complete alphanumeric,
-> dot-separated identifier containing at least one digit. Caption binding keeps
-> the caption region's identifier string instead of replacing it with a reduced
-> candidate value. Existing `PaperDocument` table-caption ownership and schemas
-> are unchanged, and visual construction continues to consume that caption
-> component. Focused boundary checks pass for `1`, `S1`, `4A`, `4B`, `3.1`,
-> `A.1`, and `B3.1.1`. The known non-extracting
-> `upload_manuscript__WEE_Bangladesh.pdf` case is not an acceptance input for
-> this identifier change. Final validation completed on
-> 2026-07-28: the deterministic chain preserves `Table 3.1` through
-> `paper_visual:table:3.1` and its resolved prose reference, and the fresh
-> focused parse in `outputs/printed_table_identity_step6_ewas_20260728`
-> preserves ordinary Table 1 on PDF pages 4 and 6 and supplementary Table S1
-> on PDF pages 4 and 9.
+> **Printed-table identifier cutover complete — 2026-07-28:** Focused checks
+> preserve `"1"`, `"3.1"`, `"S1"`, `"4B"`, `"A.1"`, and `"B3.1.1"`
+> through candidate selection, extraction, continuation evidence, resolution,
+> inventories, contexts, visual links, and R selection. In
+> `upload_manuscript__WEE_Bangladesh.pdf`, PDF page 81, printed Table 3.1
+> remains `"3.1"` through `paper_visual:table:3.1`. In `Helicobacter pylori
+> infection in the United States beyond NHANES- a scoping review of
+> seroprevalence estimates by racial and ethnic groups.pdf`, PDF pages 6–7,
+> printed Table 1 no longer aborts on mixed identifier types; its page-6
+> fragment remains rejected by the unchanged column-schema compatibility gate.
+> In `An environment-wide association study (EWAS) on type 2 diabetes
+> mellitus.pdf`, PDF pages 4 and 6, printed Table 1 remains distinct from
+> printed Table S1 on PDF page 9. `NutritionEx.pdf`, PDF page 5, printed Table
+> 1 also preserves the string `"1"`.
+>
+> The fresh 28-PDF run in
+> `outputs/testpapers_batch_printed_table_identity_step7_20260728` attempted all
+> papers with six workers and completed 27. It produced 85 source tables, 78
+> resolved tables, and 7 accepted continuation integrations. Every successful
+> identity-bearing JSON field is a string or null; no dotted identifier was
+> reduced, and the numeric-index and digit-only audit contracts have no type
+> violations. Against the 26-paper common baseline, 810 files are byte-identical
+> and 166 contain only expected identity, derived-audit, downstream-label, or
+> timestamp differences; there are no unexpected JSON, physical-grid,
+> normalization, semantic, ownership, bibliography, or footnote differences.
+> The one accepted known failure is `periodontis2.pdf`, PDF page 12, printed
+> Table 2: `Column col_idx out of range: 1`. That failure is recorded but is not
+> required to close this identifier cutover.
+
+- [ ] Diagnose the earliest extraction or table-region ownership cause of the
+  rejected canonical grids in `upload_manuscript__WEE_Bangladesh.pdf`. Treat
+  the shared header-structure failure as an extraction problem, not as an
+  identifier-string or downstream continuation problem, and preserve the raw
+  native-grid evidence while investigating it.
+
+> **Bangladesh whole-paper table checkpoint — 2026-07-28:** The complete
+> 162-page paper parsed successfully and detected 21 printed table identities
+> across 28 caption or continuation fragments. Every detected fragment has an
+> extraction artifact, but only 15 grids are non-empty and 13 are rejected as
+> `0×0`. Complete non-empty results occur for printed Table 3.1 on PDF page 81,
+> Table 3.5 on page 105, Table 3.7 on page 114, Table 3.9 on page 124, Tables
+> A.1 and A.2 on page 127, Tables A.3, A.4, and A.5 on page 128, Tables B.1 and
+> B.2 on page 129, Table B.3 on page 130, and Table B.4 on page 132. Printed
+> Table 3.6 is partial: its base on page 107 and continuation on page 108 are
+> rejected, while its continuation on page 109 produces a 2×5 grid. Printed
+> Table B.5 is partial: its base on page 135 produces a 2×6 grid and its
+> continuation on page 136 is rejected. No usable grid is produced for printed
+> Table ES.1 on page 20, Table B3.1.1 on page 75, Table 3.2 on pages 83–84,
+> Table 3.3 on pages 93–94, Table 3.4 on pages 97–98, or Table 3.8 on pages
+> 119–120. All 13 rejected fragments share canonical-grid status `rejected`,
+> diagnostic `header_structure_candidate_inconsistent`, and concern
+> `terminal_header_physical_column_mismatch`. All seven explicit continuation
+> identities are correctly preserved as strings, but all seven continuation
+> decisions are rejected rather than integrated. Do not use
+> `table_processing_status.json` as evidence that these grids succeeded: it
+> reports all 28 fragments as `ok`, including the 13 `0×0` artifacts.
 
 - [ ] Make table-candidate scoping consume the existing canonical block/prose
   boundary so later prose blocks and later page rules cannot expand a table
@@ -83,19 +127,21 @@
 > 3.1, it emits one 3×5 table with row 0 as its five-leaf header and visual ID
 > `paper_visual:table:3.1`. The fresh 28-PDF corpus run in
 > `outputs/testpapers_batch_native_table_step5_20260728` completed 26 papers and
-> exposed two known blockers accepted for this checkpoint commit:
+> at that checkpoint exposed two known blockers:
 >
 > - `Helicobacter pylori infection in the United States beyond NHANES- a
 >   scoping review of seroprevalence estimates by racial and ethnic groups.pdf`,
->   PDF page 7, printed Table 1, aborts because continuation resolution still
->   expects an integer table number after canonical caption binding has
->   preserved the printed identifier as a string.
+>   PDF page 7, printed Table 1, aborted because continuation resolution still
+>   expected an integer table number after canonical caption binding preserved
+>   the printed identifier as a string. The completed printed-identifier
+>   cutover above resolves this type failure; the page-6 fragment is now
+>   retained as a rejected continuation under the unchanged column-schema gate.
 > - `periodontis2.pdf`, PDF page 12, printed Table 2, aborts after the Step 5
 >   candidate becomes an empty 0×0 canonical extraction while a later column
 >   header schema still projects source column indices onto that rejected grid.
 >
-> These failures remain explicit next work. They are not treated as a passing
-> corpus result.
+> The `periodontis2.pdf` failure remains explicit next work and is not treated
+> as a passing corpus result.
 
 This is the persistent implementation ToDo list for parser work. Agents should check it before changing extraction, normalization, row/column semantics, table routing, value parsing, diagnostics, or R inspection helpers. Update it when a task is completed, reprioritized, split, or superseded.
 
@@ -155,6 +201,21 @@ Keep detailed implementation notes and epidemiology-table reasoning here or in l
   once, then build header candidates once against the final occupancy-defined
   physical axis. Preserve row ownership and raw provenance; do not add a
   compatibility path, fallback, or text-row classifier.
+
+- [ ] After the narrow header/body value-region precedence correction, and with
+  separate parser-logic and schema approval, preserve PyMuPDF's resolved table-
+  edge topology from the existing scoped `find_tables()` pass. Record exact
+  detector row-boundary identities, the effective PyMuPDF table-finder settings,
+  and source drawing provenance where available so later boundary ownership can
+  consume the detector's already snapped/joined/intersected structure instead
+  of repeating a fuzzy raw-rule-to-row y comparison. Do not remove PyMuPDF's
+  internal tolerances or copy their numeric defaults into another decision
+  path. Do not reverse-map resolved edges to drawings with a new tolerance: if
+  exact provenance cannot be retained from construction, keep that boundary
+  non-operative and fail closed. Before activation, audit the available
+  `TableFinder` edge fields and source-link limitations, define the typed
+  artifact change, run focused multilevel-header and textual-table checks, and
+  compare all 28 corpus PDFs.
 
 - [ ] After the one-pass artifact cutover, rerun the focused real-paper checks
   for `periodontis2.pdf`, PDF page 18, printed Table 5; `Role of Estimated

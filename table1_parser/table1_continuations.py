@@ -140,7 +140,7 @@ def table1_continuation_groups_to_payload(groups: list[Table1ContinuationGroup])
 
 def _is_table_1(table: NormalizedTable) -> bool:
     metadata_number = table.metadata.get("table_number")
-    if metadata_number == 1:
+    if metadata_number == "1":
         return True
     text = " ".join(part for part in [table.title, table.caption] if part)
     return bool(TABLE_1_CAPTION_PATTERN.search(text))
@@ -163,7 +163,7 @@ def _previous_table1_index(tables: list[NormalizedTable], table_index: int) -> i
     for prior_index in range(table_index - 1, -1, -1):
         prior_table = tables[prior_index]
         prior_number = prior_table.metadata.get("table_number")
-        if isinstance(prior_number, int) and prior_number != 1:
+        if prior_number is not None and prior_number != "1":
             return None
         if _is_table_1(prior_table):
             return prior_index

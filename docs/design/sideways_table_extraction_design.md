@@ -39,7 +39,8 @@ canonical grid is already wrong.
 - Return a normal `ExtractedTable` object so downstream stages do not need to know
   whether the source table was upright or sideways.
 - Preserve raw cell text and extraction metadata.
-- Support continued tables using the paper's table number as the stable identifier.
+- Support continued tables using the paper's complete printed identifier string
+  as the stable table number.
 - Keep the path deterministic and inspectable.
 
 ## Non-Goals
@@ -101,14 +102,15 @@ sideways pages, looking for captions in untransformed page coordinates is not en
 
 Expected behavior:
 
-- `Table 1.` on the first page should attach `table_number=1`.
-- `Table 1. (continued)` should attach `table_number=1` and continuation metadata.
-- `Table 2.` should attach `table_number=2`.
+- `Table 1.` on the first page should attach `table_number="1"`.
+- `Table 1. (continued)` should attach `table_number="1"` and continuation metadata.
+- `Table 2.` should attach `table_number="2"`.
 - A following page with compatible geometry and no new table number may be marked as
   a continuation when the evidence is strong.
 
-Continuation metadata should use the actual paper table number, not the extracted
-table list index.
+Continuation metadata should use the complete printed identifier string, not
+the extracted table-list index or a reduced integer. This applies equally to
+identifiers such as `"3.1"` and `"S1"`.
 
 ## Grid Reconstruction Requirements
 
@@ -160,7 +162,7 @@ Recommended metadata fields:
 - `sideways_detection_signals`: short list of matched signals
 - `grid_refinement_source`: include sideways extraction/refinement when used
 - `caption_detection_space`: `page_coordinates` or `transformed_coordinates`
-- `continuation_of_table_number`: integer or null
+- `continuation_of_table_number`: complete printed identifier string or null
 
 These diagnostics should be written as normal parse artifacts rather than only being
 available in logs.
@@ -172,9 +174,9 @@ Periodontology NHANES paper without committing large generated outputs.
 
 Minimum expectations:
 
-- Table 1 is detected with `table_number=1`.
+- Table 1 is detected with `table_number="1"`.
 - Table 1 continuation is detected as a continuation of table 1.
-- Table 2 is detected with `table_number=2`.
+- Table 2 is detected with `table_number="2"`.
 - Table 2 continuation is detected as a continuation of table 2 when supported by
   caption or geometry evidence.
 - Extracted grids for Tables 1 and 2 have separate rows and meaningful numeric

@@ -12,6 +12,7 @@ from table1_parser.page_furniture_mask import (
 from table1_parser.schemas import PaperTableMention
 from table1_parser.text_cleaning import clean_text
 from table1_parser.extract.table_detector import (
+    TABLE_IDENTIFIER_PATTERN,
     DetectedTableCandidate,
     _is_rectangular,
     _normalize_rows,
@@ -22,7 +23,10 @@ from table1_parser.extract.table_detector import (
 
 ALPHA_TOKEN_PATTERN = re.compile(r"[A-Za-z]")
 NUMERIC_TOKEN_PATTERN = re.compile(r"\d")
-TABLE_NUMBER_PATTERN = re.compile(r"\btable\s*(\d+)\b", re.IGNORECASE)
+TABLE_NUMBER_PATTERN = re.compile(
+    rf"\btable\s*(?P<table_number>{TABLE_IDENTIFIER_PATTERN.pattern})\b",
+    re.IGNORECASE,
+)
 LINE_MERGE_TOLERANCE = 4.0
 COLUMN_CLUSTER_TOLERANCE = 18.0
 COLLAPSED_LABEL_PATTERN = re.compile(r"[a-z][A-Z]|[A-Za-z-]{8,}")
@@ -31,7 +35,8 @@ TABLE_VALUE_TEXT_PATTERN = re.compile(r"^(?:[<>]=?\s*)?[\d.,/%()\-+±\s]+$")
 ALPHA_WORD_PATTERN = re.compile(r"[A-Za-z]{2,}")
 SENTENCE_PUNCTUATION_PATTERN = re.compile(r"[.!?;:]")
 CONTINUATION_PAGE_NOTE_PATTERN = re.compile(
-    r"^\s*(?:table\s+\d+\s*)?\(?\s*(?:cont\.?|continued\.?)\s*\)?\s*$|"
+    rf"^\s*(?:table\s+{TABLE_IDENTIFIER_PATTERN.pattern}\s*)?"
+    r"\(?\s*(?:cont\.?|continued\.?)\s*\)?\s*$|"
     r"\b(?:cont\.?|continued|continues?)\b.*\b(?:previous|next)\s+page\b|"
     r"\b(?:previous|next)\s+page\b.*\b(?:cont\.?|continued|continues?)\b",
     re.IGNORECASE,
@@ -303,7 +308,7 @@ def trim_trailing_non_table_rows(
     suffix_start = len(rows)
     removed_continuation_note = False
     continuation_note_texts: list[str] = []
-    continuation_table_number: int | None = None
+    continuation_table_number: str | None = None
     while suffix_start > 0:
         suffix_row = rows[suffix_start - 1]
         populated = [cell.strip() for cell in suffix_row if cell.strip()]
@@ -321,7 +326,9 @@ def trim_trailing_non_table_rows(
             continuation_note_texts.insert(0, suffix_text)
             table_number_match = TABLE_NUMBER_PATTERN.search(suffix_text)
             if table_number_match is not None:
-                continuation_table_number = int(table_number_match.group(1))
+                continuation_table_number = table_number_match.group(
+                    "table_number"
+                )
             suffix_start -= 1
             continue
         break

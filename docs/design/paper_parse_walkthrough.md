@@ -65,6 +65,21 @@ Today that directory may contain:
 
 Some of these are per-table artifacts. Others are paper-level context artifacts.
 
+Across those artifacts, the table identity spine is the exact identifier
+printed by the paper. Identity-bearing `table_number`,
+`continuation_of_table_number`, `continuation_table_number`, and
+`logical_table_number` fields therefore contain strings such as `"1"`,
+`"3.1"`, and `"S1"`. Candidate selection, extraction, continuation
+resolution, table inventory, variable mentions, table contexts, and public R
+selection preserve that same string without integer coercion.
+
+Visual inventory IDs such as `paper_visual:table:3.1` are derived from the
+printed identifier; they do not replace it. Page numbers, physical row and
+column indices, extraction-order table indices, and counts stay numeric. The
+missing-table-number audit is a separate numeric projection over digit-only
+identifier strings, so it intentionally excludes dotted and alphanumeric
+identifiers.
+
 `cell_text_annotations.json` records superscript, subscript, and small marker
 geometry by table cell when compatible PyMuPDF character geometry and extracted
 cell bboxes are available. It does not change the raw extracted grid. After
@@ -1080,7 +1095,7 @@ This stage is intentionally narrow. It only considers Table 1, and it only accep
 
 Current examples of continuation evidence include:
 
-- extractor metadata indicating a continuation of table number 1
+- extractor metadata indicating a continuation of table number `"1"`
 - title or caption text such as `Table 1 (continued)`
 - a continuation marker in the first normalized rows
 - an uncaptained, unnumbered table-like fragment on the next page after Table 1
@@ -1088,7 +1103,7 @@ Current examples of continuation evidence include:
 When the evidence is compatible, the parser writes two inspection artifacts:
 
 - `table1_continuation_groups.json`
-  records the source table IDs, table indices, column-header comparison, merge decision, and diagnostics
+  records table number `"1"`, source table IDs, table indices, column-header comparison, merge decision, and diagnostics
 - `merged_table1_tables.json`
   records an artifact-only `NormalizedTable` that appends continuation body rows to the base Table 1 rows
 
@@ -1559,6 +1574,8 @@ This artifact records:
 - variable-like labels harvested from deterministic table definitions
 - mentions found in table titles and captions
 - conservative merged candidate variables with provenance back to mentions
+- exact `Table <printed identifier>` labels from the canonical resolved-table
+  identity keyed by `table_id`
 
 This is a Phase 1 search artifact, not a final interpretation layer. It is intended to stay easy to inspect in both Python and R.
 
@@ -1571,6 +1588,9 @@ For each table, the parser builds a focused context bundle using:
 - variable labels
 - grouping labels
 - resolved paper-level table reference IDs when available
+
+The context bundle's `table_label` uses that same canonical resolved identity,
+so dotted and supplementary labels are not reduced by caption reparsing.
 
 This produces per-table passages and term lists that can later support standalone review workflows or future semantic interpretation.
 
