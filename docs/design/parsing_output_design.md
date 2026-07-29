@@ -600,6 +600,16 @@ Design intent:
   bracketing
 - header/body separation is selected once in `TableRegion`; normalization
   requires that artifact and copies its row ownership without inference
+- when exactly one eligible typed header/body proposal exists, `TableRegion`
+  runs the existing detector without row-bound or horizontal-rule inputs; a
+  classified value-region transition takes precedence, while an unclassified
+  content result retains the typed proposal and its canonical rule position
+- with zero or multiple eligible typed proposals, `TableRegion` retains the
+  existing full detector inputs and separator/value-region behavior
+- for a sole typed proposal, an immediate selected body row matching the
+  existing previous/next-page continuation-note form is recorded as preamble
+  and continuation-note ownership rather than body; the selected boundary is
+  unchanged and no new geometry tolerance is used
 - when a value-region data anchor begins after several header-like rows,
   `TableRegion` may use that first value row as the header/body boundary and
   exclude a sparse leading caption or note tail from both selected row sets

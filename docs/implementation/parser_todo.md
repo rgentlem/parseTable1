@@ -140,8 +140,39 @@
 >   candidate becomes an empty 0×0 canonical extraction while a later column
 >   header schema still projects source column indices onto that rejected grid.
 >
-> The `periodontis2.pdf` failure remains explicit next work and is not treated
-> as a passing corpus result.
+> **Header/body value-region precedence checkpoint — 2026-07-29:** A unique
+> typed consecutive header/body proposal now suppresses detector row/rule
+> geometry only for that detector call, allowing the existing content-based
+> value-region transition to take precedence while retaining the proposal when
+> content is unclassified. Adjacent-continuation label inheritance now consumes
+> final candidates rebuilt against final canonical tables. In `periodontis2.pdf`,
+> PDF page 12, printed Table 2 now parses as 28×11 with header rows 0–1 and body
+> row 2 onward; PDF pages 14 and 16, printed Tables 3 and 4, use three-row
+> headers, while the PDF-page-13, -15, and -17 fragments remain rejected 0×0.
+> `Uses of NHANES Biomarker Data for Chemical Risk Assessment- Trends,
+> Challenges, and Opportunities.pdf`, PDF page 7, printed Table 1 remains 10×2,
+> and `upload_manuscript__WEE_Bangladesh.pdf`, PDF page 81, printed Table 3.1
+> remains 3×5.
+>
+> The narrow post-boundary correction classifies a sole typed proposal's
+> immediate continuation-note row outside the body before occupancy is built.
+> In `Helicobacter pylori infection in the United States beyond NHANES- a
+> scoping review of seroprevalence estimates by racial and ethnic groups.pdf`,
+> PDF pages 5–7, printed Table 1, every fragment retains 15 physical columns and
+> 15 header leaves; `(Continued from previous page)` is continuation-note row 7
+> on pages 6 and 7; and one resolved continuation owns all three fragments. The
+> remaining `no_variables_for_descriptive_table` status is appropriate because
+> this scoping-review table is not an epidemiological Table 1.
+>
+> All 28 PDFs parsed successfully with six workers in
+> `outputs/testpapers_batch_post_boundary_continuation_note_v2_20260729`.
+> Against the immediate pre-fix 28-paper baseline, all physical dimensions and
+> semantic inventories are unchanged for the other 27 PDFs; their only JSON
+> differences are parse-quality report timestamps. The candidate has 94 source
+> tables, 83 resolved tables, 10 integrated continuations, and processing
+> statuses of 30 `ok`, 37 `rescued`, and 16 `failed`. The two fewer resolved
+> tables and two fewer `ok` statuses are the intended replacement of three
+> Helicobacter singletons by one integrated, non-epidemiological table.
 
 This is the persistent implementation ToDo list for parser work. Agents should check it before changing extraction, normalization, row/column semantics, table routing, value parsing, diagnostics, or R inspection helpers. Update it when a task is completed, reprioritized, split, or superseded.
 

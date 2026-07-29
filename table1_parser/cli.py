@@ -470,7 +470,7 @@ def _build_canonical_extraction_artifacts(
     )
     final.header_structure_candidates = inherit_adjacent_continuation_leaf_labels(
         final.extracted_tables,
-        provisional.header_structure_candidates,
+        final.header_structure_candidates,
     )
     return final
 

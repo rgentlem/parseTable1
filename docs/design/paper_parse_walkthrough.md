@@ -126,6 +126,23 @@ rule geometry or a coherent repeated positioned grid exists. If neither exists,
 normalization preserves that decision. Selected region edges are attached
 afterward for inspection.
 
+When exactly one eligible consecutive `header_body` proposal exists within the
+content rows, `TableRegion` calls the existing header detector without row
+bounds or horizontal-rule inputs. This limits that call to the detector's
+grid/content value-region path. A classified value-region transition is
+authoritative and leaves the selected rule position unset; if the content path
+is unclassified, the typed proposal retains its row split and canonical rule
+position. With zero or multiple eligible proposals, `TableRegion` supplies the
+full existing row and rule inputs and preserves the detector's ordinary
+separator-rule, value-region, or unclassified result.
+
+When that sole typed proposal's immediate selected body row matches the
+existing previous/next-page continuation-note form, `TableRegion` records the
+row as both preamble and continuation-note ownership and excludes it from the
+body. This does not move the selected header/body boundary or introduce another
+geometry comparison; it prevents an explicit continuation label from entering
+body occupancy and physical-column evidence.
+
 `paper_positioned_document.json` records the shared PyMuPDF positioned text pass
 for the whole paper: pages, visual lines, span text, bboxes, font names, font
 sizes, flags, line directions, words, characters, and horizontal rule segments.
@@ -803,8 +820,10 @@ Persisted header structure does not gate physical extraction. Occupancy and
 physical-band evidence are operative during canonical extraction in the
 current transitional flow. `ColumnHeaderSchema` consumes the header candidate,
 and its exact physical-column alignment also supports provenance-bearing blank-
-label inheritance for a structurally aligned continuation; normalization
-performs no repair.
+label inheritance for a structurally aligned continuation. That inheritance is
+applied to header candidates rebuilt against the final canonical tables, so
+candidate rows and physical columns share the final extraction's index spaces;
+normalization performs no repair.
 
 ## Step 4: Normalization
 

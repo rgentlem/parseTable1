@@ -9,7 +9,10 @@ from table1_parser.context.paper_document import (
     iter_paper_discovery_lines,
 )
 from table1_parser.context.visual_references import VISUAL_OBJECT_DOI_PATTERN
-from table1_parser.normalize.header_detector import detect_header_rows_with_metadata
+from table1_parser.normalize.header_detector import (
+    CONTINUATION_NOTE_PATTERN,
+    detect_header_rows_with_metadata,
+)
 from table1_parser.paper_discovery import PaperDiscoveryState
 from table1_parser.schemas import (
     CellTextAnnotationTable,
@@ -197,7 +200,53 @@ def build_table_region(
         if len(typed_header_body_candidates) == 1
         else None
     )
-    if typed_header_body_candidate is not None:
+    detector_row_bounds = (
+        None if typed_header_body_candidate is not None else content_row_bounds
+    )
+    detector_horizontal_rules = (
+        None if typed_header_body_candidate is not None else horizontal_rules
+    )
+    detector_separator_horizontal_rules = (
+        None
+        if typed_header_body_candidate is not None
+        else full_width_rules or None
+    )
+    local_header_rows, local_body_rows, header_detection = (
+        detect_header_rows_with_metadata(
+            content_grid,
+            row_bounds=detector_row_bounds,
+            horizontal_rules=detector_horizontal_rules,
+            separator_horizontal_rules=detector_separator_horizontal_rules,
+        )
+    )
+    detected_header_rows = [
+        row_idx + content_start
+        for row_idx in local_header_rows
+        if any(clean_text(cell) for cell in content_grid[row_idx])
+    ]
+    detected_body_rows = [
+        row_idx + content_start
+        for row_idx in local_body_rows
+        if any(clean_text(cell) for cell in content_grid[row_idx])
+    ]
+    detected_header_source = str(header_detection.get("source") or "unclassified")
+    detected_header_body_rule = header_detection.get("separator_rule_y")
+    detected_header_body_rule_y = (
+        float(detected_header_body_rule)
+        if isinstance(detected_header_body_rule, (int, float))
+        else None
+    )
+
+    if (
+        typed_header_body_candidate is not None
+        and detected_header_source == "value_region_anchor"
+        and detected_header_rows
+    ):
+        header_rows = detected_header_rows
+        body_rows = detected_body_rows
+        header_body_rule_y = None
+        header_source = detected_header_source
+    elif typed_header_body_candidate is not None:
         header_rows = [
             row_idx
             for row_idx in range(
@@ -214,35 +263,27 @@ def build_table_region(
             )
             if any(clean_text(cell) for cell in grid[row_idx])
         ]
-        header_detection: dict[str, object] = {}
         header_body_rule_y = typed_header_body_candidate.canonical_y
         header_source = "typed_boundary_proposal"
     else:
-        local_header_rows, local_body_rows, header_detection = (
-            detect_header_rows_with_metadata(
-                content_grid,
-                row_bounds=content_row_bounds,
-                horizontal_rules=horizontal_rules,
-                separator_horizontal_rules=full_width_rules or None,
-            )
-        )
-        header_rows = [
-            row_idx + content_start
-            for row_idx in local_header_rows
-            if any(clean_text(cell) for cell in content_grid[row_idx])
-        ]
-        body_rows = [
-            row_idx + content_start
-            for row_idx in local_body_rows
-            if any(clean_text(cell) for cell in content_grid[row_idx])
-        ]
-        header_body_rule = header_detection.get("separator_rule_y")
-        header_body_rule_y = (
-            float(header_body_rule)
-            if isinstance(header_body_rule, (int, float))
-            else None
-        )
-        header_source = str(header_detection.get("source") or "unclassified")
+        header_rows = detected_header_rows
+        body_rows = detected_body_rows
+        header_body_rule_y = detected_header_body_rule_y
+        header_source = detected_header_source
+    typed_post_header_continuation_rows: list[int] = []
+    if (
+        typed_header_body_candidate is not None
+        and typed_header_body_candidate.row_after_idx in body_rows
+    ):
+        proposed_body_row_idx = typed_header_body_candidate.row_after_idx
+        proposed_body_row_text = _row_text(grid[proposed_body_row_idx])
+        if CONTINUATION_NOTE_PATTERN.search(proposed_body_row_text) is not None:
+            typed_post_header_continuation_rows.append(proposed_body_row_idx)
+            body_rows = [
+                row_idx
+                for row_idx in body_rows
+                if row_idx != proposed_body_row_idx
+            ]
     detected_preamble_rows = header_detection.get("preamble_rows")
     detected_post_header_note_rows = header_detection.get("post_header_note_rows")
     detected_continuation_note_rows = header_detection.get("continuation_note_rows")
@@ -258,6 +299,7 @@ def build_table_region(
             for row_idx in detected_post_header_note_rows
             if isinstance(row_idx, int)
         )
+    preamble_rows.extend(typed_post_header_continuation_rows)
     preamble_rows = sorted(set(preamble_rows))
     continuation_note_rows = (
         sorted(
@@ -267,6 +309,9 @@ def build_table_region(
         )
         if isinstance(detected_continuation_note_rows, list)
         else []
+    )
+    continuation_note_rows = sorted(
+        {*continuation_note_rows, *typed_post_header_continuation_rows}
     )
     detection_basis = f"table_region_{header_source}"
     confidence = (
